@@ -207,6 +207,13 @@ export default function Pricing() {
                     : "bg-white border border-slate-200"
                 }`}
               >
+                {plan.planKey === "business" && (
+                  <div className="bg-amber-400 rounded-t-2xl px-4 py-2 text-center">
+                    <span className="text-amber-900 text-xs font-bold">
+                      💡 Eine LV-Provision mehr im Monat – und der Jahresbeitrag ist drin
+                    </span>
+                  </div>
+                )}
                 <div className="p-6 pb-3">
                   {/* Icon + Badges */}
                   <div className="flex items-center gap-3 mb-4">
