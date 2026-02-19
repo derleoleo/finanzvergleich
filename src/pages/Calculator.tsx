@@ -7,6 +7,7 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import UpgradePrompt from "@/components/UpgradePrompt";
 
 import { Calculation } from "@/entities/Calculation";
+import { UserDefaults } from "@/entities/UserDefaults";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,27 +53,24 @@ type FormData = {
 };
 
 function makeDefaults(): FormData {
+  const d = UserDefaults.load();
   return {
     name: `Berechnung ${new Date().toLocaleDateString("de-DE")}`,
-    monthly_contribution: 200,
-    contract_duration_years: 31,
-
-    lv_cost_type: "eur",
-    life_insurance_acquisition_costs_eur: 2000,
-    lv_admin_costs_monthly_eur: 6, // ✅ NEU
-    lv_effective_costs_percent: 0.7,
-
-    lv_fund_identifier: "Debeka Global Shares",
-    lv_fund_ongoing_costs_percent: 0.3,
-
-    depot_fund_identifier: "Musterfonds",
-    depot_fund_initial_charge_percent: 5.0,
-    depot_fund_ongoing_costs_percent: 0.5,
-    depot_costs_annual: 0.25,
-    depot_provider: "Musterdepot",
-
-    assumed_annual_return: 5.0,
-    birth_year: 1991,
+    monthly_contribution: d.monthly_contribution,
+    contract_duration_years: d.contract_duration_years,
+    lv_cost_type: d.lv_cost_type,
+    life_insurance_acquisition_costs_eur: d.life_insurance_acquisition_costs_eur,
+    lv_admin_costs_monthly_eur: d.lv_admin_costs_monthly_eur,
+    lv_effective_costs_percent: d.lv_effective_costs_percent,
+    lv_fund_identifier: d.lv_fund_identifier,
+    lv_fund_ongoing_costs_percent: d.lv_fund_ongoing_costs_percent,
+    depot_fund_identifier: d.depot_fund_identifier,
+    depot_fund_initial_charge_percent: d.depot_fund_initial_charge_percent,
+    depot_fund_ongoing_costs_percent: d.depot_fund_ongoing_costs_percent,
+    depot_costs_annual: d.depot_costs_annual,
+    depot_provider: d.depot_provider,
+    assumed_annual_return: d.assumed_annual_return,
+    birth_year: d.birth_year,
   };
 }
 

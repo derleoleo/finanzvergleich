@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { BestAdviceCalculation } from "@/entities/BestAdviceCalculation";
+import { UserDefaults } from "@/entities/UserDefaults";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,20 +46,21 @@ type FormData = {
 };
 
 function makeDefaults(): FormData {
+  const d = UserDefaults.load();
   return {
     name: `BestAdvice ${new Date().toLocaleDateString("de-DE")}`,
-    current_monthly_contribution: 200,
+    current_monthly_contribution: d.monthly_contribution,
     current_product_tax_free: false,
-    contract_duration_years: 20,
+    contract_duration_years: d.contract_duration_years,
     current_capital: 10000,
     guaranteed_end_capital: 80000,
-    birth_year: 1985,
-    assumed_annual_return: 5.0,
-    lv_cost_type: "eur",
-    life_insurance_acquisition_costs_eur: 2000,
-    lv_admin_costs_monthly_eur: 6,
-    lv_effective_costs_percent: 0.7,
-    lv_fund_ongoing_costs_percent: 0.3,
+    birth_year: d.birth_year,
+    assumed_annual_return: d.assumed_annual_return,
+    lv_cost_type: d.lv_cost_type,
+    life_insurance_acquisition_costs_eur: d.life_insurance_acquisition_costs_eur,
+    lv_admin_costs_monthly_eur: d.lv_admin_costs_monthly_eur,
+    lv_effective_costs_percent: d.lv_effective_costs_percent,
+    lv_fund_ongoing_costs_percent: d.lv_fund_ongoing_costs_percent,
   };
 }
 

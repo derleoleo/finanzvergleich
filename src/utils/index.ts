@@ -17,6 +17,7 @@ const routes: Record<string, string> = {
   WithdrawalPlan: "/withdrawal-plan",
   Results: "/results",
   Profile: "/profile",
+  Defaults: "/defaults",
   Pricing: "/pricing",
 };
 

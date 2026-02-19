@@ -10,6 +10,7 @@ import {
   Calculator,
   TrendingUp,
   BarChart3,
+  SlidersHorizontal,
   Home,
   Target,
   DollarSign,
@@ -78,6 +79,7 @@ const resultItems = [
 
 const profileItems = [
   { title: "Mein Profil", url: createPageUrl("Profile"), icon: User },
+  { title: "Voreinstellungen", url: createPageUrl("Defaults"), icon: SlidersHorizontal },
   { title: "Premium", url: createPageUrl("Pricing"), icon: TrendingUp },
 ];
 

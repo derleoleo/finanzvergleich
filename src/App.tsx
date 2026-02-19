@@ -22,6 +22,7 @@ import BestAdviceDetail from "@/pages/BestAdviceDetail";
 import PensionGapCalculator from "@/pages/PensionGapCalculator";
 import PensionGapDetail from "@/pages/PensionGapDetail";
 import Profile from "@/pages/Profile";
+import Defaults from "@/pages/Defaults";
 import Pricing from "@/pages/Pricing";
 
 import SimplePage from "@/pages/SimplePage";
@@ -170,6 +171,14 @@ export default function App() {
             element={
               <PageShell>
                 <Profile />
+              </PageShell>
+            }
+          />
+          <Route
+            path="/defaults"
+            element={
+              <PageShell>
+                <Defaults />
               </PageShell>
             }
           />

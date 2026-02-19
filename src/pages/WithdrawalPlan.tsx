@@ -27,6 +27,7 @@ import SummaryGrid from "@/components/results/SummaryGrid";
 import WithdrawalChart from "@/components/withdrawal/WithdrawalChart";
 import WithdrawalTable from "@/components/withdrawal/WithdrawalTable";
 import { useLocalStorage } from "@/utils/useLocalStorage";
+import { UserDefaults } from "@/entities/UserDefaults";
 import { Calculation } from "@/entities/Calculation";
 import { SinglePaymentCalculation } from "@/entities/SinglePaymentCalculation";
 import { BestAdviceCalculation } from "@/entities/BestAdviceCalculation";
@@ -36,6 +37,7 @@ import PDFSectionDialog from "@/components/pdf/PDFSectionDialog";
 type AnyCalc = any;
 
 export default function WithdrawalPlan() {
+  const _wd = UserDefaults.load();
   const [allCalculations, setAllCalculations] = useState<AnyCalc[]>([]);
   const [selectedCalculation, setSelectedCalculation] =
     useState<AnyCalc | null>(null);
@@ -47,13 +49,13 @@ export default function WithdrawalPlan() {
   );
   const [customWithdrawal, setCustomWithdrawal] = useLocalStorage<number>(
     "wp_customWithdrawal",
-    12000
+    _wd.withdrawal_amount
   );
   const [customAnnualReturn, setCustomAnnualReturn] = useLocalStorage<number>(
     "wp_customAnnualReturn",
     6.0
   );
-  const [startAge, setStartAge] = useLocalStorage<number>("wp_startAge", 65);
+  const [startAge, setStartAge] = useLocalStorage<number>("wp_startAge", _wd.withdrawal_start_age);
   const [isDetailMode, setIsDetailMode] = useLocalStorage<boolean>(
     "wp_isDetailMode",
     false

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { PensionGapCalculation } from "@/entities/PensionGapCalculation";
+import { UserDefaults } from "@/entities/UserDefaults";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,17 +33,18 @@ type FormData = {
 };
 
 function makeDefaults(): FormData {
+  const d = UserDefaults.load();
   return {
     name: `Rentenlücke ${new Date().toLocaleDateString("de-DE")}`,
-    birth_year: 1985,
-    retirement_age: 67,
-    desired_monthly_income: 3000,
-    expected_statutory_pension: 1500,
+    birth_year: d.birth_year,
+    retirement_age: d.retirement_age,
+    desired_monthly_income: d.desired_monthly_income,
+    expected_statutory_pension: d.expected_statutory_pension,
     occupational_pension_bav: 0,
     basis_rente: 0,
     rental_income: 0,
     existing_capital: 20000,
-    assumed_annual_return: 4.0,
+    assumed_annual_return: d.assumed_annual_return,
   };
 }
 

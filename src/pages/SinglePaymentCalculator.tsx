@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { SinglePaymentCalculation } from "@/entities/SinglePaymentCalculation";
+import { UserDefaults } from "@/entities/UserDefaults";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import UpgradePrompt from "@/components/UpgradePrompt";
 
@@ -43,20 +44,21 @@ type FormData = {
 };
 
 function makeDefaults(): FormData {
+  const d = UserDefaults.load();
   return {
     name: `Einmalanlage ${new Date().toLocaleDateString("de-DE")}`,
-    lump_sum: 50000,
-    contract_duration_years: 20,
-    birth_year: 1985,
-    assumed_annual_return: 5.0,
-    lv_cost_type: "eur",
-    life_insurance_acquisition_costs_eur: 2500,
-    lv_admin_costs_monthly_eur: 6,
-    lv_effective_costs_percent: 0.7,
-    lv_fund_ongoing_costs_percent: 0.3,
-    depot_fund_initial_charge_percent: 0,
-    depot_fund_ongoing_costs_percent: 0.5,
-    depot_costs_annual: 0.25,
+    lump_sum: d.lump_sum,
+    contract_duration_years: d.contract_duration_years,
+    birth_year: d.birth_year,
+    assumed_annual_return: d.assumed_annual_return,
+    lv_cost_type: d.lv_cost_type,
+    life_insurance_acquisition_costs_eur: d.life_insurance_acquisition_costs_eur,
+    lv_admin_costs_monthly_eur: d.lv_admin_costs_monthly_eur,
+    lv_effective_costs_percent: d.lv_effective_costs_percent,
+    lv_fund_ongoing_costs_percent: d.lv_fund_ongoing_costs_percent,
+    depot_fund_initial_charge_percent: d.depot_fund_initial_charge_percent,
+    depot_fund_ongoing_costs_percent: d.depot_fund_ongoing_costs_percent,
+    depot_costs_annual: d.depot_costs_annual,
   };
 }
 
