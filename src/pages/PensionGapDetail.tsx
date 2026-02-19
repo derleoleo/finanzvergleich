@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, TrendingDown, TrendingUp, Euro, CheckCircle, FileDown } from "lucide-react";
 import { usePDFExport } from "@/utils/usePDFExport";
 import PDFSectionDialog from "@/components/pdf/PDFSectionDialog";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import UpgradePrompt from "@/components/UpgradePrompt";
 
 import { formatCurrency, formatChartAxis } from "@/components/shared/CurrencyDisplay";
 import { calculateMonthlyReturn } from "@/components/shared/TaxCalculations";
@@ -71,7 +73,14 @@ export default function PensionGapDetail() {
   const navigate = useNavigate();
   const [calculation, setCalculation] = useState<PensionGapModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { isPaid } = useSubscription();
+  const [showPDFUpgrade, setShowPDFUpgrade] = useState(false);
   const { isExporting, dialogOpen, openDialog, closeDialog, doExport } = usePDFExport();
+
+  const handlePDFClick = () => {
+    if (!isPaid) { setShowPDFUpgrade(true); return; }
+    openDialog();
+  };
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("id");
@@ -133,10 +142,17 @@ export default function PensionGapDetail() {
               </p>
             </div>
           </div>
-          <Button onClick={openDialog} variant="outline" data-pdf-hide>
+          <Button onClick={handlePDFClick} variant="outline" data-pdf-hide>
             <FileDown className="w-4 h-4 mr-2" />
             Als PDF exportieren
           </Button>
+          {showPDFUpgrade && (
+            <UpgradePrompt
+              title="PDF-Export"
+              description="Der PDF-Export ist ab dem Professional-Plan verfügbar."
+              onClose={() => setShowPDFUpgrade(false)}
+            />
+          )}
         </div>
 
         {/* Kein Handlungsbedarf */}

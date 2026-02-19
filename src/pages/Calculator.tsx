@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import UpgradePrompt from "@/components/UpgradePrompt";
 
 import { Calculation } from "@/entities/Calculation";
 
@@ -117,6 +119,8 @@ export default function Calculator() {
   const defaults = useMemo(() => makeDefaults(), []);
   const resume = searchParams.get("resume") === "1";
 
+  const { canCreateCalculation, incrementCalculationCount } = useSubscription();
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -332,6 +336,10 @@ export default function Calculator() {
   };
 
   const handleCalculate = async () => {
+    if (!canCreateCalculation) {
+      setShowUpgradePrompt(true);
+      return;
+    }
     setError(null);
     setIsCalculating(true);
 
@@ -340,6 +348,7 @@ export default function Calculator() {
       const payload = { ...formData, results };
 
       const newCalc = await Calculation.create(payload as any);
+      incrementCalculationCount();
       navigate(createPageUrl("CalculatorDetail") + `?id=${newCalc.id}`);
     } catch (e) {
       console.error(e);
@@ -351,6 +360,13 @@ export default function Calculator() {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
+      {showUpgradePrompt && (
+        <UpgradePrompt
+          title="Limit erreicht"
+          description="Sie haben das Limit von 3 kostenlosen Berechnungen erreicht. Upgraden Sie, um unbegrenzt zu rechnen."
+          onClose={() => setShowUpgradePrompt(false)}
+        />
+      )}
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-3">

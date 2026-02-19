@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
 // Formspree: Konto anlegen auf formspree.io → Form-ID hier eintragen
 const FORMSPREE_ID = "mgolzyve";
@@ -20,6 +21,7 @@ import {
   X,
   User,
   LogOut,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,9 +86,15 @@ type Props = {
   children?: React.ReactNode;
 };
 
+const PAID_ONLY_URLS = [
+  createPageUrl("BestAdviceCalculator"),
+  createPageUrl("PensionGapCalculator"),
+];
+
 export default function Layout({ children }: Props) {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { isPaid } = useSubscription();
 
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackType, setFeedbackType] = useState("verbesserung");
@@ -178,9 +186,12 @@ export default function Layout({ children }: Props) {
                           className="flex items-center gap-3 px-4 py-3"
                         >
                           <item.icon className="w-5 h-5" />
-                          <span className="font-medium text-sm">
+                          <span className="font-medium text-sm flex-1">
                             {item.title}
                           </span>
+                          {!isPaid && PAID_ONLY_URLS.includes(item.url) && (
+                            <Lock className="w-3 h-3 text-slate-400 shrink-0" />
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

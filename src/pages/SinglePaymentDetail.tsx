@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, DollarSign, TrendingUp, FileDown } from "lucide-react";
 import { usePDFExport } from "@/utils/usePDFExport";
 import PDFSectionDialog from "@/components/pdf/PDFSectionDialog";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import UpgradePrompt from "@/components/UpgradePrompt";
 
 import ResultsSummary, { type Mode } from "@/components/results/ResultsSummary";
 import ComparisonTable from "@/components/results/ComparisonTable";
@@ -160,7 +162,14 @@ export default function SinglePaymentDetail() {
   const [calculation, setCalculation] = useState<SinglePaymentModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [mode, setMode] = useState<Mode>("gross");
+  const { isPaid } = useSubscription();
+  const [showPDFUpgrade, setShowPDFUpgrade] = useState(false);
   const { isExporting, dialogOpen, openDialog, closeDialog, doExport } = usePDFExport();
+
+  const handlePDFClick = () => {
+    if (!isPaid) { setShowPDFUpgrade(true); return; }
+    openDialog();
+  };
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("id");
@@ -220,10 +229,17 @@ export default function SinglePaymentDetail() {
             </div>
           </div>
           {summaryResults && (
-            <Button onClick={openDialog} variant="outline" data-pdf-hide>
+            <Button onClick={handlePDFClick} variant="outline" data-pdf-hide>
               <FileDown className="w-4 h-4 mr-2" />
               Als PDF exportieren
             </Button>
+          )}
+          {showPDFUpgrade && (
+            <UpgradePrompt
+              title="PDF-Export"
+              description="Der PDF-Export ist ab dem Professional-Plan verfügbar."
+              onClose={() => setShowPDFUpgrade(false)}
+            />
           )}
         </div>
 

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calculator as CalcIcon, Save, FileDown } from "lucide-react";
 import { usePDFExport } from "@/utils/usePDFExport";
 import PDFSectionDialog from "@/components/pdf/PDFSectionDialog";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import UpgradePrompt from "@/components/UpgradePrompt";
 
 import BasicInputs from "@/components/calculator/BasicInputs";
 import InsuranceInputs from "@/components/calculator/InsuranceInputs";
@@ -35,7 +37,14 @@ export default function CalculatorDetail() {
 
   // ✅ EIN Toggle-State für Kacheln + Graph
   const [mode, setMode] = useState<Mode>("gross");
+  const { isPaid } = useSubscription();
+  const [showPDFUpgrade, setShowPDFUpgrade] = useState(false);
   const { isExporting, dialogOpen, openDialog, closeDialog, doExport } = usePDFExport();
+
+  const handlePDFClick = () => {
+    if (!isPaid) { setShowPDFUpgrade(true); return; }
+    openDialog();
+  };
 
   useEffect(() => {
     const loadCalculation = async () => {
@@ -250,10 +259,17 @@ export default function CalculatorDetail() {
             </div>
           </div>
           {calculation.results && (
-            <Button onClick={openDialog} variant="outline" data-pdf-hide>
+            <Button onClick={handlePDFClick} variant="outline" data-pdf-hide>
               <FileDown className="w-4 h-4 mr-2" />
               Als PDF exportieren
             </Button>
+          )}
+          {showPDFUpgrade && (
+            <UpgradePrompt
+              title="PDF-Export"
+              description="Der PDF-Export ist ab dem Professional-Plan verfügbar."
+              onClose={() => setShowPDFUpgrade(false)}
+            />
           )}
         </div>
 

@@ -2,7 +2,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ReactNode } from "react";
 
 import { AuthProvider } from "@/contexts/AuthContext";
+import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import PaidRoute from "@/components/PaidRoute";
 import Layout from "@/Layout";
 
 import Login from "@/pages/Login";
@@ -39,6 +41,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <SubscriptionProvider>
         <Routes>
           {/* Login (nicht geschützt, kein Layout) */}
           <Route path="/login" element={<Login />} />
@@ -102,7 +105,9 @@ export default function App() {
             path="/best-advice"
             element={
               <PageShell>
-                <BestAdviceCalculator />
+                <PaidRoute featureName="BestAdvice Analyse">
+                  <BestAdviceCalculator />
+                </PaidRoute>
               </PageShell>
             }
           />
@@ -110,7 +115,9 @@ export default function App() {
             path="/best-advice/detail"
             element={
               <PageShell>
-                <BestAdviceDetail />
+                <PaidRoute featureName="BestAdvice Analyse">
+                  <BestAdviceDetail />
+                </PaidRoute>
               </PageShell>
             }
           />
@@ -120,7 +127,9 @@ export default function App() {
             path="/pension-gap"
             element={
               <PageShell>
-                <PensionGapCalculator />
+                <PaidRoute featureName="Rentenlücken-Rechner">
+                  <PensionGapCalculator />
+                </PaidRoute>
               </PageShell>
             }
           />
@@ -128,7 +137,9 @@ export default function App() {
             path="/pension-gap/detail"
             element={
               <PageShell>
-                <PensionGapDetail />
+                <PaidRoute featureName="Rentenlücken-Rechner">
+                  <PensionGapDetail />
+                </PaidRoute>
               </PageShell>
             }
           />
@@ -184,6 +195,7 @@ export default function App() {
             }
           />
         </Routes>
+        </SubscriptionProvider>
       </AuthProvider>
     </BrowserRouter>
   );

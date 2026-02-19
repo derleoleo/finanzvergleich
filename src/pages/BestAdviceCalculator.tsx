@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { BestAdviceCalculation } from "@/entities/BestAdviceCalculation";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -89,6 +90,7 @@ export default function BestAdviceCalculator() {
   const navigate = useNavigate();
   const defaults = useMemo(() => makeDefaults(), []);
   const [formData, setFormData] = useState<FormData>(() => loadDraft() ?? defaults);
+  const { incrementCalculationCount } = useSubscription();
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -188,6 +190,7 @@ export default function BestAdviceCalculator() {
     try {
       const results = calculateResults();
       const newCalc = await BestAdviceCalculation.create({ ...formData, results });
+      incrementCalculationCount();
       navigate(createPageUrl("BestAdviceDetail") + `?id=${newCalc.id}`);
     } catch (e) {
       console.error(e);

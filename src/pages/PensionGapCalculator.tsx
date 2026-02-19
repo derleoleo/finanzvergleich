@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { PensionGapCalculation } from "@/entities/PensionGapCalculation";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -128,6 +129,7 @@ export default function PensionGapCalculator() {
   const navigate = useNavigate();
   const defaults = useMemo(() => makeDefaults(), []);
   const [formData, setFormData] = useState<FormData>(() => loadDraft() ?? defaults);
+  const { incrementCalculationCount } = useSubscription();
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -156,6 +158,7 @@ export default function PensionGapCalculator() {
     try {
       const results = calculatePensionGapResults(formData);
       const newCalc = await PensionGapCalculation.create({ ...formData, results });
+      incrementCalculationCount();
       navigate(createPageUrl("PensionGapDetail") + `?id=${newCalc.id}`);
     } catch (e) {
       console.error(e);

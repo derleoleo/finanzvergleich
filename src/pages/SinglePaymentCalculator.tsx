@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { SinglePaymentCalculation } from "@/entities/SinglePaymentCalculation";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import UpgradePrompt from "@/components/UpgradePrompt";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -87,6 +89,8 @@ export default function SinglePaymentCalculator() {
   const navigate = useNavigate();
   const defaults = useMemo(() => makeDefaults(), []);
   const [formData, setFormData] = useState<FormData>(() => loadDraft() ?? defaults);
+  const { canCreateCalculation, incrementCalculationCount } = useSubscription();
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -186,11 +190,16 @@ export default function SinglePaymentCalculator() {
   };
 
   const handleCalculate = async () => {
+    if (!canCreateCalculation) {
+      setShowUpgradePrompt(true);
+      return;
+    }
     setError(null);
     setIsCalculating(true);
     try {
       const results = calculateResults();
       const newCalc = await SinglePaymentCalculation.create({ ...formData, results });
+      incrementCalculationCount();
       navigate(createPageUrl("SinglePaymentDetail") + `?id=${newCalc.id}`);
     } catch (e) {
       console.error(e);
@@ -201,6 +210,13 @@ export default function SinglePaymentCalculator() {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
+      {showUpgradePrompt && (
+        <UpgradePrompt
+          title="Limit erreicht"
+          description="Sie haben das Limit von 3 kostenlosen Berechnungen erreicht. Upgraden Sie, um unbegrenzt zu rechnen."
+          onClose={() => setShowUpgradePrompt(false)}
+        />
+      )}
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-3">
