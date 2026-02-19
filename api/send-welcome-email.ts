@@ -17,7 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!user?.email) return res.status(401).json({ error: "Unauthorized" });
 
   const { error } = await resend.emails.send({
-    from: "RentenCheck <info@rentencheck.app>",
+    from: "RentenCheck <info@contact.rentencheck.app>",
     to: user.email,
     subject: "Willkommen bei RentenCheck",
     html: `

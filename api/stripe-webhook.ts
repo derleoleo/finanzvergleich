@@ -154,7 +154,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const resend = new Resend(process.env.RESEND_API_KEY);
       await resend.emails.send({
-        from: "RentenCheck <info@rentencheck.app>",
+        from: "RentenCheck <info@contact.rentencheck.app>",
         to: customer.email,
         subject: "Ihr Testzeitraum endet in 3 Tagen",
         html: `
