@@ -6,9 +6,14 @@ import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import PaidRoute from "@/components/PaidRoute";
 import Layout from "@/Layout";
+import { useAuth } from "@/contexts/AuthContext";
 
 import Login from "@/pages/Login";
+import Landing from "@/pages/Landing";
 import Home from "@/pages/Home";
+import Impressum from "@/pages/Impressum";
+import Datenschutz from "@/pages/Datenschutz";
+import AGB from "@/pages/AGB";
 import Calculator from "@/pages/Calculator";
 import CalculatorDetail from "@/pages/CalculatorDetail";
 import CalculatorCostsDetail from "@/pages/CalculatorCostsDetail";
@@ -38,6 +43,16 @@ function PageShell({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * / → Landing für Gäste, Übersicht für eingeloggte Nutzer
+ */
+function SmartRoot() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Landing />;
+  return <PageShell><Home /></PageShell>;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -47,15 +62,13 @@ export default function App() {
           {/* Login (nicht geschützt, kein Layout) */}
           <Route path="/login" element={<Login />} />
 
-          {/* Home */}
-          <Route
-            path="/"
-            element={
-              <PageShell>
-                <Home />
-              </PageShell>
-            }
-          />
+          {/* Root: Landing (Gast) oder Übersicht (eingeloggt) */}
+          <Route path="/" element={<SmartRoot />} />
+
+          {/* Rechtliches – öffentlich */}
+          <Route path="/impressum" element={<Impressum />} />
+          <Route path="/datenschutz" element={<Datenschutz />} />
+          <Route path="/agb" element={<AGB />} />
 
           {/* Fonds-Sparvertrag */}
           <Route

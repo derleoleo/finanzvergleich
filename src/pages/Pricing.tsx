@@ -59,6 +59,7 @@ const plans = [
       "PDF-Export",
       "Voreinstellungen",
       "10 Berechnungen pro Monat",
+      "14 Tage kostenlos testen",
     ],
     locked: [],
   },
@@ -81,6 +82,7 @@ const plans = [
     },
     features: [
       "Alles aus Pro",
+      "14 Tage kostenlos testen",
       "Unbegrenzte Berechnungen",
       "Eigenes Logo auf PDF-Exporten",
       "Berater-Profil auf Auswertungen",
@@ -320,7 +322,7 @@ export default function Pricing() {
                         disabled={isLoading}
                       >
                         {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                        Jetzt abonnieren
+                        14 Tage kostenlos testen
                       </Button>
                     )}
 

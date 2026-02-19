@@ -19,6 +19,9 @@ const routes: Record<string, string> = {
   Profile: "/profile",
   Defaults: "/defaults",
   Pricing: "/pricing",
+  Impressum: "/impressum",
+  Datenschutz: "/datenschutz",
+  AGB: "/agb",
 };
 
 export function createPageUrl(pageName: string): string {
