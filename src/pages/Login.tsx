@@ -30,7 +30,6 @@ export default function Login() {
         navigate('/')
       } else {
         await signUp(email, password)
-        await signIn(email, password)
         navigate('/')
       }
     } catch (err: unknown) {
