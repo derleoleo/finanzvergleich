@@ -66,21 +66,18 @@ export default function Home() {
           {calculators.map((calc) => (
             <Link key={calc.title} to={calc.href} className="group block">
               <Card className="border-0 shadow-lg bg-white h-full transition-all duration-200 group-hover:shadow-xl group-hover:-translate-y-0.5">
-                <CardContent className="p-6 flex flex-col h-full">
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${calc.color}`}>
-                      <calc.icon className="w-6 h-6" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-lg font-bold text-slate-900">{calc.title}</h2>
-                        {calc.badge && (
-                          <span className="text-xs bg-blue-100 text-blue-700 font-medium px-2 py-0.5 rounded-full">
-                            {calc.badge}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                <CardContent className="p-6 flex flex-col items-center text-center h-full">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${calc.color} mb-4`}>
+                    <calc.icon className="w-6 h-6" />
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-3">
+                    <h2 className="text-lg font-bold text-slate-900">{calc.title}</h2>
+                    {calc.badge && (
+                      <span className="text-xs bg-blue-100 text-blue-700 font-medium px-2 py-0.5 rounded-full">
+                        {calc.badge}
+                      </span>
+                    )}
                   </div>
 
                   <p className="text-sm text-slate-600 flex-1 leading-relaxed">{calc.description}</p>
