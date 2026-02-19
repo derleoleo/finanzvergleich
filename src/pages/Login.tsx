@@ -30,7 +30,7 @@ export default function Login() {
         navigate('/')
       } else {
         await signUp(email, password)
-        setSuccessMessage('Konto erstellt. Sie werden weitergeleitet…')
+        navigate('/')
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Fehler beim Anmelden')
