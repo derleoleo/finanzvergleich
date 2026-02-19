@@ -30,7 +30,7 @@ jobs:
 
           for TABLE in "${TABLES[@]}"; do
             echo "Exportiere: $TABLE"
-            HTTP_STATUS=$(curl -s -o "${BACKUP_DIR}/${TABLE}.json" -w "%{http_code}" \
+            HTTP_STATUS=$(curl -s -L -o "${BACKUP_DIR}/${TABLE}.json" -w "%{http_code}" \
               -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
               -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
               -H "Accept: application/json" \
