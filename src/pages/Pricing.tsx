@@ -86,7 +86,6 @@ const plans = [
       "Unbegrenzte Berechnungen",
       "Eigenes Logo auf PDF-Exporten",
       "Berater-Profil auf Auswertungen",
-      "Mehrere Berater-Profile",
       "Prioritäts-Support",
     ],
     locked: [],
@@ -100,6 +99,8 @@ export default function Pricing() {
   const [billing, setBilling] = useState<Billing>("monthly");
   const [loadingPriceId, setLoadingPriceId] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [pendingPriceId, setPendingPriceId] = useState<string | null>(null);
+  const [widerrufsChecked, setWiderrufsChecked] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
@@ -107,6 +108,18 @@ export default function Pricing() {
       return () => clearTimeout(timer);
     }
   }, [searchParams, refreshSubscription]);
+
+  const openWiderrufsModal = (priceId: string) => {
+    setWiderrufsChecked(false);
+    setPendingPriceId(priceId);
+  };
+
+  const confirmCheckout = async () => {
+    if (!pendingPriceId) return;
+    const priceId = pendingPriceId;
+    setPendingPriceId(null);
+    await handleCheckout(priceId);
+  };
 
   const handleCheckout = async (priceId: string) => {
     if (!session) return;
@@ -318,7 +331,7 @@ export default function Pricing() {
                     {plan.planKey !== "free" && !isPaid && current.priceId && (
                       <Button
                         className={`w-full ${dark ? "bg-blue-500 hover:bg-blue-400 text-white border-0" : "bg-slate-800 hover:bg-slate-700 text-white"}`}
-                        onClick={() => handleCheckout(current.priceId!)}
+                        onClick={() => openWiderrufsModal(current.priceId!)}
                         disabled={isLoading}
                       >
                         {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -344,6 +357,54 @@ export default function Pricing() {
           </p>
         </div>
       </div>
+
+      {/* Widerrufsrecht-Modal */}
+      {pendingPriceId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <h2 className="text-lg font-bold text-slate-900">Bestellung bestätigen</h2>
+            <p className="text-sm text-slate-600">
+              Sie starten jetzt einen <strong>14-tägigen kostenlosen Testzeitraum</strong>.
+              Nach Ablauf beginnt das Abonnement automatisch, sofern Sie nicht vorher kündigen.
+            </p>
+
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={widerrufsChecked}
+                onChange={(e) => setWiderrufsChecked(e.target.checked)}
+                className="mt-0.5 w-4 h-4 shrink-0 accent-slate-800 cursor-pointer"
+              />
+              <span className="text-xs text-slate-700 leading-relaxed">
+                Ich verlange ausdrücklich, dass mit der Ausführung des Vertrags vor Ablauf der
+                Widerrufsfrist begonnen wird. Mir ist bekannt, dass ich dadurch mein{" "}
+                <strong>Widerrufsrecht verliere</strong>.
+              </span>
+            </label>
+
+            <div className="flex gap-3 pt-1">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setPendingPriceId(null)}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                className="flex-1 bg-slate-800 hover:bg-slate-700 text-white"
+                disabled={!widerrufsChecked || !!loadingPriceId}
+                onClick={confirmCheckout}
+              >
+                {loadingPriceId ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Weiter zu Stripe"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

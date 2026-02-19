@@ -31,6 +31,7 @@ import Defaults from "@/pages/Defaults";
 import Pricing from "@/pages/Pricing";
 
 import SimplePage from "@/pages/SimplePage";
+import CookieBanner from "@/components/CookieBanner";
 
 /**
  * Wrapper für alle geschützten Seiten
@@ -220,6 +221,7 @@ export default function App() {
           />
         </Routes>
         </SubscriptionProvider>
+        <CookieBanner />
       </AuthProvider>
     </BrowserRouter>
   );

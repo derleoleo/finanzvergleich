@@ -1,0 +1,32 @@
+name: Database Backup
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'   # Jeden Sonntag um 02:00 UTC
+  workflow_dispatch:        # Manuell auslösbar über GitHub UI
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Datenbank-Dump erstellen
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          FILENAME="rentencheck_backup_${TIMESTAMP}.sql"
+          pg_dump "$DATABASE_URL" \
+            --format=plain \
+            --no-owner \
+            --no-acl \
+            --file="$FILENAME"
+          gzip "$FILENAME"
+          echo "BACKUP_FILE=${FILENAME}.gz" >> $GITHUB_ENV
+
+      - name: Backup als Artifact hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: "*.sql.gz"
+          retention-days: 90

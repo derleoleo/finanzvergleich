@@ -348,6 +348,14 @@ export default function Layout({ children }: Props) {
                 Feedback & Wünsche
               </Button>
             )}
+
+            <div className="flex justify-center gap-3 pt-1">
+              <Link to="/impressum" className="text-[11px] text-slate-400 hover:text-slate-600 transition-colors">Impressum</Link>
+              <span className="text-slate-300 text-[11px]">·</span>
+              <Link to="/datenschutz" className="text-[11px] text-slate-400 hover:text-slate-600 transition-colors">Datenschutz</Link>
+              <span className="text-slate-300 text-[11px]">·</span>
+              <Link to="/agb" className="text-[11px] text-slate-400 hover:text-slate-600 transition-colors">AGB</Link>
+            </div>
           </SidebarFooter>
         </Sidebar>
 
