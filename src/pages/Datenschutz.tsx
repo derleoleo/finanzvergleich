@@ -146,6 +146,16 @@ export default function Datenschutz() {
               <strong>Kontakt für AVV-Anfragen:</strong>{" "}
               <a href="mailto:info@rentencheck.app" className="text-blue-600 hover:underline">info@rentencheck.app</a>
             </p>
+            <p className="mt-3">
+              <a
+                href="/compliance.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 border border-slate-300 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors"
+              >
+                📄 Compliance-Dokumentation herunterladen (AVV, TOMs, Subprozessorliste)
+              </a>
+            </p>
           </section>
 
           {/* 8 */}
