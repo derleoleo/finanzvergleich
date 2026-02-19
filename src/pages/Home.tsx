@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   Calculator, DollarSign, Target, TrendingDown, Wallet, ArrowRight,
 } from "lucide-react";
@@ -66,7 +66,7 @@ export default function Home() {
           {calculators.map((calc) => (
             <Link key={calc.title} to={calc.href} className="group block">
               <Card className="border-0 shadow-lg bg-white h-full transition-all duration-200 group-hover:shadow-xl group-hover:-translate-y-0.5">
-                <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
+                <div className="p-6 h-full flex flex-col items-center justify-center text-center">
                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${calc.color} mb-4`}>
                     <calc.icon className="w-6 h-6" />
                   </div>
@@ -86,7 +86,7 @@ export default function Home() {
                     Zum Rechner
                     <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                   </div>
-                </CardContent>
+                </div>
               </Card>
             </Link>
           ))}
