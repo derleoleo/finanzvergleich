@@ -34,6 +34,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null)
       if (session?.user) {
         await migrateLocalDataToSupabase()
+
+        // Willkommens-E-Mail beim ersten Anmelden senden (fire-and-forget)
+        if (_event === 'SIGNED_IN') {
+          const welcomeKey = `rc_welcome_${session.user.id}`
+          if (!localStorage.getItem(welcomeKey) && session.access_token) {
+            localStorage.setItem(welcomeKey, '1')
+            fetch('/api/send-welcome-email', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            }).catch(() => {})
+          }
+        }
       }
     })
 
