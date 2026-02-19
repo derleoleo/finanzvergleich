@@ -26,7 +26,7 @@ function buildProfileHeader(profile: UserProfileData, title: string): HTMLElemen
 
   el.innerHTML = `
     <div>
-      <div style="font-size:20px;font-weight:700;margin-bottom:4px;">FinanzVergleich</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:4px;">RentenCheck</div>
       <div style="font-size:13px;color:#94a3b8;">${title}</div>
     </div>
     <div style="text-align:right;font-size:12px;color:#cbd5e1;line-height:1.8;">

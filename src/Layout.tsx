@@ -146,7 +146,7 @@ export default function Layout({ children }: Props) {
               </div>
               <div>
                 <h2 className="font-bold text-slate-900 text-lg">
-                  FinanzVergleich
+                  RentenCheck
                 </h2>
                 <p className="text-xs text-slate-500 font-medium">
                   LV vs Depot Analyse
@@ -354,7 +354,7 @@ export default function Layout({ children }: Props) {
           <header className="bg-white border-b border-slate-200 px-6 py-4 md:hidden shrink-0 print:hidden">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200" />
-              <h1 className="text-xl font-semibold">FinanzVergleich</h1>
+              <h1 className="text-xl font-semibold">RentenCheck</h1>
             </div>
           </header>
 

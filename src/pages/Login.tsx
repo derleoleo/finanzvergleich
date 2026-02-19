@@ -63,7 +63,7 @@ export default function Login() {
             <PiggyBank className="w-7 h-7 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">FinanzVergleich</h1>
+            <h1 className="text-2xl font-bold text-slate-900">RentenCheck</h1>
             <p className="text-xs text-slate-500">LV vs Depot Analyse</p>
           </div>
         </div>

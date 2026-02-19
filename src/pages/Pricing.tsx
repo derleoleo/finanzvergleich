@@ -47,7 +47,7 @@ const plans = [
     ],
     locked: [],
     cta: "Jetzt anfragen",
-    ctaHref: "mailto:info@finanzvergleich.app?subject=Professional+Abo",
+    ctaHref: "mailto:info@rentencheck.app?subject=Professional+Abo",
     ctaVariant: "default" as const,
   },
   {
@@ -67,7 +67,7 @@ const plans = [
     ],
     locked: [],
     cta: "Jetzt anfragen",
-    ctaHref: "mailto:info@finanzvergleich.app?subject=Business+Abo",
+    ctaHref: "mailto:info@rentencheck.app?subject=Business+Abo",
     ctaVariant: "outline" as const,
   },
 ];
@@ -180,8 +180,8 @@ export default function Pricing() {
         <div className="mt-12 text-center">
           <p className="text-sm text-slate-500">
             Fragen zum Abo? Schreiben Sie uns an{" "}
-            <a href="mailto:info@finanzvergleich.app" className="underline hover:text-slate-700">
-              info@finanzvergleich.app
+            <a href="mailto:info@rentencheck.app" className="underline hover:text-slate-700">
+              info@rentencheck.app
             </a>
             . Kündigung jederzeit möglich.
           </p>
