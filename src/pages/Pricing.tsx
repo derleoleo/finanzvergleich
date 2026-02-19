@@ -57,6 +57,7 @@ const plans = [
       "Rentenlücken-Rechner",
       "Entnahmeplan",
       "PDF-Export",
+      "Voreinstellungen",
       "10 Berechnungen pro Monat",
     ],
     locked: [],
