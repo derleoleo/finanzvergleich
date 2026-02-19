@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { PiggyBank } from 'lucide-react'
 
 export default function Login() {
   const { user, signIn, signUp } = useAuth()
@@ -50,13 +49,8 @@ export default function Login() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center">
-            <PiggyBank className="w-7 h-7 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">RentenCheck</h1>
-            <p className="text-xs text-slate-500">LV vs Depot Analyse</p>
-          </div>
+          <img src="/favicon.svg" alt="RentenCheck" className="w-12 h-12" />
+          <h1 className="text-2xl font-bold text-slate-900">RentenCheck</h1>
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-8">
