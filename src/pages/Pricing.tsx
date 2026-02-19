@@ -53,7 +53,6 @@ const plans = [
       "Fonds-Sparvertrag (LV vs. Depot)",
       "Fonds-Einmalanlage",
       "Kostenaufschlüsselung",
-      "Unbegrenzte Berechnungen",
       "BestAdvice Analyse",
       "Rentenlücken-Rechner",
       "Entnahmeplan",

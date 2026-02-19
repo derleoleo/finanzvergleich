@@ -8,10 +8,11 @@ export type UserProfileData = {
   address: string;
   city: string;
   zip: string;
+  logo: string;
 };
 
 function makeEmpty(): UserProfileData {
-  return { name: '', company: '', email: '', phone: '', address: '', city: '', zip: '' }
+  return { name: '', company: '', email: '', phone: '', address: '', city: '', zip: '', logo: '' }
 }
 
 export class UserProfile {
@@ -20,7 +21,7 @@ export class UserProfile {
     if (!user) return makeEmpty()
     const { data } = await supabase
       .from('user_profiles')
-      .select('name, company, email, phone, address, city, zip')
+      .select('name, company, email, phone, address, city, zip, logo')
       .eq('user_id', user.id)
       .single()
     if (!data) return makeEmpty()

@@ -1,18 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { UserProfile, type UserProfileData } from "@/entities/UserProfile";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
-const EMPTY_PROFILE: UserProfileData = { name: "", company: "", email: "", phone: "", address: "", city: "", zip: "" };
+const EMPTY_PROFILE: UserProfileData = { name: "", company: "", email: "", phone: "", address: "", city: "", zip: "", logo: "" };
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { User, Save, CheckCircle, Building, Mail, Phone, MapPin } from "lucide-react";
+import { User, Save, CheckCircle, Building, Mail, Phone, MapPin, ImagePlus, X } from "lucide-react";
 
 export default function Profile() {
   const [profile, setProfile] = useState<UserProfileData>(EMPTY_PROFILE);
   const [saved, setSaved] = useState(false);
+  const { plan } = useSubscription();
+  const isUnlimited = plan === "business";
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     UserProfile.load().then(setProfile);
@@ -135,6 +139,65 @@ export default function Profile() {
             </CardContent>
           </Card>
 
+          {/* Logo Upload – nur für Unlimited */}
+          {isUnlimited && (
+            <Card className="border-0 shadow-lg bg-white">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-3 text-xl font-bold text-slate-900">
+                  <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                    <ImagePlus className="w-5 h-5 text-orange-600" />
+                  </div>
+                  Logo für PDF-Exporte
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {profile.logo ? (
+                  <div className="flex items-start gap-4">
+                    <img
+                      src={profile.logo}
+                      alt="Logo"
+                      className="max-h-24 max-w-48 object-contain border border-slate-200 rounded-xl p-2 bg-slate-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => update("logo", "")}
+                      className="flex items-center gap-1 text-sm text-red-500 hover:text-red-700"
+                    >
+                      <X className="w-4 h-4" />
+                      Entfernen
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center cursor-pointer hover:border-slate-400 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <ImagePlus className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                    <p className="text-sm text-slate-600 font-medium">Logo hochladen</p>
+                    <p className="text-xs text-slate-400 mt-1">PNG, JPG, SVG – max. 1 MB</p>
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 1_048_576) {
+                      alert("Die Datei ist zu groß (max. 1 MB).");
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = () => update("logo", reader.result as string);
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex justify-end">
             <Button
               onClick={handleSave}
@@ -155,7 +218,7 @@ export default function Profile() {
           </div>
 
           <div className="text-xs text-slate-500 text-center">
-            Alle Daten werden ausschließlich lokal in Ihrem Browser gespeichert.
+            Profildaten werden sicher in Ihrem Konto gespeichert und in PDF-Exporten verwendet.
           </div>
         </div>
       </div>
