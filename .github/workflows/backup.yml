@@ -10,24 +10,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Datenbank-Dump erstellen
+      - name: Datenbank-Backup via Supabase REST API
         env:
-          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
-          PGSSLMODE: require
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-          FILENAME="rentencheck_backup_${TIMESTAMP}.sql"
-          pg_dump "$DATABASE_URL" \
-            --format=plain \
-            --no-owner \
-            --no-acl \
-            --file="$FILENAME"
-          gzip "$FILENAME"
-          echo "BACKUP_FILE=${FILENAME}.gz" >> $GITHUB_ENV
+          BACKUP_DIR="backup_${TIMESTAMP}"
+          mkdir -p "$BACKUP_DIR"
+
+          TABLES=(
+            "subscriptions"
+            "user_profiles"
+            "finanzvergleich_calculations"
+            "finanzvergleich_singlepayment"
+            "finanzvergleich_bestadvice"
+            "finanzvergleich_pensiongap"
+          )
+
+          for TABLE in "${TABLES[@]}"; do
+            echo "Exportiere: $TABLE"
+            HTTP_STATUS=$(curl -s -o "${BACKUP_DIR}/${TABLE}.json" -w "%{http_code}" \
+              -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+              -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+              -H "Accept: application/json" \
+              "${SUPABASE_URL}/rest/v1/${TABLE}?select=*")
+
+            if [ "$HTTP_STATUS" != "200" ]; then
+              echo "FEHLER bei $TABLE (HTTP $HTTP_STATUS)"
+              cat "${BACKUP_DIR}/${TABLE}.json"
+              exit 1
+            fi
+
+            ROWS=$(jq length "${BACKUP_DIR}/${TABLE}.json")
+            echo "  → $ROWS Zeilen exportiert"
+          done
+
+          tar -czf "rentencheck_backup_${TIMESTAMP}.tar.gz" "$BACKUP_DIR"
+          echo "Backup erstellt: rentencheck_backup_${TIMESTAMP}.tar.gz"
 
       - name: Backup als Artifact hochladen
         uses: actions/upload-artifact@v4
         with:
           name: db-backup-${{ github.run_id }}
-          path: "*.sql.gz"
+          path: "*.tar.gz"
           retention-days: 90
