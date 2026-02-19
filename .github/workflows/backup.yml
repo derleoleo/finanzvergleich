@@ -15,39 +15,51 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-          BACKUP_DIR="backup_${TIMESTAMP}"
-          mkdir -p "$BACKUP_DIR"
+          python3 << 'EOF'
+          import requests, json, os, sys
+          from datetime import datetime
+          from pathlib import Path
 
-          TABLES=(
-            "subscriptions"
-            "user_profiles"
-            "finanzvergleich_calculations"
-            "finanzvergleich_singlepayment"
-            "finanzvergleich_bestadvice"
-            "finanzvergleich_pensiongap"
-          )
+          url = os.environ["SUPABASE_URL"].rstrip("/")
+          key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+          timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+          backup_dir = Path(f"backup_{timestamp}")
+          backup_dir.mkdir()
 
-          for TABLE in "${TABLES[@]}"; do
-            echo "Exportiere: $TABLE"
-            HTTP_STATUS=$(curl -s -L -o "${BACKUP_DIR}/${TABLE}.json" -w "%{http_code}" \
-              -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
-              -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
-              -H "Accept: application/json" \
-              "${SUPABASE_URL}/rest/v1/${TABLE}?select=*")
+          headers = {
+              "apikey": key,
+              "Authorization": f"Bearer {key}",
+              "Accept": "application/json",
+          }
 
-            if [ "$HTTP_STATUS" != "200" ]; then
-              echo "FEHLER bei $TABLE (HTTP $HTTP_STATUS)"
-              cat "${BACKUP_DIR}/${TABLE}.json"
-              exit 1
-            fi
+          tables = [
+              "subscriptions",
+              "user_profiles",
+              "finanzvergleich_calculations",
+              "finanzvergleich_singlepayment",
+              "finanzvergleich_bestadvice",
+              "finanzvergleich_pensiongap",
+          ]
 
-            ROWS=$(jq length "${BACKUP_DIR}/${TABLE}.json")
-            echo "  → $ROWS Zeilen exportiert"
-          done
+          for table in tables:
+              print(f"Exportiere: {table}")
+              r = requests.get(
+                  f"{url}/rest/v1/{table}?select=*",
+                  headers=headers,
+                  timeout=30,
+              )
+              if not r.ok:
+                  print(f"FEHLER bei {table}: HTTP {r.status_code} – {r.text}")
+                  sys.exit(1)
+              data = r.json()
+              (backup_dir / f"{table}.json").write_text(json.dumps(data, indent=2, ensure_ascii=False))
+              print(f"  → {len(data)} Zeilen exportiert")
 
-          tar -czf "rentencheck_backup_${TIMESTAMP}.tar.gz" "$BACKUP_DIR"
-          echo "Backup erstellt: rentencheck_backup_${TIMESTAMP}.tar.gz"
+          print(f"\nAlle Tabellen gesichert in {backup_dir}/")
+          EOF
+
+          tar -czf "rentencheck_backup_$(date +%Y%m%d_%H%M%S).tar.gz" backup_*/
+          echo "Fertig."
 
       - name: Backup als Artifact hochladen
         uses: actions/upload-artifact@v4
