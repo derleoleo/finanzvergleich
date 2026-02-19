@@ -17,14 +17,14 @@ jobs:
         run: |
           python3 << 'EOF'
           import requests, json, os, sys
-          from datetime import datetime
+          from datetime import datetime, timezone
           from pathlib import Path
 
           url = os.environ["SUPABASE_URL"].rstrip("/")
           if not url.startswith("http"):
               url = "https://" + url
           key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
-          timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+          timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
           backup_dir = Path(f"backup_{timestamp}")
           backup_dir.mkdir()
 
@@ -37,10 +37,10 @@ jobs:
           tables = [
               "subscriptions",
               "user_profiles",
-              "finanzvergleich_calculations",
-              "finanzvergleich_singlepayment",
-              "finanzvergleich_bestadvice",
-              "finanzvergleich_pensiongap",
+              "calculations",
+              "single_payment_calculations",
+              "best_advice_calculations",
+              "pension_gap_calculations",
           ]
 
           for table in tables:
