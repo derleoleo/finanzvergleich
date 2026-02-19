@@ -71,9 +71,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           stripe_subscription_id: session.subscription as string,
           plan,
           status: subscription.status,
-          current_period_end: new Date(
-            subscription.current_period_end * 1000
-          ).toISOString(),
+          current_period_end: subscription.items.data[0]?.current_period_end
+            ? new Date(subscription.items.data[0].current_period_end * 1000).toISOString()
+            : null,
           cancel_at_period_end: subscription.cancel_at_period_end,
           updated_at: new Date().toISOString(),
         },
@@ -109,9 +109,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           stripe_subscription_id: subscription.id,
           plan,
           status: subscription.status,
-          current_period_end: new Date(
-            subscription.current_period_end * 1000
-          ).toISOString(),
+          current_period_end: subscription.items.data[0]?.current_period_end
+            ? new Date(subscription.items.data[0].current_period_end * 1000).toISOString()
+            : null,
           cancel_at_period_end: subscription.cancel_at_period_end,
           updated_at: new Date().toISOString(),
         },
