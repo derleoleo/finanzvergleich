@@ -15,6 +15,7 @@ type SubscriptionContextType = {
   plan: Plan;
   isPaid: boolean;
   totalCalculationCount: number;
+  monthlyCalculationCount: number;
   canCreateCalculation: boolean;
   subscriptionLoading: boolean;
   refreshSubscription: () => Promise<void>;
@@ -28,11 +29,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [plan, setPlan] = useState<Plan>("free");
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [totalCalculationCount, setTotalCalculationCount] = useState(0);
+  const [monthlyCalculationCount, setMonthlyCalculationCount] = useState(0);
 
   const loadSubscription = useCallback(async () => {
     if (!user) {
       setPlan("free");
       setTotalCalculationCount(0);
+      setMonthlyCalculationCount(0);
       setSubscriptionLoading(false);
       return;
     }
@@ -52,32 +55,37 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
           : "free";
       setPlan(activePlan);
 
-      // Berechnungen zählen (alle 4 Tabellen parallel)
-      const [calc, single, best, pension] = await Promise.all([
-        supabase
-          .from("finanzvergleich_calculations")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id),
-        supabase
-          .from("finanzvergleich_singlepayment")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id),
-        supabase
-          .from("finanzvergleich_bestadvice")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id),
-        supabase
-          .from("finanzvergleich_pensiongap")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id),
+      // Monatsbeginn für monatliche Zählung
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+      // Gesamt- und Monats-Berechnungen parallel zählen (alle 4 Tabellen)
+      const tables = [
+        "finanzvergleich_calculations",
+        "finanzvergleich_singlepayment",
+        "finanzvergleich_bestadvice",
+        "finanzvergleich_pensiongap",
+      ] as const;
+
+      const [totalResults, monthlyResults] = await Promise.all([
+        Promise.all(
+          tables.map((t) =>
+            supabase.from(t).select("id", { count: "exact", head: true }).eq("user_id", user.id)
+          )
+        ),
+        Promise.all(
+          tables.map((t) =>
+            supabase
+              .from(t)
+              .select("id", { count: "exact", head: true })
+              .eq("user_id", user.id)
+              .gte("created_at", monthStart)
+          )
+        ),
       ]);
 
-      const total =
-        (calc.count ?? 0) +
-        (single.count ?? 0) +
-        (best.count ?? 0) +
-        (pension.count ?? 0);
-      setTotalCalculationCount(total);
+      setTotalCalculationCount(totalResults.reduce((s, r) => s + (r.count ?? 0), 0));
+      setMonthlyCalculationCount(monthlyResults.reduce((s, r) => s + (r.count ?? 0), 0));
     } catch (err) {
       console.error("SubscriptionContext: Ladefehler", err);
     } finally {
@@ -90,10 +98,17 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   }, [loadSubscription]);
 
   const isPaid = plan === "professional" || plan === "business";
-  const canCreateCalculation = isPaid || totalCalculationCount < 3;
+
+  const canCreateCalculation =
+    plan === "business"
+      ? true
+      : plan === "professional"
+      ? monthlyCalculationCount < 10
+      : monthlyCalculationCount < 3;
 
   const incrementCalculationCount = useCallback(() => {
     setTotalCalculationCount((n) => n + 1);
+    setMonthlyCalculationCount((n) => n + 1);
   }, []);
 
   return (
@@ -102,6 +117,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         plan,
         isPaid,
         totalCalculationCount,
+        monthlyCalculationCount,
         canCreateCalculation,
         subscriptionLoading,
         refreshSubscription: loadSubscription,

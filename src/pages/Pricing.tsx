@@ -22,14 +22,14 @@ const plans = [
       "Fonds-Sparvertrag (LV vs. Depot)",
       "Fonds-Einmalanlage",
       "Kostenaufschlüsselung",
-      "Bis zu 3 Berechnungen gesamt",
+      "3 Berechnungen pro Monat",
     ],
     locked: [
       "BestAdvice Analyse",
       "Rentenlücken-Rechner",
       "Entnahmeplan",
       "PDF-Export",
-      "Unbegrenzte Berechnungen",
+      "10+ Berechnungen pro Monat",
     ],
   },
   {
@@ -57,6 +57,7 @@ const plans = [
       "Rentenlücken-Rechner",
       "Entnahmeplan",
       "PDF-Export",
+      "10 Berechnungen pro Monat",
     ],
     locked: [],
   },
@@ -79,6 +80,7 @@ const plans = [
     },
     features: [
       "Alles aus Pro",
+      "Unbegrenzte Berechnungen",
       "Eigenes Logo auf PDF-Exporten",
       "Berater-Profil auf Auswertungen",
       "Mehrere Berater-Profile",

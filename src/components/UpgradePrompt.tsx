@@ -12,7 +12,7 @@ type Props = {
 };
 
 export default function UpgradePrompt({ title, description, onClose }: Props) {
-  const { totalCalculationCount } = useSubscription();
+  const { plan, monthlyCalculationCount } = useSubscription();
 
   const inner = (
     <Card className="border-0 shadow-xl bg-white max-w-sm w-full">
@@ -25,7 +25,7 @@ export default function UpgradePrompt({ title, description, onClose }: Props) {
           <p className="text-sm text-slate-600">{description}</p>
         </div>
         <p className="text-xs text-slate-500">
-          {totalCalculationCount} von 3 kostenlosen Berechnungen verwendet
+          {monthlyCalculationCount} von {plan === "professional" ? 10 : 3} Berechnungen diesen Monat verwendet
         </p>
         <Link to={createPageUrl("Pricing")} className="w-full">
           <Button className="w-full bg-slate-800 hover:bg-slate-700 text-white">
