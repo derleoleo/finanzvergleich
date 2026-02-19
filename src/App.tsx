@@ -178,7 +178,9 @@ export default function App() {
             path="/defaults"
             element={
               <PageShell>
-                <Defaults />
+                <PaidRoute featureName="Voreinstellungen">
+                  <Defaults />
+                </PaidRoute>
               </PageShell>
             }
           />
