@@ -66,7 +66,7 @@ export default function Home() {
           {calculators.map((calc) => (
             <Link key={calc.title} to={calc.href} className="group block">
               <Card className="border-0 shadow-lg bg-white h-full transition-all duration-200 group-hover:shadow-xl group-hover:-translate-y-0.5">
-                <CardContent className="p-6 flex flex-col items-center text-center h-full">
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full">
                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${calc.color} mb-4`}>
                     <calc.icon className="w-6 h-6" />
                   </div>
@@ -80,7 +80,7 @@ export default function Home() {
                     )}
                   </div>
 
-                  <p className="text-sm text-slate-600 flex-1 leading-relaxed">{calc.description}</p>
+                  <p className="text-sm text-slate-600 leading-relaxed">{calc.description}</p>
 
                   <div className="mt-4 flex items-center gap-1 text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">
                     Zum Rechner
