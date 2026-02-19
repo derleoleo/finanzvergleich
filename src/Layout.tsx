@@ -9,7 +9,6 @@ const FORMSPREE_ID = "mgolzyve";
 import {
   Calculator,
   TrendingUp,
-  PiggyBank,
   BarChart3,
   Home,
   Target,
@@ -147,19 +146,9 @@ export default function Layout({ children }: Props) {
           <SidebarHeader className="border-b border-slate-100 p-6">
             <Link
               to={createPageUrl("Home")}
-              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              className="hover:opacity-80 transition-opacity block"
             >
-              <div className="w-10 h-10 bg-linear-to-r from-slate-800 to-slate-600 rounded-xl flex items-center justify-center">
-                <PiggyBank className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="font-bold text-slate-900 text-lg">
-                  RentenCheck
-                </h2>
-                <p className="text-xs text-slate-500 font-medium">
-                  LV vs Depot Analyse
-                </p>
-              </div>
+              <img src="/rentencheck-logo.svg" alt="RentenCheck" className="h-10 w-auto" />
             </Link>
           </SidebarHeader>
 

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <defs>
+    <linearGradient id="bgGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0B1E3D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#163566;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="goldGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4A843" />
+      <stop offset="100%" style="stop-color:#F0C96B" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <rect width="80" height="80" rx="18" fill="url(#bgGrad2)"/>
+
+  <!-- Shield -->
+  <path d="M18 12 L62 12 L70 20 L70 46 C70 60 40 70 40 70 C40 70 10 60 10 46 L10 20 Z" 
+        fill="none" stroke="url(#goldGrad2)" stroke-width="2.5" stroke-linejoin="round"/>
+
+  <!-- Trend line -->
+  <polyline points="20,54 30,40 38,46 54,28" 
+            fill="none" stroke="url(#goldGrad2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Check circle -->
+  <circle cx="54" cy="28" r="10" fill="url(#goldGrad2)" opacity="0.95"/>
+  <polyline points="49,28 53,32 61,22" 
+            fill="none" stroke="#0B1E3D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
