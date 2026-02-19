@@ -201,17 +201,15 @@ export default function Pricing() {
             return (
               <div
                 key={plan.name}
-                className={`rounded-2xl shadow-lg flex flex-col ${
+                className={`relative rounded-2xl shadow-lg flex flex-col ${
                   dark
                     ? "bg-slate-800 ring-2 ring-blue-500"
                     : "bg-white border border-slate-200"
                 }`}
               >
                 {plan.planKey === "business" && (
-                  <div className="bg-amber-400 rounded-t-2xl px-4 py-2 text-center">
-                    <span className="text-amber-900 text-xs font-bold">
-                      💡 Eine LV-Provision mehr im Monat – und der Jahresbeitrag ist drin
-                    </span>
+                  <div className="absolute -top-4 right-4 z-10 rotate-2 bg-amber-400 text-amber-900 text-[11px] font-bold px-3 py-1.5 rounded-full shadow-md whitespace-nowrap">
+                    💡 1 LV im Jahr mehr → Jahresbeitrag drin
                   </div>
                 )}
                 <div className="p-6 pb-3">
