@@ -13,6 +13,7 @@ jobs:
       - name: Datenbank-Dump erstellen
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PGSSLMODE: require
         run: |
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
           FILENAME="rentencheck_backup_${TIMESTAMP}.sql"
