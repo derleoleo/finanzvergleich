@@ -351,10 +351,10 @@ export default function Layout({ children }: Props) {
         {/* Rechter Bereich: ebenfalls volle Höhe + nur hier scrollen */}
         <main className="flex-1 h-screen overflow-hidden flex flex-col">
           {/* Mobile Header bleibt optional – aber Content scrollt darunter */}
-          <header className="bg-white border-b border-slate-200 px-6 py-4 md:hidden shrink-0 print:hidden">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger className="hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200" />
-              <h1 className="text-xl font-semibold">RentenCheck</h1>
+          <header className="bg-white border-b border-slate-200 px-4 py-3 md:hidden shrink-0 print:hidden">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger className="hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200 shrink-0" />
+              <img src="/rentencheck-logo.svg" alt="RentenCheck" className="h-8 w-auto" />
             </div>
           </header>
 
