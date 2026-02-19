@@ -30,7 +30,8 @@ export default function Login() {
         navigate('/')
       } else {
         await signUp(email, password)
-        // Weiterleitung erfolgt automatisch via useEffect sobald user gesetzt ist
+        await signIn(email, password)
+        navigate('/')
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Fehler beim Anmelden')
