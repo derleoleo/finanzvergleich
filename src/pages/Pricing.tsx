@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, TrendingUp, Star, Zap, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -199,12 +198,12 @@ export default function Pricing() {
             const dark = plan.highlight;
 
             return (
-              <Card
+              <div
                 key={plan.name}
-                className={`border-0 shadow-lg flex flex-col ${
+                className={`rounded-2xl shadow-lg flex flex-col ${
                   dark
                     ? "bg-slate-800 ring-2 ring-blue-500"
-                    : "bg-white"
+                    : "bg-white border border-slate-200"
                 }`}
               >
                 <div className="p-6 pb-3">
@@ -257,7 +256,7 @@ export default function Pricing() {
                   </p>
                 </div>
 
-                <CardContent className="flex flex-col flex-1 space-y-4 pt-0">
+                <div className="px-6 pb-6 flex flex-col flex-1 space-y-4">
                   {/* Features */}
                   <div className="space-y-2 flex-1">
                     {plan.features.map((feature) => (
@@ -324,8 +323,8 @@ export default function Pricing() {
                       </Button>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             );
           })}
         </div>
