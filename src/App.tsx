@@ -9,6 +9,7 @@ import Layout from "@/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 
 import Login from "@/pages/Login";
+import ResetPassword from "@/pages/ResetPassword";
 import Landing from "@/pages/Landing";
 import Home from "@/pages/Home";
 import Impressum from "@/pages/Impressum";
@@ -62,6 +63,7 @@ export default function App() {
         <Routes>
           {/* Login (nicht geschützt, kein Layout) */}
           <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Root: Landing (Gast) oder Übersicht (eingeloggt) */}
           <Route path="/" element={<SmartRoot />} />

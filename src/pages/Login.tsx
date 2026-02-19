@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -123,6 +123,11 @@ export default function Login() {
               )}
               {tab === 'login' ? 'Anmelden' : 'Konto erstellen'}
             </Button>
+            {tab === 'login' && (
+              <p className="text-center text-sm text-slate-500">
+                <Link to="/reset-password" className="hover:underline">Passwort vergessen?</Link>
+              </p>
+            )}
           </form>
         </div>
       </div>
