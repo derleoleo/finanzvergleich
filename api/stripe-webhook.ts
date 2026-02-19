@@ -8,8 +8,10 @@ export const config = { api: { bodyParser: false } };
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const PRICE_TO_PLAN: Record<string, "professional" | "business"> = {
-  [process.env.VITE_STRIPE_PRICE_PROFESSIONAL!]: "professional",
-  [process.env.VITE_STRIPE_PRICE_BUSINESS!]: "business",
+  [process.env.VITE_STRIPE_PRICE_PRO_MONTHLY!]: "professional",
+  [process.env.VITE_STRIPE_PRICE_PRO_YEARLY!]: "professional",
+  [process.env.VITE_STRIPE_PRICE_UNLIMITED_MONTHLY!]: "business",
+  [process.env.VITE_STRIPE_PRICE_UNLIMITED_YEARLY!]: "business",
 };
 
 function getPlan(priceId: string): "professional" | "business" {

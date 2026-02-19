@@ -7,17 +7,18 @@ import { Check, TrendingUp, Star, Zap, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 
+type Billing = "monthly" | "yearly";
+
 const plans = [
   {
     name: "Free",
-    price: "0 €",
-    period: "für immer",
     description: "Grundlegende Vergleichsrechner für den Einstieg.",
     icon: TrendingUp,
     iconColor: "bg-slate-100 text-slate-600",
     highlight: false,
     planKey: "free" as const,
-    priceId: null,
+    monthly: { price: "0 €", period: "für immer", priceId: null },
+    yearly:  { price: "0 €", period: "für immer", priceId: null },
     features: [
       "Fonds-Sparvertrag (LV vs. Depot)",
       "Fonds-Einmalanlage",
@@ -31,15 +32,22 @@ const plans = [
     ],
   },
   {
-    name: "Professional",
-    price: "9,99 €",
-    period: "pro Monat",
+    name: "Pro",
     description: "Alle Rechner und erweiterte Analysen für Berater und Selbstentscheider.",
     icon: Star,
     iconColor: "bg-blue-100 text-blue-600",
     highlight: true,
     planKey: "professional" as const,
-    priceId: import.meta.env.VITE_STRIPE_PRICE_PROFESSIONAL as string | undefined,
+    monthly: {
+      price: "19,99 €",
+      period: "pro Monat",
+      priceId: import.meta.env.VITE_STRIPE_PRICE_PRO_MONTHLY as string | undefined,
+    },
+    yearly: {
+      price: "199,99 €",
+      period: "pro Jahr",
+      priceId: import.meta.env.VITE_STRIPE_PRICE_PRO_YEARLY as string | undefined,
+    },
     features: [
       "Alles aus Free",
       "BestAdvice Analyse",
@@ -51,17 +59,24 @@ const plans = [
     locked: [],
   },
   {
-    name: "Business",
-    price: "24,99 €",
-    period: "pro Monat",
+    name: "Unlimited",
     description: "Für Finanzberater und Agenturen mit eigenem Branding.",
     icon: Zap,
     iconColor: "bg-purple-100 text-purple-600",
     highlight: false,
     planKey: "business" as const,
-    priceId: import.meta.env.VITE_STRIPE_PRICE_BUSINESS as string | undefined,
+    monthly: {
+      price: "34,99 €",
+      period: "pro Monat",
+      priceId: import.meta.env.VITE_STRIPE_PRICE_UNLIMITED_MONTHLY as string | undefined,
+    },
+    yearly: {
+      price: "349,99 €",
+      period: "pro Jahr",
+      priceId: import.meta.env.VITE_STRIPE_PRICE_UNLIMITED_YEARLY as string | undefined,
+    },
     features: [
-      "Alles aus Professional",
+      "Alles aus Pro",
       "Eigenes Logo auf PDF-Exporten",
       "Berater-Profil auf Auswertungen",
       "Mehrere Berater-Profile",
@@ -75,10 +90,10 @@ export default function Pricing() {
   const { session } = useAuth();
   const { plan: currentPlan, isPaid, refreshSubscription } = useSubscription();
   const [searchParams] = useSearchParams();
+  const [billing, setBilling] = useState<Billing>("monthly");
   const [loadingPriceId, setLoadingPriceId] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
 
-  // Nach erfolgreichem Checkout Subscription aktualisieren
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
       const timer = setTimeout(() => refreshSubscription(), 2000);
@@ -131,7 +146,7 @@ export default function Pricing() {
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <h1 className="text-4xl font-bold text-slate-900 mb-3">Premium</h1>
           <p className="text-lg text-slate-600 max-w-xl mx-auto">
             Wählen Sie den Plan, der zu Ihnen passt.
@@ -143,11 +158,39 @@ export default function Pricing() {
           )}
         </div>
 
+        {/* Billing Toggle */}
+        <div className="flex items-center justify-center gap-4 mb-10">
+          <span className={`text-sm font-medium ${billing === "monthly" ? "text-slate-900" : "text-slate-400"}`}>
+            Monatlich
+          </span>
+          <button
+            onClick={() => setBilling(billing === "monthly" ? "yearly" : "monthly")}
+            className={`relative w-14 h-7 rounded-full transition-colors duration-200 focus:outline-none ${
+              billing === "yearly" ? "bg-slate-800" : "bg-slate-300"
+            }`}
+          >
+            <span
+              className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                billing === "yearly" ? "translate-x-7" : "translate-x-0"
+              }`}
+            />
+          </button>
+          <div className="flex items-center gap-2">
+            <span className={`text-sm font-medium ${billing === "yearly" ? "text-slate-900" : "text-slate-400"}`}>
+              Jährlich
+            </span>
+            <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">
+              2 Monate gratis
+            </span>
+          </div>
+        </div>
+
         {/* Plans */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {plans.map((plan) => {
+            const current = plan[billing];
             const isCurrentPlan = currentPlan === plan.planKey;
-            const isLoading = loadingPriceId === plan.priceId;
+            const isLoading = loadingPriceId === current.priceId;
 
             return (
               <Card
@@ -181,12 +224,17 @@ export default function Pricing() {
                   </CardTitle>
                   <div className="flex items-end gap-1 mt-2">
                     <span className={`text-3xl font-bold ${plan.highlight ? "text-white" : "text-slate-900"}`}>
-                      {plan.price}
+                      {current.price}
                     </span>
                     <span className={`text-sm mb-1 ${plan.highlight ? "text-slate-300" : "text-slate-500"}`}>
-                      / {plan.period}
+                      / {current.period}
                     </span>
                   </div>
+                  {billing === "yearly" && plan.planKey !== "free" && (
+                    <p className={`text-xs mt-1 ${plan.highlight ? "text-blue-300" : "text-green-600"}`}>
+                      {plan.planKey === "professional" ? "statt 239,88 € – spare 39,89 €" : "statt 419,88 € – spare 69,89 €"}
+                    </p>
+                  )}
                   <p className={`text-sm mt-2 ${plan.highlight ? "text-slate-300" : "text-slate-600"}`}>
                     {plan.description}
                   </p>
@@ -225,9 +273,7 @@ export default function Pricing() {
                         onClick={handlePortal}
                         disabled={portalLoading}
                       >
-                        {portalLoading ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : null}
+                        {portalLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         Abo verwalten
                       </Button>
                     )}
@@ -240,29 +286,25 @@ export default function Pricing() {
                         onClick={handlePortal}
                         disabled={portalLoading}
                       >
-                        {portalLoading ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : null}
+                        {portalLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         Plan wechseln
                       </Button>
                     )}
 
                     {/* Free-Nutzer → Checkout */}
-                    {plan.planKey !== "free" && !isPaid && plan.priceId && (
+                    {plan.planKey !== "free" && !isPaid && current.priceId && (
                       <Button
                         className={`w-full ${plan.highlight ? "bg-blue-500 hover:bg-blue-400 text-white border-0" : "bg-slate-800 hover:bg-slate-700 text-white"}`}
-                        onClick={() => handleCheckout(plan.priceId!)}
+                        onClick={() => handleCheckout(current.priceId!)}
                         disabled={isLoading}
                       >
-                        {isLoading ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : null}
+                        {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         Jetzt abonnieren
                       </Button>
                     )}
 
                     {/* Fallback: kein priceId konfiguriert */}
-                    {plan.planKey !== "free" && !isPaid && !plan.priceId && (
+                    {plan.planKey !== "free" && !isPaid && !current.priceId && (
                       <Button variant="outline" className="w-full" disabled>
                         Demnächst verfügbar
                       </Button>
@@ -274,7 +316,6 @@ export default function Pricing() {
           })}
         </div>
 
-        {/* FAQ / Note */}
         <div className="mt-12 text-center">
           <p className="text-sm text-slate-500">
             Kündigung jederzeit möglich. Bezahlung über Stripe – sicher und verschlüsselt.
