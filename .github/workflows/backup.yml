@@ -21,6 +21,8 @@ jobs:
           from pathlib import Path
 
           url = os.environ["SUPABASE_URL"].rstrip("/")
+          if not url.startswith("http"):
+              url = "https://" + url
           key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
           timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
           backup_dir = Path(f"backup_{timestamp}")
