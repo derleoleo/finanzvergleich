@@ -164,7 +164,9 @@ export default function App() {
             path="/withdrawal-plan"
             element={
               <PageShell>
-                <WithdrawalPlan />
+                <PaidRoute featureName="Entnahmeplan">
+                  <WithdrawalPlan />
+                </PaidRoute>
               </PageShell>
             }
           />

@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { User, Save, CheckCircle, Building, Mail, Phone, MapPin, ImagePlus, X } from "lucide-react";
+import { User, Save, CheckCircle, Building, Mail, Phone, MapPin, ImagePlus, X, Trash2, AlertTriangle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
   const [profile, setProfile] = useState<UserProfileData>(EMPTY_PROFILE);
@@ -17,6 +19,10 @@ export default function Profile() {
   const { plan } = useSubscription();
   const isUnlimited = plan === "business";
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { session, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     UserProfile.load().then(setProfile);
@@ -24,6 +30,30 @@ export default function Profile() {
 
   const update = (field: keyof UserProfileData, value: string) =>
     setProfile((prev) => ({ ...prev, [field]: value }));
+
+  const handleDeleteAccount = async () => {
+    if (!session) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) throw new Error("Fehler beim Löschen");
+      // localStorage leeren
+      Object.keys(localStorage).forEach((k) => {
+        if (k.startsWith("fv_") || k.startsWith("finanzvergleich") || k.startsWith("rc_") || k.startsWith("wp_")) {
+          localStorage.removeItem(k);
+        }
+      });
+      await signOut();
+      navigate("/");
+    } catch {
+      alert("Konto konnte nicht gelöscht werden. Bitte versuche es erneut.");
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   const handleSave = async () => {
     await UserProfile.save(profile);
@@ -220,6 +250,64 @@ export default function Profile() {
           <div className="text-xs text-slate-500 text-center">
             Profildaten werden sicher in Ihrem Konto gespeichert und in PDF-Exporten verwendet.
           </div>
+
+          {/* Danger Zone */}
+          <Card className="border border-red-200 bg-red-50 shadow-none">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-3 text-base font-semibold text-red-700">
+                <AlertTriangle className="w-5 h-5" />
+                Konto löschen
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!showDeleteConfirm ? (
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <p className="text-sm text-red-600">
+                    Löscht dein Konto und alle gespeicherten Daten unwiderruflich.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-100 hover:text-red-700 shrink-0"
+                    onClick={() => setShowDeleteConfirm(true)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Konto löschen
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-red-700">
+                    Bist du sicher? Diese Aktion kann nicht rückgängig gemacht werden.
+                    Alle Berechnungen, Profildaten und das Abonnement werden dauerhaft gelöscht.
+                  </p>
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setShowDeleteConfirm(false)}
+                      disabled={isDeleting}
+                    >
+                      Abbrechen
+                    </Button>
+                    <Button
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                      onClick={handleDeleteAccount}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Ja, Konto löschen
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

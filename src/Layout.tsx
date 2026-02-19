@@ -90,6 +90,7 @@ type Props = {
 const PAID_ONLY_URLS = [
   createPageUrl("BestAdviceCalculator"),
   createPageUrl("PensionGapCalculator"),
+  createPageUrl("WithdrawalPlan"),
   createPageUrl("Defaults"),
 ];
 
