@@ -12,8 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import {
-  TrendingDown, TrendingUp, AlertCircle, Euro, User, Calendar,
+  TrendingDown, TrendingUp, AlertCircle, Euro, User, Calendar, AlertTriangle,
 } from "lucide-react";
+import { looksLikeName } from "@/utils/nameDetection";
 
 import { calculateMonthlyReturn } from "@/components/shared/TaxCalculations";
 
@@ -208,7 +209,15 @@ export default function PensionGapCalculator() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">Name der Berechnung</Label>
-                  <Input value={formData.name} onChange={(e) => update("name", e.target.value)} className={inputClass} />
+                  <Input value={formData.name} onChange={(e) => update("name", e.target.value)}
+                    placeholder="Bitte keine Klarnamen"
+                    className={inputClass} />
+                  {looksLikeName(formData.name) && (
+                    <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
+                      <AlertTriangle className="w-3 h-3 shrink-0" />
+                      Möglicher Klarname erkannt – bitte Pseudonym verwenden
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">

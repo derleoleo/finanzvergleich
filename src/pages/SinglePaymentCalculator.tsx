@@ -15,8 +15,9 @@ import { Switch } from "@/components/ui/switch";
 
 import {
   DollarSign, TrendingUp, AlertCircle, Shield, Percent,
-  Calendar, User, FileText,
+  Calendar, User, FileText, AlertTriangle,
 } from "lucide-react";
+import { looksLikeName } from "@/utils/nameDetection";
 
 import {
   calculateAgeAtPayout,
@@ -256,7 +257,14 @@ export default function SinglePaymentCalculator() {
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">Name der Berechnung</Label>
                   <Input value={formData.name} onChange={(e) => update("name", e.target.value)}
+                    placeholder="Bitte keine Klarnamen"
                     className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white" />
+                  {looksLikeName(formData.name) && (
+                    <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
+                      <AlertTriangle className="w-3 h-3 shrink-0" />
+                      Möglicher Klarname erkannt – bitte Pseudonym verwenden
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">

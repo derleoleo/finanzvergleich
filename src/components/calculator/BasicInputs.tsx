@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Euro, Calendar, User, FileText } from "lucide-react";
+import { Euro, Calendar, User, FileText, AlertTriangle } from "lucide-react";
+import { looksLikeName } from "@/utils/nameDetection";
 
 type Props = {
   formData: {
@@ -67,8 +68,15 @@ export default function BasicInputs({ formData, updateFormData }: Props) {
               type="text"
               value={formData.name}
               onChange={(e) => updateFormData("name", e.target.value)}
+              placeholder="Bitte keine Klarnamen"
               className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200"
             />
+            {looksLikeName(formData.name) && (
+              <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
+                <AlertTriangle className="w-3 h-3 shrink-0" />
+                Möglicher Klarname erkannt – bitte Pseudonym verwenden
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
