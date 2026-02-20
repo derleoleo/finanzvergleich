@@ -140,6 +140,13 @@ export default function Login() {
             )}
           </form>
         </div>
+
+        <div className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-slate-400">
+          <Link to="/impressum" className="hover:text-slate-600">Impressum</Link>
+          <Link to="/datenschutz" className="hover:text-slate-600">Datenschutz</Link>
+          <Link to="/agb" className="hover:text-slate-600">AGB</Link>
+          <a href="mailto:info@rentencheck.app" className="hover:text-slate-600">Support</a>
+        </div>
       </div>
     </div>
   )
