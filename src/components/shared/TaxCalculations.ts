@@ -59,6 +59,8 @@ export function calculateLifeInsuranceTax(
   }
 
   const personalRate = options.personalIncomeTaxRate ?? 0.20; // Default 20%
-  const taxableShare = 0.35; // gemäß deiner App-Vereinfachung
+  // Halbeinkünfteverfahren: 50% steuerpflichtig, davon 15% Sparerpauschbetrag-Abschlag
+  // → 50% * (1 - 0.15) = 42,5% der Gewinne steuerpflichtig
+  const taxableShare = 0.50 * 0.85; // = 0.425
   return g * taxableShare * personalRate;
 }

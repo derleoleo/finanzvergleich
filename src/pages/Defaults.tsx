@@ -107,7 +107,7 @@ export default function Defaults() {
                   />
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Gilt für die LV-Auszahlung bei Verträgen ≥ 12 Jahre &amp; Alter ≥ 62
-                    (Halbeinkünfteverfahren). Wird auf den steuerpflichtigen Gewinnanteil (35 %) angewendet.
+                    (Halbeinkünfteverfahren). Steuerpflichtig: 50 % × 85 % = 42,5 % der Gewinne.
                   </p>
                 </div>
               </div>
