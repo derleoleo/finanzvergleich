@@ -4,7 +4,11 @@ import { createPageUrl } from "@/utils";
 import { Calculation } from "@/entities/Calculation";
 import { UserDefaults } from "@/entities/UserDefaults";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import { formatCurrency } from "@/components/shared/CurrencyDisplay";
 import { Button } from "@/components/ui/button";
 
 import { ArrowLeft, Calculator as CalcIcon, Save, FileDown } from "lucide-react";
@@ -294,6 +298,79 @@ export default function CalculatorDetail() {
               <ComparisonTable calculation={calculation} />
             </div>
 
+            {/* Kosten im Detail – standardmäßig ausgeblendet, optional im PDF */}
+            <div data-pdf-section="kosten" style={{ display: "none" }}>
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-slate-900">Kosten im Detail</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <Card className="border-0 shadow-lg bg-white">
+                    <CardContent className="p-6">
+                      <div className="text-xs text-slate-500 mb-1">Gesamtkosten LV</div>
+                      <div className="text-2xl font-bold text-slate-900">
+                        {formatCurrency(Number(calculation.results?.li_total_costs ?? 0))}
+                      </div>
+                      <div className="text-sm text-slate-600 mt-1">
+                        Abschluss {formatCurrency(Number(calculation.results?.li_acquisition_costs ?? 0))} ·{" "}
+                        Verwaltung {formatCurrency(Number(calculation.results?.li_effective_costs ?? 0))} ·{" "}
+                        Fonds {formatCurrency(Number(calculation.results?.li_fund_costs ?? 0))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-0 shadow-lg bg-white">
+                    <CardContent className="p-6">
+                      <div className="text-xs text-slate-500 mb-1">Gesamtkosten Depot</div>
+                      <div className="text-2xl font-bold text-slate-900">
+                        {formatCurrency(Number(calculation.results?.depot_total_costs ?? 0))}
+                      </div>
+                      <div className="text-sm text-slate-600 mt-1">
+                        Ausgabeaufschlag {formatCurrency(Number(calculation.results?.depot_initial_charges ?? 0))} ·{" "}
+                        Depot {formatCurrency(Number(calculation.results?.depot_depot_costs ?? 0))} ·{" "}
+                        Fonds {formatCurrency(Number(calculation.results?.depot_fund_costs ?? 0))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                <Card className="border-0 shadow-lg bg-white">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-bold text-slate-900">Aufschlüsselung</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-slate-200">
+                          <TableHead className="font-semibold text-slate-700">Kategorie</TableHead>
+                          <TableHead className="font-semibold text-slate-700 text-right">LV</TableHead>
+                          <TableHead className="font-semibold text-slate-700 text-right">Depot</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow className="border-slate-100">
+                          <TableCell className="text-slate-900 font-medium">Abschluss / Ausgabeaufschlag</TableCell>
+                          <TableCell className="text-right">{formatCurrency(Number(calculation.results?.li_acquisition_costs ?? 0))}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(Number(calculation.results?.depot_initial_charges ?? 0))}</TableCell>
+                        </TableRow>
+                        <TableRow className="border-slate-100">
+                          <TableCell className="text-slate-900 font-medium">Verwaltung / Depotkosten</TableCell>
+                          <TableCell className="text-right">{formatCurrency(Number(calculation.results?.li_effective_costs ?? 0))}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(Number(calculation.results?.depot_depot_costs ?? 0))}</TableCell>
+                        </TableRow>
+                        <TableRow className="border-slate-100">
+                          <TableCell className="text-slate-900 font-medium">Fondskosten</TableCell>
+                          <TableCell className="text-right">{formatCurrency(Number(calculation.results?.li_fund_costs ?? 0))}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(Number(calculation.results?.depot_fund_costs ?? 0))}</TableCell>
+                        </TableRow>
+                        <TableRow className="border-slate-200 bg-slate-50">
+                          <TableCell className="text-slate-900 font-bold">Gesamt</TableCell>
+                          <TableCell className="text-right font-bold">{formatCurrency(Number(calculation.results?.li_total_costs ?? 0))}</TableCell>
+                          <TableCell className="text-right font-bold">{formatCurrency(Number(calculation.results?.depot_total_costs ?? 0))}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-3" data-pdf-hide>
               <Button
                 variant="outline"
@@ -368,6 +445,7 @@ export default function CalculatorDetail() {
           { id: "ergebnis", label: "Ergebnisse (Brutto/Netto)" },
           { id: "grafik", label: "Verlaufsgrafik" },
           { id: "vergleich", label: "Vergleichstabelle" },
+          { id: "kosten", label: "Kosten im Detail", defaultChecked: false },
           { id: "eingaben", label: "Eingaben", defaultChecked: false },
         ]}
         isExporting={isExporting}

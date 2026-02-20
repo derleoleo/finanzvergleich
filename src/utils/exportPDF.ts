@@ -92,13 +92,19 @@ export async function exportSections(
   const header     = buildProfileHeader(profile, title);
   const disclaimer = buildDisclaimer();
 
-  // Alle Sektionen die NICHT ausgewählt sind → ausblenden
+  // Alle Sektionen: ausgewählte zeigen, nicht-ausgewählte verstecken
   const allSections = Array.from(
     source.querySelectorAll<HTMLElement>("[data-pdf-section]")
   );
+  // Originalzustand merken (manche Sektionen sind standardmäßig display:none)
+  const savedSectionDisplays = allSections.map((el) => el.style.display);
   const hiddenSections = allSections.filter(
     (el) => !selectedSectionIds.includes(el.dataset.pdfSection!)
   );
+  const shownSections = allSections.filter(
+    (el) => selectedSectionIds.includes(el.dataset.pdfSection!)
+  );
+  shownSections.forEach((el) => (el.style.display = ""));
   hiddenSections.forEach((el) => (el.style.display = "none"));
 
   // Buttons/Navigation ausblenden
@@ -181,7 +187,7 @@ export async function exportSections(
     // Alles wiederherstellen
     source.removeChild(header);
     source.removeChild(disclaimer);
-    hiddenSections.forEach((el) => (el.style.display = ""));
+    allSections.forEach((el, i) => (el.style.display = savedSectionDisplays[i]));
     hiddenEls.forEach((el) => (el.style.display = ""));
     for (const s of saved) {
       s.el.style.overflow  = s.overflow;
