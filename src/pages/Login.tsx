@@ -29,11 +29,15 @@ export default function Login() {
         await signIn(email, password)
         navigate('/')
       } else {
-        await signUp(email, password)
-        navigate('/')
+        const { sessionCreated } = await signUp(email, password)
+        if (sessionCreated) {
+          navigate('/')
+        } else {
+          setSuccessMessage('Registrierung erfolgreich! Bitte überprüfe deine E-Mails und bestätige dein Konto.')
+        }
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Fehler beim Anmelden')
+      setError(err instanceof Error ? err.message : tab === 'login' ? 'Fehler beim Anmelden' : 'Fehler bei der Registrierung')
     } finally {
       setLoading(false)
     }

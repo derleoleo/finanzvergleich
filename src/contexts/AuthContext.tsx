@@ -8,7 +8,7 @@ type AuthContextType = {
   session: Session | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string) => Promise<{ sessionCreated: boolean }>
   signOut: () => Promise<void>
   signInWithGoogle: () => Promise<void>
 }
@@ -57,13 +57,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error
   }
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string): Promise<{ sessionCreated: boolean }> => {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
     if (data.session) {
       setSession(data.session)
       setUser(data.user)
+      return { sessionCreated: true }
     }
+    return { sessionCreated: false }
   }
 
   const signOut = async () => {
