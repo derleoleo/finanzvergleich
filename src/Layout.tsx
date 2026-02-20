@@ -390,6 +390,15 @@ export default function Layout({ children }: Props) {
             `}</style>
 
             {children ?? <Outlet />}
+
+            {/* Mobile-Footer mit rechtlichen Links */}
+            <footer className="md:hidden border-t border-slate-100 py-4 px-4 flex justify-center gap-4 bg-white print:hidden">
+              <Link to="/impressum" className="text-xs text-slate-400 hover:text-slate-600">Impressum</Link>
+              <span className="text-slate-300 text-xs">·</span>
+              <Link to="/datenschutz" className="text-xs text-slate-400 hover:text-slate-600">Datenschutz</Link>
+              <span className="text-slate-300 text-xs">·</span>
+              <Link to="/agb" className="text-xs text-slate-400 hover:text-slate-600">AGB</Link>
+            </footer>
           </div>
         </main>
       </div>
