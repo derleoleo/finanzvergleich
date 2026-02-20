@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   SlidersHorizontal, Save, CheckCircle, User, Calendar, TrendingUp,
-  Shield, BarChart3, Calculator, DollarSign, TrendingDown, Wallet, RotateCcw,
+  Shield, BarChart3, Calculator, DollarSign, TrendingDown, Wallet, RotateCcw, Percent,
 } from "lucide-react";
 
 export default function Defaults() {
@@ -90,6 +90,26 @@ export default function Defaults() {
                 <Input type="number" step={0.1} value={data.assumed_annual_return}
                   onChange={(e) => set("assumed_annual_return", parseFloat(e.target.value) || 0)}
                   className={inputClass} />
+              </div>
+              <div className="space-y-2 md:col-span-3 border-t border-slate-100 pt-4">
+                <Label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                  <Percent className="w-3.5 h-3.5" /> Pers. Steuersatz bei Rente (%)
+                </Label>
+                <div className="flex items-center gap-4">
+                  <Input
+                    type="number"
+                    step={1}
+                    min={0}
+                    max={60}
+                    value={data.lv_personal_income_tax_rate}
+                    onChange={(e) => set("lv_personal_income_tax_rate", parseFloat(e.target.value) || 0)}
+                    className={`${inputClass} max-w-[140px]`}
+                  />
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Gilt für die LV-Auszahlung bei Verträgen ≥ 12 Jahre &amp; Alter ≥ 62
+                    (Halbeinkünfteverfahren). Wird auf den steuerpflichtigen Gewinnanteil (35 %) angewendet.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -298,7 +298,9 @@ export default function Calculator() {
     const age_at_payout = calculateAgeAtPayout(birth_year, years);
 
     const li_gains = li_capital - total_contributions;
-    const li_tax = calculateLifeInsuranceTax(li_gains, years, age_at_payout);
+    const li_tax = calculateLifeInsuranceTax(li_gains, years, age_at_payout, {
+      personalIncomeTaxRate: UserDefaults.load().lv_personal_income_tax_rate / 100,
+    });
 
     const depot_gains = depot_capital - total_contributions;
     const depot_tax = calculateCapitalGainsTax(depot_gains);

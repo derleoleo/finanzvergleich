@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { SinglePaymentCalculation, type SinglePaymentModel } from "@/entities/SinglePaymentCalculation";
+import { UserDefaults } from "@/entities/UserDefaults";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,7 +72,9 @@ function buildSeries(calc: SinglePaymentModel, mode: Mode) {
       } else {
         const lvGains = lvCapital - ls;
         const depotGains = depotCapital - ls;
-        const lvTax = calculateLifeInsuranceTax(lvGains, year, age);
+        const lvTax = calculateLifeInsuranceTax(lvGains, year, age, {
+          personalIncomeTaxRate: UserDefaults.load().lv_personal_income_tax_rate / 100,
+        });
         const depotTax = calculateCapitalGainsTax(depotGains);
         points.push({
           year, age,

@@ -34,6 +34,9 @@ export type UserDefaultsData = {
   withdrawal_amount: number;
   withdrawal_start_age: number;
   withdrawal_end_age: number;
+
+  // Steuern
+  lv_personal_income_tax_rate: number; // persönlicher Steuersatz bei TEV (%), z.B. 20
 };
 
 export const SYSTEM_DEFAULTS: UserDefaultsData = {
@@ -64,6 +67,8 @@ export const SYSTEM_DEFAULTS: UserDefaultsData = {
   withdrawal_amount: 12000,
   withdrawal_start_age: 65,
   withdrawal_end_age: 85,
+
+  lv_personal_income_tax_rate: 20,
 };
 
 export class UserDefaults {

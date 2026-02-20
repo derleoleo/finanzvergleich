@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { UserDefaults } from "@/entities/UserDefaults";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -135,7 +136,9 @@ function buildSeries(calc: Calc, mode: Mode): SeriesPoint[] {
         const lvGains = lvCapital - contributionsSoFar;
         const depotGains = depotCapital - contributionsSoFar;
 
-        const lvTax = calculateLifeInsuranceTax(lvGains, year, age);
+        const lvTax = calculateLifeInsuranceTax(lvGains, year, age, {
+          personalIncomeTaxRate: UserDefaults.load().lv_personal_income_tax_rate / 100,
+        });
         const depotTax = calculateCapitalGainsTax(depotGains);
 
         points.push({

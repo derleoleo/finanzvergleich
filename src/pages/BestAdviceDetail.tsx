@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { BestAdviceCalculation, type BestAdviceModel } from "@/entities/BestAdviceCalculation";
+import { UserDefaults } from "@/entities/UserDefaults";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -66,7 +67,9 @@ function buildSeries(calc: BestAdviceModel, mode: Mode) {
         points.push({ year, age, fondsLV: Math.round(lvCapital), bestand: Math.round(bestandValue) });
       } else {
         const lvGains = lvCapital - total_contributions;
-        const lvTax = calculateLifeInsuranceTax(lvGains, year, age);
+        const lvTax = calculateLifeInsuranceTax(lvGains, year, age, {
+          personalIncomeTaxRate: UserDefaults.load().lv_personal_income_tax_rate / 100,
+        });
 
         let bestandNet = bestandValue;
         if (!calc.current_product_tax_free) {

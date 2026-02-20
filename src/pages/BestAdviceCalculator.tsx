@@ -162,7 +162,9 @@ export default function BestAdviceCalculator() {
     // LV tax
     const age_at_payout = calculateAgeAtPayout(toNum(formData.birth_year), years);
     const li_gains = li_capital - total_contributions;
-    const li_tax = calculateLifeInsuranceTax(li_gains, years, age_at_payout);
+    const li_tax = calculateLifeInsuranceTax(li_gains, years, age_at_payout, {
+      personalIncomeTaxRate: UserDefaults.load().lv_personal_income_tax_rate / 100,
+    });
 
     // Current (guaranteed) product
     const depot_gross = toNum(formData.guaranteed_end_capital);

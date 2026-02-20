@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Calculation } from "@/entities/Calculation";
+import { UserDefaults } from "@/entities/UserDefaults";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -178,7 +179,8 @@ export default function CalculatorDetail() {
     const li_tax = calculateLifeInsuranceTax(
       li_gains,
       contract_duration_years,
-      age_at_payout
+      age_at_payout,
+      { personalIncomeTaxRate: UserDefaults.load().lv_personal_income_tax_rate / 100 }
     );
 
     const depot_gains = depot_capital - total_contributions;

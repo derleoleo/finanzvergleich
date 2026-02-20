@@ -169,7 +169,9 @@ export default function SinglePaymentCalculator() {
 
     // Taxes
     const age_at_payout = calculateAgeAtPayout(toNum(formData.birth_year), years);
-    const li_tax = calculateLifeInsuranceTax(li_capital - ls, years, age_at_payout);
+    const li_tax = calculateLifeInsuranceTax(li_capital - ls, years, age_at_payout, {
+      personalIncomeTaxRate: UserDefaults.load().lv_personal_income_tax_rate / 100,
+    });
     const depot_tax = calculateCapitalGainsTax(depot_capital - ls);
 
     return {
