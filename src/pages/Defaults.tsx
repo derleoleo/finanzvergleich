@@ -281,7 +281,7 @@ export default function Defaults() {
                 Entnahmeplan
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
+            <CardContent className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Jährliche Entnahme (€)</Label>
                 <Input type="number" value={data.withdrawal_amount}
@@ -292,6 +292,12 @@ export default function Defaults() {
                 <Label className="text-sm font-medium text-slate-700">Beginn-Alter</Label>
                 <Input type="number" value={data.withdrawal_start_age}
                   onChange={(e) => set("withdrawal_start_age", parseInt(e.target.value) || 0)}
+                  className={inputClass} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">Ende-Alter</Label>
+                <Input type="number" value={data.withdrawal_end_age}
+                  onChange={(e) => set("withdrawal_end_age", parseInt(e.target.value) || 85)}
                   className={inputClass} />
               </div>
             </CardContent>

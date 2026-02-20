@@ -38,6 +38,7 @@ type AnyCalc = any;
 
 export default function WithdrawalPlan() {
   const _wd = UserDefaults.load();
+  const endAge = _wd.withdrawal_end_age ?? 85;
   const [allCalculations, setAllCalculations] = useState<AnyCalc[]>([]);
   const [selectedCalculation, setSelectedCalculation] =
     useState<AnyCalc | null>(null);
@@ -113,8 +114,8 @@ export default function WithdrawalPlan() {
       getNetResultFromCalc(selectedCalculation) ||
       0;
 
-    // Startalter >= 85 -> nur Komplettentnahme sinnvoll
-    if (startAge >= 85) {
+    // Startalter >= Ende-Alter -> nur Komplettentnahme sinnvoll
+    if (startAge >= endAge) {
       if (initialStartCapital > 0) {
         setWithdrawalData([
           {
@@ -140,7 +141,7 @@ export default function WithdrawalPlan() {
     }
 
     const annualReturn = customAnnualReturn / 100;
-    const maxRetirementAge = 85;
+    const maxRetirementAge = endAge;
     const yearsToCalculate = maxRetirementAge - startAge;
 
     let capital = initialStartCapital;
@@ -404,7 +405,7 @@ export default function WithdrawalPlan() {
                       className="bg-slate-50 border-slate-200"
                     />
                     <p className="text-xs text-slate-500 mt-1">
-                      Der Plan läuft bis zum 85. Lebensjahr
+                      Der Plan läuft bis zum {endAge}. Lebensjahr
                     </p>
                   </div>
                 </div>
@@ -497,7 +498,7 @@ export default function WithdrawalPlan() {
                       dann Verzinsung des Restkapitals
                     </li>
                     <li>
-                      • <strong>Letztes Jahr (Alter 85):</strong>{" "}
+                      • <strong>Letztes Jahr (Alter {endAge}):</strong>{" "}
                       Komplettentnahme des Restkapitals
                     </li>
                   </ul>
@@ -523,7 +524,7 @@ export default function WithdrawalPlan() {
                   title="Entnahmezeitraum"
                   value={`${Math.max(0, withdrawalData.length - 1)} Jahre`}
                   subtext={`Bis Alter: ${
-                    withdrawalData[withdrawalData.length - 1]?.age ?? 85
+                    withdrawalData[withdrawalData.length - 1]?.age ?? endAge
                   }`}
                   icon={<Calendar className="w-5 h-5" />}
                   tone="info"

@@ -33,6 +33,7 @@ export type UserDefaultsData = {
   // Entnahmeplan
   withdrawal_amount: number;
   withdrawal_start_age: number;
+  withdrawal_end_age: number;
 };
 
 export const SYSTEM_DEFAULTS: UserDefaultsData = {
@@ -62,6 +63,7 @@ export const SYSTEM_DEFAULTS: UserDefaultsData = {
 
   withdrawal_amount: 12000,
   withdrawal_start_age: 65,
+  withdrawal_end_age: 85,
 };
 
 export class UserDefaults {
