@@ -37,19 +37,7 @@ export default function Login() {
         }
       }
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message.toLowerCase() : ''
-      // E-Mail-Versand-Fehler von Supabase → direkt einloggen versuchen (User wurde evtl. trotzdem angelegt)
-      if (tab === 'register' && (errMsg.includes('email') || errMsg.includes('mail') || errMsg.includes('sending'))) {
-        try {
-          await signIn(email, password)
-          navigate('/')
-          return
-        } catch {
-          setError('Registrierung fehlgeschlagen: Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuche es später erneut oder wende dich an den Support.')
-        }
-      } else {
-        setError(err instanceof Error ? err.message : tab === 'login' ? 'Fehler beim Anmelden' : 'Fehler bei der Registrierung')
-      }
+      setError(err instanceof Error ? err.message : tab === 'login' ? 'Fehler beim Anmelden' : 'Fehler bei der Registrierung')
     } finally {
       setLoading(false)
     }
