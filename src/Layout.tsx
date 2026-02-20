@@ -146,7 +146,7 @@ export default function Layout({ children }: Props) {
       {/* WICHTIG: h-screen + overflow-hidden -> NUR rechter Content scrollt */}
       <div className="h-screen w-full bg-slate-50 overflow-hidden flex">
         {/* Sidebar: sticky + volle Höhe, eigener Scroll */}
-        <Sidebar className="border-r border-slate-200 bg-white h-screen sticky top-0 flex flex-col overflow-hidden print:hidden">
+        <Sidebar className="border-r border-slate-200 bg-white h-screen flex flex-col overflow-hidden print:hidden">
           <SidebarHeader className="border-b border-slate-100 p-6">
             <Link
               to={createPageUrl("Home")}
