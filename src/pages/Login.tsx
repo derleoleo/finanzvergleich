@@ -45,7 +45,7 @@ export default function Login() {
           navigate('/')
           return
         } catch {
-          setError('Konto wurde angelegt, aber die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuche dich direkt anzumelden oder wende dich an den Support.')
+          setError('Registrierung fehlgeschlagen: Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuche es später erneut oder wende dich an den Support.')
         }
       } else {
         setError(err instanceof Error ? err.message : tab === 'login' ? 'Fehler beim Anmelden' : 'Fehler bei der Registrierung')
