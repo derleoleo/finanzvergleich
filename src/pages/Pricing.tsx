@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Check, TrendingUp, Star, Zap, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { Consent } from "@/entities/Consent";
+import { LEGAL_DOC_VERSION, REQUIRED_CONSENT_TYPES } from "@/utils/legalVersion";
 
 type Billing = "monthly" | "yearly";
 
@@ -99,8 +101,17 @@ export default function Pricing() {
   const [billing, setBilling] = useState<Billing>("monthly");
   const [loadingPriceId, setLoadingPriceId] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [pendingPriceId, setPendingPriceId] = useState<string | null>(null);
-  const [widerrufsChecked, setWiderrufsChecked] = useState(false);
+
+  // Consent-Gate vor Checkout
+  const [consentGateOpen, setConsentGateOpen] = useState(false);
+  const [gateAfterPriceId, setGateAfterPriceId] = useState<string | null>(null);
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [consentOkCached, setConsentOkCached] = useState(false);
+  const [gateConsentB2B, setGateConsentB2B] = useState(false);
+  const [gateConsentAVV, setGateConsentAVV] = useState(false);
+  const [gateConsentAGB, setGateConsentAGB] = useState(false);
+  const [gateSubmitting, setGateSubmitting] = useState(false);
+  const [gateError, setGateError] = useState('');
 
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
@@ -108,18 +119,6 @@ export default function Pricing() {
       return () => clearTimeout(timer);
     }
   }, [searchParams, refreshSubscription]);
-
-  const openWiderrufsModal = (priceId: string) => {
-    setWiderrufsChecked(false);
-    setPendingPriceId(priceId);
-  };
-
-  const confirmCheckout = async () => {
-    if (!pendingPriceId) return;
-    const priceId = pendingPriceId;
-    setPendingPriceId(null);
-    await handleCheckout(priceId);
-  };
 
   const handleCheckout = async (priceId: string) => {
     if (!session) return;
@@ -142,6 +141,41 @@ export default function Pricing() {
     }
   };
 
+  const handleUpgradeClick = async (priceId: string) => {
+    if (!session) return;
+
+    // Use cached result if available
+    if (consentChecked && consentOkCached) {
+      await handleCheckout(priceId);
+      return;
+    }
+    if (consentChecked && !consentOkCached) {
+      setGateAfterPriceId(priceId);
+      setConsentGateOpen(true);
+      return;
+    }
+
+    // First click: check consent
+    try {
+      const ok = await Consent.hasRequiredConsents(
+        session.user.id,
+        LEGAL_DOC_VERSION,
+        REQUIRED_CONSENT_TYPES
+      );
+      setConsentChecked(true);
+      setConsentOkCached(ok);
+      if (ok) {
+        await handleCheckout(priceId);
+      } else {
+        setGateAfterPriceId(priceId);
+        setConsentGateOpen(true);
+      }
+    } catch {
+      // fail-open
+      await handleCheckout(priceId);
+    }
+  };
+
   const handlePortal = async () => {
     if (!session) return;
     setPortalLoading(true);
@@ -161,6 +195,30 @@ export default function Pricing() {
       setPortalLoading(false);
     }
   };
+
+  const handleGateSubmit = async () => {
+    if (!session) return;
+    setGateSubmitting(true);
+    setGateError('');
+    try {
+      await Consent.saveConsents(
+        [...REQUIRED_CONSENT_TYPES].map((t) => ({
+          consent_type: t,
+          document_version: LEGAL_DOC_VERSION,
+        })),
+        session
+      );
+      setConsentOkCached(true);
+      setConsentGateOpen(false);
+      if (gateAfterPriceId) await handleCheckout(gateAfterPriceId);
+    } catch {
+      setGateError('Fehler beim Speichern der Zustimmung. Bitte versuchen Sie es erneut.');
+    } finally {
+      setGateSubmitting(false);
+    }
+  };
+
+  const gateCanSubmit = gateConsentB2B && gateConsentAVV && gateConsentAGB;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
@@ -331,7 +389,7 @@ export default function Pricing() {
                     {plan.planKey !== "free" && !isPaid && current.priceId && (
                       <Button
                         className={`w-full ${dark ? "bg-blue-500 hover:bg-blue-400 text-white border-0" : "bg-slate-800 hover:bg-slate-700 text-white"}`}
-                        onClick={() => openWiderrufsModal(current.priceId!)}
+                        onClick={() => handleUpgradeClick(current.priceId!)}
                         disabled={isLoading}
                       >
                         {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -358,44 +416,80 @@ export default function Pricing() {
         </div>
       </div>
 
-      {/* Widerrufsrecht-Modal */}
-      {pendingPriceId && (
+      {/* Consent-Gate-Modal vor Checkout */}
+      {consentGateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
-            <h2 className="text-lg font-bold text-slate-900">Bestellung bestätigen</h2>
+            <h2 className="text-lg font-bold text-slate-900">Vertragsbedingungen bestätigen</h2>
             <p className="text-sm text-slate-600">
-              Sie starten jetzt einen <strong>14-tägigen kostenlosen Testzeitraum</strong>.
-              Nach Ablauf beginnt das Abonnement automatisch, sofern Sie nicht vorher kündigen.
+              Bitte bestätigen Sie die Vertragsbedingungen, bevor Sie fortfahren.
             </p>
 
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={widerrufsChecked}
-                onChange={(e) => setWiderrufsChecked(e.target.checked)}
-                className="mt-0.5 w-4 h-4 shrink-0 accent-slate-800 cursor-pointer"
-              />
-              <span className="text-xs text-slate-700 leading-relaxed">
-                Ich verlange ausdrücklich, dass mit der Ausführung des Vertrags vor Ablauf der
-                Widerrufsfrist begonnen wird. Mir ist bekannt, dass ich dadurch mein{" "}
-                <strong>Widerrufsrecht verliere</strong>.
-              </span>
-            </label>
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={gateConsentB2B}
+                  onChange={(e) => setGateConsentB2B(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 shrink-0 accent-slate-800 cursor-pointer"
+                />
+                <span className="text-xs text-slate-700 leading-relaxed">
+                  Ich bestätige, dass ich als Unternehmer im Sinne des § 14 BGB handle und die
+                  Plattform ausschließlich zu gewerblichen Zwecken nutze.
+                </span>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={gateConsentAVV}
+                  onChange={(e) => setGateConsentAVV(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 shrink-0 accent-slate-800 cursor-pointer"
+                />
+                <span className="text-xs text-slate-700 leading-relaxed">
+                  Ich stimme dem{" "}
+                  <Link to="/legal/avv" target="_blank" className="text-blue-600 hover:underline">
+                    Auftragsverarbeitungsvertrag (AVV)
+                  </Link>{" "}
+                  gemäß Art. 28 DSGVO zu.
+                </span>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={gateConsentAGB}
+                  onChange={(e) => setGateConsentAGB(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 shrink-0 accent-slate-800 cursor-pointer"
+                />
+                <span className="text-xs text-slate-700 leading-relaxed">
+                  Ich habe die{" "}
+                  <Link to="/agb" target="_blank" className="text-blue-600 hover:underline">
+                    AGB
+                  </Link>{" "}
+                  gelesen und stimme diesen zu.
+                </span>
+              </label>
+            </div>
+
+            {gateError && (
+              <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{gateError}</p>
+            )}
 
             <div className="flex gap-3 pt-1">
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => setPendingPriceId(null)}
+                onClick={() => setConsentGateOpen(false)}
               >
                 Abbrechen
               </Button>
               <Button
                 className="flex-1 bg-slate-800 hover:bg-slate-700 text-white"
-                disabled={!widerrufsChecked || !!loadingPriceId}
-                onClick={confirmCheckout}
+                disabled={!gateCanSubmit || gateSubmitting}
+                onClick={handleGateSubmit}
               >
-                {loadingPriceId ? (
+                {gateSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   "Weiter zu Stripe"

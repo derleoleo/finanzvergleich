@@ -15,6 +15,9 @@ import Home from "@/pages/Home";
 import Impressum from "@/pages/Impressum";
 import Datenschutz from "@/pages/Datenschutz";
 import AGB from "@/pages/AGB";
+import AVV from "@/pages/AVV";
+import Compliance from "@/pages/Compliance";
+import ConsentGate from "@/components/ConsentGate";
 import Calculator from "@/pages/Calculator";
 import CalculatorDetail from "@/pages/CalculatorDetail";
 import CalculatorCostsDetail from "@/pages/CalculatorCostsDetail";
@@ -40,7 +43,9 @@ import CookieBanner from "@/components/CookieBanner";
 function PageShell({ children }: { children: ReactNode }) {
   return (
     <ProtectedRoute>
-      <Layout>{children}</Layout>
+      <ConsentGate>
+        <Layout>{children}</Layout>
+      </ConsentGate>
     </ProtectedRoute>
   );
 }
@@ -72,6 +77,8 @@ export default function App() {
           <Route path="/impressum" element={<Impressum />} />
           <Route path="/datenschutz" element={<Datenschutz />} />
           <Route path="/agb" element={<AGB />} />
+          <Route path="/legal/avv" element={<AVV />} />
+          <Route path="/compliance" element={<Compliance />} />
 
           {/* Fonds-Sparvertrag */}
           <Route
