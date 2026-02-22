@@ -1,28 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56" width="56" height="56">
   <defs>
-    <linearGradient id="bgGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0B1E3D;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#163566;stop-opacity:1" />
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F1F3D"/>
+      <stop offset="100%" stop-color="#1a3260"/>
     </linearGradient>
-    <linearGradient id="goldGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#D4A843" />
-      <stop offset="100%" style="stop-color:#F0C96B" />
+    <linearGradient id="g2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00C9A7"/>
+      <stop offset="100%" stop-color="#00A3FF"/>
     </linearGradient>
   </defs>
 
-  <!-- Background circle -->
-  <rect width="80" height="80" rx="18" fill="url(#bgGrad2)"/>
+  <rect width="56" height="56" rx="14" fill="url(#bg2)"/>
 
-  <!-- Shield -->
-  <path d="M18 12 L62 12 L70 20 L70 46 C70 60 40 70 40 70 C40 70 10 60 10 46 L10 20 Z" 
-        fill="none" stroke="url(#goldGrad2)" stroke-width="2.5" stroke-linejoin="round"/>
-
-  <!-- Trend line -->
-  <polyline points="20,54 30,40 38,46 54,28" 
-            fill="none" stroke="url(#goldGrad2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- 3 bars -->
+  <rect x="8"  y="34" width="7" height="13" rx="2" fill="white" opacity="0.25"/>
+  <rect x="18" y="26" width="7" height="21" rx="2" fill="white" opacity="0.5"/>
+  <rect x="28" y="16" width="7" height="31" rx="2" fill="url(#g2)"/>
 
   <!-- Check circle -->
-  <circle cx="54" cy="28" r="10" fill="url(#goldGrad2)" opacity="0.95"/>
-  <polyline points="49,28 53,32 61,22" 
-            fill="none" stroke="#0B1E3D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="44" cy="16" r="9" fill="url(#g2)" opacity="0.15"/>
+  <circle cx="44" cy="16" r="9" fill="none" stroke="url(#g2)" stroke-width="1.8"/>
+  <polyline points="39.5,16 43,19.5 49.5,11" fill="none" stroke="url(#g2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
