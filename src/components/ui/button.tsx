@@ -22,7 +22,7 @@ export function Button({
       ? "border border-slate-200 bg-white hover:bg-slate-50 text-slate-900"
       : variant === "ghost"
       ? "bg-transparent hover:bg-slate-100 text-slate-900"
-      : "bg-slate-900 hover:bg-slate-800 text-white";
+      : "bg-gradient-to-tr from-brand-cyan to-brand-blue hover:opacity-90 text-white transition-opacity";
 
   const sizeClass =
     size === "sm"

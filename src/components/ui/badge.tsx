@@ -13,7 +13,7 @@ export function Badge({
       ? "bg-transparent"
       : variant === "destructive"
       ? "bg-red-600 text-white border-transparent"
-      : "bg-slate-900 text-white border-transparent";
+      : "bg-gradient-to-tr from-brand-cyan to-brand-blue text-white border-transparent";
 
   return <span className={`${base} ${v} ${className}`} {...props} />;
 }

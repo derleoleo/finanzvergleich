@@ -1,1 +1,59 @@
 @import "tailwindcss";
+
+@theme {
+  /* Slate → Navy brand scale */
+  --color-slate-50:  #F4F6F9;
+  --color-slate-100: #E8ECF2;
+  --color-slate-200: #D0D8E6;
+  --color-slate-300: #B0BCCF;
+  --color-slate-400: #A0AABF;
+  --color-slate-500: #5A6A85;
+  --color-slate-600: #3D5175;
+  --color-slate-700: #2A3D5E;
+  --color-slate-800: #1E2F4A;
+  --color-slate-900: #0F1F3D;
+  --color-slate-950: #091629;
+
+  /* Brand accent tokens */
+  --color-brand-cyan: #00C9A7;
+  --color-brand-blue: #00A3FF;
+
+  /* Green → Brand teal (success) */
+  --color-green-50:  #E6FAF7;
+  --color-green-100: #B3F0E7;
+  --color-green-200: #80E6D8;
+  --color-green-500: #00C9A7;
+  --color-green-600: #00B596;
+  --color-green-700: #009E82;
+  --color-green-800: #007A64;
+  --color-green-900: #005748;
+
+  /* Blue → Brand blue */
+  --color-blue-50:  #E6F4FF;
+  --color-blue-100: #CCE9FF;
+  --color-blue-200: #99D3FF;
+  --color-blue-400: #33B5FF;
+  --color-blue-500: #00A3FF;
+  --color-blue-600: #0092E6;
+  --color-blue-700: #0080CC;
+  --color-blue-800: #006DB3;
+
+  /* Red → Warm red (error) */
+  --color-red-50:  #FFF0F0;
+  --color-red-100: #FFD6D6;
+  --color-red-200: #FFB3B3;
+  --color-red-500: #FF6B6B;
+  --color-red-600: #FF5252;
+  --color-red-700: #E03E3E;
+  --color-red-800: #C02828;
+  --color-red-900: #A01515;
+
+  /* Amber → Info orange */
+  --color-amber-50:  #FFF8ED;
+  --color-amber-100: #FFE9C7;
+  --color-amber-200: #FFD4A0;
+  --color-amber-400: #F5A623;
+  --color-amber-500: #E09510;
+  --color-amber-600: #CC8400;
+  --color-amber-700: #A86A00;
+}

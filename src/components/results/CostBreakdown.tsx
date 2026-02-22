@@ -131,13 +131,13 @@ export default function CostBreakdown({ calculation }: { calculation: Calc }) {
   return (
     <Card className="border-0 shadow-lg bg-white">
       <style>{`
-        .fv-bar-lv-acq path { fill: #2563eb !important; }
-        .fv-bar-lv-fund path { fill: #16a34a !important; }
-        .fv-bar-lv-third path { fill: #7c3aed !important; }
+        .fv-bar-lv-acq path { fill: #00A3FF !important; }
+        .fv-bar-lv-fund path { fill: #00C9A7 !important; }
+        .fv-bar-lv-third path { fill: #5A6A85 !important; }
 
-        .fv-bar-depot-init path { fill: #f97316 !important; }
-        .fv-bar-depot-fund path { fill: #22c55e !important; }
-        .fv-bar-depot-depot path { fill: #0ea5e9 !important; }
+        .fv-bar-depot-init path { fill: #F5A623 !important; }
+        .fv-bar-depot-fund path { fill: #33D4BA !important; }
+        .fv-bar-depot-depot path { fill: #33B5FF !important; }
 
         .recharts-legend-item .recharts-surface { fill: currentColor; }
       `}</style>
@@ -158,23 +158,23 @@ export default function CostBreakdown({ calculation }: { calculation: Calc }) {
               data={chartData}
               margin={{ top: 20, right: 20, left: 10, bottom: 10 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#D0D8E6" />
               <XAxis
                 dataKey="name"
-                tick={{ fill: "#64748b", fontSize: 12 }}
-                axisLine={{ stroke: "#cbd5e1" }}
+                tick={{ fill: "#5A6A85", fontSize: 12 }}
+                axisLine={{ stroke: "#B0BCCF" }}
               />
               <YAxis
                 tickFormatter={formatChartAxis}
-                tick={{ fill: "#64748b", fontSize: 12 }}
-                axisLine={{ stroke: "#cbd5e1" }}
+                tick={{ fill: "#5A6A85", fontSize: 12 }}
+                axisLine={{ stroke: "#B0BCCF" }}
               />
 
               <Tooltip
                 formatter={(value) => [formatCurrency(Number(value || 0)), ""]}
                 contentStyle={{
                   backgroundColor: "white",
-                  border: "1px solid #e2e8f0",
+                  border: "1px solid #D0D8E6",
                   borderRadius: "8px",
                 }}
               />

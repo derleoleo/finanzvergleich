@@ -241,7 +241,7 @@ export default function ResultsChart({
                 type="monotone"
                 dataKey="lv"
                 name="LV"
-                stroke="#2563eb"
+                stroke="#00A3FF"
                 strokeWidth={3}
                 dot={false}
                 isAnimationActive={false}
@@ -250,7 +250,7 @@ export default function ResultsChart({
                 type="monotone"
                 dataKey="depot"
                 name="Depot"
-                stroke="#16a34a"
+                stroke="#00C9A7"
                 strokeWidth={3}
                 dot={false}
                 isAnimationActive={false}
