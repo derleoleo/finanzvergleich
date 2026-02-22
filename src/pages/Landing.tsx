@@ -20,7 +20,7 @@ const faq = [
   },
   {
     q: "Gibt es eine kostenlose Testversion?",
-    a: "Ja. Der Free-Plan ist dauerhaft kostenlos und beinhaltet die grundlegenden Vergleichsrechner (Fonds-Sparvertrag, Einmalanlage). Pro und Unlimited starten mit einem 14-tägigen kostenlosen Testzeitraum – keine Kreditkarte erforderlich.",
+    a: "Ja. Der Free-Plan ist dauerhaft kostenlos und beinhaltet die grundlegenden Rechner (Fonds-Sparvertrag, Einmalanlage). Pro und Unlimited starten mit einem 30-tägigen kostenlosen Testzeitraum – keine Kreditkarte erforderlich.",
   },
   {
     q: "Was passiert nach der Probezeit?",
@@ -44,7 +44,7 @@ export default function Landing() {
             </Link>
             <Link
               to="/login"
-              className="text-sm font-semibold bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-700 transition-colors"
+              className="text-sm font-semibold bg-gradient-to-tr from-brand-cyan to-brand-blue hover:opacity-90 text-white px-4 py-2 rounded-xl transition-opacity"
             >
               Demo starten
             </Link>
@@ -53,14 +53,16 @@ export default function Landing() {
       </nav>
 
       {/* Hero */}
-      <section className="bg-linear-to-br from-[#0B1E3D] to-[#163566] text-white py-24 px-6">
+      <section className="bg-linear-to-br from-slate-900 to-slate-800 text-white py-24 px-6">
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-block bg-white/10 text-slate-200 text-xs font-semibold px-3 py-1 rounded-full mb-6 border border-white/20">
             Ausschließlich für Unternehmer · § 14 BGB
           </div>
           <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6">
             Modellbasierte Simulationen<br />
-            <span className="text-[#D4A843]">für Finanzvergleiche.</span>
+            <span className="bg-gradient-to-tr from-brand-cyan to-brand-blue bg-clip-text text-transparent">
+              für Finanzvergleiche.
+            </span>
           </h1>
           <p className="text-lg text-slate-300 max-w-xl mx-auto mb-4">
             Standardisiertes Analyse-Werkzeug für Vermittler und Makler.
@@ -71,7 +73,7 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/login"
-              className="bg-[#D4A843] hover:bg-[#F0C96B] text-[#0B1E3D] font-bold px-8 py-3.5 rounded-xl text-base transition-colors flex items-center justify-center gap-2"
+              className="bg-gradient-to-tr from-brand-cyan to-brand-blue hover:opacity-90 text-white font-bold px-8 py-3.5 rounded-xl text-base transition-opacity flex items-center justify-center gap-2"
             >
               Demo starten <ArrowRight className="w-4 h-4" />
             </Link>
@@ -106,8 +108,8 @@ export default function Landing() {
             },
           ].map((item) => (
             <div key={item.title} className="flex flex-col items-center">
-              <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
-                <item.icon className="w-6 h-6 text-slate-700" />
+              <div className="w-12 h-12 bg-brand-cyan/10 rounded-2xl flex items-center justify-center mb-4">
+                <item.icon className="w-6 h-6 text-brand-cyan" />
               </div>
               <h3 className="font-semibold text-slate-900 mb-2">{item.title}</h3>
               <p className="text-sm text-slate-600">{item.desc}</p>
@@ -123,11 +125,11 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { step: "1", title: "Parameter eingeben", desc: "Produkt-Konditionen und Annahmen eingeben. Voreinstellungen sparen Zeit bei jedem neuen Mandat." },
-              { step: "2", title: "Simulation berechnen", desc: "Monatliche Simulation berechnet LV vs. Depot – mit vollständiger Kosten- und Steueranalyse." },
+              { step: "2", title: "Simulation berechnen", desc: "Monatliche Simulation mit vollständiger Kosten- und Steueranalyse." },
               { step: "3", title: "PDF exportieren", desc: "Auswertung als PDF mit Ihrem Logo und Berater-Profil. Transparent und mandatsfähig." },
             ].map((item) => (
               <div key={item.step} className="flex flex-col items-center text-center">
-                <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white text-xl font-bold flex items-center justify-center mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-cyan to-brand-blue text-white text-xl font-bold flex items-center justify-center mb-4">
                   {item.step}
                 </div>
                 <h3 className="font-semibold text-slate-900 mb-2">{item.title}</h3>
@@ -164,8 +166,8 @@ export default function Landing() {
               },
             ].map((item) => (
               <div key={item.title} className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
-                <div className="w-10 h-10 bg-slate-200 rounded-xl flex items-center justify-center mb-4">
-                  <item.icon className="w-5 h-5 text-slate-700" />
+                <div className="w-10 h-10 bg-brand-cyan/10 rounded-xl flex items-center justify-center mb-4">
+                  <item.icon className="w-5 h-5 text-brand-cyan" />
                 </div>
                 <h3 className="font-semibold text-slate-900 mb-2">{item.title}</h3>
                 <p className="text-sm text-slate-600">{item.desc}</p>
@@ -179,7 +181,7 @@ export default function Landing() {
       <section className="py-20 px-6 bg-slate-50">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-6 justify-center">
-            <Shield className="w-7 h-7 text-slate-700" />
+            <Shield className="w-7 h-7 text-brand-cyan" />
             <h2 className="text-2xl font-bold text-slate-900">Datenschutz & Compliance</h2>
           </div>
           <p className="text-slate-500 text-center mb-10 text-sm">
@@ -195,7 +197,7 @@ export default function Landing() {
               "Subprozessoren transparent gelistet (Supabase, Vercel, Stripe, Resend)",
             ].map((item) => (
               <div key={item} className="flex items-start gap-3 bg-white rounded-xl p-4 border border-slate-100">
-                <Shield className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+                <Shield className="w-4 h-4 text-brand-cyan mt-0.5 shrink-0" />
                 <span className="text-sm text-slate-700">{item}</span>
               </div>
             ))}
@@ -203,7 +205,7 @@ export default function Landing() {
           <div className="mt-8 text-center">
             <Link
               to={createPageUrl("Compliance")}
-              className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline"
+              className="inline-flex items-center gap-2 text-sm font-medium text-brand-blue hover:underline"
             >
               Compliance & TOM-Dokumentation ansehen <ArrowRight className="w-4 h-4" />
             </Link>
@@ -229,9 +231,9 @@ export default function Landing() {
               <div className="text-3xl font-bold text-slate-900 mb-1">0 €</div>
               <p className="text-sm text-slate-500 mb-6">dauerhaft kostenlos</p>
               <ul className="space-y-2 text-sm text-slate-700 flex-1">
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500 shrink-0" /> Fonds-Sparvertrag</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500 shrink-0" /> Fonds-Einmalanlage</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-500 shrink-0" /> 3 Simulationen/Monat</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-cyan shrink-0" /> Fonds-Sparvertrag</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-cyan shrink-0" /> Fonds-Einmalanlage</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-brand-cyan shrink-0" /> 3 Simulationen/Monat</li>
               </ul>
               <Link to="/login" className="mt-6 block text-center border border-slate-200 rounded-xl py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
                 Kostenlos starten
@@ -242,19 +244,19 @@ export default function Landing() {
             <div className="bg-slate-900 rounded-2xl p-6 flex flex-col">
               <div className="flex items-center gap-2 mb-3">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pro</p>
-                <span className="text-xs bg-[#D4A843] text-[#0B1E3D] font-bold px-2 py-0.5 rounded-full">14 Tage gratis</span>
+                <span className="text-xs bg-gradient-to-tr from-brand-cyan to-brand-blue text-white font-bold px-2 py-0.5 rounded-full">30 Tage gratis</span>
               </div>
               <div className="text-3xl font-bold text-white mb-1">19,99 €</div>
               <p className="text-sm text-slate-400 mb-6">pro Monat, zzgl. MwSt.</p>
               <ul className="space-y-2 text-sm text-slate-300 flex-1">
                 {["Alle 5 Simulationsrechner", "PDF-Export mit Berater-Branding", "BestAdvice & Rentenlücken-Rechner", "10 Simulationen/Monat"].map((f) => (
                   <li key={f} className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-[#D4A843] shrink-0" /> {f}
+                    <Check className="w-4 h-4 text-brand-cyan shrink-0" /> {f}
                   </li>
                 ))}
               </ul>
-              <Link to={createPageUrl("Pricing")} className="mt-6 block text-center bg-[#D4A843] hover:bg-[#F0C96B] text-[#0B1E3D] rounded-xl py-2.5 text-sm font-bold transition-colors">
-                14 Tage kostenlos testen
+              <Link to={createPageUrl("Pricing")} className="mt-6 block text-center bg-gradient-to-tr from-brand-cyan to-brand-blue hover:opacity-90 text-white rounded-xl py-2.5 text-sm font-bold transition-opacity">
+                30 Tage kostenlos testen
               </Link>
             </div>
 
@@ -266,19 +268,19 @@ export default function Landing() {
               <ul className="space-y-2 text-sm text-slate-700 flex-1">
                 {["Alles aus Pro", "Unbegrenzte Simulationen", "Eigenes Logo auf PDFs", "Prioritäts-Support"].map((f) => (
                   <li key={f} className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-green-500 shrink-0" /> {f}
+                    <Check className="w-4 h-4 text-brand-cyan shrink-0" /> {f}
                   </li>
                 ))}
               </ul>
               <Link to={createPageUrl("Pricing")} className="mt-6 block text-center border border-slate-200 rounded-xl py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                14 Tage kostenlos testen
+                30 Tage kostenlos testen
               </Link>
             </div>
           </div>
 
           <p className="text-center mt-6 text-sm text-slate-500">
             Auch als Jahrestarif verfügbar – spare 2 Monate.{" "}
-            <Link to={createPageUrl("Pricing")} className="text-blue-600 hover:underline">Alle Pläne ansehen →</Link>
+            <Link to={createPageUrl("Pricing")} className="text-brand-blue hover:underline">Alle Pläne ansehen →</Link>
           </p>
         </div>
       </section>
