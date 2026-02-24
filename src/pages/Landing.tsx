@@ -28,6 +28,24 @@ const faq = [
   },
 ];
 
+function BrowserFrame({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-2xl border border-slate-200 ring-1 ring-black/5">
+      <div className="bg-slate-100 px-4 py-2.5 flex items-center gap-2 border-b border-slate-200">
+        <div className="flex gap-1.5 shrink-0">
+          <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
+          <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
+          <div className="w-3 h-3 rounded-full bg-[#28c840]" />
+        </div>
+        <div className="flex-1 mx-3 bg-white rounded-md px-3 py-0.5 text-xs text-slate-400 text-center truncate">
+          app.rentencheck.de
+        </div>
+      </div>
+      <img src={src} alt={alt} className="w-full block" />
+    </div>
+  );
+}
+
 export default function Landing() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -118,24 +136,127 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Product Preview */}
+      <section className="py-16 px-6 bg-slate-50">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider mb-8">
+            Echtansicht der Anwendung
+          </p>
+          <BrowserFrame
+            src="/screenshots/screenshot-results.png"
+            alt="RentenCheck Ergebnis-Ansicht: LV vs. Direktanlage Vergleich"
+          />
+        </div>
+      </section>
+
       {/* So funktioniert's */}
+      <section className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-2xl font-bold text-slate-900 text-center mb-20">So funktioniert's</h2>
+
+          <div className="space-y-24">
+
+            {/* Step 1 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-cyan to-brand-blue text-white text-xl font-bold flex items-center justify-center mb-6">
+                  1
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-3">Parameter eingeben</h3>
+                <p className="text-slate-600 leading-relaxed">
+                  Produkt-Konditionen, Laufzeit und Kosten eingeben. Voreinstellungen sparen Zeit bei jedem neuen Mandat — einmal konfigurieren, dauerhaft nutzen.
+                </p>
+              </div>
+              <BrowserFrame
+                src="/screenshots/screenshot-calculator.png"
+                alt="Fonds-Sparvertrag Rechner: Parameter eingeben"
+              />
+            </div>
+
+            {/* Step 2 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+              <div className="order-2 md:order-1">
+                <BrowserFrame
+                  src="/screenshots/screenshot-results.png"
+                  alt="Simulationsergebnis: LV vs. Direktanlage Vergleich"
+                />
+              </div>
+              <div className="order-1 md:order-2">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-cyan to-brand-blue text-white text-xl font-bold flex items-center justify-center mb-6">
+                  2
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-3">Simulation berechnen</h3>
+                <p className="text-slate-600 leading-relaxed">
+                  Monatliche Simulation mit vollständiger Kosten- und Steueranalyse. LV vs. Direktanlage — transparent, nachvollziehbar und mit Brutto-/Netto-Umschaltung.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-cyan to-brand-blue text-white text-xl font-bold flex items-center justify-center mb-6">
+                  3
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-3">PDF exportieren</h3>
+                <p className="text-slate-600 leading-relaxed">
+                  Auswertung als PDF mit Ihrem Logo und Berater-Profil. Transparent und mandatsfähig — direkt an den Kunden weitergeben.
+                </p>
+              </div>
+              <BrowserFrame
+                src="/screenshots/screenshot-bestadvice.png"
+                alt="BestAdvice Rechner: Bestandsvertrag vs. Umschichtung"
+              />
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* Weitere Rechner */}
       <section className="py-20 px-6 bg-slate-50">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl font-bold text-slate-900 text-center mb-12">So funktioniert's</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { step: "1", title: "Parameter eingeben", desc: "Produkt-Konditionen und Annahmen eingeben. Voreinstellungen sparen Zeit bei jedem neuen Mandat." },
-              { step: "2", title: "Simulation berechnen", desc: "Monatliche Simulation mit vollständiger Kosten- und Steueranalyse." },
-              { step: "3", title: "PDF exportieren", desc: "Auswertung als PDF mit Ihrem Logo und Berater-Profil. Transparent und mandatsfähig." },
-            ].map((item) => (
-              <div key={item.step} className="flex flex-col items-center text-center">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-cyan to-brand-blue text-white text-xl font-bold flex items-center justify-center mb-4">
-                  {item.step}
+          <h2 className="text-2xl font-bold text-slate-900 text-center mb-3">5 Simulationsrechner</h2>
+          <p className="text-slate-500 text-center mb-12 text-sm">
+            Von der Erstberatung bis zur Bestandsanalyse — alle Szenarien abgedeckt.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              {[
+                { name: "Fonds-Sparvertrag", desc: "LV vs. Direktanlage (monatliche Sparrate)" },
+                { name: "Einmalanlage", desc: "LV vs. Direktanlage (Einmalbetrag)" },
+                { name: "BestAdvice", desc: "Bestandsvertrag vs. Umschichtung in Fonds-LV" },
+              ].map((item) => (
+                <div key={item.name} className="bg-white rounded-xl border border-slate-100 p-4 flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-brand-cyan mt-2 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{item.name}</p>
+                    <p className="text-xs text-slate-500">{item.desc}</p>
+                  </div>
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-2">{item.title}</h3>
-                <p className="text-sm text-slate-600">{item.desc}</p>
+              ))}
+            </div>
+            <div className="space-y-3">
+              {[
+                { name: "Rentenlücken-Rechner", desc: "Versorgungslücke im Ruhestand berechnen" },
+                { name: "Entnahmeplan", desc: "Kapitalverzehr im Ruhestand simulieren" },
+              ].map((item) => (
+                <div key={item.name} className="bg-white rounded-xl border border-slate-100 p-4 flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-brand-cyan mt-2 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{item.name}</p>
+                    <p className="text-xs text-slate-500">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+              <div className="rounded-xl overflow-hidden border border-slate-100 shadow-md">
+                <img
+                  src="/screenshots/screenshot-pensiongap.png"
+                  alt="Rentenlücken-Rechner"
+                  className="w-full block"
+                />
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </section>
