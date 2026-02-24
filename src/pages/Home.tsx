@@ -12,7 +12,7 @@ const calculators = [
     description: "Monatliche Sparrate vergleichen: Lebensversicherung vs. Direktanlage im Depot. Inklusive Kostenanalyse und Steuervergleich.",
     href: createPageUrl("Calculator"),
     color: "bg-blue-100 text-blue-600",
-    badge: "Hauptrechner",
+    badge: null,
   },
   {
     icon: DollarSign,
@@ -57,7 +57,7 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-slate-900 mb-3">Übersicht</h1>
           <p className="text-lg text-slate-600 max-w-2xl">
             Alle Rechner auf einen Blick. Analysieren Sie Finanzprodukte, berechnen Sie Rentenlücken
-            und planen Sie Ihre Entnahmen – vollständig lokal und ohne Datenweitergabe.
+            und planen Sie Ihre Entnahmen.
           </p>
         </div>
 

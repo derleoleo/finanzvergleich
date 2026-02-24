@@ -1,0 +1,18 @@
+{
+  "name": "RentenCheck",
+  "short_name": "RentenCheck",
+  "description": "Professionelle Vergleichsrechner für Finanzberater",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0057ff",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

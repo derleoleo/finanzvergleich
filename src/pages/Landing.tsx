@@ -37,7 +37,7 @@ export default function Landing() {
       {/* Navbar */}
       <nav className="border-b border-slate-100 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <img src="/rentencheck-logo.svg" alt="RentenCheck" className="h-9 w-auto" />
+          <img src="/rentencheck-logo.png" alt="RentenCheck" className="h-9 w-auto" />
           <div className="flex items-center gap-3">
             <Link to="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">
               Anmelden
@@ -315,7 +315,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-400 py-10 px-6">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <img src="/rentencheck-logo.svg" alt="RentenCheck" className="h-8 w-auto opacity-80" />
+          <img src="/rentencheck-logo.png" alt="RentenCheck" className="h-8 w-auto opacity-80" />
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-xs">
             <Link to="/impressum" className="hover:text-white transition-colors">Impressum</Link>
             <Link to="/datenschutz" className="hover:text-white transition-colors">Datenschutz</Link>

@@ -1,59 +1,61 @@
 @import "tailwindcss";
 
 @theme {
-  /* Slate → Navy brand scale */
-  --color-slate-50:  #F4F6F9;
-  --color-slate-100: #E8ECF2;
-  --color-slate-200: #D0D8E6;
-  --color-slate-300: #B0BCCF;
-  --color-slate-400: #A0AABF;
-  --color-slate-500: #5A6A85;
-  --color-slate-600: #3D5175;
-  --color-slate-700: #2A3D5E;
-  --color-slate-800: #1E2F4A;
-  --color-slate-900: #0F1F3D;
-  --color-slate-950: #091629;
+  /* ── Neutral / Ink scale ──────────────────────────────────────── */
+  --color-slate-50:  #F7F9FF;   /* Surface – App-Hintergrund        */
+  --color-slate-100: #EEF2F9;
+  --color-slate-200: #E0E8F5;   /* Border – Trennlinien, Rahmen     */
+  --color-slate-300: #C8D5E8;
+  --color-slate-400: #AABBD4;
+  --color-slate-500: #8899BB;   /* Muted – Placeholder, Hints       */
+  --color-slate-600: #445566;   /* Slate – Sekundärer Text          */
+  --color-slate-700: #2E3E55;
+  --color-slate-800: #1F2D40;
+  --color-slate-900: #1A1A2E;   /* Ink – Headlines, Body Text       */
+  --color-slate-950: #0F1020;
 
-  /* Brand accent tokens */
-  --color-brand-cyan: #00C9A7;
-  --color-brand-blue: #00A3FF;
+  /* ── Brand Blue scale ────────────────────────────────────────── */
+  --color-blue-50:  #F0F5FF;   /* Tint – Hover, Badges             */
+  --color-blue-100: #E0EAFF;
+  --color-blue-200: #C0D5FF;
+  --color-blue-300: #80AAFF;
+  --color-blue-400: #4080FF;
+  --color-blue-500: #0057FF;   /* Brand – Primary CTA, Links       */
+  --color-blue-600: #0040CC;   /* Dark – Hover auf Primary-Buttons */
+  --color-blue-700: #002E99;
+  --color-blue-800: #001E66;
 
-  /* Green → Brand teal (success) */
-  --color-green-50:  #E6FAF7;
-  --color-green-100: #B3F0E7;
-  --color-green-200: #80E6D8;
-  --color-green-500: #00C9A7;
-  --color-green-600: #00B596;
-  --color-green-700: #009E82;
-  --color-green-800: #007A64;
-  --color-green-900: #005748;
+  /* ── Success (Green) ─────────────────────────────────────────── */
+  --color-green-50:  #EDFAF3;
+  --color-green-100: #CAFAE3;
+  --color-green-200: #A5EFC7;
+  --color-green-500: #22C55E;
+  --color-green-600: #16A34A;
+  --color-green-700: #15803D;
+  --color-green-800: #166534;
+  --color-green-900: #14532D;
 
-  /* Blue → Brand blue */
-  --color-blue-50:  #E6F4FF;
-  --color-blue-100: #CCE9FF;
-  --color-blue-200: #99D3FF;
-  --color-blue-400: #33B5FF;
-  --color-blue-500: #00A3FF;
-  --color-blue-600: #0092E6;
-  --color-blue-700: #0080CC;
-  --color-blue-800: #006DB3;
+  /* ── Warning (Amber) ─────────────────────────────────────────── */
+  --color-amber-50:  #FFFBEB;
+  --color-amber-100: #FEF3C7;
+  --color-amber-200: #FDE68A;
+  --color-amber-400: #FBBF24;
+  --color-amber-500: #F59E0B;
+  --color-amber-600: #D97706;
+  --color-amber-700: #B45309;
 
-  /* Red → Warm red (error) */
-  --color-red-50:  #FFF0F0;
-  --color-red-100: #FFD6D6;
-  --color-red-200: #FFB3B3;
-  --color-red-500: #FF6B6B;
-  --color-red-600: #FF5252;
-  --color-red-700: #E03E3E;
-  --color-red-800: #C02828;
-  --color-red-900: #A01515;
+  /* ── Error (Red) ─────────────────────────────────────────────── */
+  --color-red-50:  #FFF1F0;
+  --color-red-100: #FFE4E1;
+  --color-red-200: #FFC9C4;
+  --color-red-500: #EF4444;
+  --color-red-600: #DC2626;
+  --color-red-700: #B91C1C;
+  --color-red-800: #991B1B;
+  --color-red-900: #7F1D1D;
 
-  /* Amber → Info orange */
-  --color-amber-50:  #FFF8ED;
-  --color-amber-100: #FFE9C7;
-  --color-amber-200: #FFD4A0;
-  --color-amber-400: #F5A623;
-  --color-amber-500: #E09510;
-  --color-amber-600: #CC8400;
-  --color-amber-700: #A86A00;
+  /* ── Purple (BestAdvice) ─────────────────────────────────────── */
+  --color-purple-50:  #F5F3FF;
+  --color-purple-100: #EDE9FE;
+  --color-purple-600: #7C3AED;
 }

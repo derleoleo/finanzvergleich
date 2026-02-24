@@ -283,14 +283,13 @@ export default function CalculatorDetail() {
         {calculation.results && (
           <>
             <div data-pdf-section="ergebnis">
-              <ResultsSummary results={calculation.results} mode={mode} />
+              <ResultsSummary results={calculation.results} mode={mode} onModeChange={setMode} />
             </div>
 
             <div data-pdf-section="grafik">
               <ResultsChart
                 calculation={calculation}
                 mode={mode}
-                onModeChange={setMode}
               />
             </div>
 

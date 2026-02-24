@@ -152,7 +152,7 @@ export default function Layout({ children }: Props) {
               to={createPageUrl("Home")}
               className="hover:opacity-80 transition-opacity block"
             >
-              <img src="/rentencheck-logo.svg" alt="RentenCheck" className="h-10 w-auto" />
+              <img src="/rentencheck-logo.png" alt="RentenCheck" className="w-full h-auto" />
             </Link>
           </SidebarHeader>
 
@@ -366,7 +366,7 @@ export default function Layout({ children }: Props) {
           <header className="bg-white border-b border-slate-200 px-4 py-3 md:hidden shrink-0 print:hidden">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200 shrink-0" />
-              <img src="/rentencheck-logo.svg" alt="RentenCheck" className="h-8 w-auto" />
+              <img src="/rentencheck-logo.png" alt="RentenCheck" className="h-7 w-auto max-w-[220px]" />
             </div>
           </header>
 

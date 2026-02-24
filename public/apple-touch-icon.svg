@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 180 180">
+  <defs>
+    <style>.c1{fill:#0057ff}.c2{fill:url(#g)}</style>
+    <linearGradient id="g" x1="23.54" y1="26.83" x2="58.85" y2="26.83" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff"/>
+      <stop offset=".1" stop-color="#f9fbff"/>
+      <stop offset=".22" stop-color="#eaf1ff"/>
+      <stop offset=".36" stop-color="#d0e0ff"/>
+      <stop offset=".51" stop-color="#acc8ff"/>
+      <stop offset=".66" stop-color="#7faaff"/>
+      <stop offset=".82" stop-color="#4785ff"/>
+      <stop offset=".99" stop-color="#065bff"/>
+      <stop offset="1" stop-color="#0057ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" fill="white"/>
+  <!-- Brand mark: scale=2.258, centered in 180x180 -->
+  <!-- Mark spans x:0-62, y:9-45 in logo coords -->
+  <!-- x_offset=20, y_offset=29.03 centers it vertically -->
+  <g transform="translate(20, 29.03) scale(2.258)">
+    <polygon class="c2" points="58.85 9.18 23.54 44.49 58.85 44.49 58.85 9.18"/>
+    <rect class="c1" x="11.64" y="15.75" width="49.93" height="12.98" transform="translate(-5.01 32.4) rotate(-45)"/>
+    <rect class="c1" x="9.87" y="11.48" width="12.98" height="33.29" transform="translate(-15.09 19.81) rotate(-45)"/>
+  </g>
+</svg>
