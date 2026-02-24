@@ -8,7 +8,7 @@ import {
 const faq = [
   {
     q: "Ist RentenCheck für Privatpersonen geeignet?",
-    a: "Nein. Die Plattform richtet sich ausschließlich an Unternehmer im Sinne des § 14 BGB – also Makler, Vermittler und Agenturen. Ein Vertragsschluss mit Verbrauchern ist ausgeschlossen.",
+    a: "Nein. Die Plattform richtet sich ausschließlich an Finanz- und Versicherungsberater – also Makler, Vermittler und Agenturen. Ein Vertragsschluss mit Privatpersonen ist ausgeschlossen.",
   },
   {
     q: "Handelt es sich um Finanzberatung?",
@@ -74,7 +74,7 @@ export default function Landing() {
       <section className="bg-linear-to-br from-slate-900 to-slate-800 text-white py-24 px-6">
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-block bg-white/10 text-slate-200 text-xs font-semibold px-3 py-1 rounded-full mb-6 border border-white/20">
-            Ausschließlich für Unternehmer · § 14 BGB
+            Nur für Finanz- und Versicherungsberater
           </div>
           <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6">
             Modellbasierte Simulationen<br />
@@ -266,7 +266,7 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-slate-900 text-center mb-3">Für wen ist RentenCheck?</h2>
           <p className="text-slate-500 text-center mb-12 text-sm">
-            Ausschließlich für Unternehmer i.S.d. § 14 BGB.
+            Nur für Finanz- und Versicherungsberater.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
@@ -339,7 +339,7 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold text-slate-900 text-center mb-3">Transparente Preise</h2>
           <p className="text-slate-500 text-center mb-3 text-sm">
-            Alle Pläne nur für Unternehmer i.S.d. § 14 BGB.
+            Nur für Finanz- und Versicherungsberater.
           </p>
           <p className="text-slate-400 text-center mb-12 text-xs">
             Keine Finanz-, Steuer- oder Rechtsberatung enthalten.
