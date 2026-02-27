@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Shield, Percent } from "lucide-react";
+import MultiFundEditor from "./MultiFundEditor";
 
 import { buildLvCostBreakdownActual } from "@/components/shared/CostBreakdown";
 import { formatCurrency } from "@/components/shared/CurrencyDisplay";
@@ -359,33 +360,27 @@ export default function InsuranceInputs({ formData, updateFormData }: Props) {
           )}
         </div>
 
-        {/* Laufende Fonds-Kosten */}
+        {/* Fonds innerhalb der LV */}
         <div className="space-y-2">
-          <Label
-            htmlFor="lv_fund_ongoing_costs_percent"
-            className="text-sm font-medium text-slate-700"
-          >
+          <Label className="text-sm font-medium text-slate-700">
             <div className="flex items-center gap-2">
               <Percent className="w-4 h-4" />
-              Laufende Kosten LV-Fonds p.a. (%)
+              Fonds innerhalb der LV-Police
             </div>
           </Label>
-          <Input
-            id="lv_fund_ongoing_costs_percent"
-            type="number"
-            step="0.01"
-            value={formData.lv_fund_ongoing_costs_percent ?? ""}
-            onChange={(e) =>
-              updateFormData(
-                "lv_fund_ongoing_costs_percent",
-                toNumber(e.target.value)
-              )
+          <MultiFundEditor
+            funds={formData.lv_funds || []}
+            totalAmount={toNumber(
+              formData.monthly_contribution ?? formData.lump_sum ?? 0
+            )}
+            allocationLabel={
+              formData.monthly_contribution !== undefined
+                ? "Monatl. Einzelbeitrag (€)"
+                : "Einzelbetrag (€)"
             }
-            className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200 md:w-1/2"
+            mode="lv"
+            onChange={(funds) => updateFormData("lv_funds", funds)}
           />
-          <p className="text-xs text-slate-500">
-            Kosten des spezifischen Fonds innerhalb der LV-Police
-          </p>
         </div>
 
         {/* Steuerblock */}

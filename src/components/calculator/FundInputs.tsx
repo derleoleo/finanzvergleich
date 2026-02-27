@@ -4,7 +4,8 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, Building, Percent, Search } from "lucide-react";
+import { TrendingUp, Building, Percent } from "lucide-react";
+import MultiFundEditor from "./MultiFundEditor";
 
 type Props = {
   formData: any;
@@ -31,79 +32,27 @@ export default function FundInputs({ formData, updateFormData }: Props) {
       </CardHeader>
 
       <CardContent className="space-y-6">
+        {/* Multi-Fonds-Editor */}
         <div className="space-y-2">
-          <Label
-            htmlFor="depot_fund_identifier"
-            className="text-sm font-medium text-slate-700"
-          >
+          <Label className="text-sm font-medium text-slate-700">
             <div className="flex items-center gap-2">
-              <Search className="w-4 h-4" />
-              Fonds für Direktanlage (ISIN/WKN)
+              <TrendingUp className="w-4 h-4" />
+              Fonds im Depot
             </div>
           </Label>
-
-          <Input
-            id="depot_fund_identifier"
-            type="text"
-            value={formData.depot_fund_identifier}
-            onChange={(e) =>
-              updateFormData("depot_fund_identifier", e.target.value)
+          <MultiFundEditor
+            funds={formData.depot_funds || []}
+            totalAmount={toNumber(
+              formData.monthly_contribution ?? formData.lump_sum ?? 0
+            )}
+            allocationLabel={
+              formData.monthly_contribution !== undefined
+                ? "Monatl. Einzelbeitrag (€)"
+                : "Einzelbetrag (€)"
             }
-            className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200"
-            placeholder="z.B. LU0553164731"
+            mode="depot"
+            onChange={(funds) => updateFormData("depot_funds", funds)}
           />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label
-              htmlFor="depot_fund_initial_charge_percent"
-              className="text-sm font-medium text-slate-700"
-            >
-              <div className="flex items-center gap-2">
-                <Percent className="w-4 h-4" />
-                Ausgabeaufschlag (%)
-              </div>
-            </Label>
-            <Input
-              id="depot_fund_initial_charge_percent"
-              type="number"
-              step="0.01"
-              value={formData.depot_fund_initial_charge_percent ?? ""}
-              onChange={(e) =>
-                updateFormData(
-                  "depot_fund_initial_charge_percent",
-                  toNumber(e.target.value)
-                )
-              }
-              className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label
-              htmlFor="depot_fund_ongoing_costs_percent"
-              className="text-sm font-medium text-slate-700"
-            >
-              <div className="flex items-center gap-2">
-                <Percent className="w-4 h-4" />
-                Laufende Kosten p.a. (TER, %)
-              </div>
-            </Label>
-            <Input
-              id="depot_fund_ongoing_costs_percent"
-              type="number"
-              step="0.01"
-              value={formData.depot_fund_ongoing_costs_percent ?? ""}
-              onChange={(e) =>
-                updateFormData(
-                  "depot_fund_ongoing_costs_percent",
-                  toNumber(e.target.value)
-                )
-              }
-              className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200"
-            />
-          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

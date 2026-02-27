@@ -18,6 +18,7 @@ import {
   Calendar, User, FileText, AlertTriangle,
 } from "lucide-react";
 import { looksLikeName } from "@/utils/nameDetection";
+import MultiFundEditor, { type FundEntry } from "@/components/calculator/MultiFundEditor";
 
 import {
   calculateAgeAtPayout,
@@ -38,9 +39,13 @@ type FormData = {
   life_insurance_acquisition_costs_eur: number;
   lv_admin_costs_monthly_eur: number;
   lv_effective_costs_percent: number;
+  // Legacy single-fund (für Draft-Migration)
   lv_fund_ongoing_costs_percent: number;
   depot_fund_initial_charge_percent: number;
   depot_fund_ongoing_costs_percent: number;
+  // Multi-Fonds-Arrays
+  lv_funds: FundEntry[];
+  depot_funds: FundEntry[];
   depot_costs_annual: number;
 };
 
@@ -59,6 +64,25 @@ function makeDefaults(): FormData {
     lv_fund_ongoing_costs_percent: d.lv_fund_ongoing_costs_percent,
     depot_fund_initial_charge_percent: d.depot_fund_initial_charge_percent,
     depot_fund_ongoing_costs_percent: d.depot_fund_ongoing_costs_percent,
+    lv_funds: [
+      {
+        id: "lv-1",
+        name: d.lv_fund_identifier || "Fonds 1",
+        allocation_eur: d.lump_sum,
+        ongoing_costs_percent: d.lv_fund_ongoing_costs_percent,
+        identifier: d.lv_fund_identifier,
+      },
+    ],
+    depot_funds: [
+      {
+        id: "depot-1",
+        name: d.depot_fund_identifier || "Fonds 1",
+        allocation_eur: d.lump_sum,
+        ongoing_costs_percent: d.depot_fund_ongoing_costs_percent,
+        initial_charge_percent: d.depot_fund_initial_charge_percent,
+        identifier: d.depot_fund_identifier,
+      },
+    ],
     depot_costs_annual: d.depot_costs_annual,
   };
 }
@@ -72,7 +96,35 @@ function loadDraft(): FormData | null {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
-    return { ...makeDefaults(), ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw) as Partial<FormData>;
+    const base: FormData = { ...makeDefaults(), ...parsed };
+    // Migration: alte Drafts ohne lv_funds/depot_funds
+    return {
+      ...base,
+      lv_funds:
+        Array.isArray(parsed.lv_funds) && parsed.lv_funds.length > 0
+          ? parsed.lv_funds
+          : [
+              {
+                id: "lv-1",
+                name: "Fonds 1",
+                allocation_eur: base.lump_sum,
+                ongoing_costs_percent: base.lv_fund_ongoing_costs_percent,
+              },
+            ],
+      depot_funds:
+        Array.isArray(parsed.depot_funds) && parsed.depot_funds.length > 0
+          ? parsed.depot_funds
+          : [
+              {
+                id: "depot-1",
+                name: "Fonds 1",
+                allocation_eur: base.lump_sum,
+                ongoing_costs_percent: base.depot_fund_ongoing_costs_percent,
+                initial_charge_percent: base.depot_fund_initial_charge_percent,
+              },
+            ],
+    };
   } catch {
     return null;
   }
@@ -116,6 +168,38 @@ export default function SinglePaymentCalculator() {
     const monthly_return = calculateMonthlyReturn(toNum(formData.assumed_annual_return));
     const ls = toNum(formData.lump_sum);
 
+    // Gewichtete TER für LV-Fonds
+    const lvFunds = formData.lv_funds;
+    const lvTotalAlloc = Math.max(0.01, lvFunds.reduce((s, f) => s + (Number(f.allocation_eur) || 0), 0));
+    const lv_fund_ter =
+      lvFunds.length === 1
+        ? lvFunds[0].ongoing_costs_percent
+        : lvFunds.reduce(
+            (acc, f) =>
+              acc + ((Number(f.allocation_eur) || 0) / lvTotalAlloc) * f.ongoing_costs_percent,
+            0
+          );
+
+    // Gewichtete Werte für Depot-Fonds
+    const depotFunds = formData.depot_funds;
+    const depotTotalAlloc = Math.max(0.01, depotFunds.reduce((s, f) => s + (Number(f.allocation_eur) || 0), 0));
+    const depot_fund_ter =
+      depotFunds.length === 1
+        ? depotFunds[0].ongoing_costs_percent
+        : depotFunds.reduce(
+            (acc, f) =>
+              acc + ((Number(f.allocation_eur) || 0) / depotTotalAlloc) * f.ongoing_costs_percent,
+            0
+          );
+    const depot_fund_aa =
+      depotFunds.length === 1
+        ? depotFunds[0].initial_charge_percent ?? 0
+        : depotFunds.reduce(
+            (acc, f) =>
+              acc + ((Number(f.allocation_eur) || 0) / depotTotalAlloc) * (f.initial_charge_percent ?? 0),
+            0
+          );
+
     // LV
     let li_capital = 0;
     let li_acquisition_costs = 0;
@@ -129,7 +213,7 @@ export default function SinglePaymentCalculator() {
       const adminMonthly = toNum(formData.lv_admin_costs_monthly_eur);
 
       for (let m = 1; m <= months; m++) {
-        const fundCost = li_capital * (toNum(formData.lv_fund_ongoing_costs_percent) / 100 / 12);
+        const fundCost = li_capital * (lv_fund_ter / 100 / 12);
         li_fund_costs += fundCost;
         li_admin_costs += adminMonthly;
         li_capital = li_capital * (1 + monthly_return) - fundCost - adminMonthly;
@@ -140,7 +224,7 @@ export default function SinglePaymentCalculator() {
       let totalContractCosts = 0;
 
       for (let m = 1; m <= months; m++) {
-        const fundCost = li_capital * (toNum(formData.lv_fund_ongoing_costs_percent) / 100 / 12);
+        const fundCost = li_capital * (lv_fund_ter / 100 / 12);
         const effCost = li_capital * effRate;
         li_fund_costs += fundCost;
         totalContractCosts += effCost;
@@ -153,7 +237,7 @@ export default function SinglePaymentCalculator() {
     }
 
     // Depot
-    const initCharge = toNum(formData.depot_fund_initial_charge_percent) / 100;
+    const initCharge = depot_fund_aa / 100;
     let depot_capital = ls * (1 - initCharge);
     const depot_initial_charges = ls * initCharge;
     let depot_fund_costs = 0;
@@ -161,7 +245,7 @@ export default function SinglePaymentCalculator() {
 
     for (let m = 1; m <= months; m++) {
       const depotCost = depot_capital * (toNum(formData.depot_costs_annual) / 100 / 12);
-      const fundCost = depot_capital * (toNum(formData.depot_fund_ongoing_costs_percent) / 100 / 12);
+      const fundCost = depot_capital * (depot_fund_ter / 100 / 12);
       depot_depot_costs += depotCost;
       depot_fund_costs += fundCost;
       depot_capital = depot_capital * (1 + monthly_return) - depotCost - fundCost;
@@ -370,11 +454,15 @@ export default function SinglePaymentCalculator() {
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  <div className="flex items-center gap-2"><Percent className="w-4 h-4" />Laufende Kosten LV-Fonds p.a. (%)</div>
+                  <div className="flex items-center gap-2"><Percent className="w-4 h-4" />Fonds innerhalb der LV-Police</div>
                 </Label>
-                <Input type="number" step="0.01" value={formData.lv_fund_ongoing_costs_percent ?? ""}
-                  onChange={(e) => update("lv_fund_ongoing_costs_percent", toNum(e.target.value))}
-                  className="bg-slate-50 border-slate-200 focus:border-blue-500 md:w-1/2" />
+                <MultiFundEditor
+                  funds={formData.lv_funds}
+                  totalAmount={toNum(formData.lump_sum)}
+                  allocationLabel="Einzelbetrag (€)"
+                  mode="lv"
+                  onChange={(funds) => update("lv_funds", funds)}
+                />
               </div>
 
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
@@ -396,32 +484,25 @@ export default function SinglePaymentCalculator() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    <div className="flex items-center gap-2"><Percent className="w-4 h-4" />Ausgabeaufschlag (%)</div>
-                  </Label>
-                  <Input type="number" step="0.01" value={formData.depot_fund_initial_charge_percent ?? ""}
-                    onChange={(e) => update("depot_fund_initial_charge_percent", toNum(e.target.value))}
-                    className="bg-slate-50 border-slate-200 focus:border-blue-500" />
-                  <p className="text-xs text-slate-500">Einmalig vom Einmalbetrag abgezogen.</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    <div className="flex items-center gap-2"><Percent className="w-4 h-4" />Fondskosten p.a. (TER, %)</div>
-                  </Label>
-                  <Input type="number" step="0.01" value={formData.depot_fund_ongoing_costs_percent ?? ""}
-                    onChange={(e) => update("depot_fund_ongoing_costs_percent", toNum(e.target.value))}
-                    className="bg-slate-50 border-slate-200 focus:border-blue-500" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    <div className="flex items-center gap-2"><Percent className="w-4 h-4" />Depotkosten p.a. (%)</div>
-                  </Label>
-                  <Input type="number" step="0.01" value={formData.depot_costs_annual ?? ""}
-                    onChange={(e) => update("depot_costs_annual", toNum(e.target.value))}
-                    className="bg-slate-50 border-slate-200 focus:border-blue-500" />
-                </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  <div className="flex items-center gap-2"><TrendingUp className="w-4 h-4" />Fonds im Depot</div>
+                </Label>
+                <MultiFundEditor
+                  funds={formData.depot_funds}
+                  totalAmount={toNum(formData.lump_sum)}
+                  allocationLabel="Einzelbetrag (€)"
+                  mode="depot"
+                  onChange={(funds) => update("depot_funds", funds)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  <div className="flex items-center gap-2"><Percent className="w-4 h-4" />Depotkosten p.a. (%)</div>
+                </Label>
+                <Input type="number" step="0.01" value={formData.depot_costs_annual ?? ""}
+                  onChange={(e) => update("depot_costs_annual", toNum(e.target.value))}
+                  className="bg-slate-50 border-slate-200 focus:border-blue-500 md:w-1/3" />
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <p className="text-sm text-blue-700">

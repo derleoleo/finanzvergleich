@@ -18,6 +18,7 @@ import { Calculator as CalcIcon, TrendingUp, AlertCircle } from "lucide-react";
 import BasicInputs from "@/components/calculator/BasicInputs";
 import InsuranceInputs from "@/components/calculator/InsuranceInputs";
 import FundInputs from "@/components/calculator/FundInputs";
+import type { FundEntry } from "@/components/calculator/MultiFundEditor";
 
 import {
   calculateAgeAtPayout,
@@ -36,15 +37,20 @@ type FormData = {
 
   lv_cost_type: "eur" | "percent";
   life_insurance_acquisition_costs_eur: number;
-  lv_admin_costs_monthly_eur: number; // ✅ NEU
+  lv_admin_costs_monthly_eur: number;
   lv_effective_costs_percent: number;
 
+  // Legacy single-fund fields (für Draft-Migration)
   lv_fund_identifier: string;
   lv_fund_ongoing_costs_percent: number;
-
   depot_fund_identifier: string;
   depot_fund_initial_charge_percent: number;
   depot_fund_ongoing_costs_percent: number;
+
+  // Multi-Fonds-Arrays (überschreiben die Legacy-Felder in der Berechnung)
+  lv_funds: FundEntry[];
+  depot_funds: FundEntry[];
+
   depot_costs_annual: number;
   depot_provider: string;
 
@@ -67,6 +73,25 @@ function makeDefaults(): FormData {
     depot_fund_identifier: d.depot_fund_identifier,
     depot_fund_initial_charge_percent: d.depot_fund_initial_charge_percent,
     depot_fund_ongoing_costs_percent: d.depot_fund_ongoing_costs_percent,
+    lv_funds: [
+      {
+        id: "lv-1",
+        name: d.lv_fund_identifier || "Fonds 1",
+        allocation_eur: d.monthly_contribution,
+        ongoing_costs_percent: d.lv_fund_ongoing_costs_percent,
+        identifier: d.lv_fund_identifier,
+      },
+    ],
+    depot_funds: [
+      {
+        id: "depot-1",
+        name: d.depot_fund_identifier || "Fonds 1",
+        allocation_eur: d.monthly_contribution,
+        ongoing_costs_percent: d.depot_fund_ongoing_costs_percent,
+        initial_charge_percent: d.depot_fund_initial_charge_percent,
+        identifier: d.depot_fund_identifier,
+      },
+    ],
     depot_costs_annual: d.depot_costs_annual,
     depot_provider: d.depot_provider,
     assumed_annual_return: d.assumed_annual_return,
@@ -82,18 +107,44 @@ function loadDraft(): FormData | null {
     const parsed = JSON.parse(raw) as Partial<FormData>;
     const defaults = makeDefaults();
 
-    const migrated: FormData = {
+    const base: FormData = {
       ...defaults,
       ...parsed,
-
-      // Safety: Union-Wert absichern
       lv_cost_type: parsed.lv_cost_type === "percent" ? "percent" : "eur",
-
-      // Safety: neues Feld, wenn alte Drafts es nicht haben
       lv_admin_costs_monthly_eur:
         typeof parsed.lv_admin_costs_monthly_eur === "number"
           ? parsed.lv_admin_costs_monthly_eur
           : defaults.lv_admin_costs_monthly_eur,
+    };
+
+    // Migration: alte Drafts ohne lv_funds/depot_funds
+    const migrated: FormData = {
+      ...base,
+      lv_funds:
+        Array.isArray(parsed.lv_funds) && parsed.lv_funds.length > 0
+          ? parsed.lv_funds
+          : [
+              {
+                id: "lv-1",
+                name: base.lv_fund_identifier || "Fonds 1",
+                allocation_eur: base.monthly_contribution,
+                ongoing_costs_percent: base.lv_fund_ongoing_costs_percent,
+                identifier: base.lv_fund_identifier,
+              },
+            ],
+      depot_funds:
+        Array.isArray(parsed.depot_funds) && parsed.depot_funds.length > 0
+          ? parsed.depot_funds
+          : [
+              {
+                id: "depot-1",
+                name: base.depot_fund_identifier || "Fonds 1",
+                allocation_eur: base.monthly_contribution,
+                ongoing_costs_percent: base.depot_fund_ongoing_costs_percent,
+                initial_charge_percent: base.depot_fund_initial_charge_percent,
+                identifier: base.depot_fund_identifier,
+              },
+            ],
     };
 
     return migrated;
@@ -159,15 +210,56 @@ export default function Calculator() {
       contract_duration_years,
       lv_cost_type,
       life_insurance_acquisition_costs_eur,
-      lv_admin_costs_monthly_eur, // ✅ NEU
+      lv_admin_costs_monthly_eur,
       lv_effective_costs_percent,
-      lv_fund_ongoing_costs_percent,
-      depot_fund_initial_charge_percent,
-      depot_fund_ongoing_costs_percent,
       depot_costs_annual,
       assumed_annual_return,
       birth_year,
+      lv_funds,
+      depot_funds,
     } = formData;
+
+    // Gewichtete TER für LV-Fonds
+    const lvTotalAlloc = Math.max(
+      0.01,
+      lv_funds.reduce((s, f) => s + (Number(f.allocation_eur) || 0), 0)
+    );
+    const lv_fund_ongoing_costs_percent =
+      lv_funds.length === 1
+        ? lv_funds[0].ongoing_costs_percent
+        : lv_funds.reduce(
+            (acc, f) =>
+              acc +
+              ((Number(f.allocation_eur) || 0) / lvTotalAlloc) *
+                f.ongoing_costs_percent,
+            0
+          );
+
+    // Gewichtete Werte für Depot-Fonds
+    const depotTotalAlloc = Math.max(
+      0.01,
+      depot_funds.reduce((s, f) => s + (Number(f.allocation_eur) || 0), 0)
+    );
+    const depot_fund_ongoing_costs_percent =
+      depot_funds.length === 1
+        ? depot_funds[0].ongoing_costs_percent
+        : depot_funds.reduce(
+            (acc, f) =>
+              acc +
+              ((Number(f.allocation_eur) || 0) / depotTotalAlloc) *
+                f.ongoing_costs_percent,
+            0
+          );
+    const depot_fund_initial_charge_percent =
+      depot_funds.length === 1
+        ? depot_funds[0].initial_charge_percent ?? 0
+        : depot_funds.reduce(
+            (acc, f) =>
+              acc +
+              ((Number(f.allocation_eur) || 0) / depotTotalAlloc) *
+                (f.initial_charge_percent ?? 0),
+            0
+          );
 
     const years = Math.max(1, Number(contract_duration_years || 1));
     const months = years * 12;
