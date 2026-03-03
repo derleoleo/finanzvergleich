@@ -3,6 +3,7 @@ import { UserDefaults, type UserDefaultsData, SYSTEM_DEFAULTS } from "@/entities
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -17,13 +18,12 @@ export default function Defaults() {
   const set = (field: keyof UserDefaultsData, value: string | number) =>
     setData((prev) => ({ ...prev, [field]: value }));
 
-  const n = (val: number | string, step = 1) => (
+  const n = (val: number, step = 1) => (
     (field: keyof UserDefaultsData) => (
-      <Input
-        type="number"
+      <NumericInput
         step={step}
-        value={val as number}
-        onChange={(e) => set(field, parseFloat(e.target.value) || 0)}
+        value={val}
+        onChange={(v) => set(field, v)}
         className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white"
       />
     )
@@ -70,16 +70,16 @@ export default function Defaults() {
                 <Label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5" /> Geburtsjahr
                 </Label>
-                <Input type="number" value={data.birth_year}
-                  onChange={(e) => set("birth_year", parseInt(e.target.value) || 0)}
+                <NumericInput value={data.birth_year}
+                  onChange={(v) => set("birth_year", v)}
                   className={inputClass} />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5" /> Laufzeit (Jahre)
                 </Label>
-                <Input type="number" value={data.contract_duration_years}
-                  onChange={(e) => set("contract_duration_years", parseFloat(e.target.value) || 0)}
+                <NumericInput value={data.contract_duration_years}
+                  onChange={(v) => set("contract_duration_years", v)}
                   className={inputClass} />
                 <p className="text-xs text-slate-400">Sparvertrag, Einmalanlage, BestAdvice</p>
               </div>
@@ -87,8 +87,8 @@ export default function Defaults() {
                 <Label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
                   <TrendingUp className="w-3.5 h-3.5" /> Rendite p.a. (%)
                 </Label>
-                <Input type="number" step={0.1} value={data.assumed_annual_return}
-                  onChange={(e) => set("assumed_annual_return", parseFloat(e.target.value) || 0)}
+                <NumericInput step={0.1} value={data.assumed_annual_return}
+                  onChange={(v) => set("assumed_annual_return", v)}
                   className={inputClass} />
               </div>
               <div className="space-y-2 md:col-span-3 border-t border-slate-100 pt-4">
@@ -96,13 +96,12 @@ export default function Defaults() {
                   <Percent className="w-3.5 h-3.5" /> Pers. Steuersatz bei Rente (%)
                 </Label>
                 <div className="flex items-center gap-4">
-                  <Input
-                    type="number"
+                  <NumericInput
                     step={1}
                     min={0}
                     max={60}
                     value={data.lv_personal_income_tax_rate}
-                    onChange={(e) => set("lv_personal_income_tax_rate", parseFloat(e.target.value) || 0)}
+                    onChange={(v) => set("lv_personal_income_tax_rate", v)}
                     className={`${inputClass} max-w-[140px]`}
                   />
                   <p className="text-xs text-slate-400 leading-relaxed">
@@ -134,8 +133,8 @@ export default function Defaults() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">LV-Fondskosten p.a. (%)</Label>
-                  <Input type="number" step={0.01} value={data.lv_fund_ongoing_costs_percent}
-                    onChange={(e) => set("lv_fund_ongoing_costs_percent", parseFloat(e.target.value) || 0)}
+                  <NumericInput step={0.01} value={data.lv_fund_ongoing_costs_percent}
+                    onChange={(v) => set("lv_fund_ongoing_costs_percent", v)}
                     className={inputClass} />
                 </div>
               </div>
@@ -163,22 +162,22 @@ export default function Defaults() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">Abschlusskosten (€)</Label>
-                    <Input type="number" value={data.life_insurance_acquisition_costs_eur}
-                      onChange={(e) => set("life_insurance_acquisition_costs_eur", parseFloat(e.target.value) || 0)}
+                    <NumericInput value={data.life_insurance_acquisition_costs_eur}
+                      onChange={(v) => set("life_insurance_acquisition_costs_eur", v)}
                       className={inputClass} />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">Verwaltung (€/Monat)</Label>
-                    <Input type="number" step={0.5} value={data.lv_admin_costs_monthly_eur}
-                      onChange={(e) => set("lv_admin_costs_monthly_eur", parseFloat(e.target.value) || 0)}
+                    <NumericInput step={0.5} value={data.lv_admin_costs_monthly_eur}
+                      onChange={(v) => set("lv_admin_costs_monthly_eur", v)}
                       className={inputClass} />
                   </div>
                 </div>
               ) : (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">Effektivkosten p.a. (%)</Label>
-                  <Input type="number" step={0.01} value={data.lv_effective_costs_percent}
-                    onChange={(e) => set("lv_effective_costs_percent", parseFloat(e.target.value) || 0)}
+                  <NumericInput step={0.01} value={data.lv_effective_costs_percent}
+                    onChange={(v) => set("lv_effective_costs_percent", v)}
                     className={inputClass} />
                 </div>
               )}
@@ -213,20 +212,20 @@ export default function Defaults() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">Ausgabeaufschlag (%)</Label>
-                  <Input type="number" step={0.1} value={data.depot_fund_initial_charge_percent}
-                    onChange={(e) => set("depot_fund_initial_charge_percent", parseFloat(e.target.value) || 0)}
+                  <NumericInput step={0.1} value={data.depot_fund_initial_charge_percent}
+                    onChange={(v) => set("depot_fund_initial_charge_percent", v)}
                     className={inputClass} />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">Fondskosten TER (%)</Label>
-                  <Input type="number" step={0.01} value={data.depot_fund_ongoing_costs_percent}
-                    onChange={(e) => set("depot_fund_ongoing_costs_percent", parseFloat(e.target.value) || 0)}
+                  <NumericInput step={0.01} value={data.depot_fund_ongoing_costs_percent}
+                    onChange={(v) => set("depot_fund_ongoing_costs_percent", v)}
                     className={inputClass} />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">Depotgebühren p.a. (%)</Label>
-                  <Input type="number" step={0.01} value={data.depot_costs_annual}
-                    onChange={(e) => set("depot_costs_annual", parseFloat(e.target.value) || 0)}
+                  <NumericInput step={0.01} value={data.depot_costs_annual}
+                    onChange={(v) => set("depot_costs_annual", v)}
                     className={inputClass} />
                 </div>
               </div>
@@ -246,14 +245,14 @@ export default function Defaults() {
             <CardContent className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Monatliche Sparrate (€)</Label>
-                <Input type="number" value={data.monthly_contribution}
-                  onChange={(e) => set("monthly_contribution", parseFloat(e.target.value) || 0)}
+                <NumericInput value={data.monthly_contribution}
+                  onChange={(v) => set("monthly_contribution", v)}
                   className={inputClass} />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Einmalbetrag (€)</Label>
-                <Input type="number" value={data.lump_sum}
-                  onChange={(e) => set("lump_sum", parseFloat(e.target.value) || 0)}
+                <NumericInput value={data.lump_sum}
+                  onChange={(v) => set("lump_sum", v)}
                   className={inputClass} />
               </div>
             </CardContent>
@@ -272,20 +271,20 @@ export default function Defaults() {
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Renteneintrittsalter</Label>
-                <Input type="number" value={data.retirement_age}
-                  onChange={(e) => set("retirement_age", parseInt(e.target.value) || 0)}
+                <NumericInput value={data.retirement_age}
+                  onChange={(v) => set("retirement_age", v)}
                   className={inputClass} />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Wunscheinkommen (€/Monat)</Label>
-                <Input type="number" value={data.desired_monthly_income}
-                  onChange={(e) => set("desired_monthly_income", parseFloat(e.target.value) || 0)}
+                <NumericInput value={data.desired_monthly_income}
+                  onChange={(v) => set("desired_monthly_income", v)}
                   className={inputClass} />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Gesetzliche Rente (€/Monat)</Label>
-                <Input type="number" value={data.expected_statutory_pension}
-                  onChange={(e) => set("expected_statutory_pension", parseFloat(e.target.value) || 0)}
+                <NumericInput value={data.expected_statutory_pension}
+                  onChange={(v) => set("expected_statutory_pension", v)}
                   className={inputClass} />
               </div>
             </CardContent>
@@ -304,20 +303,20 @@ export default function Defaults() {
             <CardContent className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Jährliche Entnahme (€)</Label>
-                <Input type="number" value={data.withdrawal_amount}
-                  onChange={(e) => set("withdrawal_amount", parseFloat(e.target.value) || 0)}
+                <NumericInput value={data.withdrawal_amount}
+                  onChange={(v) => set("withdrawal_amount", v)}
                   className={inputClass} />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Beginn-Alter</Label>
-                <Input type="number" value={data.withdrawal_start_age}
-                  onChange={(e) => set("withdrawal_start_age", parseInt(e.target.value) || 0)}
+                <NumericInput value={data.withdrawal_start_age}
+                  onChange={(v) => set("withdrawal_start_age", v)}
                   className={inputClass} />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Ende-Alter</Label>
-                <Input type="number" value={data.withdrawal_end_age}
-                  onChange={(e) => set("withdrawal_end_age", parseInt(e.target.value) || 85)}
+                <NumericInput value={data.withdrawal_end_age}
+                  onChange={(v) => set("withdrawal_end_age", v)}
                   className={inputClass} />
               </div>
             </CardContent>

@@ -8,6 +8,7 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -223,8 +224,8 @@ export default function PensionGapCalculator() {
                   <Label className="text-sm font-medium text-slate-700">
                     <div className="flex items-center gap-2"><User className="w-4 h-4" />Geburtsjahr</div>
                   </Label>
-                  <Input type="number" value={formData.birth_year}
-                    onChange={(e) => update("birth_year", parseInt(e.target.value || "0", 10))} className={inputClass} />
+                  <NumericInput value={formData.birth_year}
+                    onChange={(val) => update("birth_year", val)} className={inputClass} />
                   {currentAge > 0 && <div className="text-xs text-slate-500">Aktuelles Alter (ca.): {currentAge}</div>}
                 </div>
               </div>
@@ -234,8 +235,8 @@ export default function PensionGapCalculator() {
                   <Label className="text-sm font-medium text-slate-700">
                     <div className="flex items-center gap-2"><Calendar className="w-4 h-4" />Renteneintrittsalter</div>
                   </Label>
-                  <Input type="number" value={formData.retirement_age}
-                    onChange={(e) => update("retirement_age", parseInt(e.target.value || "0", 10))} className={inputClass} />
+                  <NumericInput value={formData.retirement_age}
+                    onChange={(val) => update("retirement_age", val)} className={inputClass} />
                   {yearsToRetirement > 0 && <div className="text-xs text-slate-500">Noch {yearsToRetirement} Jahre bis zur Rente</div>}
                 </div>
                 <div className="space-y-2">
@@ -247,8 +248,8 @@ export default function PensionGapCalculator() {
                       Angenommene Rendite auf Ersparnisse (%)
                     </div>
                   </Label>
-                  <Input type="number" step="0.1" value={formData.assumed_annual_return}
-                    onChange={(e) => update("assumed_annual_return", toNum(e.target.value))} className={inputClass} />
+                  <NumericInput step="0.1" value={formData.assumed_annual_return}
+                    onChange={(val) => update("assumed_annual_return", val)} className={inputClass} />
                 </div>
               </div>
             </CardContent>
@@ -269,8 +270,8 @@ export default function PensionGapCalculator() {
                 <Label className="text-sm font-medium text-slate-700">
                   <div className="flex items-center gap-2"><Euro className="w-4 h-4" />Gewünschtes Monatseinkommen (€)</div>
                 </Label>
-                <Input type="number" value={formData.desired_monthly_income}
-                  onChange={(e) => update("desired_monthly_income", toNum(e.target.value))}
+                <NumericInput value={formData.desired_monthly_income}
+                  onChange={(val) => update("desired_monthly_income", val)}
                   className="bg-blue-50 border-blue-200 focus:border-blue-500 font-semibold" />
               </div>
 
@@ -279,23 +280,23 @@ export default function PensionGapCalculator() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">Gesetzliche Rente (€/Monat)</Label>
-                    <Input type="number" value={formData.expected_statutory_pension}
-                      onChange={(e) => update("expected_statutory_pension", toNum(e.target.value))} className={inputClass} />
+                    <NumericInput value={formData.expected_statutory_pension}
+                      onChange={(val) => update("expected_statutory_pension", val)} className={inputClass} />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">Betriebliche Altersvorsorge (€/Monat)</Label>
-                    <Input type="number" value={formData.occupational_pension_bav}
-                      onChange={(e) => update("occupational_pension_bav", toNum(e.target.value))} className={inputClass} />
+                    <NumericInput value={formData.occupational_pension_bav}
+                      onChange={(val) => update("occupational_pension_bav", val)} className={inputClass} />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">Basisrente / Rüruprente (€/Monat)</Label>
-                    <Input type="number" value={formData.basis_rente}
-                      onChange={(e) => update("basis_rente", toNum(e.target.value))} className={inputClass} />
+                    <NumericInput value={formData.basis_rente}
+                      onChange={(val) => update("basis_rente", val)} className={inputClass} />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">Mieteinnahmen (€/Monat)</Label>
-                    <Input type="number" value={formData.rental_income}
-                      onChange={(e) => update("rental_income", toNum(e.target.value))} className={inputClass} />
+                    <NumericInput value={formData.rental_income}
+                      onChange={(val) => update("rental_income", val)} className={inputClass} />
                   </div>
                 </div>
               </div>
@@ -335,8 +336,8 @@ export default function PensionGapCalculator() {
                 <Label className="text-sm font-medium text-slate-700">
                   <div className="flex items-center gap-2"><Euro className="w-4 h-4" />Aktuelles Kapital / Ersparnisse (€)</div>
                 </Label>
-                <Input type="number" value={formData.existing_capital}
-                  onChange={(e) => update("existing_capital", toNum(e.target.value))}
+                <NumericInput value={formData.existing_capital}
+                  onChange={(val) => update("existing_capital", val)}
                   className={inputClass + " md:w-1/2"} />
                 <p className="text-xs text-slate-500">
                   Wächst bis zur Rente mit der angenommenen Rendite weiter.

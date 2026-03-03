@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -112,15 +112,11 @@ export default function InsuranceInputs({ formData, updateFormData }: Props) {
                 >
                   Abschluss- und Vertriebskosten gesamt (€)
                 </Label>
-                <Input
+                <NumericInput
                   id="life_insurance_acquisition_costs_eur"
-                  type="number"
-                  value={formData.life_insurance_acquisition_costs_eur ?? ""}
-                  onChange={(e) =>
-                    updateFormData(
-                      "life_insurance_acquisition_costs_eur",
-                      toNumber(e.target.value)
-                    )
+                  value={formData.life_insurance_acquisition_costs_eur ?? 0}
+                  onChange={(val) =>
+                    updateFormData("life_insurance_acquisition_costs_eur", val)
                   }
                   className="bg-white border-slate-300 focus:border-blue-500 focus:bg-white transition-all duration-200"
                 />
@@ -136,16 +132,12 @@ export default function InsuranceInputs({ formData, updateFormData }: Props) {
                 >
                   Verwaltungskosten (€ pro Monat)
                 </Label>
-                <Input
+                <NumericInput
                   id="lv_admin_costs_monthly_eur"
-                  type="number"
                   step="0.01"
-                  value={formData.lv_admin_costs_monthly_eur ?? ""}
-                  onChange={(e) =>
-                    updateFormData(
-                      "lv_admin_costs_monthly_eur",
-                      toNumber(e.target.value)
-                    )
+                  value={formData.lv_admin_costs_monthly_eur ?? 0}
+                  onChange={(val) =>
+                    updateFormData("lv_admin_costs_monthly_eur", val)
                   }
                   className="bg-white border-slate-300 focus:border-blue-500 focus:bg-white transition-all duration-200 md:w-1/2"
                 />
@@ -256,16 +248,12 @@ export default function InsuranceInputs({ formData, updateFormData }: Props) {
                     Effektivkosten p.a. (%)
                   </div>
                 </Label>
-                <Input
+                <NumericInput
                   id="lv_effective_costs_percent"
-                  type="number"
                   step="0.01"
-                  value={formData.lv_effective_costs_percent ?? ""}
-                  onChange={(e) =>
-                    updateFormData(
-                      "lv_effective_costs_percent",
-                      toNumber(e.target.value)
-                    )
+                  value={formData.lv_effective_costs_percent ?? 0}
+                  onChange={(val) =>
+                    updateFormData("lv_effective_costs_percent", val)
                   }
                   className="bg-white border-slate-300 focus:border-blue-500 focus:bg-white transition-all duration-200"
                 />

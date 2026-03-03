@@ -9,6 +9,7 @@ import UpgradePrompt from "@/components/UpgradePrompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
@@ -356,8 +357,8 @@ export default function SinglePaymentCalculator() {
                   <Label className="text-sm font-medium text-slate-700">
                     <div className="flex items-center gap-2"><User className="w-4 h-4" />Geburtsjahr</div>
                   </Label>
-                  <Input type="number" value={formData.birth_year}
-                    onChange={(e) => update("birth_year", parseInt(e.target.value || "0", 10))}
+                  <NumericInput value={formData.birth_year}
+                    onChange={(val) => update("birth_year", val)}
                     className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white" />
                   <div className="text-xs text-slate-500">
                     {currentAge > 0 ? `Aktuelles Alter (ca.): ${currentAge}` : ""}
@@ -370,16 +371,16 @@ export default function SinglePaymentCalculator() {
                   <Label className="text-sm font-medium text-slate-700">
                     <div className="flex items-center gap-2"><DollarSign className="w-4 h-4" />Einmalbetrag (€)</div>
                   </Label>
-                  <Input type="number" value={formData.lump_sum}
-                    onChange={(e) => update("lump_sum", toNum(e.target.value))}
+                  <NumericInput value={formData.lump_sum}
+                    onChange={(val) => update("lump_sum", val)}
                     className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
                     <div className="flex items-center gap-2"><Calendar className="w-4 h-4" />Laufzeit (Jahre)</div>
                   </Label>
-                  <Input type="number" value={formData.contract_duration_years}
-                    onChange={(e) => update("contract_duration_years", parseInt(e.target.value || "0", 10))}
+                  <NumericInput value={formData.contract_duration_years}
+                    onChange={(val) => update("contract_duration_years", val)}
                     className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white" />
                   {endAge > 0 && (
                     <div className="text-xs text-slate-500">Endalter: <span className="font-semibold text-slate-700">{endAge}</span></div>
@@ -389,8 +390,8 @@ export default function SinglePaymentCalculator() {
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Angenommene jährliche Rendite (%)</Label>
-                <Input type="number" step="0.1" value={formData.assumed_annual_return}
-                  onChange={(e) => update("assumed_annual_return", toNum(e.target.value))}
+                <NumericInput step="0.1" value={formData.assumed_annual_return}
+                  onChange={(val) => update("assumed_annual_return", val)}
                   className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white md:w-1/2" />
               </div>
             </CardContent>
@@ -428,15 +429,15 @@ export default function SinglePaymentCalculator() {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-slate-700">Abschluss- und Vertriebskosten (€)</Label>
-                      <Input type="number" value={formData.life_insurance_acquisition_costs_eur ?? ""}
-                        onChange={(e) => update("life_insurance_acquisition_costs_eur", toNum(e.target.value))}
+                      <NumericInput value={formData.life_insurance_acquisition_costs_eur ?? 0}
+                        onChange={(val) => update("life_insurance_acquisition_costs_eur", val)}
                         className="bg-white border-slate-300 focus:border-blue-500" />
                       <p className="text-xs text-slate-500">Wird einmalig vom Einmalbetrag abgezogen.</p>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-slate-700">Verwaltungskosten (€ pro Monat)</Label>
-                      <Input type="number" step="0.01" value={formData.lv_admin_costs_monthly_eur ?? ""}
-                        onChange={(e) => update("lv_admin_costs_monthly_eur", toNum(e.target.value))}
+                      <NumericInput step="0.01" value={formData.lv_admin_costs_monthly_eur ?? 0}
+                        onChange={(val) => update("lv_admin_costs_monthly_eur", val)}
                         className="bg-white border-slate-300 focus:border-blue-500 md:w-1/2" />
                     </div>
                   </div>
@@ -445,8 +446,8 @@ export default function SinglePaymentCalculator() {
                     <Label className="text-sm font-medium text-slate-700">
                       <div className="flex items-center gap-2"><Percent className="w-4 h-4" />Effektivkosten p.a. (%)</div>
                     </Label>
-                    <Input type="number" step="0.01" value={formData.lv_effective_costs_percent ?? ""}
-                      onChange={(e) => update("lv_effective_costs_percent", toNum(e.target.value))}
+                    <NumericInput step="0.01" value={formData.lv_effective_costs_percent ?? 0}
+                      onChange={(val) => update("lv_effective_costs_percent", val)}
                       className="bg-white border-slate-300 focus:border-blue-500" />
                   </div>
                 )}
@@ -500,8 +501,8 @@ export default function SinglePaymentCalculator() {
                 <Label className="text-sm font-medium text-slate-700">
                   <div className="flex items-center gap-2"><Percent className="w-4 h-4" />Depotkosten p.a. (%)</div>
                 </Label>
-                <Input type="number" step="0.01" value={formData.depot_costs_annual ?? ""}
-                  onChange={(e) => update("depot_costs_annual", toNum(e.target.value))}
+                <NumericInput step="0.01" value={formData.depot_costs_annual ?? 0}
+                  onChange={(val) => update("depot_costs_annual", val)}
                   className="bg-slate-50 border-slate-200 focus:border-blue-500 md:w-1/3" />
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">

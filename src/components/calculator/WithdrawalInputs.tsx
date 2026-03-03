@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Wallet, Euro } from "lucide-react";
 
@@ -29,11 +29,10 @@ export default function WithdrawalInputs({ formData, updateFormData }: Props) {
               Jährliche Entnahme (€)
             </div>
           </Label>
-          <Input
+          <NumericInput
             id="annual_withdrawal"
-            type="number"
-            value={formData.annual_withdrawal}
-            onChange={(e) => updateFormData("annual_withdrawal", parseFloat(e.target.value))}
+            value={formData.annual_withdrawal ?? 0}
+            onChange={(val) => updateFormData("annual_withdrawal", val)}
             className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200 md:w-1/2"
           />
         </div>

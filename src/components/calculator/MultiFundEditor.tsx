@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
 
@@ -115,13 +116,10 @@ export default function MultiFundEditor({
             {isMulti && (
               <div className="space-y-1">
                 <Label className="text-xs text-slate-600">{allocationLabel}</Label>
-                <Input
-                  type="number"
+                <NumericInput
                   step="0.01"
-                  value={fund.allocation_eur || ""}
-                  onChange={(e) =>
-                    update(fund.id, "allocation_eur", toNum(e.target.value))
-                  }
+                  value={toNum(fund.allocation_eur)}
+                  onChange={(val) => update(fund.id, "allocation_eur", val)}
                   className="bg-white border-slate-300"
                 />
               </div>
@@ -145,16 +143,11 @@ export default function MultiFundEditor({
                   <Label className="text-xs text-slate-600">
                     Ausgabeaufschlag (%)
                   </Label>
-                  <Input
-                    type="number"
+                  <NumericInput
                     step="0.01"
-                    value={fund.initial_charge_percent ?? ""}
-                    onChange={(e) =>
-                      update(
-                        fund.id,
-                        "initial_charge_percent",
-                        toNum(e.target.value)
-                      )
+                    value={toNum(fund.initial_charge_percent)}
+                    onChange={(val) =>
+                      update(fund.id, "initial_charge_percent", val)
                     }
                     className="bg-white border-slate-300"
                   />
@@ -166,16 +159,11 @@ export default function MultiFundEditor({
               <Label className="text-xs text-slate-600">
                 Laufende Kosten p.a. (TER, %)
               </Label>
-              <Input
-                type="number"
+              <NumericInput
                 step="0.01"
-                value={fund.ongoing_costs_percent ?? ""}
-                onChange={(e) =>
-                  update(
-                    fund.id,
-                    "ongoing_costs_percent",
-                    toNum(e.target.value)
-                  )
+                value={toNum(fund.ongoing_costs_percent)}
+                onChange={(val) =>
+                  update(fund.id, "ongoing_costs_percent", val)
                 }
                 className="bg-white border-slate-300"
               />

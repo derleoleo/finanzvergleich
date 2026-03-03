@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { BestAdviceCalculation, type BestAdviceModel } from "@/entities/BestAdviceCalculation";
+import { BestAdviceCalculation, type BestAdviceModel, type LVResult } from "@/entities/BestAdviceCalculation";
 import { UserDefaults } from "@/entities/UserDefaults";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -241,6 +241,50 @@ export default function BestAdviceDetail() {
           </Card>
         </div>
 
+        {/* Per-LV-Aufschlüsselung (nur bei mehreren LVs) */}
+        {r.lvs_results && r.lvs_results.length > 1 && (
+          <div data-pdf-section="lv-aufschluesselung">
+          <Card className="border-0 shadow-lg bg-white">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Lock className="w-5 h-5 text-amber-500" />
+                Bestandsverträge einzeln
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th className="text-left py-2 pr-4 text-slate-600 font-medium">Vertrag</th>
+                      <th className="text-right py-2 pr-4 text-slate-600 font-medium">Endkapital brutto</th>
+                      <th className="text-right py-2 pr-4 text-slate-600 font-medium">Steuern</th>
+                      <th className="text-right py-2 text-slate-600 font-medium">Endkapital netto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {r.lvs_results.map((lv: LVResult, i: number) => (
+                      <tr key={i} className="border-b border-slate-100 last:border-0">
+                        <td className="py-2 pr-4 font-medium text-slate-800">{lv.label}</td>
+                        <td className="py-2 pr-4 text-right text-slate-700">{formatCurrency(lv.depot_gross)}</td>
+                        <td className="py-2 pr-4 text-right text-red-600">{lv.depot_tax > 0 ? `− ${formatCurrency(lv.depot_tax)}` : "—"}</td>
+                        <td className="py-2 text-right font-semibold text-slate-900">{formatCurrency(lv.depot_net)}</td>
+                      </tr>
+                    ))}
+                    <tr className="border-t-2 border-slate-300 bg-slate-50">
+                      <td className="py-2 pr-4 font-bold text-slate-900">Summe</td>
+                      <td className="py-2 pr-4 text-right font-bold text-slate-900">{formatCurrency(r.depot_gross)}</td>
+                      <td className="py-2 pr-4 text-right font-bold text-red-600">{r.depot_tax > 0 ? `− ${formatCurrency(r.depot_tax)}` : "—"}</td>
+                      <td className="py-2 text-right font-bold text-slate-900">{formatCurrency(r.depot_net)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+          </div>
+        )}
+
         {/* Chart */}
         <div data-pdf-section="grafik">
         <Card className="border-0 shadow-lg bg-white">
@@ -327,6 +371,7 @@ export default function BestAdviceDetail() {
         sections={[
           { id: "empfehlung", label: "Empfehlung" },
           { id: "vergleich", label: "Vergleich (Bestand vs. Fonds-LV)" },
+          { id: "lv-aufschluesselung", label: "LV-Aufschlüsselung" },
           { id: "grafik", label: "Verlaufsgrafik" },
           { id: "kosten", label: "Kostendetails" },
         ]}

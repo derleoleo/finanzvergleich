@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
@@ -381,27 +382,21 @@ export default function WithdrawalPlan() {
                     <Label htmlFor="customAnnualReturn">
                       Angenommene Rendite p.a. (%)
                     </Label>
-                    <Input
+                    <NumericInput
                       id="customAnnualReturn"
-                      type="number"
                       step="0.1"
                       value={customAnnualReturn}
-                      onChange={(e) =>
-                        setCustomAnnualReturn(parseFloat(e.target.value) || 0)
-                      }
+                      onChange={(v) => setCustomAnnualReturn(v)}
                       className="bg-slate-50 border-slate-200"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="startAge">Beginn-Alter</Label>
-                    <Input
+                    <NumericInput
                       id="startAge"
-                      type="number"
                       value={startAge}
-                      onChange={(e) =>
-                        setStartAge(parseInt(e.target.value) || 65)
-                      }
+                      onChange={(v) => setStartAge(v)}
                       className="bg-slate-50 border-slate-200"
                     />
                     <p className="text-xs text-slate-500 mt-1">
@@ -427,14 +422,11 @@ export default function WithdrawalPlan() {
                       <Label htmlFor="withdrawal">
                         Jährliche Pauschalentnahme (€)
                       </Label>
-                      <Input
+                      <NumericInput
                         id="withdrawal"
-                        type="number"
                         step="1000"
                         value={customWithdrawal}
-                        onChange={(e) =>
-                          setCustomWithdrawal(parseFloat(e.target.value) || 0)
-                        }
+                        onChange={(v) => setCustomWithdrawal(v)}
                         className="bg-slate-50 border-slate-200"
                       />
                     </div>

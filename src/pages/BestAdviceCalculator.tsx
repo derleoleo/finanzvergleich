@@ -8,15 +8,17 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 
 import {
   Target, TrendingUp, AlertCircle, Shield, Percent,
-  Calendar, User, FileText, Euro, Lock, AlertTriangle,
+  Calendar, User, FileText, Euro, Lock, AlertTriangle, Plus, Trash2,
 } from "lucide-react";
 import { looksLikeName } from "@/utils/nameDetection";
+import { formatCurrency } from "@/components/shared/CurrencyDisplay";
 
 import {
   calculateAgeAtPayout,
@@ -28,14 +30,25 @@ import {
 
 const DRAFT_KEY = "fv_bestadvice_draft_v1";
 
+type ExtraLV = {
+  id: string;
+  label: string;
+  monthly_contribution: number;
+  current_capital: number;
+  guaranteed_end_capital: number;
+  current_product_tax_free: boolean;
+};
+
 type FormData = {
   name: string;
-  // Current product
+  // Bestandsvertrag #1
   current_monthly_contribution: number;
   current_product_tax_free: boolean;
   contract_duration_years: number;
   current_capital: number;
   guaranteed_end_capital: number;
+  // Weitere Bestandsverträge
+  extra_lvs: ExtraLV[];
   // Fonds-LV
   birth_year: number;
   assumed_annual_return: number;
@@ -44,7 +57,14 @@ type FormData = {
   lv_admin_costs_monthly_eur: number;
   lv_effective_costs_percent: number;
   lv_fund_ongoing_costs_percent: number;
+  // Optionale Fonds-LV-Überschreibungen (Summen)
+  fonds_lv_monthly_override: number | null;
+  fonds_lv_capital_override: number | null;
 };
+
+function genId() {
+  return Math.random().toString(36).slice(2, 9);
+}
 
 function makeDefaults(): FormData {
   const d = UserDefaults.load();
@@ -55,6 +75,7 @@ function makeDefaults(): FormData {
     contract_duration_years: d.contract_duration_years,
     current_capital: 10000,
     guaranteed_end_capital: 80000,
+    extra_lvs: [],
     birth_year: d.birth_year,
     assumed_annual_return: d.assumed_annual_return,
     lv_cost_type: d.lv_cost_type,
@@ -62,6 +83,8 @@ function makeDefaults(): FormData {
     lv_admin_costs_monthly_eur: d.lv_admin_costs_monthly_eur,
     lv_effective_costs_percent: d.lv_effective_costs_percent,
     lv_fund_ongoing_costs_percent: d.lv_fund_ongoing_costs_percent,
+    fonds_lv_monthly_override: null,
+    fonds_lv_capital_override: null,
   };
 }
 
@@ -109,19 +132,34 @@ export default function BestAdviceCalculator() {
 
   const currentAge = getCurrentAge(toNum(formData.birth_year));
   const endAge = currentAge > 0 ? currentAge + toNum(formData.contract_duration_years) : 0;
-  const totalContributions = toNum(formData.current_capital) +
-    toNum(formData.current_monthly_contribution) * toNum(formData.contract_duration_years) * 12;
+
+  // Alle LVs als einheitliche Liste
+  const allLVs = [
+    {
+      label: "LV 1",
+      monthly_contribution: toNum(formData.current_monthly_contribution),
+      current_capital: toNum(formData.current_capital),
+      guaranteed_end_capital: toNum(formData.guaranteed_end_capital),
+      current_product_tax_free: formData.current_product_tax_free,
+    },
+    ...(formData.extra_lvs ?? []),
+  ];
+
+  const totalMonthly = allLVs.reduce((s, lv) => s + lv.monthly_contribution, 0);
+  const totalCapital = allLVs.reduce((s, lv) => s + lv.current_capital, 0);
+  const effectiveMonthly = formData.fonds_lv_monthly_override ?? totalMonthly;
+  const effectiveCapital = formData.fonds_lv_capital_override ?? totalCapital;
+  const isMultiLV = (formData.extra_lvs ?? []).length > 0;
 
   const calculateResults = () => {
     const years = Math.max(1, toNum(formData.contract_duration_years));
     const months = years * 12;
     const monthly_return = calculateMonthlyReturn(toNum(formData.assumed_annual_return));
-    const monthly_contrib = toNum(formData.current_monthly_contribution);
-    const start_capital = toNum(formData.current_capital);
-    const total_contributions = start_capital + monthly_contrib * months;
 
-    // Fonds-LV: start with current_capital + redirect monthly contributions
-    let li_capital = start_capital;
+    // Fonds-LV: mit effektiven Gesamtwerten aller LVs
+    let li_capital = effectiveCapital;
+    const monthly_contrib = effectiveMonthly;
+    const total_contributions = effectiveCapital + monthly_contrib * months;
     let li_acquisition_costs = 0;
     let li_fund_costs = 0;
     let li_admin_costs = 0;
@@ -159,20 +197,34 @@ export default function BestAdviceCalculator() {
       li_admin_costs = totalContractCosts * (1 - acqShare);
     }
 
-    // LV tax
+    // LV-Steuer
     const age_at_payout = calculateAgeAtPayout(toNum(formData.birth_year), years);
     const li_gains = li_capital - total_contributions;
     const li_tax = calculateLifeInsuranceTax(li_gains, years, age_at_payout, {
       personalIncomeTaxRate: UserDefaults.load().lv_personal_income_tax_rate / 100,
     });
 
-    // Current (guaranteed) product
-    const depot_gross = toNum(formData.guaranteed_end_capital);
-    let depot_tax = 0;
-    if (!formData.current_product_tax_free) {
-      const depot_gains = depot_gross - total_contributions;
-      depot_tax = calculateCapitalGainsTax(depot_gains);
-    }
+    // Bestandsverträge: jede LV einzeln berechnen
+    const lvs_results = allLVs.map((lv) => {
+      const lv_total_contributions = lv.current_capital + lv.monthly_contribution * months;
+      const gross = lv.guaranteed_end_capital;
+      let tax = 0;
+      if (!lv.current_product_tax_free) {
+        const gains = gross - lv_total_contributions;
+        tax = calculateCapitalGainsTax(gains);
+      }
+      return {
+        label: lv.label,
+        total_contributions: Math.round(lv_total_contributions),
+        depot_gross: Math.round(gross),
+        depot_net: Math.round(gross - tax),
+        depot_tax: Math.round(tax),
+      };
+    });
+
+    const depot_gross = lvs_results.reduce((s, r) => s + r.depot_gross, 0);
+    const depot_net = lvs_results.reduce((s, r) => s + r.depot_net, 0);
+    const depot_tax = lvs_results.reduce((s, r) => s + r.depot_tax, 0);
 
     return {
       total_contributions: Math.round(total_contributions),
@@ -183,9 +235,10 @@ export default function BestAdviceCalculator() {
       li_fund_costs: Math.round(li_fund_costs),
       li_admin_costs: Math.round(li_admin_costs),
       li_tax: Math.round(li_tax),
-      depot_gross: Math.round(depot_gross),
-      depot_net: Math.round(depot_gross - depot_tax),
-      depot_tax: Math.round(depot_tax),
+      depot_gross,
+      depot_net,
+      depot_tax,
+      lvs_results,
     };
   };
 
@@ -194,7 +247,23 @@ export default function BestAdviceCalculator() {
     setIsCalculating(true);
     try {
       const results = calculateResults();
-      const newCalc = await BestAdviceCalculation.create({ ...formData, results });
+      // extra_lvs + overrides werden nicht separat gespeichert, sondern via results
+      // Die top-level-Felder werden mit den effektiven Gesamtwerten überschrieben
+      const {
+        extra_lvs: _el,
+        fonds_lv_monthly_override: _fm,
+        fonds_lv_capital_override: _fc,
+        ...formBase
+      } = formData;
+      const totalGuaranteed = allLVs.reduce((s, lv) => s + lv.guaranteed_end_capital, 0);
+      const newCalc = await BestAdviceCalculation.create({
+        ...formBase,
+        current_monthly_contribution: effectiveMonthly,
+        current_capital: effectiveCapital,
+        guaranteed_end_capital: totalGuaranteed,
+        current_product_tax_free: false,
+        results,
+      });
       incrementCalculationCount();
       navigate(createPageUrl("BestAdviceDetail") + `?id=${newCalc.id}`);
     } catch (e) {
@@ -256,8 +325,8 @@ export default function BestAdviceCalculator() {
                   <Label className="text-sm font-medium text-slate-700">
                     <div className="flex items-center gap-2"><User className="w-4 h-4" />Geburtsjahr</div>
                   </Label>
-                  <Input type="number" value={formData.birth_year}
-                    onChange={(e) => update("birth_year", parseInt(e.target.value || "0", 10))}
+                  <NumericInput value={formData.birth_year}
+                    onChange={(val) => update("birth_year", val)}
                     className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white" />
                   {currentAge > 0 && <div className="text-xs text-slate-500">Aktuelles Alter (ca.): {currentAge}</div>}
                 </div>
@@ -268,8 +337,8 @@ export default function BestAdviceCalculator() {
                   <Label className="text-sm font-medium text-slate-700">
                     <div className="flex items-center gap-2"><Calendar className="w-4 h-4" />Restlaufzeit (Jahre)</div>
                   </Label>
-                  <Input type="number" value={formData.contract_duration_years}
-                    onChange={(e) => update("contract_duration_years", parseInt(e.target.value || "0", 10))}
+                  <NumericInput value={formData.contract_duration_years}
+                    onChange={(val) => update("contract_duration_years", val)}
                     className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white" />
                   {endAge > 0 && <div className="text-xs text-slate-500">Endalter: <span className="font-semibold text-slate-700">{endAge}</span></div>}
                 </div>
@@ -282,71 +351,183 @@ export default function BestAdviceCalculator() {
                       Angenommene Rendite Fonds-LV (%)
                     </div>
                   </Label>
-                  <Input type="number" step="0.1" value={formData.assumed_annual_return}
-                    onChange={(e) => update("assumed_annual_return", toNum(e.target.value))}
+                  <NumericInput step="0.1" value={formData.assumed_annual_return}
+                    onChange={(val) => update("assumed_annual_return", val)}
                     className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Bestandsvertrag */}
+          {/* Bestandsverträge */}
           <Card className="border-0 shadow-lg bg-white">
             <CardHeader className="pb-6">
               <CardTitle className="flex items-center gap-3 text-xl font-bold text-slate-900">
                 <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
                   <Lock className="w-5 h-5 text-amber-600" />
                 </div>
-                Bestandsvertrag (aktuell)
+                Bestandsverträge (aktuell)
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    <div className="flex items-center gap-2"><Euro className="w-4 h-4" />Aktuelle Sparrate (€/Monat)</div>
-                  </Label>
-                  <Input type="number" value={formData.current_monthly_contribution}
-                    onChange={(e) => update("current_monthly_contribution", toNum(e.target.value))}
-                    className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white" />
+              {/* LV 1 (Primär) */}
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                <div className="text-sm font-semibold text-slate-700">LV 1</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      <div className="flex items-center gap-2"><Euro className="w-4 h-4" />Sparrate (€/Monat)</div>
+                    </Label>
+                    <NumericInput value={formData.current_monthly_contribution}
+                      onChange={(val) => update("current_monthly_contribution", val)}
+                      className="bg-white border-slate-300 focus:border-blue-500" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      <div className="flex items-center gap-2"><Euro className="w-4 h-4" />Kapital / Rückkaufswert (€)</div>
+                    </Label>
+                    <NumericInput value={formData.current_capital}
+                      onChange={(val) => update("current_capital", val)}
+                      className="bg-white border-slate-300 focus:border-blue-500" />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
-                    <div className="flex items-center gap-2"><Euro className="w-4 h-4" />Aktuelles Kapital / Rückkaufswert (€)</div>
+                    <div className="flex items-center gap-2"><Lock className="w-4 h-4" />Garantiertes Endkapital (€)</div>
                   </Label>
-                  <Input type="number" value={formData.current_capital}
-                    onChange={(e) => update("current_capital", toNum(e.target.value))}
-                    className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white" />
+                  <NumericInput value={formData.guaranteed_end_capital}
+                    onChange={(val) => update("guaranteed_end_capital", val)}
+                    className="bg-white border-slate-300 focus:border-blue-500 md:w-1/2" />
+                </div>
+                <div className="flex items-center gap-3 pt-1">
+                  <Switch
+                    checked={formData.current_product_tax_free}
+                    onCheckedChange={(checked) => update("current_product_tax_free", checked)}
+                  />
+                  <Label className="text-sm font-medium text-slate-700">
+                    {formData.current_product_tax_free ? "Steuerfrei (z.B. vor 2005)" : "Steuerpflichtig (Abgeltungsteuer)"}
+                  </Label>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">
-                  <div className="flex items-center gap-2"><Lock className="w-4 h-4" />Garantiertes Endkapital (€)</div>
-                </Label>
-                <Input type="number" value={formData.guaranteed_end_capital}
-                  onChange={(e) => update("guaranteed_end_capital", toNum(e.target.value))}
-                  className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white md:w-1/2" />
-                <p className="text-xs text-slate-500">
-                  Garantierte Ablaufleistung laut aktuellem Vertrag.
-                  Gesamte Einzahlungen (Kapital + Sparrate × Laufzeit): <strong>{new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(totalContributions)}</strong>
-                </p>
-              </div>
-
-              <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                <Switch
-                  checked={formData.current_product_tax_free}
-                  onCheckedChange={(checked) => update("current_product_tax_free", checked)}
-                />
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">Steuerfrei</Label>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {formData.current_product_tax_free
-                      ? "Keine Abgeltungsteuer auf Gewinne (z.B. alter Vertrag vor 2005)."
-                      : "Gewinne werden mit Abgeltungsteuer (25%) besteuert."}
-                  </p>
+              {/* Weitere LVs */}
+              {(formData.extra_lvs ?? []).map((lv, idx) => (
+                <div key={lv.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Input
+                      value={lv.label}
+                      onChange={(e) => {
+                        const updated = formData.extra_lvs.map((x) =>
+                          x.id === lv.id ? { ...x, label: e.target.value } : x
+                        );
+                        update("extra_lvs", updated);
+                      }}
+                      className="text-sm font-semibold text-slate-700 bg-transparent border-0 border-b border-slate-300 rounded-none px-0 h-7 w-40 focus:border-blue-500 focus:ring-0"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        update("extra_lvs", formData.extra_lvs.filter((x) => x.id !== lv.id));
+                      }}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                      title="LV entfernen"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">
+                        <div className="flex items-center gap-2"><Euro className="w-4 h-4" />Sparrate (€/Monat)</div>
+                      </Label>
+                      <NumericInput value={lv.monthly_contribution}
+                        onChange={(val) => {
+                          const updated = formData.extra_lvs.map((x) =>
+                            x.id === lv.id ? { ...x, monthly_contribution: val } : x
+                          );
+                          update("extra_lvs", updated);
+                        }}
+                        className="bg-white border-slate-300 focus:border-blue-500" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">
+                        <div className="flex items-center gap-2"><Euro className="w-4 h-4" />Kapital / Rückkaufswert (€)</div>
+                      </Label>
+                      <NumericInput value={lv.current_capital}
+                        onChange={(val) => {
+                          const updated = formData.extra_lvs.map((x) =>
+                            x.id === lv.id ? { ...x, current_capital: val } : x
+                          );
+                          update("extra_lvs", updated);
+                        }}
+                        className="bg-white border-slate-300 focus:border-blue-500" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      <div className="flex items-center gap-2"><Lock className="w-4 h-4" />Garantiertes Endkapital (€)</div>
+                    </Label>
+                    <NumericInput value={lv.guaranteed_end_capital}
+                      onChange={(val) => {
+                        const updated = formData.extra_lvs.map((x) =>
+                          x.id === lv.id ? { ...x, guaranteed_end_capital: val } : x
+                        );
+                        update("extra_lvs", updated);
+                      }}
+                      className="bg-white border-slate-300 focus:border-blue-500 md:w-1/2" />
+                  </div>
+                  <div className="flex items-center gap-3 pt-1">
+                    <Switch
+                      checked={lv.current_product_tax_free}
+                      onCheckedChange={(checked) => {
+                        const updated = formData.extra_lvs.map((x) =>
+                          x.id === lv.id ? { ...x, current_product_tax_free: checked } : x
+                        );
+                        update("extra_lvs", updated);
+                      }}
+                    />
+                    <Label className="text-sm font-medium text-slate-700">
+                      {lv.current_product_tax_free ? "Steuerfrei (z.B. vor 2005)" : "Steuerpflichtig (Abgeltungsteuer)"}
+                    </Label>
+                  </div>
                 </div>
-              </div>
+              ))}
+
+              {/* + Weitere LV hinzufügen */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const newLV: ExtraLV = {
+                    id: genId(),
+                    label: `LV ${(formData.extra_lvs ?? []).length + 2}`,
+                    monthly_contribution: 0,
+                    current_capital: 0,
+                    guaranteed_end_capital: 0,
+                    current_product_tax_free: false,
+                  };
+                  update("extra_lvs", [...(formData.extra_lvs ?? []), newLV]);
+                }}
+                className="w-full border-dashed border-slate-300 text-slate-600 hover:border-amber-400 hover:text-amber-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Weitere LV hinzufügen
+              </Button>
+
+              {/* Summe bei mehreren LVs */}
+              {isMultiLV && (
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-sm text-amber-800">
+                  <div className="font-semibold mb-1">Summe aller Bestandsverträge</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-slate-600">Gesamte Sparrate:</span>
+                    <span className="font-medium">{formatCurrency(totalMonthly)}/Monat</span>
+                    <span className="text-slate-600">Gesamtkapital:</span>
+                    <span className="font-medium">{formatCurrency(totalCapital)}</span>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -363,9 +544,43 @@ export default function BestAdviceCalculator() {
             <CardContent className="space-y-6">
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <p className="text-sm text-blue-700">
-                  Das aktuelle Kapital wird in die Fonds-LV übertragen; die Sparrate fließt weiterhin monatlich ein.
+                  {isMultiLV
+                    ? "Das Gesamtkapital und die Gesamtsparrate aller Bestandsverträge werden in die Fonds-LV übertragen."
+                    : "Das aktuelle Kapital wird in die Fonds-LV übertragen; die Sparrate fließt weiterhin monatlich ein."}
                 </p>
               </div>
+
+              {/* Überschreibbare Summen bei mehreren LVs */}
+              {isMultiLV && (
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                  <div className="text-sm font-semibold text-slate-700">Einzahlungen in die Fonds-LV</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-slate-600">
+                        Monatsbeitrag (€) — auto: {formatCurrency(totalMonthly)}/Monat
+                      </Label>
+                      <NumericInput
+                        value={formData.fonds_lv_monthly_override ?? totalMonthly}
+                        onChange={(val) => update("fonds_lv_monthly_override", val === totalMonthly ? null : val)}
+                        className="bg-white border-slate-300 focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-slate-600">
+                        Startkapital (€) — auto: {formatCurrency(totalCapital)}
+                      </Label>
+                      <NumericInput
+                        value={formData.fonds_lv_capital_override ?? totalCapital}
+                        onChange={(val) => update("fonds_lv_capital_override", val === totalCapital ? null : val)}
+                        className="bg-white border-slate-300 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Werte werden automatisch aus den Bestandsverträgen summiert. Zur manuellen Anpassung einfach überschreiben.
+                  </p>
+                </div>
+              )}
 
               <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                 <div className="flex items-center justify-between mb-4">
@@ -388,15 +603,15 @@ export default function BestAdviceCalculator() {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-slate-700">Abschluss- und Vertriebskosten (€)</Label>
-                      <Input type="number" value={formData.life_insurance_acquisition_costs_eur ?? ""}
-                        onChange={(e) => update("life_insurance_acquisition_costs_eur", toNum(e.target.value))}
+                      <NumericInput value={formData.life_insurance_acquisition_costs_eur ?? 0}
+                        onChange={(val) => update("life_insurance_acquisition_costs_eur", val)}
                         className="bg-white border-slate-300 focus:border-blue-500" />
                       <p className="text-xs text-slate-500">Wird gezillmert über die ersten 5 Jahre (max. 60 Monate).</p>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-slate-700">Verwaltungskosten (€ pro Monat)</Label>
-                      <Input type="number" step="0.01" value={formData.lv_admin_costs_monthly_eur ?? ""}
-                        onChange={(e) => update("lv_admin_costs_monthly_eur", toNum(e.target.value))}
+                      <NumericInput step="0.01" value={formData.lv_admin_costs_monthly_eur ?? 0}
+                        onChange={(val) => update("lv_admin_costs_monthly_eur", val)}
                         className="bg-white border-slate-300 focus:border-blue-500 md:w-1/2" />
                     </div>
                   </div>
@@ -405,8 +620,8 @@ export default function BestAdviceCalculator() {
                     <Label className="text-sm font-medium text-slate-700">
                       <div className="flex items-center gap-2"><Percent className="w-4 h-4" />Effektivkosten p.a. (%)</div>
                     </Label>
-                    <Input type="number" step="0.01" value={formData.lv_effective_costs_percent ?? ""}
-                      onChange={(e) => update("lv_effective_costs_percent", toNum(e.target.value))}
+                    <NumericInput step="0.01" value={formData.lv_effective_costs_percent ?? 0}
+                      onChange={(val) => update("lv_effective_costs_percent", val)}
                       className="bg-white border-slate-300 focus:border-blue-500" />
                   </div>
                 )}
@@ -416,8 +631,8 @@ export default function BestAdviceCalculator() {
                 <Label className="text-sm font-medium text-slate-700">
                   <div className="flex items-center gap-2"><Percent className="w-4 h-4" />Laufende Kosten LV-Fonds p.a. (%)</div>
                 </Label>
-                <Input type="number" step="0.01" value={formData.lv_fund_ongoing_costs_percent ?? ""}
-                  onChange={(e) => update("lv_fund_ongoing_costs_percent", toNum(e.target.value))}
+                <NumericInput step="0.01" value={formData.lv_fund_ongoing_costs_percent ?? 0}
+                  onChange={(val) => update("lv_fund_ongoing_costs_percent", val)}
                   className="bg-slate-50 border-slate-200 focus:border-blue-500 md:w-1/2" />
               </div>
 

@@ -1,5 +1,13 @@
 import { supabase } from '@/lib/supabase'
 
+export type LVResult = {
+  label: string;
+  total_contributions: number;
+  depot_gross: number;
+  depot_net: number;
+  depot_tax: number;
+};
+
 export type BestAdviceResults = {
   total_contributions: number;
   // Fonds-LV (the alternative)
@@ -10,10 +18,12 @@ export type BestAdviceResults = {
   li_fund_costs: number;
   li_admin_costs: number;
   li_tax: number;
-  // Bestandsvertrag (the current product)
-  depot_gross: number; // = guaranteed_end_capital
+  // Bestandsvertrag (the current product, combined if multi-LV)
+  depot_gross: number;
   depot_net: number;
   depot_tax: number;
+  // Multi-LV: per-policy breakdown (optional, only for new calculations)
+  lvs_results?: LVResult[];
 };
 
 export type BestAdviceModel = {

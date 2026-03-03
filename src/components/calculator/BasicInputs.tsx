@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Euro, Calendar, User, FileText, AlertTriangle } from "lucide-react";
@@ -89,16 +90,10 @@ export default function BasicInputs({ formData, updateFormData }: Props) {
                 Geburtsjahr
               </div>
             </Label>
-            <Input
+            <NumericInput
               id="birth_year"
-              type="number"
               value={formData.birth_year}
-              onChange={(e) =>
-                updateFormData(
-                  "birth_year",
-                  parseInt(e.target.value || "0", 10)
-                )
-              }
+              onChange={(val) => updateFormData("birth_year", val)}
               className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200"
             />
             <div className="text-xs text-slate-500">
@@ -121,16 +116,10 @@ export default function BasicInputs({ formData, updateFormData }: Props) {
                 Monatlicher Beitrag (€)
               </div>
             </Label>
-            <Input
+            <NumericInput
               id="monthly_contribution"
-              type="number"
               value={formData.monthly_contribution}
-              onChange={(e) =>
-                updateFormData(
-                  "monthly_contribution",
-                  parseFloat(e.target.value || "0")
-                )
-              }
+              onChange={(val) => updateFormData("monthly_contribution", val)}
               className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200"
             />
           </div>
@@ -147,16 +136,10 @@ export default function BasicInputs({ formData, updateFormData }: Props) {
             </Label>
 
             <div className="flex gap-2">
-              <Input
+              <NumericInput
                 id="contract_duration_years"
-                type="number"
                 value={formData.contract_duration_years}
-                onChange={(e) =>
-                  updateFormData(
-                    "contract_duration_years",
-                    parseInt(e.target.value || "0", 10)
-                  )
-                }
+                onChange={(val) => updateFormData("contract_duration_years", val)}
                 className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200"
               />
 
@@ -198,17 +181,11 @@ export default function BasicInputs({ formData, updateFormData }: Props) {
               Angenommene jährliche Rendite (%)
             </div>
           </Label>
-          <Input
+          <NumericInput
             id="assumed_annual_return"
-            type="number"
             step="0.1"
             value={formData.assumed_annual_return}
-            onChange={(e) =>
-              updateFormData(
-                "assumed_annual_return",
-                parseFloat(e.target.value || "0")
-              )
-            }
+            onChange={(val) => updateFormData("assumed_annual_return", val)}
             className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200 md:w-1/2"
           />
         </div>
