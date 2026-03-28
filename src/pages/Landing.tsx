@@ -21,7 +21,7 @@ const faq = [
   },
   {
     q: "Gibt es eine kostenlose Testversion?",
-    a: "Ja. Der Free-Plan ist dauerhaft kostenlos und beinhaltet die grundlegenden Rechner (Fonds-Sparvertrag, Einmalanlage). Pro und Unlimited starten mit einem 30-tägigen kostenlosen Testzeitraum – keine Kreditkarte erforderlich.",
+    a: "Ja. Der Free-Plan ist dauerhaft kostenlos und beinhaltet die grundlegenden Rechner (Fonds-Sparvertrag, Einmalanlage). Der Premium-Plan startet mit einem 30-tägigen kostenlosen Testzeitraum – keine Kreditkarte erforderlich.",
   },
   {
     q: "Was passiert nach der Probezeit?",
@@ -363,42 +363,24 @@ export default function Landing() {
             <h2 className="text-3xl font-bold text-slate-900 mb-3">Transparente Preise</h2>
             <p className="text-sm text-slate-500">Keine versteckten Kosten. Jederzeit kündbar.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-
-            {/* Free */}
-            <div className="rounded-2xl border border-slate-200 p-7 flex flex-col">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Free</p>
-              <div className="text-3xl font-black text-slate-900 mb-1">0 €</div>
-              <p className="text-sm text-slate-500 mb-6">dauerhaft kostenlos</p>
-              <ul className="space-y-2.5 text-sm text-slate-700 flex-1 mb-8">
-                {["Fonds-Sparvertrag", "Fonds-Einmalanlage", "3 Simulationen/Monat"].map((f) => (
-                  <li key={f} className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-green-500 shrink-0" /> {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to="/login"
-                className="block text-center border border-slate-200 rounded-xl py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                Kostenlos starten
-              </Link>
-            </div>
-
-            {/* Pro – Highlighted */}
+          <div className="max-w-sm mx-auto">
+            {/* Premium */}
             <div className="rounded-2xl bg-brand-blue p-7 flex flex-col relative overflow-hidden shadow-xl">
               <div className="absolute top-0 right-0 bg-brand-cyan text-white text-[10px] font-bold px-3 py-1.5 rounded-bl-xl tracking-wider">
-                BELIEBT
+                ALLES INKLUSIVE
               </div>
-              <p className="text-xs font-bold text-blue-200 uppercase tracking-widest mb-4">Pro</p>
-              <div className="text-3xl font-black text-white mb-1">19,99 €</div>
-              <p className="text-sm text-blue-300 mb-6">pro Monat, zzgl. MwSt.</p>
+              <p className="text-xs font-bold text-blue-200 uppercase tracking-widest mb-4">Premium</p>
+              <div className="text-3xl font-black text-white mb-1">59 €</div>
+              <p className="text-sm text-blue-300 mb-1">pro Monat, zzgl. MwSt.</p>
+              <p className="text-xs text-blue-400 mb-6">oder 599,99 €/Jahr (spare 2 Monate)</p>
               <ul className="space-y-2.5 text-sm text-blue-100 flex-1 mb-8">
                 {[
                   "Alle 5 Simulationsrechner",
+                  "Unbegrenzte Berechnungen",
                   "PDF-Export mit Branding",
                   "BestAdvice & Rentenlücke",
-                  "10 Simulationen/Monat",
+                  "Eigenes Logo auf PDFs",
+                  "30 Tage kostenlos testen",
                 ].map((f) => (
                   <li key={f} className="flex items-center gap-2.5">
                     <Check className="w-4 h-4 text-white shrink-0" /> {f}
@@ -412,32 +394,9 @@ export default function Landing() {
                 30 Tage kostenlos testen
               </Link>
             </div>
-
-            {/* Unlimited */}
-            <div className="rounded-2xl border border-slate-200 p-7 flex flex-col">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Unlimited</p>
-              <div className="text-3xl font-black text-slate-900 mb-1">34,99 €</div>
-              <p className="text-sm text-slate-500 mb-6">pro Monat, zzgl. MwSt.</p>
-              <ul className="space-y-2.5 text-sm text-slate-700 flex-1 mb-8">
-                {["Alles aus Pro", "Unbegrenzte Simulationen", "Eigenes Logo auf PDFs", "Prioritäts-Support"].map((f) => (
-                  <li key={f} className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-green-500 shrink-0" /> {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to={createPageUrl("Pricing")}
-                className="block text-center border border-slate-200 rounded-xl py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                30 Tage kostenlos testen
-              </Link>
-            </div>
           </div>
           <p className="text-center mt-6 text-sm text-slate-500">
-            Auch als Jahrestarif verfügbar – spare 2 Monate.{" "}
-            <Link to={createPageUrl("Pricing")} className="text-brand-cyan font-medium hover:underline">
-              Alle Pläne ansehen →
-            </Link>
+            Kündigung jederzeit möglich. Nach dem Testzeitraum 59 €/Monat zzgl. MwSt.
           </p>
         </div>
       </section>

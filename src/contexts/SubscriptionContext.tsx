@@ -100,10 +100,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const isPaid = plan === "professional" || plan === "business";
 
   const canCreateCalculation =
-    plan === "business"
+    plan === "business" || plan === "professional"
       ? true
-      : plan === "professional"
-      ? monthlyCalculationCount < 10
       : monthlyCalculationCount < 3;
 
   const incrementCalculationCount = useCallback(() => {

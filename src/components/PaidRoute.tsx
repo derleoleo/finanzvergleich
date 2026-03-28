@@ -22,7 +22,7 @@ export default function PaidRoute({ featureName, children }: Props) {
     return (
       <UpgradePrompt
         title={`${featureName} – Premium-Funktion`}
-        description={`${featureName} ist ab dem Professional-Plan verfügbar. Upgraden Sie jetzt, um alle Rechner und den PDF-Export zu nutzen.`}
+        description={`${featureName} ist im Premium-Plan verfügbar. Testen Sie jetzt 30 Tage kostenlos.`}
       />
     );
   }

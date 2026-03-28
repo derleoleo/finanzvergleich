@@ -9,6 +9,10 @@ export const config = { api: { bodyParser: false } };
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const PRICE_TO_PLAN: Record<string, "professional" | "business"> = {
+  // Premium (aktuell)
+  [process.env.VITE_STRIPE_PRICE_PREMIUM_MONTHLY!]: "business",
+  [process.env.VITE_STRIPE_PRICE_PREMIUM_YEARLY!]:  "business",
+  // Legacy – bestehende Abos behalten ihren Zugang
   [process.env.VITE_STRIPE_PRICE_PRO_MONTHLY!]: "professional",
   [process.env.VITE_STRIPE_PRICE_PRO_YEARLY!]: "professional",
   [process.env.VITE_STRIPE_PRICE_UNLIMITED_MONTHLY!]: "business",
@@ -168,7 +172,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               <div style="padding: 40px;">
                 <h2 style="color: #0f172a; margin: 0 0 16px; font-size: 20px;">Ihr Testzeitraum endet bald</h2>
                 <p style="color: #475569; line-height: 1.6; margin: 0 0 24px;">
-                  Ihr 14-tägiger kostenloser Testzeitraum endet in <strong>3 Tagen</strong>.
+                  Ihr 30-tägiger kostenloser Testzeitraum endet in <strong>3 Tagen</strong>.
                   Damit Sie weiterhin uneingeschränkt alle Funktionen nutzen können, bleibt Ihr Abo
                   automatisch aktiv – es sei denn, Sie kündigen vorher im Kundenportal.
                 </p>
