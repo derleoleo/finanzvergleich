@@ -61,10 +61,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
       // Gesamt- und Monats-Berechnungen parallel zählen (alle 4 Tabellen)
       const tables = [
-        "finanzvergleich_calculations",
-        "finanzvergleich_singlepayment",
-        "finanzvergleich_bestadvice",
-        "finanzvergleich_pensiongap",
+        "calculations",
+        "single_payment_calculations",
+        "best_advice_calculations",
+        "pension_gap_calculations",
       ] as const;
 
       const [totalResults, monthlyResults] = await Promise.all([
