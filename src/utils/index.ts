@@ -15,6 +15,7 @@ const routes: Record<string, string> = {
   PensionGapDetail: "/pension-gap/detail",
 
   WithdrawalPlan: "/withdrawal-plan",
+  WithdrawalPlanDetail: "/withdrawal-plan/detail",
   Results: "/results",
   Profile: "/profile",
   Defaults: "/defaults",
@@ -28,4 +29,9 @@ const routes: Record<string, string> = {
 
 export function createPageUrl(pageName: string): string {
   return routes[pageName] ?? `/page/${pageName}`;
+}
+
+export function toNum(v: any): number {
+  const n = typeof v === "number" ? v : parseFloat(v);
+  return Number.isFinite(n) ? n : 0;
 }

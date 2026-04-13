@@ -22,6 +22,7 @@ import Calculator from "@/pages/Calculator";
 import CalculatorDetail from "@/pages/CalculatorDetail";
 import CalculatorCostsDetail from "@/pages/CalculatorCostsDetail";
 import WithdrawalPlan from "@/pages/WithdrawalPlan";
+import WithdrawalPlanDetail from "@/pages/WithdrawalPlanDetail";
 
 import AllResults from "@/pages/AllResults";
 import SinglePaymentCalculator from "@/pages/SinglePaymentCalculator";
@@ -175,6 +176,16 @@ export default function App() {
               <PageShell>
                 <PaidRoute featureName="Entnahmeplan">
                   <WithdrawalPlan />
+                </PaidRoute>
+              </PageShell>
+            }
+          />
+          <Route
+            path="/withdrawal-plan/detail"
+            element={
+              <PageShell>
+                <PaidRoute featureName="Entnahmeplan">
+                  <WithdrawalPlanDetail />
                 </PaidRoute>
               </PageShell>
             }
