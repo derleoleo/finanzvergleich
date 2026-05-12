@@ -190,7 +190,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               </div>
               <div style="background: #f8fafc; padding: 24px 40px; border-top: 1px solid #e2e8f0;">
                 <p style="color: #94a3b8; font-size: 12px; margin: 0; line-height: 1.6;">
-                  RentenCheck · Leonard Brandt · Ernst-Bähre-Str. 3, 30453 Hannover<br />
+                  RentenCheck · Luisa Brandt · Ernst-Bähre-Str. 3, 30453 Hannover<br />
                   <a href="https://www.rentencheck.app/datenschutz" style="color: #94a3b8;">Datenschutz</a> ·
                   <a href="https://www.rentencheck.app/impressum" style="color: #94a3b8;">Impressum</a>
                 </p>

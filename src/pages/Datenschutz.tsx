@@ -17,7 +17,7 @@ export default function Datenschutz() {
           <section>
             <h2 className="text-lg font-semibold text-slate-900 mb-3">1. Verantwortlicher</h2>
             <address className="not-italic space-y-0.5">
-              <p>Leonard Brandt, Einzelunternehmer</p>
+              <p>Luisa Brandt, Einzelunternehmer</p>
               <p>Ernst-Bähre-Str. 3</p>
               <p>30453 Hannover</p>
               <p>E-Mail: <a href="mailto:info@rentencheck.app" className="text-blue-600 hover:underline">info@rentencheck.app</a></p>

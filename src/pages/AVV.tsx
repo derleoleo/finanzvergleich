@@ -32,7 +32,7 @@ export default function AVV() {
             <p>
               Dieser Auftragsverarbeitungsvertrag (nachfolgend „AVV") regelt die Verarbeitung
               personenbezogener Daten durch den Auftragnehmer (Anbieter der Plattform rentencheck.app,
-              Leonard Brandt, Hannover) im Auftrag des Auftraggebers (registrierter Nutzer als
+              Luisa Brandt, Hannover) im Auftrag des Auftraggebers (registrierter Nutzer als
               Unternehmer i.S.d. § 14 BGB) im Rahmen der Nutzung der SaaS-Plattform.
             </p>
             <p className="mt-2">

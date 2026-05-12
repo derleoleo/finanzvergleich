@@ -456,7 +456,7 @@ export default function Landing() {
             <Link to="/legal/avv" className="hover:text-white transition-colors">AVV</Link>
             <Link to="/compliance" className="hover:text-white transition-colors">Compliance</Link>
           </div>
-          <p className="text-xs">© {new Date().getFullYear()} Leonard Brandt</p>
+          <p className="text-xs">© {new Date().getFullYear()} Luisa Brandt</p>
         </div>
       </footer>
     </div>

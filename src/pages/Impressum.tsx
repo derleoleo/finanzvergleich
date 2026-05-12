@@ -15,7 +15,7 @@ export default function Impressum() {
           <section>
             <h2 className="text-lg font-semibold text-slate-900 mb-2">Angaben gemäß § 5 TMG</h2>
             <p>
-              Leonard Brandt<br />
+              Luisa Brandt<br />
               Ernst-Bähre-Str. 3<br />
               30453 Hannover
             </p>
@@ -31,7 +31,7 @@ export default function Impressum() {
           <section>
             <h2 className="text-lg font-semibold text-slate-900 mb-2">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
             <p>
-              Leonard Brandt<br />
+              Luisa Brandt<br />
               Ernst-Bähre-Str. 3<br />
               30453 Hannover
             </p>
