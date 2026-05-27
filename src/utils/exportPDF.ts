@@ -113,6 +113,38 @@ export async function exportSections(
   );
   hiddenEls.forEach((el) => (el.style.display = "none"));
 
+  // Grid-Layout des Elterncontainers korrigieren, wenn data-pdf-hide-Elemente ausgeblendet werden.
+  // Ohne Fix: results-Div landet in Spalte 1 (z.B. 360px) statt in der vollen Breite.
+  type GridFix = { el: HTMLElement; gridTemplateColumns: string };
+  const fixedGridLayouts: GridFix[] = [];
+  const processedGridParents = new Set<HTMLElement>();
+  hiddenEls.forEach((el) => {
+    const parent = el.parentElement;
+    if (parent && !processedGridParents.has(parent)) {
+      processedGridParents.add(parent);
+      const cs = window.getComputedStyle(parent);
+      if (cs.display === "grid" || cs.display === "inline-grid") {
+        fixedGridLayouts.push({ el: parent, gridTemplateColumns: parent.style.gridTemplateColumns });
+        parent.style.gridTemplateColumns = "1fr";
+      }
+    }
+  });
+
+  // Innere Scroll-/max-height-Constraints entfernen (z.B. Tabelle mit max-h-96 overflow-y-auto)
+  type ScrollFix = { el: HTMLElement; overflow: string; overflowY: string; maxHeight: string };
+  const fixedScrollEls: ScrollFix[] = [];
+  Array.from(source.querySelectorAll<HTMLElement>("*")).forEach((el) => {
+    const cs = window.getComputedStyle(el);
+    const mh = parseFloat(cs.maxHeight);
+    const hasMaxH = !isNaN(mh) && isFinite(mh);
+    const hasScroll = cs.overflowY === "auto" || cs.overflowY === "scroll";
+    if (hasMaxH || hasScroll) {
+      fixedScrollEls.push({ el, overflow: el.style.overflow, overflowY: el.style.overflowY, maxHeight: el.style.maxHeight });
+      if (hasMaxH) el.style.maxHeight = "none";
+      if (hasScroll) { el.style.overflow = "visible"; el.style.overflowY = "visible"; }
+    }
+  });
+
   // Overflow-Constraints der Eltern temporär entfernen
   const saved: SavedStyle[] = [];
   let node: HTMLElement | null = source.parentElement;
@@ -143,8 +175,8 @@ export async function exportSections(
   source.insertBefore(header, source.firstChild);
   source.appendChild(disclaimer);
 
-  // Zwei Frames warten → Browser layoutet neu
-  await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+  // Warten bis Browser neu layoutet und Recharts ResizeObserver gefeuert hat
+  await new Promise<void>((r) => setTimeout(r, 150));
 
   const captureW = source.offsetWidth;
   const captureH = source.scrollHeight;
@@ -189,6 +221,14 @@ export async function exportSections(
     source.removeChild(disclaimer);
     allSections.forEach((el, i) => (el.style.display = savedSectionDisplays[i]));
     hiddenEls.forEach((el) => (el.style.display = ""));
+    for (const s of fixedGridLayouts) {
+      s.el.style.gridTemplateColumns = s.gridTemplateColumns;
+    }
+    for (const s of fixedScrollEls) {
+      s.el.style.overflow  = s.overflow;
+      s.el.style.overflowY = s.overflowY;
+      s.el.style.maxHeight = s.maxHeight;
+    }
     for (const s of saved) {
       s.el.style.overflow  = s.overflow;
       s.el.style.overflowY = s.overflowY;
