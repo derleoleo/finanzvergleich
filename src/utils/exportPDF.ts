@@ -130,18 +130,28 @@ export async function exportSections(
     }
   });
 
-  // Innere Scroll-/max-height-Constraints entfernen (z.B. Tabelle mit max-h-96 overflow-y-auto)
-  type ScrollFix = { el: HTMLElement; overflow: string; overflowY: string; maxHeight: string };
+  // Innere max-height-Constraints entfernen (z.B. Tabelle mit max-h-96)
+  // Nur maxHeight anfassen – overflow-y nicht ändern, da sonst overflow-x freigesetzt wird
+  type ScrollFix = { el: HTMLElement; maxHeight: string };
   const fixedScrollEls: ScrollFix[] = [];
   Array.from(source.querySelectorAll<HTMLElement>("*")).forEach((el) => {
     const cs = window.getComputedStyle(el);
     const mh = parseFloat(cs.maxHeight);
-    const hasMaxH = !isNaN(mh) && isFinite(mh);
-    const hasScroll = cs.overflowY === "auto" || cs.overflowY === "scroll";
-    if (hasMaxH || hasScroll) {
-      fixedScrollEls.push({ el, overflow: el.style.overflow, overflowY: el.style.overflowY, maxHeight: el.style.maxHeight });
-      if (hasMaxH) el.style.maxHeight = "none";
-      if (hasScroll) { el.style.overflow = "visible"; el.style.overflowY = "visible"; }
+    if (!isNaN(mh) && isFinite(mh)) {
+      fixedScrollEls.push({ el, maxHeight: el.style.maxHeight });
+      el.style.maxHeight = "none";
+    }
+  });
+
+  // Grids mit data-pdf-single-col einspaltig machen (z.B. Chart+Tabelle stapeln)
+  // → Tabelle bekommt volle Breite, kein horizontaler Überlauf
+  type SingleColFix = { el: HTMLElement; gridTemplateColumns: string };
+  const fixedSingleColLayouts: SingleColFix[] = [];
+  Array.from(source.querySelectorAll<HTMLElement>("[data-pdf-single-col]")).forEach((el) => {
+    const cs = window.getComputedStyle(el);
+    if (cs.display === "grid" || cs.display === "inline-grid") {
+      fixedSingleColLayouts.push({ el, gridTemplateColumns: el.style.gridTemplateColumns });
+      el.style.gridTemplateColumns = "1fr";
     }
   });
 
@@ -178,7 +188,7 @@ export async function exportSections(
   // Warten bis Browser neu layoutet und Recharts ResizeObserver gefeuert hat
   await new Promise<void>((r) => setTimeout(r, 150));
 
-  const captureW = source.offsetWidth;
+  const captureW = Math.max(source.offsetWidth, source.scrollWidth);
   const captureH = source.scrollHeight;
 
   try {
@@ -225,9 +235,10 @@ export async function exportSections(
       s.el.style.gridTemplateColumns = s.gridTemplateColumns;
     }
     for (const s of fixedScrollEls) {
-      s.el.style.overflow  = s.overflow;
-      s.el.style.overflowY = s.overflowY;
       s.el.style.maxHeight = s.maxHeight;
+    }
+    for (const s of fixedSingleColLayouts) {
+      s.el.style.gridTemplateColumns = s.gridTemplateColumns;
     }
     for (const s of saved) {
       s.el.style.overflow  = s.overflow;

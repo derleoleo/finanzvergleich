@@ -394,7 +394,7 @@ export default function WithdrawalPlan() {
                     </SummaryGrid>
                   </div>
 
-                  <div data-pdf-section="verlauf" className="grid lg:grid-cols-2 gap-8 mt-8">
+                  <div data-pdf-section="verlauf" data-pdf-single-col className="grid lg:grid-cols-2 gap-8 mt-8">
                     <WithdrawalChart data={withdrawalData} />
                     <WithdrawalTable
                       data={withdrawalData}
