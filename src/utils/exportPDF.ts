@@ -82,13 +82,17 @@ export async function exportSections(
   filename: string,
   title: string
 ): Promise<void> {
+  console.log("[exportPDF] start", { contentId, selectedSectionIds, filename });
+
   const source = document.getElementById(contentId);
   if (!source) {
+    console.log("[exportPDF] source element not found");
     alert(`Element #${contentId} nicht gefunden`);
     return;
   }
 
   const profile    = await UserProfile.load();
+  console.log("[exportPDF] profile loaded");
   const header     = buildProfileHeader(profile, title);
   const disclaimer = buildDisclaimer();
 
@@ -192,6 +196,8 @@ export async function exportSections(
   const captureH = source.scrollHeight;
 
   try {
+    console.log("[exportPDF] capture start", { captureW, captureH });
+
     const captureTimeout = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("Zeitüberschreitung beim Erfassen des Inhalts (15s)")), 15000)
     );
@@ -211,6 +217,8 @@ export async function exportSections(
       captureTimeout,
     ]);
 
+    console.log("[exportPDF] capture done", { dataUrlLength: dataUrl.length });
+
     // Bild-Abmessungen für PDF berechnen
     const img = new Image();
     await new Promise<void>((res, rej) => {
@@ -218,6 +226,8 @@ export async function exportSections(
       img.onerror = rej;
       img.src = dataUrl;
     });
+
+    console.log("[exportPDF] image decoded", { width: img.width, height: img.height });
 
     // Einzelne Seite in Inhalts-Höhe → kein Seitenumbruch
     const pdfW      = 210; // A4 Breite in mm
@@ -231,6 +241,7 @@ export async function exportSections(
     });
 
     pdf.addImage(dataUrl, "JPEG", 0, 0, pdfW, imgTotalH);
+    console.log("[exportPDF] pdf built");
 
     // Manche Firmenrechner blockieren den automatischen Blob-Download (DLP/Policy)
     // lautlos, ohne dass ein JS-Fehler entsteht. Stattdessen öffnen wir die PDF
@@ -238,14 +249,18 @@ export async function exportSections(
     // sie manuell speichern/drucken. pdf.save() bleibt als Fallback, falls Popups
     // doch blockiert sind.
     const blobUrl = URL.createObjectURL(pdf.output("blob"));
+    console.log("[exportPDF] blob url created", { blobUrl });
     const opened = window.open(blobUrl, "_blank");
+    console.log("[exportPDF] window.open result", { opened: !!opened });
     if (!opened) {
+      console.log("[exportPDF] falling back to pdf.save()");
       pdf.save(`${filename}.pdf`);
+      console.log("[exportPDF] pdf.save() called");
     }
     setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
   } catch (err) {
     const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-    console.error("[exportPDF]", err);
+    console.error("[exportPDF] CATCH", err);
     alert(`PDF-Export fehlgeschlagen:\n\n${msg}`);
   } finally {
     // Alles wiederherstellen
