@@ -192,13 +192,24 @@ export async function exportSections(
   const captureH = source.scrollHeight;
 
   try {
-    const dataUrl = await toJpeg(source, {
-      quality:         0.93,
-      pixelRatio:      1.5,
-      backgroundColor: "#f8fafc",
-      width:           captureW,
-      height:          captureH,
-    });
+    const captureTimeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Zeitüberschreitung beim Erfassen des Inhalts (15s)")), 15000)
+    );
+
+    const dataUrl = await Promise.race([
+      toJpeg(source, {
+        quality:         0.93,
+        pixelRatio:      1.5,
+        backgroundColor: "#f8fafc",
+        width:           captureW,
+        height:          captureH,
+        // Schriften sind im Live-DOM bereits geladen; das erneute Nachladen
+        // per fetch() schlägt in vielen Firmennetzwerken (Proxy/Security-Software)
+        // mit ERR_BLOCKED_BY_CLIENT fehl und lässt den Export sonst lautlos hängen.
+        skipFonts:       true,
+      }),
+      captureTimeout,
+    ]);
 
     // Bild-Abmessungen für PDF berechnen
     const img = new Image();
