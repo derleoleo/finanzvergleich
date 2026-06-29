@@ -231,7 +231,18 @@ export async function exportSections(
     });
 
     pdf.addImage(dataUrl, "JPEG", 0, 0, pdfW, imgTotalH);
-    pdf.save(`${filename}.pdf`);
+
+    // Manche Firmenrechner blockieren den automatischen Blob-Download (DLP/Policy)
+    // lautlos, ohne dass ein JS-Fehler entsteht. Stattdessen öffnen wir die PDF
+    // in einem neuen Tab (nutzt den Chrome-PDF-Viewer) – von dort kann der Nutzer
+    // sie manuell speichern/drucken. pdf.save() bleibt als Fallback, falls Popups
+    // doch blockiert sind.
+    const blobUrl = URL.createObjectURL(pdf.output("blob"));
+    const opened = window.open(blobUrl, "_blank");
+    if (!opened) {
+      pdf.save(`${filename}.pdf`);
+    }
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
   } catch (err) {
     const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
     console.error("[exportPDF]", err);
