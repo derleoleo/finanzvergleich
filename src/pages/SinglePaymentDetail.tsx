@@ -163,7 +163,8 @@ function SinglePaymentChart({
 export default function SinglePaymentDetail() {
   const navigate = useNavigate();
   const [calculation, setCalculation] = useState<SinglePaymentModel | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const calcId = new URLSearchParams(window.location.search).get("id");
+  const [isLoading, setIsLoading] = useState(!!calcId);
   const [mode, setMode] = useState<Mode>("gross");
   const { isPaid } = useSubscription();
   const [showPDFUpgrade, setShowPDFUpgrade] = useState(false);
@@ -175,14 +176,12 @@ export default function SinglePaymentDetail() {
   };
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get("id");
-    if (!id) { setIsLoading(false); return; }
-
-    SinglePaymentCalculation.get(id).then((calc) => {
+    if (!calcId) return;
+    SinglePaymentCalculation.get(calcId).then((calc) => {
       if (calc) setCalculation(calc);
       setIsLoading(false);
     });
-  }, []);
+  }, [calcId]);
 
   if (isLoading) {
     return (

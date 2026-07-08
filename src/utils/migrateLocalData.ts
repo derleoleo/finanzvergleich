@@ -56,22 +56,18 @@ export async function migrateLocalDataToSupabase(): Promise<void> {
   try {
     // Insert in reverse so newest ends up on top (create() inserts newest first in Supabase)
     for (const item of [...calculations].reverse()) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { id: _id, created_date: _cd, ...rest } = item as CalculationModel & Record<string, unknown>
       await Calculation.create(rest as Omit<CalculationModel, 'id' | 'created_date'>)
     }
     for (const item of [...singlePayments].reverse()) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { id: _id, created_date: _cd, ...rest } = item as SinglePaymentModel & Record<string, unknown>
       await SinglePaymentCalculation.create(rest as Omit<SinglePaymentModel, 'id' | 'created_date'>)
     }
     for (const item of [...bestAdvice].reverse()) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { id: _id, created_date: _cd, ...rest } = item as BestAdviceModel & Record<string, unknown>
       await BestAdviceCalculation.create(rest as Omit<BestAdviceModel, 'id' | 'created_date'>)
     }
     for (const item of [...pensionGaps].reverse()) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { id: _id, created_date: _cd, ...rest } = item as PensionGapModel & Record<string, unknown>
       await PensionGapCalculation.create(rest as Omit<PensionGapModel, 'id' | 'created_date'>)
     }

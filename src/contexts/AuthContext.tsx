@@ -78,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- Hook gehört zum Provider-Pattern
 export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth muss innerhalb von AuthProvider verwendet werden')

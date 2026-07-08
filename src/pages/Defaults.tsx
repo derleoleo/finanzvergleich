@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   SlidersHorizontal, Save, CheckCircle, User, Calendar, TrendingUp,
-  Shield, BarChart3, Calculator, DollarSign, TrendingDown, Wallet, RotateCcw, Percent,
+  Shield, BarChart3, Calculator, TrendingDown, Wallet, RotateCcw, Percent,
 } from "lucide-react";
 
 export default function Defaults() {
@@ -18,18 +18,7 @@ export default function Defaults() {
   const set = (field: keyof UserDefaultsData, value: string | number) =>
     setData((prev) => ({ ...prev, [field]: value }));
 
-  const n = (val: number, step = 1) => (
-    (field: keyof UserDefaultsData) => (
-      <NumericInput
-        step={step}
-        value={val}
-        onChange={(v) => set(field, v)}
-        className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white"
-      />
-    )
-  );
-
-  const inputClass = "bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white";
+  const inputClass ="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white";
 
   const handleSave = () => {
     UserDefaults.save(data);

@@ -411,7 +411,7 @@ export default function BestAdviceCalculator() {
               </div>
 
               {/* Weitere LVs */}
-              {(formData.extra_lvs ?? []).map((lv, idx) => (
+              {(formData.extra_lvs ?? []).map((lv) => (
                 <div key={lv.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
                   <div className="flex items-center justify-between">
                     <Input

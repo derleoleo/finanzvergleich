@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { exportSections } from "./exportPDF";
 
 export function usePDFExport() {
   const [isExporting, setIsExporting] = useState(false);
@@ -15,6 +14,8 @@ export function usePDFExport() {
   ) => {
     setIsExporting(true);
     try {
+      // jspdf + html-to-image erst beim Export laden – hält das Initial-Bundle klein
+      const { exportSections } = await import("./exportPDF");
       await exportSections("pdf-content", selectedIds, filename, title);
     } finally {
       setIsExporting(false);

@@ -10,7 +10,12 @@ export default defineConfig([
   {
     files: ["**/*.{ts,tsx}"],
     rules: {
-      "@typescript-eslint/no-explicity-any": "warn",
+      "@typescript-eslint/no-explicit-any": "warn",
+      // Mit Unterstich prefixte Parameter/Variablen sind bewusst ungenutzt
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
     },
     extends: [
       js.configs.recommended,

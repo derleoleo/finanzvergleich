@@ -23,7 +23,6 @@ function buildSavingsGrowthSeries(calc: PensionGapModel) {
   if (!calc.results || calc.results.gap_already_covered) return [];
 
   const r = calc.results;
-  const annual_return = (calc.assumed_annual_return || 0) / 100;
   const monthly_r = calculateMonthlyReturn(calc.assumed_annual_return || 0);
   const monthly_savings = r.monthly_savings_needed;
   const years_to_retirement = r.years_to_retirement;
@@ -72,7 +71,8 @@ function buildIncomeBreakdown(calc: PensionGapModel) {
 export default function PensionGapDetail() {
   const navigate = useNavigate();
   const [calculation, setCalculation] = useState<PensionGapModel | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const calcId = new URLSearchParams(window.location.search).get("id");
+  const [isLoading, setIsLoading] = useState(!!calcId);
   const { isPaid } = useSubscription();
   const [showPDFUpgrade, setShowPDFUpgrade] = useState(false);
   const { isExporting, dialogOpen, openDialog, closeDialog, doExport } = usePDFExport();
@@ -83,13 +83,12 @@ export default function PensionGapDetail() {
   };
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get("id");
-    if (!id) { setIsLoading(false); return; }
-    PensionGapCalculation.get(id).then((calc) => {
+    if (!calcId) return;
+    PensionGapCalculation.get(calcId).then((calc) => {
       if (calc) setCalculation(calc);
       setIsLoading(false);
     });
-  }, []);
+  }, [calcId]);
 
   const savingsSeries = useMemo(() => {
     if (!calculation) return [];

@@ -13,7 +13,9 @@ export function useLocalStorage<T>(key: string, defaultValue: T) {
   useEffect(() => {
     try {
       localStorage.setItem(key, JSON.stringify(value));
-    } catch {}
+    } catch {
+      // localStorage voll oder blockiert (z.B. Private Mode) – Wert bleibt nur im State
+    }
   }, [key, value]);
 
   return [value, setValue] as const;
