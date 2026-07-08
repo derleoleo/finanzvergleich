@@ -318,7 +318,7 @@ export default function SinglePaymentDetail() {
         ]}
         isExporting={isExporting}
         onExport={(ids) =>
-          doExport(ids, `einmalanlage-${calculation.name}`, "Fonds-Einmalanlage")
+          doExport(ids, `einmalanlage-${calculation.name}`, "Depot vs. LV – Einmalige Anlage")
         }
         onClose={closeDialog}
       />

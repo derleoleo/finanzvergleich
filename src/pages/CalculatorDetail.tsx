@@ -452,7 +452,7 @@ export default function CalculatorDetail() {
         ]}
         isExporting={isExporting}
         onExport={(ids) =>
-          doExport(ids, `sparvertrag-${calculation.name}`, "Fonds-Sparvertrag")
+          doExport(ids, `sparvertrag-${calculation.name}`, "Depot vs. LV – Monatliche Anlage")
         }
         onClose={closeDialog}
       />

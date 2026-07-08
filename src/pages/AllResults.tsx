@@ -57,8 +57,8 @@ export default function AllResults() {
 
   const typeLabel = (type: AnyCalc["type"]) => {
     switch (type) {
-      case "sparvertrag": return "Fonds-Sparvertrag";
-      case "einmalanlage": return "Einmalanlage";
+      case "sparvertrag": return "Depot vs. LV (monatlich)";
+      case "einmalanlage": return "Depot vs. LV (einmalig)";
       case "bestadvice": return "BestAdvice";
       case "pensiongap": return "Rentenlücke";
     }

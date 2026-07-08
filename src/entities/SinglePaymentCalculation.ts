@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { FundEntry } from '@/components/calculator/MultiFundEditor'
 
 export type SinglePaymentResults = {
   lump_sum: number;
@@ -35,8 +36,30 @@ export type SinglePaymentModel = {
   depot_fund_initial_charge_percent: number;
   depot_fund_ongoing_costs_percent: number;
   depot_costs_annual: number;
+  // Multi-Fonds-Konfiguration – Spalten existieren evtl. noch nicht in der DB
+  // (siehe stripUnknownColumns-Fallback in create/update)
+  lv_funds?: FundEntry[];
+  depot_funds?: FundEntry[];
   results?: SinglePaymentResults;
 };
+
+// Die Tabelle single_payment_calculations hat die JSONB-Spalten lv_funds/depot_funds
+// evtl. noch nicht (Migration ausstehend). Wenn PostgREST eine unbekannte Spalte
+// meldet, wird der Schreibvorgang ohne diese Felder wiederholt, damit das Speichern
+// nicht komplett fehlschlägt. Sobald die Spalten existieren, greift der Fallback nicht mehr.
+function isUnknownColumnError(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return (
+    error.code === '42703' ||
+    error.code === 'PGRST204' ||
+    /column|spalte/i.test(error.message ?? '')
+  );
+}
+
+function withoutFundArrays<T extends { lv_funds?: unknown; depot_funds?: unknown }>(obj: T) {
+  const { lv_funds: _lv, depot_funds: _depot, ...rest } = obj;
+  return rest;
+}
 
 export class SinglePaymentCalculation {
   static async list(_sort?: string): Promise<SinglePaymentModel[]> {
@@ -61,22 +84,38 @@ export class SinglePaymentCalculation {
     input: Omit<SinglePaymentModel, 'id' | 'created_date'>
   ): Promise<SinglePaymentModel> {
     const { data: { user } } = await supabase.auth.getUser()
-    const { data, error } = await supabase
+    const row = { ...input, user_id: user!.id }
+    let { data, error } = await supabase
       .from('single_payment_calculations')
-      .insert({ ...input, user_id: user!.id })
+      .insert(row)
       .select()
       .single()
+    if (error && isUnknownColumnError(error)) {
+      ({ data, error } = await supabase
+        .from('single_payment_calculations')
+        .insert(withoutFundArrays(row))
+        .select()
+        .single())
+    }
     if (error) throw error
     return data as SinglePaymentModel
   }
 
   static async update(id: string, changes: Partial<SinglePaymentModel>): Promise<SinglePaymentModel> {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('single_payment_calculations')
       .update(changes)
       .eq('id', id)
       .select()
       .single()
+    if (error && isUnknownColumnError(error)) {
+      ({ data, error } = await supabase
+        .from('single_payment_calculations')
+        .update(withoutFundArrays(changes))
+        .eq('id', id)
+        .select()
+        .single())
+    }
     if (error) throw error
     return data as SinglePaymentModel
   }

@@ -222,8 +222,8 @@ export default function WithdrawalPlan() {
             )}
           </div>
 
-          {/* Body: settings | results */}
-          <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-8 items-start">
+          {/* Body: Einstellungen oben, Ergebnisse darunter (volle Breite) */}
+          <div className="grid grid-cols-1 gap-8 items-start">
 
             {/* Settings */}
             <div data-pdf-hide>

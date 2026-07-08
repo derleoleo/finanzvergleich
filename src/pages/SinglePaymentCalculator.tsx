@@ -19,6 +19,7 @@ import {
   Calendar, User, FileText, AlertTriangle,
 } from "lucide-react";
 import { looksLikeName } from "@/utils/nameDetection";
+import AnlageModeToggle from "@/components/calculator/AnlageModeToggle";
 import MultiFundEditor, { type FundEntry } from "@/components/calculator/MultiFundEditor";
 
 import {
@@ -314,9 +315,13 @@ export default function SinglePaymentCalculator() {
               <DollarSign className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Fonds-Einmalanlage</h1>
-              <p className="text-slate-600 mt-1">Einmalbetrag – LV vs. Direktanlage vergleichen</p>
+              <h1 className="text-3xl font-bold text-slate-900">Depot vs. LV</h1>
+              <p className="text-slate-600 mt-1">Einmalige Anlage – LV vs. Direktanlage vergleichen</p>
             </div>
+          </div>
+
+          <div className="mt-4">
+            <AnlageModeToggle mode="single" />
           </div>
 
           {error && (

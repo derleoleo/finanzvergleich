@@ -13,7 +13,6 @@ import {
   SlidersHorizontal,
   Home,
   Target,
-  DollarSign,
   TrendingDown,
   Wallet,
   MessageSquare,
@@ -48,17 +47,22 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-const calculatorItems = [
+type NavItem = {
+  title: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+  /** Zusätzliche Pfade, bei denen der Eintrag als aktiv markiert wird */
+  activeUrls?: string[];
+};
+
+const calculatorItems: NavItem[] = [
   { title: "Übersicht", url: createPageUrl("Home"), icon: Home },
   {
-    title: "Fonds-Sparvertrag",
+    title: "Depot vs. LV",
     url: createPageUrl("Calculator"),
     icon: Calculator,
-  },
-  {
-    title: "Fonds-Einmalanlage",
-    url: createPageUrl("SinglePaymentCalculator"),
-    icon: DollarSign,
+    // Auf der Seite wird zwischen monatlicher und einmaliger Anlage umgeschaltet
+    activeUrls: [createPageUrl("Calculator"), createPageUrl("SinglePaymentCalculator")],
   },
   {
     title: "BestAdvice",
@@ -169,7 +173,7 @@ export default function Layout({ children }: Props) {
                       <SidebarMenuButton
                         asChild
                         className={`hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 rounded-xl mb-1 ${
-                          location.pathname === item.url
+                          (item.activeUrls ?? [item.url]).includes(location.pathname)
                             ? "bg-slate-100 text-slate-900 font-medium"
                             : "text-slate-600"
                         }`}
