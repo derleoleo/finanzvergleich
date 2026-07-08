@@ -13,9 +13,9 @@ export default function Impressum() {
 
         <div className="prose prose-slate max-w-none space-y-6 text-slate-700">
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-2">Angaben gemäß § 5 TMG</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Angaben gemäß § 5 DDG</h2>
             <p>
-              Luisa Brandt<br />
+              Luisa Brandt (Einzelunternehmerin)<br />
               Ernst-Bähre-Str. 3<br />
               30453 Hannover
             </p>
@@ -48,12 +48,10 @@ export default function Impressum() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-2">Streitschlichtung</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Verbraucherstreitbeilegung</h2>
             <p className="text-sm">
-              Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:{" "}
-              <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                https://ec.europa.eu/consumers/odr/
-              </a>. Ich bin nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer
+              Dieses Angebot richtet sich ausschließlich an Unternehmer im Sinne des § 14 BGB.
+              Ich bin nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer
               Verbraucherschlichtungsstelle teilzunehmen.
             </p>
           </section>
