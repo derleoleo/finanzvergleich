@@ -5,17 +5,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TrendingUp, Building, Percent } from "lucide-react";
-import MultiFundEditor from "./MultiFundEditor";
+import MultiFundEditor, { type FundEntry } from "./MultiFundEditor";
+
+type FundFormData = {
+  depot_funds?: FundEntry[];
+  monthly_contribution?: number;
+  lump_sum?: number;
+  depot_provider?: string;
+  depot_costs_annual?: number;
+};
 
 type Props = {
-  formData: any;
-  updateFormData: (field: string, value: any) => void;
+  formData: FundFormData;
+  updateFormData: (field: string, value: unknown) => void;
   fetchDepotFundCosts: () => void | Promise<void>; // bleibt kompatibel, wird nur nicht mehr genutzt
   isFetchingDepot: boolean; // bleibt kompatibel, wird nur nicht mehr genutzt
 };
 
-function toNumber(value: any): number {
-  const n = typeof value === "number" ? value : parseFloat(value);
+function toNumber(value: unknown): number {
+  const n = typeof value === "number" ? value : parseFloat(String(value));
   return Number.isFinite(n) ? n : 0;
 }
 

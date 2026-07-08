@@ -25,8 +25,8 @@ function genId() {
   return Math.random().toString(36).slice(2, 9);
 }
 
-function toNum(v: any): number {
-  const n = typeof v === "number" ? v : parseFloat(v);
+function toNum(v: unknown): number {
+  const n = typeof v === "number" ? v : parseFloat(String(v));
   return Number.isFinite(n) ? n : 0;
 }
 
@@ -58,8 +58,8 @@ export default function MultiFundEditor({
     onChange(funds.filter((f) => f.id !== id));
   };
 
-  const update = (id: string, field: keyof FundEntry, value: any) => {
-    onChange(funds.map((f) => (f.id === id ? { ...f, [field]: value } : f)));
+  const update = (id: string, field: keyof FundEntry, value: string | number) => {
+    onChange(funds.map((f) => (f.id === id ? { ...f, [field]: value } as FundEntry : f)));
   };
 
   return (

@@ -314,11 +314,11 @@ export default function BestAdviceDetail() {
                   <XAxis dataKey="year" tick={{ fontSize: 12 }} />
                   <YAxis tickFormatter={formatChartAxis} tick={{ fontSize: 12 }} />
                   <Tooltip
-                    formatter={(value: any, name: any) => [
+                    formatter={(value: unknown, name: unknown) => [
                       formatCurrency(Number(value || 0)),
                       name === "fondsLV" ? "Fonds-LV" : "Bestandsvertrag"
                     ]}
-                    labelFormatter={(year: any) => {
+                    labelFormatter={(year: unknown) => {
                       const p = series.find((x) => x.year === Number(year));
                       return p ? `Jahr ${year} (Alter ${p.age})` : `Jahr ${year}`;
                     }}

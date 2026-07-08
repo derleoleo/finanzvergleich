@@ -194,7 +194,7 @@ export function SidebarMenuButton({
       return <>{children}</>;
     }
 
-    const child = children as ReactElement<any>;
+    const child = children as ReactElement<{ className?: string }>;
     const merged = [child.props?.className ?? "", className].join(" ").trim();
 
     return React.cloneElement(child, { className: merged });

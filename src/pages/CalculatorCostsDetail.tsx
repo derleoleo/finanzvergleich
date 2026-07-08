@@ -76,9 +76,7 @@ export default function CalculatorCostsDetail() {
       }
 
       const all = await Calculation.list();
-      const found = (all as any[]).find((x) => String(x.id) === String(id)) as
-        | Calc
-        | undefined;
+      const found = all.find((x) => String(x.id) === String(id));
 
       setCalc(found ?? null);
       setIsLoading(false);
@@ -229,7 +227,7 @@ export default function CalculatorCostsDetail() {
                   />
 
                   <Tooltip
-                    formatter={(value: any, name: any) => [
+                    formatter={(value: unknown, name: unknown) => [
                       formatCurrency(Number(value || 0)),
                       String(name),
                     ]}

@@ -48,8 +48,8 @@ type Calc = {
   };
 };
 
-function n(v: any): number {
-  const x = typeof v === "number" ? v : parseFloat(v);
+function n(v: unknown): number {
+  const x = typeof v === "number" ? v : parseFloat(String(v));
   return Number.isFinite(x) ? x : 0;
 }
 

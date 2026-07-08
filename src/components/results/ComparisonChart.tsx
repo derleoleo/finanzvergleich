@@ -49,12 +49,12 @@ export default function ComparisonChart({ data, mode }: Props) {
               />
               <YAxis tick={{ fontSize: 12 }} tickFormatter={formatChartAxis} />
               <Tooltip
-                formatter={(value: any, name: any) => {
+                formatter={(value: unknown, name: unknown) => {
                   const label =
                     name === lvKey ? "LV" : name === depotKey ? "Depot" : String(name);
                   return [formatCurrency(Number(value) || 0), label];
                 }}
-                labelFormatter={(year: any) => {
+                labelFormatter={(year: unknown) => {
                   const row = data.find((d) => d.year === Number(year));
                   const age = row?.age ?? "";
                   return `Jahr ${year}${age !== "" ? ` • Alter ${age}` : ""}`;

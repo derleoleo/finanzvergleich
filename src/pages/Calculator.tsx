@@ -200,7 +200,7 @@ export default function Calculator() {
     };
   }, [formData]);
 
-  const updateFormData = (field: string, value: any) => {
+  const updateFormData = (field: string, value: unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -439,7 +439,7 @@ export default function Calculator() {
       const results = calculateResults();
       const payload = { ...formData, results };
 
-      const newCalc = await Calculation.create(payload as any);
+      const newCalc = await Calculation.create(payload);
       incrementCalculationCount();
       navigate(createPageUrl("CalculatorDetail") + `?id=${newCalc.id}`);
     } catch (e) {

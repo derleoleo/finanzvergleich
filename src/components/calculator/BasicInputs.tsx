@@ -14,7 +14,7 @@ type Props = {
     assumed_annual_return: number;
     birth_year: number;
   };
-  updateFormData: (field: string, value: any) => void;
+  updateFormData: (field: string, value: unknown) => void;
 };
 
 function clampNumber(value: number, min: number, max: number) {

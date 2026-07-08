@@ -88,8 +88,8 @@ function makeDefaults(): FormData {
   };
 }
 
-function toNum(v: any): number {
-  const n = typeof v === "number" ? v : parseFloat(v);
+function toNum(v: unknown): number {
+  const n = typeof v === "number" ? v : parseFloat(String(v));
   return Number.isFinite(n) ? n : 0;
 }
 
@@ -157,7 +157,7 @@ export default function SinglePaymentCalculator() {
     return () => { if (saveTimer.current) window.clearTimeout(saveTimer.current); };
   }, [formData]);
 
-  const update = (field: string, value: any) =>
+  const update = (field: string, value: unknown) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
   const currentAge = getCurrentAge(toNum(formData.birth_year));

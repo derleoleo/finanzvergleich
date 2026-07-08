@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { FundEntry } from '@/components/calculator/MultiFundEditor'
 
 export type CalculationResults = {
   life_insurance_gross: number;
@@ -21,7 +22,9 @@ export type CalculationResults = {
   depot_fund_costs: number; // TER im Depot
   depot_depot_costs: number; // Depotgebühren
 
-  withdrawal_years: number;
+  li_tax?: number;
+  depot_tax?: number;
+  withdrawal_years?: number;
 };
 
 export type CalculationModel = {
@@ -34,6 +37,7 @@ export type CalculationModel = {
 
   lv_cost_type: "eur" | "percent";
   life_insurance_acquisition_costs_eur: number;
+  lv_admin_costs_monthly_eur?: number;
   lv_effective_costs_percent: number;
 
   lv_fund_identifier: string;
@@ -43,13 +47,17 @@ export type CalculationModel = {
   depot_fund_initial_charge_percent: number;
   depot_fund_ongoing_costs_percent: number;
 
+  // Multi-Fonds-Konfiguration (neuere Berechnungen)
+  lv_funds?: FundEntry[];
+  depot_funds?: FundEntry[];
+
   depot_costs_annual: number;
   depot_provider: string;
 
   assumed_annual_return: number;
   birth_year: number;
 
-  annual_withdrawal: number;
+  annual_withdrawal?: number;
 
   results?: CalculationResults;
 };

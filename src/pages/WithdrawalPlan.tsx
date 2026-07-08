@@ -13,9 +13,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useLocalStorage } from "@/utils/useLocalStorage";
 import { UserDefaults } from "@/entities/UserDefaults";
-import { Calculation } from "@/entities/Calculation";
-import { SinglePaymentCalculation } from "@/entities/SinglePaymentCalculation";
-import { BestAdviceCalculation } from "@/entities/BestAdviceCalculation";
+import { Calculation, type CalculationModel } from "@/entities/Calculation";
+import { SinglePaymentCalculation, type SinglePaymentModel } from "@/entities/SinglePaymentCalculation";
+import { BestAdviceCalculation, type BestAdviceModel } from "@/entities/BestAdviceCalculation";
 import { usePDFExport } from "@/utils/usePDFExport";
 import PDFSectionDialog from "@/components/pdf/PDFSectionDialog";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -25,7 +25,23 @@ import SummaryGrid from "@/components/results/SummaryGrid";
 import WithdrawalChart from "@/components/withdrawal/WithdrawalChart";
 import WithdrawalTable from "@/components/withdrawal/WithdrawalTable";
 
-type AnyCalc = any;
+// Legacy-Felder (lv_expected_return etc.) stammen aus alten localStorage-Datenformaten
+type AnyCalc = (CalculationModel | SinglePaymentModel | BestAdviceModel) & {
+  _type?: string;
+  lv_expected_return?: number;
+  fund_expected_return?: number;
+};
+
+type WithdrawalRow = {
+  year: number;
+  age: number;
+  startCapital: number;
+  withdrawal: number;
+  growth: number;
+  endCapital: number;
+  totalWithdrawn: number;
+  isLastYear?: boolean;
+};
 
 export default function WithdrawalPlan() {
   const _wd = UserDefaults.load();
@@ -47,25 +63,27 @@ export default function WithdrawalPlan() {
   const [isDetailMode, setIsDetailMode] = useLocalStorage<boolean>("wp_isDetailMode", false);
   const [specialWithdrawals, setSpecialWithdrawals] = useLocalStorage<Record<number, number>>("wp_specialWithdrawals", {});
 
-  const [withdrawalData, setWithdrawalData] = useState<any[]>([]);
+  const [withdrawalData, setWithdrawalData] = useState<WithdrawalRow[]>([]);
 
   useEffect(() => {
     if (!isDetailMode) setSpecialWithdrawals({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDetailMode]);
 
-  const getNetResultFromCalc = (calc: AnyCalc): number => {
+  const getNetResultFromCalc = (calc: AnyCalc | null): number => {
     if (!calc?.results) return 0;
-    if (calc.results.life_insurance_net !== undefined)
-      return Math.max(calc.results.life_insurance_net, calc.results.depot_net);
-    if (calc.results.fund_net !== undefined)
-      return Math.max(calc.results.lv_net, calc.results.fund_net, calc.results.fixed_deposit_net, calc.results.current_account_net);
-    if (calc.results.existing_lv_net !== undefined)
-      return Math.max(calc.results.existing_lv_net, calc.results.new_lv_net);
+    // Legacy-Ergebnisformate haben abweichende Feldnamen – daher lose typisiert lesen
+    const r = calc.results as unknown as Partial<Record<string, number>>;
+    if (r.life_insurance_net !== undefined)
+      return Math.max(r.life_insurance_net, r.depot_net ?? 0);
+    if (r.fund_net !== undefined)
+      return Math.max(r.lv_net ?? 0, r.fund_net, r.fixed_deposit_net ?? 0, r.current_account_net ?? 0);
+    if (r.existing_lv_net !== undefined)
+      return Math.max(r.existing_lv_net, r.new_lv_net ?? 0);
     return 0;
   };
 
-  const getAssumedReturnFromCalc = (calc: AnyCalc): number =>
+  const getAssumedReturnFromCalc = (calc: AnyCalc | null): number =>
     calc?.assumed_annual_return ?? calc?.lv_expected_return ?? calc?.fund_expected_return ?? 6.0;
 
   useEffect(() => {
@@ -110,7 +128,7 @@ export default function WithdrawalPlan() {
 
     const ar = customAnnualReturn / 100;
     let capital = startCapital;
-    const data: any[] = [];
+    const data: WithdrawalRow[] = [];
     let yearIndex = 0;
     let totalWithdrawn = 0;
 

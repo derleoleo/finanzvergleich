@@ -226,7 +226,7 @@ export default function PensionGapDetail() {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                         <YAxis tickFormatter={(v) => `${v} €`} tick={{ fontSize: 12 }} />
-                        <Tooltip formatter={(value: any) => [`${value} €/Monat`]} />
+                        <Tooltip formatter={(value: unknown) => [`${value} €/Monat`]} />
                         <Legend />
                         {incomeBreakdown.sources.map((s) => (
                           <Bar key={s.name} dataKey={s.name} stackId="a" fill={s.fill} />
@@ -273,8 +273,8 @@ export default function PensionGapDetail() {
                         <XAxis dataKey="age" tick={{ fontSize: 12 }} label={{ value: "Alter", position: "insideBottom", offset: -4, fontSize: 11 }} />
                         <YAxis tickFormatter={formatChartAxis} tick={{ fontSize: 12 }} />
                         <Tooltip
-                          formatter={(value: any, name: any) => [formatCurrency(Number(value || 0)), name === "capital" ? "Angespartes Kapital" : "Benötigtes Kapital"]}
-                          labelFormatter={(age: any) => `Alter ${age}`}
+                          formatter={(value: unknown, name: unknown) => [formatCurrency(Number(value || 0)), name === "capital" ? "Angespartes Kapital" : "Benötigtes Kapital"]}
+                          labelFormatter={(age: unknown) => `Alter ${age}`}
                         />
                         <Legend formatter={(v) => v === "capital" ? "Angespartes Kapital" : "Zielkapital"} />
                         <Line type="monotone" dataKey="capital" name="capital" stroke="#2563eb" strokeWidth={3} dot={false} isAnimationActive={false} />

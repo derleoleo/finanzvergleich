@@ -10,9 +10,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Shield, Building2 } from "lucide-react";
 import { formatCurrency } from "@/components/shared/CurrencyDisplay";
+import type { CalculationResults } from "@/entities/Calculation";
 
 type Props = {
-  calculation: any;
+  calculation: { results?: Partial<CalculationResults> | null } | null;
 };
 
 export default function ComparisonTable({ calculation }: Props) {

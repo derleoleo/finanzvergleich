@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Calculation } from "@/entities/Calculation";
+import { Calculation, type CalculationModel } from "@/entities/Calculation";
 import { UserDefaults } from "@/entities/UserDefaults";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,8 +35,8 @@ import {
 
 export default function CalculatorDetail() {
   const navigate = useNavigate();
-  const [calculation, setCalculation] = useState<any | null>(null);
-  const [formData, setFormData] = useState<any | null>(null);
+  const [calculation, setCalculation] = useState<CalculationModel | null>(null);
+  const [formData, setFormData] = useState<CalculationModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRecalculating, setIsRecalculating] = useState(false);
 
@@ -61,7 +61,7 @@ export default function CalculatorDetail() {
       }
 
       const allCalcs = await Calculation.list();
-      const calc = (allCalcs as any[]).find((c) => String(c.id) === String(id));
+      const calc = allCalcs.find((c) => String(c.id) === String(id));
 
       if (calc) {
         setCalculation(calc);
@@ -74,11 +74,12 @@ export default function CalculatorDetail() {
     loadCalculation();
   }, []);
 
-  const updateFormData = (field: string, value: any) => {
-    setFormData((prev: any) => ({ ...prev, [field]: value }));
+  const updateFormData = (field: string, value: unknown) => {
+    setFormData((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
   const calculateResults = () => {
+    if (!formData) return null;
     const {
       monthly_contribution,
       contract_duration_years,
@@ -219,8 +220,10 @@ export default function CalculatorDetail() {
   };
 
   const handleRecalculate = async () => {
+    if (!formData || !calculation) return;
     setIsRecalculating(true);
     const results = calculateResults();
+    if (!results) { setIsRecalculating(false); return; }
     const updatedData = { ...formData, results };
     await Calculation.update(calculation.id, updatedData);
     setCalculation(updatedData);

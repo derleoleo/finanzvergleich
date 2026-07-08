@@ -37,8 +37,8 @@ export default function WithdrawalChart({ data }: { data: WithdrawalRow[] }) {
                 tickFormatter={formatChartAxis}
               />
               <Tooltip
-                formatter={(value: any, name: any) => [formatCurrency(Number(value)), name === "endCapital" ? "Restkapital" : String(name)]}
-                labelFormatter={(year: any) => `Jahr ${year}`}
+                formatter={(value: unknown, name: unknown) => [formatCurrency(Number(value)), name === "endCapital" ? "Restkapital" : String(name)]}
+                labelFormatter={(year: unknown) => `Jahr ${year}`}
                 contentStyle={{
                   backgroundColor: "white",
                   border: "1px solid #e2e8f0",

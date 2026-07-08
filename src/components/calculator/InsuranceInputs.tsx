@@ -7,20 +7,31 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Shield, Percent } from "lucide-react";
-import MultiFundEditor from "./MultiFundEditor";
+import MultiFundEditor, { type FundEntry } from "./MultiFundEditor";
 
 import { buildLvCostBreakdownActual } from "@/components/shared/CostBreakdown";
 import { formatCurrency } from "@/components/shared/CurrencyDisplay";
 
+type InsuranceFormData = {
+  contract_duration_years?: number;
+  life_insurance_acquisition_costs_eur?: number;
+  lv_admin_costs_monthly_eur?: number;
+  lv_cost_type?: "eur" | "percent";
+  lv_effective_costs_percent?: number;
+  lv_funds?: FundEntry[];
+  monthly_contribution?: number;
+  lump_sum?: number;
+};
+
 type Props = {
-  formData: any;
-  updateFormData: (field: string, value: any) => void;
+  formData: InsuranceFormData;
+  updateFormData: (field: string, value: unknown) => void;
   fetchLVFundCosts: () => void | Promise<void>; // bleibt optional im Props, aber UI nutzt es nicht
   isFetchingLV: boolean; // bleibt optional im Props, aber UI nutzt es nicht
 };
 
-function toNumber(value: any): number {
-  const n = typeof value === "number" ? value : parseFloat(value);
+function toNumber(value: unknown): number {
+  const n = typeof value === "number" ? value : parseFloat(String(value));
   return Number.isFinite(n) ? n : 0;
 }
 

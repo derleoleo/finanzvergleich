@@ -227,11 +227,11 @@ export default function ResultsChart({
               <XAxis dataKey="year" tick={{ fontSize: 12 }} />
               <YAxis tickFormatter={formatChartAxis} tick={{ fontSize: 12 }} />
               <Tooltip
-                formatter={(value: any, name: any) => {
+                formatter={(value: unknown, name: unknown) => {
                   const label = name === "lv" ? "LV" : "Depot";
                   return [formatCurrency(Number(value || 0)), label];
                 }}
-                labelFormatter={(year: any) => {
+                labelFormatter={(year: unknown) => {
                   const p = series.find((x) => x.year === Number(year));
                   return p ? `Jahr ${year} (Alter ${p.age})` : `Jahr ${year}`;
                 }}
