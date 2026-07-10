@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Wallet, AlertCircle, FileDown, Calendar, TrendingUp, Copy, Info, Pencil,
 } from "lucide-react";
@@ -43,6 +43,70 @@ type WithdrawalRow = {
   isLastYear?: boolean;
 };
 
+type PlanParams = {
+  startCapital: number;
+  annualWithdrawal: number;
+  annualReturnPercent: number;
+  startAge: number;
+  endAge: number;
+  /** Sonderentnahmen je Jahr (nur Expertenmodus, Szenario A) */
+  specialWithdrawals?: Record<number, number>;
+};
+
+/** Simuliert den Kapitalverlauf: Jahr 0 wächst ohne Entnahme, ab Jahr 1
+ *  Entnahme zu Jahresbeginn, Komplettentnahme im letzten Jahr. */
+function buildPlan({ startCapital, annualWithdrawal, annualReturnPercent, startAge, endAge, specialWithdrawals }: PlanParams): WithdrawalRow[] {
+  if (startCapital === 0) return [];
+  if (startAge >= endAge) {
+    return [{
+      year: 0, age: startAge,
+      startCapital: Math.round(startCapital), withdrawal: Math.round(startCapital),
+      growth: 0, endCapital: 0, totalWithdrawn: Math.round(startCapital), isLastYear: true,
+    }];
+  }
+
+  const ar = annualReturnPercent / 100;
+  let capital = startCapital;
+  const data: WithdrawalRow[] = [];
+  let yearIndex = 0;
+  let totalWithdrawn = 0;
+
+  const initialGrowth = capital * ar;
+  capital += initialGrowth;
+  data.push({
+    year: 0, age: startAge,
+    startCapital: Math.round(startCapital), withdrawal: 0,
+    growth: Math.round(initialGrowth), endCapital: Math.round(capital), totalWithdrawn: 0,
+  });
+
+  while (yearIndex < endAge - startAge && capital > 0) {
+    yearIndex++;
+    const currentAge = startAge + yearIndex;
+    const startYearCapital = capital;
+    const isLastYearOfPlan = currentAge === endAge;
+    const special = specialWithdrawals?.[yearIndex];
+    const withdrawalAmount = isLastYearOfPlan ? startYearCapital : (special ?? annualWithdrawal);
+    const actualWithdrawal = Math.min(withdrawalAmount, startYearCapital);
+    const capitalAfterWithdrawal = startYearCapital - actualWithdrawal;
+    const growth = capitalAfterWithdrawal * ar;
+    capital = capitalAfterWithdrawal + growth;
+    totalWithdrawn += actualWithdrawal;
+
+    data.push({
+      year: yearIndex, age: currentAge,
+      startCapital: Math.round(Math.max(0, startYearCapital)),
+      withdrawal: Math.round(actualWithdrawal),
+      growth: Math.round(Math.max(0, growth)),
+      endCapital: Math.round(Math.max(0, capital)),
+      totalWithdrawn: Math.round(totalWithdrawn),
+      isLastYear: isLastYearOfPlan,
+    });
+
+    if (capital <= 0 || isLastYearOfPlan) break;
+  }
+  return data;
+}
+
 export default function WithdrawalPlan() {
   const _wd = UserDefaults.load();
   const endAge = _wd.withdrawal_end_age ?? 85;
@@ -63,7 +127,9 @@ export default function WithdrawalPlan() {
   const [isDetailMode, setIsDetailMode] = useLocalStorage<boolean>("wp_isDetailMode", false);
   const [specialWithdrawals, setSpecialWithdrawals] = useLocalStorage<Record<number, number>>("wp_specialWithdrawals", {});
 
-  const [withdrawalData, setWithdrawalData] = useState<WithdrawalRow[]>([]);
+  // Szenario-Vergleich: zweite Entnahmehöhe nebeneinander darstellen
+  const [compareEnabled, setCompareEnabled] = useLocalStorage<boolean>("wp_compareEnabled", false);
+  const [compareWithdrawal, setCompareWithdrawal] = useLocalStorage<number>("wp_compareWithdrawal", 0);
 
   useEffect(() => {
     if (!isDetailMode) setSpecialWithdrawals({});
@@ -115,60 +181,31 @@ export default function WithdrawalPlan() {
   const maxAnnualWithdrawal = startCapital > 0 && annualReturnFraction > 0 ? startCapital * annualReturnFraction : 0;
   const maxMonthlyWithdrawal = maxAnnualWithdrawal / 12;
 
-  const calculateWithdrawalPlan = useCallback(() => {
-    if (startAge >= endAge) {
-      setWithdrawalData(startCapital > 0 ? [{
-        year: 0, age: startAge,
-        startCapital: Math.round(startCapital), withdrawal: Math.round(startCapital),
-        growth: 0, endCapital: 0, totalWithdrawn: Math.round(startCapital), isLastYear: true,
-      }] : []);
-      return;
-    }
-    if (startCapital === 0) { setWithdrawalData([]); return; }
+  const withdrawalData = useMemo(
+    () => buildPlan({
+      startCapital,
+      annualWithdrawal: customWithdrawal,
+      annualReturnPercent: customAnnualReturn,
+      startAge,
+      endAge,
+      specialWithdrawals: isDetailMode ? specialWithdrawals : undefined,
+    }),
+    [startCapital, customWithdrawal, customAnnualReturn, startAge, endAge, isDetailMode, specialWithdrawals]
+  );
 
-    const ar = customAnnualReturn / 100;
-    let capital = startCapital;
-    const data: WithdrawalRow[] = [];
-    let yearIndex = 0;
-    let totalWithdrawn = 0;
-
-    const initialGrowth = capital * ar;
-    capital += initialGrowth;
-    data.push({
-      year: 0, age: startAge,
-      startCapital: Math.round(startCapital), withdrawal: 0,
-      growth: Math.round(initialGrowth), endCapital: Math.round(capital), totalWithdrawn: 0,
-    });
-
-    while (yearIndex < endAge - startAge && capital > 0) {
-      yearIndex++;
-      const currentAge = startAge + yearIndex;
-      const startYearCapital = capital;
-      const isLastYearOfPlan = currentAge === endAge;
-      const special = isDetailMode ? specialWithdrawals[yearIndex] : undefined;
-      const withdrawalAmount = isLastYearOfPlan ? startYearCapital : (special ?? customWithdrawal);
-      const actualWithdrawal = Math.min(withdrawalAmount, startYearCapital);
-      const capitalAfterWithdrawal = startYearCapital - actualWithdrawal;
-      const growth = capitalAfterWithdrawal * ar;
-      capital = capitalAfterWithdrawal + growth;
-      totalWithdrawn += actualWithdrawal;
-
-      data.push({
-        year: yearIndex, age: currentAge,
-        startCapital: Math.round(Math.max(0, startYearCapital)),
-        withdrawal: Math.round(actualWithdrawal),
-        growth: Math.round(Math.max(0, growth)),
-        endCapital: Math.round(Math.max(0, capital)),
-        totalWithdrawn: Math.round(totalWithdrawn),
-        isLastYear: isLastYearOfPlan,
-      });
-
-      if (capital <= 0 || isLastYearOfPlan) break;
-    }
-    setWithdrawalData(data);
-  }, [startCapital, customWithdrawal, customAnnualReturn, specialWithdrawals, startAge, isDetailMode, endAge]);
-
-  useEffect(() => { calculateWithdrawalPlan(); }, [calculateWithdrawalPlan]);
+  // Szenario B: gleiche Parameter, andere Entnahmehöhe (ohne Sonderentnahmen)
+  const compareData = useMemo(
+    () => compareEnabled
+      ? buildPlan({
+          startCapital,
+          annualWithdrawal: compareWithdrawal,
+          annualReturnPercent: customAnnualReturn,
+          startAge,
+          endAge,
+        })
+      : [],
+    [compareEnabled, startCapital, compareWithdrawal, customAnnualReturn, startAge, endAge]
+  );
 
   const handleSpecialWithdrawalChange = (year: number, amount: string) => {
     if (!isDetailMode) return;
@@ -351,6 +388,44 @@ export default function WithdrawalPlan() {
                     </div>
                   )}
 
+                  {/* Szenario-Vergleich */}
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="compare-mode"
+                      checked={compareEnabled}
+                      onCheckedChange={(on) => {
+                        setCompareEnabled(on);
+                        // Beim ersten Aktivieren mit der aktuellen Entnahme vorbelegen
+                        if (on && !compareWithdrawal) setCompareWithdrawal(customWithdrawal);
+                      }}
+                    />
+                    <Label htmlFor="compare-mode">Szenario-Vergleich (zweite Entnahmehöhe)</Label>
+                  </div>
+
+                  {compareEnabled && (
+                    <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                      <div className="space-y-2">
+                        <Label className="text-blue-700 font-semibold">Szenario A (€/Jahr)</Label>
+                        <NumericInput
+                          step="1000"
+                          value={customWithdrawal}
+                          onChange={(v) => setCustomWithdrawal(v)}
+                          className="bg-white border-slate-200"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="withdrawalB" className="text-amber-700 font-semibold">Szenario B (€/Jahr)</Label>
+                        <NumericInput
+                          id="withdrawalB"
+                          step="1000"
+                          value={compareWithdrawal}
+                          onChange={(v) => setCompareWithdrawal(v)}
+                          className="bg-white border-slate-200"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Berechnungslogik */}
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                     <h4 className="font-medium text-slate-800 mb-1.5 text-sm flex items-center gap-1.5">
@@ -376,6 +451,49 @@ export default function WithdrawalPlan() {
                   <p className="text-slate-500 text-sm">
                     Bitte ein Startkapital eingeben oder eine Berechnung auswählen.
                   </p>
+                </div>
+              ) : compareEnabled ? (
+                <div data-pdf-section="vergleich" data-pdf-single-col className="grid lg:grid-cols-2 gap-8 items-start">
+                  {[
+                    { key: "A", label: "Szenario A", amount: customWithdrawal, data: withdrawalData, color: "#3b82f6", tone: "text-blue-700 bg-blue-50 border-blue-200" },
+                    { key: "B", label: "Szenario B", amount: compareWithdrawal, data: compareData, color: "#d97706", tone: "text-amber-700 bg-amber-50 border-amber-200" },
+                  ].map((s) => {
+                    const last = s.data[s.data.length - 1];
+                    const depletedEarly = !!last && last.endCapital <= 0 && !last.isLastYear;
+                    return (
+                      <div key={s.key} className="space-y-6">
+                        <Card className={`border shadow-lg ${s.tone}`}>
+                          <CardContent className="p-5">
+                            <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                              <div>
+                                <div className="text-sm font-semibold">{s.label}</div>
+                                <div className="text-2xl font-bold">{fmt(s.amount)} / Jahr</div>
+                              </div>
+                              <div className="text-right text-sm space-y-0.5">
+                                <div>
+                                  {depletedEarly
+                                    ? <>Kapital aufgebraucht mit <strong>Alter {last?.age}</strong></>
+                                    : <>Reicht bis Planende (<strong>Alter {last?.age ?? endAge}</strong>)</>}
+                                </div>
+                                <div>Gesamtentnahme: <strong>{fmt(last?.totalWithdrawn ?? 0)}</strong></div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        <WithdrawalChart
+                          data={s.data}
+                          title={`Kapitalverlauf ${s.label}`}
+                          color={s.color}
+                          showHint={false}
+                        />
+                        <WithdrawalTable
+                          data={s.data}
+                          isDetailMode={false}
+                          onSpecialWithdrawalChange={() => {}}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <>
@@ -438,10 +556,12 @@ export default function WithdrawalPlan() {
 
       {dialogOpen && (
         <PDFSectionDialog
-          sections={[
-            { id: "zusammenfassung", label: "Zusammenfassung" },
-            { id: "verlauf", label: "Verlauf & Tabelle" },
-          ]}
+          sections={compareEnabled
+            ? [{ id: "vergleich", label: "Szenario-Vergleich" }]
+            : [
+                { id: "zusammenfassung", label: "Zusammenfassung" },
+                { id: "verlauf", label: "Verlauf & Tabelle" },
+              ]}
           isExporting={isExporting}
           onExport={(ids) => doExport(ids, "entnahmeplan", "Entnahmeplan")}
           onClose={closeDialog}
