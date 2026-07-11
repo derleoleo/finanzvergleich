@@ -10,7 +10,11 @@ import {
   formatCurrency,
   formatChartAxis,
 } from "@/components/shared/CurrencyDisplay";
-import { UserDefaults, depotTaxOptionsFromDefaults } from "@/entities/UserDefaults";
+import {
+  UserDefaults,
+  depotTaxOptionsFromDefaults,
+  lvTaxOptionsFromDefaults,
+} from "@/entities/UserDefaults";
 import {
   simulateDepot,
   simulateLv,
@@ -140,9 +144,7 @@ export default function ResultsChart({
       depot: depot.series,
       mode: activeMode,
       birth_year: calculation.birth_year,
-      lvTaxOptions: {
-        personalIncomeTaxRate: d.lv_personal_income_tax_rate / 100,
-      },
+      lvTaxOptions: lvTaxOptionsFromDefaults(d),
       depotTaxOptions: depotTaxOptionsFromDefaults(d),
     });
   }, [calculation, activeMode]);

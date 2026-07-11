@@ -1,13 +1,12 @@
 // src/components/calculator/TaxInputs.tsx
-// Steuer-Einstellungen für den Depot-Vergleich (Teilfreistellung,
-// Sparerpauschbetrag, SolZ, Kirchensteuer). Die Werte leben in den
-// UserDefaults (lokal) und gelten für alle Rechner; sie werden nicht
-// pro Berechnung gespeichert.
+// Steuer-Einstellungen für den Vergleich (Teilfreistellung, SolZ,
+// Kirchensteuer). SolZ/KiSt gelten für Depot- und LV-Steuer. Die Werte
+// leben in den UserDefaults (lokal) und gelten für alle Rechner; sie
+// werden nicht pro Berechnung gespeichert.
 
 import { useState } from "react";
 import { UserDefaults, type UserDefaultsData } from "@/entities/UserDefaults";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Percent } from "lucide-react";
@@ -63,28 +62,14 @@ export default function TaxInputs({
               Anteil der Depot-Gewinne, der steuerfrei bleibt (InvStG).
             </p>
           </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700">
-              Sparerpauschbetrag (€)
-            </Label>
-            <NumericInput
-              value={data.sparerpauschbetrag_eur}
-              onChange={(v) => set("sparerpauschbetrag_eur", v)}
-              className={inputClass}
-            />
-            <p className="text-xs text-slate-500">
-              Wird einmalig bei Auszahlung abgezogen (Vereinfachung).
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
             <div>
               <p className="text-sm font-medium text-slate-700">
                 Solidaritätszuschlag
               </p>
-              <p className="text-xs text-slate-500 mt-0.5">+5,5 % auf die Steuer</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                +5,5 % auf die Steuer (fällt bei Kapitalerträgen immer an)
+              </p>
             </div>
             <Switch
               checked={data.apply_solidaritaetszuschlag}
@@ -109,7 +94,9 @@ export default function TaxInputs({
 
         <p className="text-xs text-slate-400">
           Diese Einstellungen werden in den Voreinstellungen gespeichert und
-          gelten für alle Rechner. Vereinfachtes Modell ohne Vorabpauschale.
+          gelten für alle Rechner (SolZ/Kirchensteuer auch für die LV-Steuer).
+          Vereinfachtes Modell: keine Vorabpauschale, kein Sparerpauschbetrag
+          (konservativ – ggf. anderweitig verbraucht).
         </p>
       </CardContent>
     </Card>

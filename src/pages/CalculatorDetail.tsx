@@ -5,6 +5,7 @@ import { Calculation } from "@/entities/Calculation";
 import {
   UserDefaults,
   depotTaxOptionsFromDefaults,
+  lvTaxOptionsFromDefaults,
 } from "@/entities/UserDefaults";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -121,9 +122,7 @@ export default function CalculatorDetail() {
       depot,
       years,
       birth_year: formData.birth_year,
-      lvTaxOptions: {
-        personalIncomeTaxRate: d.lv_personal_income_tax_rate / 100,
-      },
+      lvTaxOptions: lvTaxOptionsFromDefaults(d),
       depotTaxOptions: depotTaxOptionsFromDefaults(d),
     });
   };

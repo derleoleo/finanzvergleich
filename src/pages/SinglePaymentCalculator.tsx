@@ -23,7 +23,10 @@ import MultiFundEditor, { type FundEntry } from "@/components/calculator/MultiFu
 
 import { simulateDepot, simulateLv } from "@/lib/finance/simulation";
 import { buildComparisonResults } from "@/lib/finance/series";
-import { depotTaxOptionsFromDefaults } from "@/entities/UserDefaults";
+import {
+  depotTaxOptionsFromDefaults,
+  lvTaxOptionsFromDefaults,
+} from "@/entities/UserDefaults";
 import TaxInputs from "@/components/calculator/TaxInputs";
 
 const DRAFT_KEY = "fv_singlepayment_draft_v1";
@@ -197,9 +200,7 @@ export default function SinglePaymentCalculator() {
       depot,
       years,
       birth_year: toNum(formData.birth_year),
-      lvTaxOptions: {
-        personalIncomeTaxRate: d.lv_personal_income_tax_rate / 100,
-      },
+      lvTaxOptions: lvTaxOptionsFromDefaults(d),
       depotTaxOptions: depotTaxOptionsFromDefaults(d),
     });
 
@@ -435,7 +436,7 @@ export default function SinglePaymentCalculator() {
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <p className="text-sm text-blue-700">
                   Gewinne werden mit der <strong>Abgeltungsteuer</strong> (25 %) besteuert –
-                  abzüglich Teilfreistellung und Sparerpauschbetrag (siehe Karte „Steuern").
+                  abzüglich Teilfreistellung (siehe Karte „Steuern").
                 </p>
               </div>
             </CardContent>

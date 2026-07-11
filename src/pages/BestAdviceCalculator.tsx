@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl, toNum } from "@/utils";
 import { BestAdviceCalculation } from "@/entities/BestAdviceCalculation";
-import { UserDefaults } from "@/entities/UserDefaults";
+import { UserDefaults, lvTaxOptionsFromDefaults } from "@/entities/UserDefaults";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -155,8 +155,7 @@ export default function BestAdviceCalculator() {
   const calculateResults = () => {
     const years = Math.max(1, toNum(formData.contract_duration_years));
     const months = years * 12;
-    const personalIncomeTaxRate =
-      UserDefaults.load().lv_personal_income_tax_rate / 100;
+    const lvTaxOptions = lvTaxOptionsFromDefaults();
 
     // Fonds-LV: mit effektiven Gesamtwerten aller LVs, über die gemeinsame Engine
     const lvSim = simulateLv({
@@ -194,9 +193,12 @@ export default function BestAdviceCalculator() {
     // LV-Steuer
     const age_at_payout = calculateAgeAtPayout(toNum(formData.birth_year), years);
     const li_gains = li_capital - total_contributions;
-    const li_tax = calculateLifeInsuranceTax(li_gains, years, age_at_payout, {
-      personalIncomeTaxRate,
-    });
+    const li_tax = calculateLifeInsuranceTax(
+      li_gains,
+      years,
+      age_at_payout,
+      lvTaxOptions
+    );
 
     // Bestandsverträge: jede LV einzeln berechnen.
     // Auch Bestands-LVs sind Versicherungen → Halbeinkünfteverfahren statt
@@ -214,9 +216,12 @@ export default function BestAdviceCalculator() {
         const startYear = toNum(lv.contract_start_year ?? 0);
         const qualDuration =
           startYear > 1900 ? payoutYear - startYear : years;
-        tax = calculateLifeInsuranceTax(gains, qualDuration, age_at_payout, {
-          personalIncomeTaxRate,
-        });
+        tax = calculateLifeInsuranceTax(
+          gains,
+          qualDuration,
+          age_at_payout,
+          lvTaxOptions
+        );
       }
       return {
         label: lv.label,

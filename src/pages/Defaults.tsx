@@ -102,14 +102,14 @@ export default function Defaults() {
             </CardContent>
           </Card>
 
-          {/* Steuern (Depot) */}
+          {/* Steuern (Depot & LV) */}
           <Card className="border-0 shadow-lg bg-white">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-3 text-lg font-bold text-slate-900">
                 <div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center">
                   <Percent className="w-4 h-4 text-amber-600" />
                 </div>
-                Steuern (Depot)
+                Steuern
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -127,19 +127,10 @@ export default function Defaults() {
                   </select>
                   <p className="text-xs text-slate-400">Anteil der Depot-Gewinne, der steuerfrei bleibt (InvStG).</p>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">Sparerpauschbetrag (€)</Label>
-                  <NumericInput value={data.sparerpauschbetrag_eur}
-                    onChange={(v) => set("sparerpauschbetrag_eur", v)}
-                    className={inputClass} />
-                  <p className="text-xs text-slate-400">Wird einmalig bei Auszahlung von den steuerpflichtigen Gewinnen abgezogen (Vereinfachung).</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
                   <div>
                     <p className="text-sm font-medium text-slate-700">Solidaritätszuschlag</p>
-                    <p className="text-xs text-slate-400 mt-0.5">+5,5 % auf die Steuer</p>
+                    <p className="text-xs text-slate-400 mt-0.5">+5,5 % auf die Steuer (fällt bei Kapitalerträgen immer an)</p>
                   </div>
                   <Switch
                     checked={data.apply_solidaritaetszuschlag}
@@ -160,7 +151,9 @@ export default function Defaults() {
                 </div>
               </div>
               <p className="text-xs text-slate-400">
-                Vereinfachtes Modell: keine Vorabpauschale; Kirchensteuer als Zuschlag auf 25 % KapESt.
+                Vereinfachtes Modell: keine Vorabpauschale, kein Sparerpauschbetrag (konservativ – ggf.
+                anderweitig verbraucht); Kirchensteuer als Zuschlag auf 25 % KapESt. SolZ/Kirchensteuer
+                gelten auch für die LV-Steuer.
               </p>
             </CardContent>
           </Card>

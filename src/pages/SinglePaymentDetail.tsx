@@ -21,7 +21,10 @@ import {
   type FundAllocation,
 } from "@/lib/finance/simulation";
 import { buildYearlySeries } from "@/lib/finance/series";
-import { depotTaxOptionsFromDefaults } from "@/entities/UserDefaults";
+import {
+  depotTaxOptionsFromDefaults,
+  lvTaxOptionsFromDefaults,
+} from "@/entities/UserDefaults";
 
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -78,7 +81,7 @@ function buildSeries(calc: SinglePaymentModel, mode: Mode) {
     depot: depot.series,
     mode,
     birth_year: calc.birth_year,
-    lvTaxOptions: { personalIncomeTaxRate: d.lv_personal_income_tax_rate / 100 },
+    lvTaxOptions: lvTaxOptionsFromDefaults(d),
     depotTaxOptions: depotTaxOptionsFromDefaults(d),
   });
 }

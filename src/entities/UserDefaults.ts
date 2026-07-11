@@ -38,9 +38,8 @@ export type UserDefaultsData = {
   // Steuern
   lv_personal_income_tax_rate: number; // persönlicher Steuersatz bei Halbeinkünfteverfahren (%), z.B. 20
   depot_teilfreistellung_percent: number; // Teilfreistellung Depot-Fonds (0/15/30 %)
-  sparerpauschbetrag_eur: number; // Sparerpauschbetrag, einmalig bei Auszahlung
-  apply_solidaritaetszuschlag: boolean; // +5,5 % auf die Steuer
-  kirchensteuer_percent: number; // 0/8/9 % als Zuschlag auf die Steuer
+  apply_solidaritaetszuschlag: boolean; // +5,5 % auf die Steuer (Depot und LV)
+  kirchensteuer_percent: number; // 0/8/9 % als Zuschlag auf die Steuer (Depot und LV)
 };
 
 export const SYSTEM_DEFAULTS: UserDefaultsData = {
@@ -74,8 +73,8 @@ export const SYSTEM_DEFAULTS: UserDefaultsData = {
 
   lv_personal_income_tax_rate: 20,
   depot_teilfreistellung_percent: 30,
-  sparerpauschbetrag_eur: 1000,
-  apply_solidaritaetszuschlag: false,
+  // Soli fällt auf Kapitalerträge immer an (keine Freigrenze) → Default an
+  apply_solidaritaetszuschlag: true,
   kirchensteuer_percent: 0,
 };
 
@@ -83,7 +82,15 @@ export const SYSTEM_DEFAULTS: UserDefaultsData = {
 export function depotTaxOptionsFromDefaults(d: UserDefaultsData = UserDefaults.load()) {
   return {
     teilfreistellung_percent: d.depot_teilfreistellung_percent,
-    sparerpauschbetrag_eur: d.sparerpauschbetrag_eur,
+    solidaritaetszuschlag: d.apply_solidaritaetszuschlag,
+    kirchensteuer_percent: d.kirchensteuer_percent,
+  };
+}
+
+/** LV-Steueroptionen aus den UserDefaults (für calculateLifeInsuranceTax). */
+export function lvTaxOptionsFromDefaults(d: UserDefaultsData = UserDefaults.load()) {
+  return {
+    personalIncomeTaxRate: d.lv_personal_income_tax_rate / 100,
     solidaritaetszuschlag: d.apply_solidaritaetszuschlag,
     kirchensteuer_percent: d.kirchensteuer_percent,
   };

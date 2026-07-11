@@ -22,7 +22,10 @@ import type { FundEntry } from "@/components/calculator/MultiFundEditor";
 
 import { simulateDepot, simulateLv } from "@/lib/finance/simulation";
 import { buildComparisonResults } from "@/lib/finance/series";
-import { depotTaxOptionsFromDefaults } from "@/entities/UserDefaults";
+import {
+  depotTaxOptionsFromDefaults,
+  lvTaxOptionsFromDefaults,
+} from "@/entities/UserDefaults";
 import TaxInputs from "@/components/calculator/TaxInputs";
 
 const DRAFT_KEY = "fv_calculator_draft_v1";
@@ -239,9 +242,7 @@ export default function Calculator() {
       depot,
       years,
       birth_year: formData.birth_year,
-      lvTaxOptions: {
-        personalIncomeTaxRate: d.lv_personal_income_tax_rate / 100,
-      },
+      lvTaxOptions: lvTaxOptionsFromDefaults(d),
       depotTaxOptions: depotTaxOptionsFromDefaults(d),
     });
   };

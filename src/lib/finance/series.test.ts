@@ -48,10 +48,10 @@ describe("buildYearlySeries", () => {
 
   it("Netto-Serie am Laufzeitende == Summary-Netto aus buildComparisonResults", () => {
     const { lv, depot, years } = makePair(25);
-    const lvTaxOptions = { personalIncomeTaxRate: 0.2 };
+    const lvTaxOptions = { personalIncomeTaxRate: 0.2, solidaritaetszuschlag: true };
     const depotTaxOptions = {
       teilfreistellung_percent: 30,
-      sparerpauschbetrag_eur: 1000,
+      solidaritaetszuschlag: true,
     };
 
     const points = buildYearlySeries({
@@ -76,7 +76,7 @@ describe("buildYearlySeries", () => {
     expect(last.depot).toBe(summary.depot_net);
   });
 
-  it("Depot-Netto steigt durch Teilfreistellung + Pauschbetrag", () => {
+  it("Depot-Netto steigt durch Teilfreistellung", () => {
     const { lv, depot, years } = makePair(25);
     const base = buildComparisonResults({
       lv,
@@ -91,7 +91,6 @@ describe("buildYearlySeries", () => {
       birth_year: YOUNG_BIRTH_YEAR,
       depotTaxOptions: {
         teilfreistellung_percent: 30,
-        sparerpauschbetrag_eur: 1000,
       },
     });
     expect(withRelief.depot_net).toBeGreaterThan(base.depot_net);
