@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { createPageUrl, toNum } from "@/utils";
 import { BestAdviceCalculation } from "@/entities/BestAdviceCalculation";
 import { UserDefaults } from "@/entities/UserDefaults";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -88,10 +88,6 @@ function makeDefaults(): FormData {
   };
 }
 
-function toNum(v: any): number {
-  const n = typeof v === "number" ? v : parseFloat(v);
-  return Number.isFinite(n) ? n : 0;
-}
 
 function loadDraft(): FormData | null {
   try {

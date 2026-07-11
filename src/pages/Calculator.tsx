@@ -334,12 +334,10 @@ export default function Calculator() {
       let adminShare = 0.4;
 
       if (years > 5) {
-        adminShare = (0.3 * years) / (years - 5);
+        // 30% der Kosten entfallen anteilig auf die "Verwaltungsphase" (Jahre 6+),
+        // 70% auf die Abschlussphase (erste 5 Jahre). adminShare → 0 bei years=5, → 0.3 bei years→∞.
+        adminShare = (0.3 * (years - 5)) / years;
         acqShare = 1 - adminShare;
-
-        // Sicherheitsklemmen
-        adminShare = Math.max(0, Math.min(1, adminShare));
-        acqShare = Math.max(0, Math.min(1, acqShare));
       }
 
       li_acquisition_costs = totalContractCosts * acqShare;
@@ -490,15 +488,11 @@ export default function Calculator() {
           <InsuranceInputs
             formData={formData}
             updateFormData={updateFormData}
-            fetchLVFundCosts={() => {}}
-            isFetchingLV={false}
           />
 
           <FundInputs
             formData={formData}
             updateFormData={updateFormData}
-            fetchDepotFundCosts={() => {}}
-            isFetchingDepot={false}
           />
 
           <Card className="border-0 shadow-lg bg-white">

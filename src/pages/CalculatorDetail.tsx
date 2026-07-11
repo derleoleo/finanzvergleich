@@ -401,14 +401,10 @@ export default function CalculatorDetail() {
           <InsuranceInputs
             formData={formData}
             updateFormData={updateFormData}
-            fetchLVFundCosts={() => {}}
-            isFetchingLV={false}
           />
           <FundInputs
             formData={formData}
             updateFormData={updateFormData}
-            fetchDepotFundCosts={() => {}}
-            isFetchingDepot={false}
           />
         </div>
 

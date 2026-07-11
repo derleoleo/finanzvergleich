@@ -7,17 +7,12 @@ import { Label } from "@/components/ui/label";
 import { TrendingUp, Building, Percent } from "lucide-react";
 import MultiFundEditor from "./MultiFundEditor";
 
+import { toNum as toNumber } from "@/utils";
+
 type Props = {
   formData: any;
   updateFormData: (field: string, value: any) => void;
-  fetchDepotFundCosts: () => void | Promise<void>; // bleibt kompatibel, wird nur nicht mehr genutzt
-  isFetchingDepot: boolean; // bleibt kompatibel, wird nur nicht mehr genutzt
 };
-
-function toNumber(value: any): number {
-  const n = typeof value === "number" ? value : parseFloat(value);
-  return Number.isFinite(n) ? n : 0;
-}
 
 export default function FundInputs({ formData, updateFormData }: Props) {
   return (

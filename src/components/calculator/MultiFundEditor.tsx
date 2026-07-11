@@ -1,3 +1,4 @@
+import { toNum } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
@@ -25,10 +26,6 @@ function genId() {
   return Math.random().toString(36).slice(2, 9);
 }
 
-function toNum(v: any): number {
-  const n = typeof v === "number" ? v : parseFloat(v);
-  return Number.isFinite(n) ? n : 0;
-}
 
 export default function MultiFundEditor({
   funds,

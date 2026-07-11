@@ -59,8 +59,8 @@ export function calculateLifeInsuranceTax(
   }
 
   const personalRate = options.personalIncomeTaxRate ?? 0.20; // Default 20%
-  // Halbeinkünfteverfahren: 50% steuerpflichtig, davon 15% Sparerpauschbetrag-Abschlag
-  // → 50% * (1 - 0.15) = 42,5% der Gewinne steuerpflichtig
+  // Halbeinkünfteverfahren: 50% der Gewinne steuerpflichtig, abzgl. 15% pauschalem Freibetrag
+  // → 50% * (1 - 0.15) = 42,5% der Gewinne steuerpflichtig (Sparerpauschbetrag individuell)
   const taxableShare = 0.50 * 0.85; // = 0.425
   return g * taxableShare * personalRate;
 }

@@ -9,20 +9,14 @@ import { Switch } from "@/components/ui/switch";
 import { Shield, Percent } from "lucide-react";
 import MultiFundEditor from "./MultiFundEditor";
 
+import { toNum as toNumber } from "@/utils";
 import { buildLvCostBreakdownActual } from "@/components/shared/CostBreakdown";
 import { formatCurrency } from "@/components/shared/CurrencyDisplay";
 
 type Props = {
   formData: any;
   updateFormData: (field: string, value: any) => void;
-  fetchLVFundCosts: () => void | Promise<void>; // bleibt optional im Props, aber UI nutzt es nicht
-  isFetchingLV: boolean; // bleibt optional im Props, aber UI nutzt es nicht
 };
-
-function toNumber(value: any): number {
-  const n = typeof value === "number" ? value : parseFloat(value);
-  return Number.isFinite(n) ? n : 0;
-}
 
 export default function InsuranceInputs({ formData, updateFormData }: Props) {
   const [showEffectiveDetails, setShowEffectiveDetails] = useState(false);

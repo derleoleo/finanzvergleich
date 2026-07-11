@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { createPageUrl, toNum } from "@/utils";
 import { PensionGapCalculation } from "@/entities/PensionGapCalculation";
 import { UserDefaults } from "@/entities/UserDefaults";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -48,11 +48,6 @@ function makeDefaults(): FormData {
     existing_capital: 20000,
     assumed_annual_return: d.assumed_annual_return,
   };
-}
-
-function toNum(v: any): number {
-  const n = typeof v === "number" ? v : parseFloat(v);
-  return Number.isFinite(n) ? n : 0;
 }
 
 function loadDraft(): FormData | null {

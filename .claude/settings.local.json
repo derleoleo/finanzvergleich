@@ -2,7 +2,46 @@
   "permissions": {
     "allow": [
       "Bash(npm install:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(node -e:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite build)",
+      "Bash(echo:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(vercel --version:*)",
+      "Bash(npx vercel:*)",
+      "Bash(gh workflow run:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh:*)",
+      "Bash(winget install:*)",
+      "Bash(npm run lint:*)",
+      "Bash(cd /c/Users/leobr/develop/finanzvergleich-local && vercel --prod 2>&1)",
+      "Bash(grep:*)",
+      "Bash(echo not ready:*)",
+      "Bash(cd C:/Users/leobr/develop/finanzvergleich-local && node take-screenshots.mjs 2>&1)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(rm:*)",
+      "Bash(claude mcp:*)",
+      "Bash(npx:*)",
+      "Bash(cp /c/Users/leobr/develop/finanzvergleich-local/public/screenshots/*.png /c/Users/leobr/my-video/public/)",
+      "Bash(cp /c/Users/leobr/develop/finanzvergleich-local/public/rentencheck-logo.png /c/Users/leobr/my-video/public/)",
+      "Bash(cp /c/Users/leobr/develop/finanzvergleich-local/public/rentencheck-logo.svg /c/Users/leobr/my-video/public/)",
+      "Bash(npm run:*)",
+      "Bash(pkill -f \"remotion studio\")",
+      "Bash(pkill -f \"remotion\")",
+      "Bash(netstat -ano)",
+      "Bash(curl:*)",
+      "Bash(bash)",
+      "Bash(cp:*)",
+      "Bash(vercel --prod)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "claude-flow"
+  ]
 }
