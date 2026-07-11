@@ -8,7 +8,7 @@ import { PensionGapCalculation, type PensionGapModel } from "@/entities/PensionG
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Calculator, DollarSign, Target, TrendingDown, ArrowRight } from "lucide-react";
+import { BarChart3, Calculator, DollarSign, Target, TrendingDown, ArrowRight, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/components/shared/CurrencyDisplay";
 
 type AnyCalc =

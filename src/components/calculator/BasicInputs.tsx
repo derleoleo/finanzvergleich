@@ -13,7 +13,7 @@ type Props = {
     contract_duration_years: number;
     assumed_annual_return: number;
     birth_year: number;
-    dynamik_percent: number;
+    dynamik_percent?: number; // ältere Datensätze: undefined = 0
   };
   updateFormData: (field: string, value: unknown) => void;
 };
@@ -205,7 +205,7 @@ export default function BasicInputs({ formData, updateFormData }: Props) {
             <NumericInput
               id="dynamik_percent"
               step="0.5"
-              value={formData.dynamik_percent}
+              value={formData.dynamik_percent ?? 0}
               onChange={(val) => updateFormData("dynamik_percent", val)}
               className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200"
             />

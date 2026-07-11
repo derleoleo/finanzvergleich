@@ -65,10 +65,6 @@ export type CalculationModel = {
 
   annual_withdrawal?: number;
 
-  // Multi-Fonds (neuere Datensätze); ältere haben nur die Einzelfonds-Felder
-  lv_funds?: FundEntry[];
-  depot_funds?: FundEntry[];
-
   results?: CalculationResults;
 };
 
