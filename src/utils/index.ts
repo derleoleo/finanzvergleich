@@ -11,6 +11,8 @@ const routes: Record<string, string> = {
   BestAdviceCalculator: "/best-advice",
   BestAdviceDetail: "/best-advice/detail",
 
+  NetPolicyCalculator: "/net-policy",
+
   PensionGapCalculator: "/pension-gap",
   PensionGapDetail: "/pension-gap/detail",
 

@@ -5,6 +5,7 @@ export type UserDefaultsData = {
   birth_year: number;
   assumed_annual_return: number;
   contract_duration_years: number;
+  inflation_percent: number; // für die Kaufkraft-Anzeige (real statt nominal)
 
   // LV-Fonds & Kosten
   lv_cost_type: "eur" | "percent";
@@ -24,6 +25,7 @@ export type UserDefaultsData = {
   // Sparvertrag & Einmalanlage
   monthly_contribution: number;
   lump_sum: number;
+  dynamik_percent: number; // jährliche Beitragssteigerung (%), 0 = konstant
 
   // Rentenlücke
   retirement_age: number;
@@ -34,6 +36,9 @@ export type UserDefaultsData = {
   withdrawal_amount: number;
   withdrawal_start_age: number;
   withdrawal_end_age: number;
+
+  // Honorarberatung (schaltet den Netto- vs. Bruttopolice-Rechner frei)
+  honorarberatung_enabled: boolean;
 
   // Steuern
   lv_personal_income_tax_rate: number; // persönlicher Steuersatz bei Halbeinkünfteverfahren (%), z.B. 20
@@ -46,6 +51,7 @@ export const SYSTEM_DEFAULTS: UserDefaultsData = {
   birth_year: 1985,
   assumed_annual_return: 5.0,
   contract_duration_years: 25,
+  inflation_percent: 2.0,
 
   lv_cost_type: "eur",
   life_insurance_acquisition_costs_eur: 2000,
@@ -62,6 +68,7 @@ export const SYSTEM_DEFAULTS: UserDefaultsData = {
 
   monthly_contribution: 200,
   lump_sum: 50000,
+  dynamik_percent: 0,
 
   retirement_age: 67,
   desired_monthly_income: 3000,
@@ -70,6 +77,8 @@ export const SYSTEM_DEFAULTS: UserDefaultsData = {
   withdrawal_amount: 12000,
   withdrawal_start_age: 65,
   withdrawal_end_age: 85,
+
+  honorarberatung_enabled: false,
 
   lv_personal_income_tax_rate: 20,
   depot_teilfreistellung_percent: 30,

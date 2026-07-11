@@ -18,6 +18,9 @@ export type SinglePaymentResults = {
   depot_depot_costs: number;
   li_tax: number;
   depot_tax: number;
+  // Effektivkosten (Reduction in Yield) in %-Punkten p.a.; ältere Datensätze: undefined
+  li_riy_percent?: number;
+  depot_riy_percent?: number;
 };
 
 export type SinglePaymentModel = {

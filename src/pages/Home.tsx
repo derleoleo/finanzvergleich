@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Card } from "@/components/ui/card";
+import { UserDefaults } from "@/entities/UserDefaults";
 import {
-  Calculator, DollarSign, Target, TrendingDown, Wallet, ArrowRight,
+  Calculator, DollarSign, Target, TrendingDown, Wallet, ArrowRight, Handshake,
 } from "lucide-react";
 
 const calculators = [
@@ -48,7 +49,20 @@ const calculators = [
   },
 ];
 
+// Nur sichtbar, wenn Honorarberatung in den Voreinstellungen aktiviert ist
+const netPolicyCard = {
+  icon: Handshake,
+  title: "Netto- vs. Bruttopolice",
+  description: "Honorarberatung: Nettotarif plus Beratungshonorar gegen klassischen Courtagetarif vergleichen.",
+  href: createPageUrl("NetPolicyCalculator"),
+  color: "bg-teal-100 text-teal-600",
+  badge: "Neu",
+};
+
 export default function Home() {
+  const cards = UserDefaults.load().honorarberatung_enabled
+    ? [...calculators, netPolicyCard]
+    : calculators;
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
@@ -63,7 +77,7 @@ export default function Home() {
 
         {/* Calculator cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {calculators.map((calc) => (
+          {cards.map((calc) => (
             <Link key={calc.title} to={calc.href} className="group block">
               <Card className="border-0 shadow-lg bg-white h-full transition-all duration-200 group-hover:shadow-xl group-hover:-translate-y-0.5">
                 <div className="p-6 h-full flex flex-col items-center justify-center text-center">

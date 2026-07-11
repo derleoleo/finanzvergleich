@@ -46,6 +46,9 @@ type CostResults = {
 
   li_tax?: number;
   depot_tax?: number;
+
+  li_riy_percent?: number;
+  depot_riy_percent?: number;
 };
 
 type Calc = {
@@ -188,6 +191,16 @@ export default function CalculatorCostsDetail() {
                 Abschluss {formatCurrency(liAcq)} · Verwaltung{" "}
                 {formatCurrency(liAdmin)} · Fonds {formatCurrency(liFund)}
               </div>
+              {calc.results?.li_riy_percent != null && (
+                <div className="text-sm text-slate-600 mt-1">
+                  Effektivkosten:{" "}
+                  <span className="font-semibold">
+                    {Number(calc.results.li_riy_percent).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+                    %-Pkt. p.a.
+                  </span>{" "}
+                  Renditeminderung
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -203,6 +216,16 @@ export default function CalculatorCostsDetail() {
                 Ausgabeaufschlag {formatCurrency(depotInit)} · Depot{" "}
                 {formatCurrency(depotDepot)} · Fonds {formatCurrency(depotFund)}
               </div>
+              {calc.results?.depot_riy_percent != null && (
+                <div className="text-sm text-slate-600 mt-1">
+                  Effektivkosten:{" "}
+                  <span className="font-semibold">
+                    {Number(calc.results.depot_riy_percent).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+                    %-Pkt. p.a.
+                  </span>{" "}
+                  Renditeminderung
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

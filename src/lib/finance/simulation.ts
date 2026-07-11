@@ -12,6 +12,11 @@
 //   nach einheitlicher Regel (siehe splitLvEffectiveCosts).
 // - Depot: Ausgabeaufschlag auf Startkapital und jeden Beitrag; Depot- und
 //   Fondskosten monatlich vom Kapital.
+// - Beitragsdynamik (dynamik_percent): der Monatsbeitrag steigt nach jeweils
+//   12 Monaten um x %. Bewusste Vereinfachung: keine Nachzillmerung der
+//   Erhöhungsbeiträge – im EUR-Modus bleiben die Abschlusskosten der
+//   eingegebene Festbetrag, im Prozent-Modus skalieren die Effektivkosten
+//   ohnehin mit dem Kapital.
 
 import {
   calculateMonthlyReturn,
@@ -35,6 +40,7 @@ export type LvSimulationInput = {
   initial_capital?: number; // Einmalbetrag / übertragenes Bestandskapital
   funds: FundAllocation[]; // gewichtete TER via weightedFundCosts()
   cost: LvCostConfig;
+  dynamik_percent?: number; // jährliche Beitragssteigerung, 0 = konstant
 };
 
 export type DepotSimulationInput = {
@@ -44,6 +50,7 @@ export type DepotSimulationInput = {
   initial_capital?: number;
   funds: FundAllocation[]; // gewichtete TER + gewichteter Ausgabeaufschlag
   depot_costs_annual_percent: number;
+  dynamik_percent?: number; // jährliche Beitragssteigerung, 0 = konstant
 };
 
 export type MonthlyPoint = {
@@ -129,6 +136,7 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
   const years = months / 12;
   const monthlyContribution = Number(input.monthly_contribution) || 0;
   const monthlyReturn = calculateMonthlyReturn(input.annual_return_percent);
+  const dynamikFactor = 1 + (Number(input.dynamik_percent) || 0) / 100;
   const fundMonthlyRate =
     weightedFundCosts(input.funds).ongoing_costs_percent / 100 / 12;
 
@@ -139,6 +147,8 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
 
   const series: MonthlyPoint[] = [];
   const initialContribution = Number(input.initial_capital) || 0;
+  let contribution = monthlyContribution;
+  let contributionsCum = initialContribution;
 
   if (input.cost.type === "eur") {
     const acq = Number(input.cost.acquisition_costs_eur) || 0;
@@ -152,10 +162,13 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
     if (!useZillmer) capital -= acq;
 
     for (let m = 1; m <= months; m++) {
+      if (m > 1 && (m - 1) % 12 === 0) contribution *= dynamikFactor;
+      contributionsCum += contribution;
+
       const contribAfter =
         useZillmer && m <= zillmerMonths
-          ? monthlyContribution - monthlyZillmer
-          : monthlyContribution;
+          ? contribution - monthlyZillmer
+          : contribution;
 
       const fundCost = capital * fundMonthlyRate;
       fundCosts += fundCost;
@@ -167,7 +180,7 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
       series.push({
         month: m,
         capital,
-        contributions_cum: initialContribution + m * monthlyContribution,
+        contributions_cum: contributionsCum,
       });
     }
   } else {
@@ -175,6 +188,9 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
     let totalContractCosts = 0;
 
     for (let m = 1; m <= months; m++) {
+      if (m > 1 && (m - 1) % 12 === 0) contribution *= dynamikFactor;
+      contributionsCum += contribution;
+
       const fundCost = capital * fundMonthlyRate;
       const effCost = capital * effRate;
       fundCosts += fundCost;
@@ -182,14 +198,14 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
 
       capital =
         capital * (1 + monthlyReturn) +
-        monthlyContribution -
+        contribution -
         fundCost -
         effCost;
 
       series.push({
         month: m,
         capital,
-        contributions_cum: initialContribution + m * monthlyContribution,
+        contributions_cum: contributionsCum,
       });
     }
 
@@ -200,7 +216,7 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
 
   return {
     gross_capital: capital,
-    total_contributions: initialContribution + monthlyContribution * months,
+    total_contributions: contributionsCum,
     costs: {
       acquisition: acquisitionCosts,
       admin: adminCosts,
@@ -215,6 +231,7 @@ export function simulateDepot(input: DepotSimulationInput): DepotSimulationResul
   const months = Math.max(1, Math.floor(input.months));
   const monthlyContribution = Number(input.monthly_contribution) || 0;
   const monthlyReturn = calculateMonthlyReturn(input.annual_return_percent);
+  const dynamikFactor = 1 + (Number(input.dynamik_percent) || 0) / 100;
 
   const { ongoing_costs_percent, initial_charge_percent } = weightedFundCosts(
     input.funds
@@ -229,13 +246,18 @@ export function simulateDepot(input: DepotSimulationInput): DepotSimulationResul
   let capital = initialContribution - initialCharges;
   let depotCosts = 0;
   let fundCosts = 0;
+  let contribution = monthlyContribution;
+  let contributionsCum = initialContribution;
 
   const series: MonthlyPoint[] = [];
 
   for (let m = 1; m <= months; m++) {
-    const initCost = monthlyContribution * initialChargeRate;
+    if (m > 1 && (m - 1) % 12 === 0) contribution *= dynamikFactor;
+    contributionsCum += contribution;
+
+    const initCost = contribution * initialChargeRate;
     initialCharges += initCost;
-    const contribAfterInit = monthlyContribution - initCost;
+    const contribAfterInit = contribution - initCost;
 
     const depotCost = capital * depotMonthlyRate;
     const fundCost = capital * fundMonthlyRate;
@@ -248,13 +270,13 @@ export function simulateDepot(input: DepotSimulationInput): DepotSimulationResul
     series.push({
       month: m,
       capital,
-      contributions_cum: initialContribution + m * monthlyContribution,
+      contributions_cum: contributionsCum,
     });
   }
 
   return {
     gross_capital: capital,
-    total_contributions: initialContribution + monthlyContribution * months,
+    total_contributions: contributionsCum,
     costs: {
       initial_charges: initialCharges,
       depot: depotCosts,

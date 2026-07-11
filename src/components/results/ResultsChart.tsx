@@ -22,7 +22,8 @@ import {
 } from "@/lib/finance/simulation";
 import { buildYearlySeries, type Mode } from "@/lib/finance/series";
 import {
-  LineChart,
+  ComposedChart,
+  Area,
   Line,
   XAxis,
   YAxis,
@@ -33,6 +34,9 @@ import {
 } from "recharts";
 import { TrendingUp } from "lucide-react";
 
+// Renditeabweichung der pessimistisch/optimistisch-Szenarien in %-Punkten
+const SCENARIO_DELTA = 2;
+
 export type { Mode };
 
 export type Calc = {
@@ -40,6 +44,7 @@ export type Calc = {
   contract_duration_years: number;
   assumed_annual_return: number;
   birth_year: number;
+  dynamik_percent?: number;
 
   lv_cost_type: "eur" | "percent";
   life_insurance_acquisition_costs_eur: number;
@@ -99,6 +104,8 @@ export default function ResultsChart({
   showModeToggle = true,
 }: Props) {
   const [internalMode, setInternalMode] = useState<Mode>("gross");
+  const [showReal, setShowReal] = useState(false);
+  const [showScenarios, setShowScenarios] = useState(false);
   const activeMode = mode ?? internalMode;
 
   const setMode = (m: Mode) => {
@@ -106,62 +113,100 @@ export default function ResultsChart({
     if (mode === undefined) setInternalMode(m);
   };
 
+  const inflationPercent = Number(UserDefaults.load().inflation_percent) || 0;
+
   const series = useMemo(() => {
     const years = Math.max(1, Math.round(calculation.contract_duration_years || 1));
     const months = years * 12;
     const d = UserDefaults.load();
+    const baseReturn = Number(calculation.assumed_annual_return) || 0;
 
-    const lv = simulateLv({
-      months,
-      annual_return_percent: Number(calculation.assumed_annual_return) || 0,
-      monthly_contribution: Number(calculation.monthly_contribution) || 0,
-      funds: lvFundsOf(calculation),
-      cost:
-        (calculation.lv_cost_type ?? "eur") === "eur"
-          ? {
-              type: "eur",
-              acquisition_costs_eur:
-                Number(calculation.life_insurance_acquisition_costs_eur) || 0,
-              admin_costs_monthly_eur:
-                Number(calculation.lv_admin_costs_monthly_eur) || 0,
-            }
-          : {
-              type: "percent",
-              effective_costs_percent:
-                Number(calculation.lv_effective_costs_percent) || 0,
-            },
-    });
-    const depot = simulateDepot({
-      months,
-      annual_return_percent: Number(calculation.assumed_annual_return) || 0,
-      monthly_contribution: Number(calculation.monthly_contribution) || 0,
-      funds: depotFundsOf(calculation),
-      depot_costs_annual_percent: Number(calculation.depot_costs_annual) || 0,
-    });
+    const run = (annualReturn: number) => {
+      const lv = simulateLv({
+        months,
+        annual_return_percent: annualReturn,
+        monthly_contribution: Number(calculation.monthly_contribution) || 0,
+        dynamik_percent: Number(calculation.dynamik_percent) || 0,
+        funds: lvFundsOf(calculation),
+        cost:
+          (calculation.lv_cost_type ?? "eur") === "eur"
+            ? {
+                type: "eur",
+                acquisition_costs_eur:
+                  Number(calculation.life_insurance_acquisition_costs_eur) || 0,
+                admin_costs_monthly_eur:
+                  Number(calculation.lv_admin_costs_monthly_eur) || 0,
+              }
+            : {
+                type: "percent",
+                effective_costs_percent:
+                  Number(calculation.lv_effective_costs_percent) || 0,
+              },
+      });
+      const depot = simulateDepot({
+        months,
+        annual_return_percent: annualReturn,
+        monthly_contribution: Number(calculation.monthly_contribution) || 0,
+        dynamik_percent: Number(calculation.dynamik_percent) || 0,
+        funds: depotFundsOf(calculation),
+        depot_costs_annual_percent: Number(calculation.depot_costs_annual) || 0,
+      });
+      return buildYearlySeries({
+        lv: lv.series,
+        depot: depot.series,
+        mode: activeMode,
+        birth_year: calculation.birth_year,
+        lvTaxOptions: lvTaxOptionsFromDefaults(d),
+        depotTaxOptions: depotTaxOptionsFromDefaults(d),
+      });
+    };
 
-    return buildYearlySeries({
-      lv: lv.series,
-      depot: depot.series,
-      mode: activeMode,
-      birth_year: calculation.birth_year,
-      lvTaxOptions: lvTaxOptionsFromDefaults(d),
-      depotTaxOptions: depotTaxOptionsFromDefaults(d),
-    });
-  }, [calculation, activeMode]);
+    const main = run(baseReturn);
+    const low = showScenarios ? run(baseReturn - SCENARIO_DELTA) : null;
+    const high = showScenarios ? run(baseReturn + SCENARIO_DELTA) : null;
+
+    const inflationRate = (Number(d.inflation_percent) || 0) / 100;
+    const deflate = (value: number, year: number) =>
+      showReal ? Math.round(value / Math.pow(1 + inflationRate, year)) : value;
+
+    return main.map((p, i) => ({
+      year: p.year,
+      age: p.age,
+      lv: deflate(p.lv, p.year),
+      depot: deflate(p.depot, p.year),
+      ...(low && high
+        ? {
+            lvBand: [deflate(low[i].lv, p.year), deflate(high[i].lv, p.year)],
+            depotBand: [
+              deflate(low[i].depot, p.year),
+              deflate(high[i].depot, p.year),
+            ],
+          }
+        : {}),
+    }));
+  }, [calculation, activeMode, showReal, showScenarios]);
 
   const end = useMemo(() => {
     const r = calculation.results;
     if (!r) return { lv: 0, depot: 0 };
-    return activeMode === "gross"
-      ? {
-          lv: Number(r.life_insurance_gross || 0),
-          depot: Number(r.depot_gross || 0),
-        }
-      : {
-          lv: Number(r.life_insurance_net || 0),
-          depot: Number(r.depot_net || 0),
-        };
-  }, [calculation.results, activeMode]);
+    const nominal =
+      activeMode === "gross"
+        ? {
+            lv: Number(r.life_insurance_gross || 0),
+            depot: Number(r.depot_gross || 0),
+          }
+        : {
+            lv: Number(r.life_insurance_net || 0),
+            depot: Number(r.depot_net || 0),
+          };
+    if (!showReal) return nominal;
+    const years = Math.max(1, Math.round(calculation.contract_duration_years || 1));
+    const factor = Math.pow(1 + inflationPercent / 100, years);
+    return {
+      lv: Math.round(nominal.lv / factor),
+      depot: Math.round(nominal.depot / factor),
+    };
+  }, [calculation, activeMode, showReal, inflationPercent]);
 
   return (
     <Card className="border-0 shadow-lg bg-white">
@@ -174,28 +219,46 @@ export default function ResultsChart({
             Verlauf (LV vs Depot)
           </CardTitle>
 
-          {showModeToggle && (
-            <div className="flex gap-2">
-              <Button
-                variant={activeMode === "gross" ? "default" : "outline"}
-                className={
-                  activeMode === "gross" ? "bg-slate-800 hover:bg-slate-700" : ""
-                }
-                onClick={() => setMode("gross")}
-              >
-                Brutto
-              </Button>
-              <Button
-                variant={activeMode === "net" ? "default" : "outline"}
-                className={
-                  activeMode === "net" ? "bg-slate-800 hover:bg-slate-700" : ""
-                }
-                onClick={() => setMode("net")}
-              >
-                Netto
-              </Button>
-            </div>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {showModeToggle && (
+              <>
+                <Button
+                  variant={activeMode === "gross" ? "default" : "outline"}
+                  className={
+                    activeMode === "gross" ? "bg-slate-800 hover:bg-slate-700" : ""
+                  }
+                  onClick={() => setMode("gross")}
+                >
+                  Brutto
+                </Button>
+                <Button
+                  variant={activeMode === "net" ? "default" : "outline"}
+                  className={
+                    activeMode === "net" ? "bg-slate-800 hover:bg-slate-700" : ""
+                  }
+                  onClick={() => setMode("net")}
+                >
+                  Netto
+                </Button>
+              </>
+            )}
+            <Button
+              variant={showReal ? "default" : "outline"}
+              className={showReal ? "bg-slate-800 hover:bg-slate-700" : ""}
+              onClick={() => setShowReal((v) => !v)}
+              title={`Kaufkraftbereinigt mit ${inflationPercent.toLocaleString("de-DE")} % Inflation p.a. (Voreinstellungen)`}
+            >
+              Real
+            </Button>
+            <Button
+              variant={showScenarios ? "default" : "outline"}
+              className={showScenarios ? "bg-slate-800 hover:bg-slate-700" : ""}
+              onClick={() => setShowScenarios((v) => !v)}
+              title={`Bandbreite bei Rendite ±${SCENARIO_DELTA} %-Punkte`}
+            >
+              Szenarien
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
@@ -204,7 +267,8 @@ export default function ResultsChart({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="rounded-xl border border-slate-200 p-4">
               <div className="text-xs text-slate-500 mb-1">
-                LV Endwert ({activeMode === "gross" ? "Brutto" : "Netto"})
+                LV Endwert ({activeMode === "gross" ? "Brutto" : "Netto"}
+                {showReal ? ", real" : ""})
               </div>
               <div className="text-xl font-bold text-slate-900">
                 {formatCurrency(end.lv)}
@@ -212,7 +276,8 @@ export default function ResultsChart({
             </div>
             <div className="rounded-xl border border-slate-200 p-4">
               <div className="text-xs text-slate-500 mb-1">
-                Depot Endwert ({activeMode === "gross" ? "Brutto" : "Netto"})
+                Depot Endwert ({activeMode === "gross" ? "Brutto" : "Netto"}
+                {showReal ? ", real" : ""})
               </div>
               <div className="text-xl font-bold text-slate-900">
                 {formatCurrency(end.depot)}
@@ -223,7 +288,7 @@ export default function ResultsChart({
 
         <div className="h-90 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
+            <ComposedChart
               data={series}
               margin={{ top: 10, right: 20, left: 10, bottom: 8 }}
             >
@@ -241,6 +306,28 @@ export default function ResultsChart({
                 }}
               />
               <Legend />
+              {showScenarios && (
+                <>
+                  <Area
+                    dataKey="lvBand"
+                    stroke="none"
+                    fill="#2563eb"
+                    fillOpacity={0.12}
+                    legendType="none"
+                    tooltipType="none"
+                    isAnimationActive={false}
+                  />
+                  <Area
+                    dataKey="depotBand"
+                    stroke="none"
+                    fill="#16a34a"
+                    fillOpacity={0.12}
+                    legendType="none"
+                    tooltipType="none"
+                    isAnimationActive={false}
+                  />
+                </>
+              )}
               <Line
                 type="monotone"
                 dataKey="lv"
@@ -259,13 +346,27 @@ export default function ResultsChart({
                 dot={false}
                 isAnimationActive={false}
               />
-            </LineChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
 
         <div className="text-sm text-slate-600">
           Tipp: Mit der Maus über den Graph fahren → Jahreswerte + Alter.
           Standard ist <strong>Brutto</strong>.
+          {showReal && (
+            <>
+              {" "}
+              <strong>Real</strong>: kaufkraftbereinigt mit{" "}
+              {inflationPercent.toLocaleString("de-DE")} % Inflation p.a.
+            </>
+          )}
+          {showScenarios && (
+            <>
+              {" "}
+              <strong>Szenarien</strong>: Bandbreite bei Rendite ±
+              {SCENARIO_DELTA} %-Punkte.
+            </>
+          )}
         </div>
       </CardContent>
     </Card>

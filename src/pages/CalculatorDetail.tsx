@@ -92,6 +92,7 @@ export default function CalculatorDetail() {
       months,
       annual_return_percent: Number(formData.assumed_annual_return) || 0,
       monthly_contribution: Number(formData.monthly_contribution) || 0,
+      dynamik_percent: Number(formData.dynamik_percent) || 0,
       funds: lvFundsOf(formData),
       cost:
         (formData.lv_cost_type ?? "eur") === "eur"
@@ -113,6 +114,7 @@ export default function CalculatorDetail() {
       months,
       annual_return_percent: Number(formData.assumed_annual_return) || 0,
       monthly_contribution: Number(formData.monthly_contribution) || 0,
+      dynamik_percent: Number(formData.dynamik_percent) || 0,
       funds: depotFundsOf(formData),
       depot_costs_annual_percent: Number(formData.depot_costs_annual) || 0,
     });
@@ -124,6 +126,12 @@ export default function CalculatorDetail() {
       birth_year: formData.birth_year,
       lvTaxOptions: lvTaxOptionsFromDefaults(d),
       depotTaxOptions: depotTaxOptionsFromDefaults(d),
+      riyInputs: {
+        annual_return_percent: Number(formData.assumed_annual_return) || 0,
+        monthly_contribution: Number(formData.monthly_contribution) || 0,
+        months,
+        dynamik_percent: Number(formData.dynamik_percent) || 0,
+      },
     });
   };
 
@@ -223,6 +231,16 @@ export default function CalculatorDetail() {
                         Verwaltung {formatCurrency(Number(calculation.results?.li_effective_costs ?? 0))} ·{" "}
                         Fonds {formatCurrency(Number(calculation.results?.li_fund_costs ?? 0))}
                       </div>
+                      {calculation.results?.li_riy_percent != null && (
+                        <div className="text-sm text-slate-600 mt-1">
+                          Effektivkosten:{" "}
+                          <span className="font-semibold">
+                            {Number(calculation.results.li_riy_percent).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+                            %-Pkt. p.a.
+                          </span>{" "}
+                          Renditeminderung durch Kosten
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                   <Card className="border-0 shadow-lg bg-white">
@@ -236,6 +254,16 @@ export default function CalculatorDetail() {
                         Depot {formatCurrency(Number(calculation.results?.depot_depot_costs ?? 0))} ·{" "}
                         Fonds {formatCurrency(Number(calculation.results?.depot_fund_costs ?? 0))}
                       </div>
+                      {calculation.results?.depot_riy_percent != null && (
+                        <div className="text-sm text-slate-600 mt-1">
+                          Effektivkosten:{" "}
+                          <span className="font-semibold">
+                            {Number(calculation.results.depot_riy_percent).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+                            %-Pkt. p.a.
+                          </span>{" "}
+                          Renditeminderung durch Kosten
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </div>

@@ -13,6 +13,7 @@ import type {
   LvSimulationResult,
   MonthlyPoint,
 } from "./simulation";
+import { reductionInYield, type ContributionStream } from "./riy";
 
 export type Mode = "gross" | "net";
 
@@ -127,6 +128,11 @@ export type ComparisonResults = {
 
   li_tax: number;
   depot_tax: number;
+
+  // Effektivkosten (Reduction in Yield) in %-Punkten p.a.;
+  // nur gesetzt, wenn riyInputs übergeben wurden
+  li_riy_percent?: number;
+  depot_riy_percent?: number;
 };
 
 /**
@@ -140,8 +146,11 @@ export function buildComparisonResults(args: {
   birth_year: number;
   lvTaxOptions?: LifeInsuranceTaxOptions;
   depotTaxOptions?: DepotTaxOptions;
+  // Beitragsreihe + angenommene Rendite für die Effektivkosten-Kennzahl (RIY)
+  riyInputs?: ContributionStream & { annual_return_percent: number };
 }): ComparisonResults {
-  const { lv, depot, years, birth_year, lvTaxOptions, depotTaxOptions } = args;
+  const { lv, depot, years, birth_year, lvTaxOptions, depotTaxOptions, riyInputs } =
+    args;
 
   const ageAtPayout = calculateAgeAtPayout(birth_year, years);
   const liTax = calculateLifeInsuranceTax(
@@ -177,5 +186,26 @@ export function buildComparisonResults(args: {
 
     li_tax: Math.round(liTax),
     depot_tax: Math.round(depotTax),
+
+    ...(riyInputs
+      ? {
+          li_riy_percent:
+            Math.round(
+              reductionInYield(
+                lv.gross_capital,
+                riyInputs.annual_return_percent,
+                riyInputs
+              ) * 100
+            ) / 100,
+          depot_riy_percent:
+            Math.round(
+              reductionInYield(
+                depot.gross_capital,
+                riyInputs.annual_return_percent,
+                riyInputs
+              ) * 100
+            ) / 100,
+        }
+      : {}),
   };
 }

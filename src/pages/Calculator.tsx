@@ -56,6 +56,7 @@ type FormData = {
 
   assumed_annual_return: number;
   birth_year: number;
+  dynamik_percent: number;
 };
 
 function makeDefaults(): FormData {
@@ -96,6 +97,7 @@ function makeDefaults(): FormData {
     depot_provider: d.depot_provider,
     assumed_annual_return: d.assumed_annual_return,
     birth_year: d.birth_year,
+    dynamik_percent: d.dynamik_percent,
   };
 }
 
@@ -213,6 +215,7 @@ export default function Calculator() {
       months,
       annual_return_percent: formData.assumed_annual_return,
       monthly_contribution: formData.monthly_contribution,
+      dynamik_percent: formData.dynamik_percent,
       funds: formData.lv_funds,
       cost:
         formData.lv_cost_type === "eur"
@@ -233,6 +236,7 @@ export default function Calculator() {
       months,
       annual_return_percent: formData.assumed_annual_return,
       monthly_contribution: formData.monthly_contribution,
+      dynamik_percent: formData.dynamik_percent,
       funds: formData.depot_funds,
       depot_costs_annual_percent: formData.depot_costs_annual,
     });
@@ -244,6 +248,12 @@ export default function Calculator() {
       birth_year: formData.birth_year,
       lvTaxOptions: lvTaxOptionsFromDefaults(d),
       depotTaxOptions: depotTaxOptionsFromDefaults(d),
+      riyInputs: {
+        annual_return_percent: formData.assumed_annual_return,
+        monthly_contribution: formData.monthly_contribution,
+        months,
+        dynamik_percent: formData.dynamik_percent,
+      },
     });
   };
 

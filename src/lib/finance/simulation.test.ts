@@ -337,6 +337,82 @@ describe("simulateDepot – Parität zur Legacy-Referenz", () => {
   });
 });
 
+describe("Beitragsdynamik", () => {
+  it("Dynamik 0 % == Altverhalten (Parität LV und Depot)", () => {
+    const base = {
+      months: 120,
+      annual_return_percent: 5,
+      monthly_contribution: 200,
+      funds: [{ allocation_eur: 200, ongoing_costs_percent: 0.3 }],
+    };
+    const lvWithout = simulateLv({
+      ...base,
+      cost: { type: "eur", acquisition_costs_eur: 2000, admin_costs_monthly_eur: 6 },
+    });
+    const lvWith = simulateLv({
+      ...base,
+      cost: { type: "eur", acquisition_costs_eur: 2000, admin_costs_monthly_eur: 6 },
+      dynamik_percent: 0,
+    });
+    expect(lvWith.gross_capital).toBe(lvWithout.gross_capital);
+    expect(lvWith.total_contributions).toBe(lvWithout.total_contributions);
+
+    const depotWithout = simulateDepot({ ...base, depot_costs_annual_percent: 0.25 });
+    const depotWith = simulateDepot({
+      ...base,
+      depot_costs_annual_percent: 0.25,
+      dynamik_percent: 0,
+    });
+    expect(depotWith.gross_capital).toBe(depotWithout.gross_capital);
+    expect(depotWith.total_contributions).toBe(depotWithout.total_contributions);
+  });
+
+  it("Golden: 5 % Dynamik über 3 Jahre → Beitragssumme 100×12×(1 + 1,05 + 1,05²)", () => {
+    // Jahr 1: 100 €/M, Jahr 2: 105 €/M, Jahr 3: 110,25 €/M
+    const expected = 12 * (100 + 105 + 110.25);
+    const lv = simulateLv({
+      months: 36,
+      annual_return_percent: 0,
+      monthly_contribution: 100,
+      funds: [{ allocation_eur: 100, ongoing_costs_percent: 0 }],
+      cost: { type: "eur", acquisition_costs_eur: 0, admin_costs_monthly_eur: 0 },
+      dynamik_percent: 5,
+    });
+    expect(lv.total_contributions).toBeCloseTo(expected, 8);
+    // Bei 0 % Rendite und 0 Kosten ist das Endkapital exakt die Beitragssumme
+    expect(lv.gross_capital).toBeCloseTo(expected, 8);
+    // Serie: Monat 12 == 1200, Monat 13 == 1200 + 105
+    expect(lv.series[11].contributions_cum).toBeCloseTo(1200, 8);
+    expect(lv.series[12].contributions_cum).toBeCloseTo(1305, 8);
+
+    const depot = simulateDepot({
+      months: 36,
+      annual_return_percent: 0,
+      monthly_contribution: 100,
+      funds: [],
+      depot_costs_annual_percent: 0,
+      dynamik_percent: 5,
+    });
+    expect(depot.total_contributions).toBeCloseTo(expected, 8);
+    expect(depot.gross_capital).toBeCloseTo(expected, 8);
+  });
+
+  it("Depot: Ausgabeaufschlag fällt auch auf erhöhte Beiträge an", () => {
+    const depot = simulateDepot({
+      months: 24,
+      annual_return_percent: 0,
+      monthly_contribution: 100,
+      funds: [
+        { allocation_eur: 100, ongoing_costs_percent: 0, initial_charge_percent: 2 },
+      ],
+      depot_costs_annual_percent: 0,
+      dynamik_percent: 10,
+    });
+    // AA = 2 % von (12×100 + 12×110)
+    expect(depot.costs.initial_charges).toBeCloseTo(0.02 * (1200 + 1320), 8);
+  });
+});
+
 describe("splitLvEffectiveCosts", () => {
   it.each([
     [4, 0.6, 0.4],

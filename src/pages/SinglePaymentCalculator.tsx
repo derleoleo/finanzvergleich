@@ -202,6 +202,11 @@ export default function SinglePaymentCalculator() {
       birth_year: toNum(formData.birth_year),
       lvTaxOptions: lvTaxOptionsFromDefaults(d),
       depotTaxOptions: depotTaxOptionsFromDefaults(d),
+      riyInputs: {
+        annual_return_percent: toNum(formData.assumed_annual_return),
+        initial_capital: ls,
+        months,
+      },
     });
 
     return { lump_sum: Math.round(ls), ...results };

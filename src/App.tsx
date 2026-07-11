@@ -31,6 +31,7 @@ import SinglePaymentCalculator from "@/pages/SinglePaymentCalculator";
 import SinglePaymentDetail from "@/pages/SinglePaymentDetail";
 import BestAdviceCalculator from "@/pages/BestAdviceCalculator";
 import BestAdviceDetail from "@/pages/BestAdviceDetail";
+import NetPolicyCalculator from "@/pages/NetPolicyCalculator";
 import PensionGapCalculator from "@/pages/PensionGapCalculator";
 import PensionGapDetail from "@/pages/PensionGapDetail";
 import Profile from "@/pages/Profile";
@@ -171,6 +172,18 @@ export default function App() {
               <PageShell>
                 <PaidRoute featureName="BestAdvice Analyse">
                   <BestAdviceDetail />
+                </PaidRoute>
+              </PageShell>
+            }
+          />
+
+          {/* Netto- vs. Bruttopolice (Honorarberatung, per Voreinstellung freigeschaltet) */}
+          <Route
+            path="/net-policy"
+            element={
+              <PageShell>
+                <PaidRoute featureName="Netto- vs. Bruttopolice">
+                  <NetPolicyCalculator />
                 </PaidRoute>
               </PageShell>
             }

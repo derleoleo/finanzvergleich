@@ -27,15 +27,19 @@ import {
 } from "@/entities/UserDefaults";
 
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
+  ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 
-function buildSeries(calc: SinglePaymentModel, mode: Mode) {
+// Renditeabweichung der pessimistisch/optimistisch-Szenarien in %-Punkten
+const SCENARIO_DELTA = 2;
+
+function buildSeries(calc: SinglePaymentModel, mode: Mode, annualReturnOverride?: number) {
   const years = Math.max(1, Math.round(calc.contract_duration_years || 1));
   const months = years * 12;
   const ls = Number(calc.lump_sum || 0);
   const d = UserDefaults.load();
+  const annualReturn = annualReturnOverride ?? Number(calc.assumed_annual_return || 0);
 
   // Multi-Fonds mit Fallback auf Legacy-Einzelfonds-Felder älterer Datensätze
   const lvFunds: FundAllocation[] =
@@ -53,7 +57,7 @@ function buildSeries(calc: SinglePaymentModel, mode: Mode) {
 
   const lv = simulateLv({
     months,
-    annual_return_percent: Number(calc.assumed_annual_return || 0),
+    annual_return_percent: annualReturn,
     initial_capital: ls,
     funds: lvFunds,
     cost:
@@ -70,7 +74,7 @@ function buildSeries(calc: SinglePaymentModel, mode: Mode) {
   });
   const depot = simulateDepot({
     months,
-    annual_return_percent: Number(calc.assumed_annual_return || 0),
+    annual_return_percent: annualReturn,
     initial_capital: ls,
     funds: depotFunds,
     depot_costs_annual_percent: Number(calc.depot_costs_annual || 0),
@@ -93,15 +97,53 @@ function SinglePaymentChart({
   mode: Mode;
   onModeChange: (m: Mode) => void;
 }) {
-  const series = useMemo(() => buildSeries(calculation, mode), [calculation, mode]);
+  const [showReal, setShowReal] = useState(false);
+  const [showScenarios, setShowScenarios] = useState(false);
+  const inflationPercent = Number(UserDefaults.load().inflation_percent) || 0;
+
+  const series = useMemo(() => {
+    const main = buildSeries(calculation, mode);
+    const baseReturn = Number(calculation.assumed_annual_return || 0);
+    const low = showScenarios
+      ? buildSeries(calculation, mode, baseReturn - SCENARIO_DELTA)
+      : null;
+    const high = showScenarios
+      ? buildSeries(calculation, mode, baseReturn + SCENARIO_DELTA)
+      : null;
+
+    const inflationRate = inflationPercent / 100;
+    const deflate = (value: number, year: number) =>
+      showReal ? Math.round(value / Math.pow(1 + inflationRate, year)) : value;
+
+    return main.map((p, i) => ({
+      year: p.year,
+      age: p.age,
+      lv: deflate(p.lv, p.year),
+      depot: deflate(p.depot, p.year),
+      ...(low && high
+        ? {
+            lvBand: [deflate(low[i].lv, p.year), deflate(high[i].lv, p.year)],
+            depotBand: [deflate(low[i].depot, p.year), deflate(high[i].depot, p.year)],
+          }
+        : {}),
+    }));
+  }, [calculation, mode, showReal, showScenarios, inflationPercent]);
 
   const end = useMemo(() => {
     const r = calculation.results;
     if (!r) return { lv: 0, depot: 0 };
-    return mode === "gross"
-      ? { lv: r.life_insurance_gross, depot: r.depot_gross }
-      : { lv: r.life_insurance_net, depot: r.depot_net };
-  }, [calculation.results, mode]);
+    const nominal =
+      mode === "gross"
+        ? { lv: r.life_insurance_gross, depot: r.depot_gross }
+        : { lv: r.life_insurance_net, depot: r.depot_net };
+    if (!showReal) return nominal;
+    const years = Math.max(1, Math.round(calculation.contract_duration_years || 1));
+    const factor = Math.pow(1 + inflationPercent / 100, years);
+    return {
+      lv: Math.round(nominal.lv / factor),
+      depot: Math.round(nominal.depot / factor),
+    };
+  }, [calculation, mode, showReal, inflationPercent]);
 
   return (
     <Card className="border-0 shadow-lg bg-white">
@@ -113,30 +155,38 @@ function SinglePaymentChart({
             </div>
             Verlauf (LV vs Depot)
           </CardTitle>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant={mode === "gross" ? "default" : "outline"}
               className={mode === "gross" ? "bg-slate-800 hover:bg-slate-700" : ""}
               onClick={() => onModeChange("gross")}>Brutto</Button>
             <Button variant={mode === "net" ? "default" : "outline"}
               className={mode === "net" ? "bg-slate-800 hover:bg-slate-700" : ""}
               onClick={() => onModeChange("net")}>Netto</Button>
+            <Button variant={showReal ? "default" : "outline"}
+              className={showReal ? "bg-slate-800 hover:bg-slate-700" : ""}
+              title={`Kaufkraftbereinigt mit ${inflationPercent.toLocaleString("de-DE")} % Inflation p.a. (Voreinstellungen)`}
+              onClick={() => setShowReal((v) => !v)}>Real</Button>
+            <Button variant={showScenarios ? "default" : "outline"}
+              className={showScenarios ? "bg-slate-800 hover:bg-slate-700" : ""}
+              title={`Bandbreite bei Rendite ±${SCENARIO_DELTA} %-Punkte`}
+              onClick={() => setShowScenarios((v) => !v)}>Szenarien</Button>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="rounded-xl border border-slate-200 p-4">
-            <div className="text-xs text-slate-500 mb-1">LV Endwert ({mode === "gross" ? "Brutto" : "Netto"})</div>
+            <div className="text-xs text-slate-500 mb-1">LV Endwert ({mode === "gross" ? "Brutto" : "Netto"}{showReal ? ", real" : ""})</div>
             <div className="text-xl font-bold text-slate-900">{formatCurrency(end.lv)}</div>
           </div>
           <div className="rounded-xl border border-slate-200 p-4">
-            <div className="text-xs text-slate-500 mb-1">Depot Endwert ({mode === "gross" ? "Brutto" : "Netto"})</div>
+            <div className="text-xs text-slate-500 mb-1">Depot Endwert ({mode === "gross" ? "Brutto" : "Netto"}{showReal ? ", real" : ""})</div>
             <div className="text-xl font-bold text-slate-900">{formatCurrency(end.depot)}</div>
           </div>
         </div>
         <div className="h-90 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={series} margin={{ top: 10, right: 20, left: 10, bottom: 8 }}>
+            <ComposedChart data={series} margin={{ top: 10, right: 20, left: 10, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="year" tick={{ fontSize: 12 }} />
               <YAxis tickFormatter={formatChartAxis} tick={{ fontSize: 12 }} />
@@ -148,9 +198,17 @@ function SinglePaymentChart({
                 }}
               />
               <Legend />
+              {showScenarios && (
+                <>
+                  <Area dataKey="lvBand" stroke="none" fill="#2563eb" fillOpacity={0.12}
+                    legendType="none" tooltipType="none" isAnimationActive={false} />
+                  <Area dataKey="depotBand" stroke="none" fill="#16a34a" fillOpacity={0.12}
+                    legendType="none" tooltipType="none" isAnimationActive={false} />
+                </>
+              )}
               <Line type="monotone" dataKey="lv" name="LV" stroke="#2563eb" strokeWidth={3} dot={false} isAnimationActive={false} />
               <Line type="monotone" dataKey="depot" name="Depot" stroke="#16a34a" strokeWidth={3} dot={false} isAnimationActive={false} />
-            </LineChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </CardContent>
@@ -291,6 +349,18 @@ export default function SinglePaymentDetail() {
                         <div className="text-lg font-bold text-slate-900 mt-1">{formatCurrency(r.depot_depot_costs)}</div>
                       </div>
                     </div>
+                    {r.li_riy_percent != null && r.depot_riy_percent != null && (
+                      <p className="text-sm text-slate-600 mt-4">
+                        Effektivkosten (Renditeminderung durch Kosten): LV{" "}
+                        <span className="font-semibold">
+                          {Number(r.li_riy_percent).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %-Pkt. p.a.
+                        </span>{" "}
+                        · Depot{" "}
+                        <span className="font-semibold">
+                          {Number(r.depot_riy_percent).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %-Pkt. p.a.
+                        </span>
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               </div>

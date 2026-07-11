@@ -22,6 +22,10 @@ export type CalculationResults = {
   depot_fund_costs: number; // TER im Depot
   depot_depot_costs: number; // Depotgebühren
 
+  // Effektivkosten (Reduction in Yield) in %-Punkten p.a.; ältere Datensätze: undefined
+  li_riy_percent?: number;
+  depot_riy_percent?: number;
+
   withdrawal_years: number;
 };
 
@@ -49,6 +53,7 @@ export type CalculationModel = {
 
   assumed_annual_return: number;
   birth_year: number;
+  dynamik_percent?: number; // jährliche Beitragssteigerung (%); ältere Datensätze: undefined = 0
 
   annual_withdrawal: number;
 

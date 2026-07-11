@@ -13,6 +13,7 @@ type Props = {
     contract_duration_years: number;
     assumed_annual_return: number;
     birth_year: number;
+    dynamik_percent: number;
   };
   updateFormData: (field: string, value: any) => void;
 };
@@ -168,26 +169,50 @@ export default function BasicInputs({ formData, updateFormData }: Props) {
           </div>
         </div>
 
-        {/* Rendite */}
-        <div className="space-y-2">
-          <Label
-            htmlFor="assumed_annual_return"
-            className="text-sm font-medium text-slate-700"
-          >
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center">
-                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+        {/* Rendite + Dynamik */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label
+              htmlFor="assumed_annual_return"
+              className="text-sm font-medium text-slate-700"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                </div>
+                Angenommene jährliche Rendite (%)
               </div>
-              Angenommene jährliche Rendite (%)
+            </Label>
+            <NumericInput
+              id="assumed_annual_return"
+              step="0.1"
+              value={formData.assumed_annual_return}
+              onChange={(val) => updateFormData("assumed_annual_return", val)}
+              className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label
+              htmlFor="dynamik_percent"
+              className="text-sm font-medium text-slate-700"
+            >
+              <div className="flex items-center gap-2">
+                <Euro className="w-4 h-4" />
+                Beitragsdynamik p.a. (%)
+              </div>
+            </Label>
+            <NumericInput
+              id="dynamik_percent"
+              step="0.5"
+              value={formData.dynamik_percent}
+              onChange={(val) => updateFormData("dynamik_percent", val)}
+              className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200"
+            />
+            <div className="text-xs text-slate-500">
+              Jährliche Beitragserhöhung, gilt für LV und Depot gleichermaßen.
             </div>
-          </Label>
-          <NumericInput
-            id="assumed_annual_return"
-            step="0.1"
-            value={formData.assumed_annual_return}
-            onChange={(val) => updateFormData("assumed_annual_return", val)}
-            className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200 md:w-1/2"
-          />
+          </div>
         </div>
       </CardContent>
     </Card>

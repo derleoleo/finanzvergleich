@@ -80,6 +80,15 @@ export default function Defaults() {
                   onChange={(v) => set("assumed_annual_return", v)}
                   className={inputClass} />
               </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5" /> Inflation p.a. (%)
+                </Label>
+                <NumericInput step={0.1} value={data.inflation_percent}
+                  onChange={(v) => set("inflation_percent", v)}
+                  className={inputClass} />
+                <p className="text-xs text-slate-400">Für die „Real"-Anzeige (Kaufkraft) in den Verlaufscharts.</p>
+              </div>
               <div className="space-y-2 md:col-span-3 border-t border-slate-100 pt-4">
                 <Label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
                   <Percent className="w-3.5 h-3.5" /> Pers. Steuersatz bei Rente (%)
@@ -299,6 +308,39 @@ export default function Defaults() {
                 <NumericInput value={data.lump_sum}
                   onChange={(v) => set("lump_sum", v)}
                   className={inputClass} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">Beitragsdynamik p.a. (%)</Label>
+                <NumericInput step={0.5} value={data.dynamik_percent}
+                  onChange={(v) => set("dynamik_percent", v)}
+                  className={inputClass} />
+                <p className="text-xs text-slate-400">Jährliche Beitragserhöhung im Sparvertrag (LV und Depot).</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Honorarberatung */}
+          <Card className="border-0 shadow-lg bg-white">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-lg font-bold text-slate-900">
+                <div className="w-9 h-9 bg-teal-100 rounded-xl flex items-center justify-center">
+                  <Percent className="w-4 h-4 text-teal-600" />
+                </div>
+                Honorarberatung
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Honorarberatung anbieten</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Schaltet den Rechner „Netto- vs. Bruttopolice" auf der Übersicht frei.
+                  </p>
+                </div>
+                <Switch
+                  checked={data.honorarberatung_enabled}
+                  onCheckedChange={(v) => set("honorarberatung_enabled", v)}
+                />
               </div>
             </CardContent>
           </Card>
