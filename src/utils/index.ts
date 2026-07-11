@@ -33,7 +33,7 @@ export function createPageUrl(pageName: string): string {
   return routes[pageName] ?? `/page/${pageName}`;
 }
 
-export function toNum(v: any): number {
-  const n = typeof v === "number" ? v : parseFloat(v);
+export function toNum(v: unknown): number {
+  const n = typeof v === "number" ? v : parseFloat(String(v));
   return Number.isFinite(n) ? n : 0;
 }

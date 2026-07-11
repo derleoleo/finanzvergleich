@@ -8,7 +8,7 @@ import { PensionGapCalculation, type PensionGapModel } from "@/entities/PensionG
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Calculator, DollarSign, Target, TrendingDown, ArrowRight, Trash2 } from "lucide-react";
+import { BarChart3, Calculator, DollarSign, Target, TrendingDown, ArrowRight } from "lucide-react";
 import { formatCurrency } from "@/components/shared/CurrencyDisplay";
 
 type AnyCalc =
@@ -26,27 +26,25 @@ export default function AllResults() {
   const [items, setItems] = useState<AnyCalc[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const load = async () => {
-    const [sparvertraege, einmalanlagen, bestAdvice, pensionGaps] = await Promise.all([
+  useEffect(() => {
+    Promise.all([
       Calculation.list("-created_date"),
       SinglePaymentCalculation.list("-created_date"),
       BestAdviceCalculation.list("-created_date"),
       PensionGapCalculation.list("-created_date"),
-    ]);
+    ]).then(([sparvertraege, einmalanlagen, bestAdvice, pensionGaps]) => {
+      const all: AnyCalc[] = [
+        ...sparvertraege.map((d): AnyCalc => ({ type: "sparvertrag", data: d })),
+        ...einmalanlagen.map((d): AnyCalc => ({ type: "einmalanlage", data: d })),
+        ...bestAdvice.map((d): AnyCalc => ({ type: "bestadvice", data: d })),
+        ...pensionGaps.map((d): AnyCalc => ({ type: "pensiongap", data: d })),
+      ];
 
-    const all: AnyCalc[] = [
-      ...sparvertraege.map((d): AnyCalc => ({ type: "sparvertrag", data: d })),
-      ...einmalanlagen.map((d): AnyCalc => ({ type: "einmalanlage", data: d })),
-      ...bestAdvice.map((d): AnyCalc => ({ type: "bestadvice", data: d })),
-      ...pensionGaps.map((d): AnyCalc => ({ type: "pensiongap", data: d })),
-    ];
-
-    all.sort((a, b) => new Date(b.data.created_date).getTime() - new Date(a.data.created_date).getTime());
-    setItems(all);
-    setIsLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
+      all.sort((a, b) => new Date(b.data.created_date).getTime() - new Date(a.data.created_date).getTime());
+      setItems(all);
+      setIsLoading(false);
+    });
+  }, []);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -79,8 +77,8 @@ export default function AllResults() {
 
   const typeLabel = (type: AnyCalc["type"]) => {
     switch (type) {
-      case "sparvertrag": return "Fonds-Sparvertrag";
-      case "einmalanlage": return "Einmalanlage";
+      case "sparvertrag": return "Depot vs. LV (monatlich)";
+      case "einmalanlage": return "Depot vs. LV (einmalig)";
       case "bestadvice": return "BestAdvice";
       case "pensiongap": return "Rentenlücke";
     }

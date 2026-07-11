@@ -7,16 +7,28 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Shield, Percent } from "lucide-react";
-import MultiFundEditor from "./MultiFundEditor";
+import MultiFundEditor, { type FundEntry } from "./MultiFundEditor";
 
 import { toNum as toNumber } from "@/utils";
 import { buildLvCostBreakdownActual } from "@/components/shared/CostBreakdown";
 import { formatCurrency } from "@/components/shared/CurrencyDisplay";
 
-type Props = {
-  formData: any;
-  updateFormData: (field: string, value: any) => void;
+type InsuranceFormData = {
+  contract_duration_years?: number;
+  life_insurance_acquisition_costs_eur?: number;
+  lv_admin_costs_monthly_eur?: number;
+  lv_cost_type?: "eur" | "percent";
+  lv_effective_costs_percent?: number;
+  lv_funds?: FundEntry[];
+  monthly_contribution?: number;
+  lump_sum?: number;
 };
+
+type Props = {
+  formData: InsuranceFormData;
+  updateFormData: (field: string, value: unknown) => void;
+};
+
 
 export default function InsuranceInputs({ formData, updateFormData }: Props) {
   const [showEffectiveDetails, setShowEffectiveDetails] = useState(false);

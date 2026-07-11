@@ -10,8 +10,8 @@ import { LEGAL_DOC_VERSION, REQUIRED_CONSENT_TYPES } from "@/utils/legalVersion"
 type Billing = "monthly" | "yearly";
 
 const PREMIUM_FEATURES = [
-  "Fonds-Sparvertrag (LV vs. Depot)",
-  "Fonds-Einmalanlage",
+  "Depot vs. LV (monatliche Anlage)",
+  "Depot vs. LV (einmalige Anlage)",
   "Kostenaufschlüsselung",
   "BestAdvice Analyse",
   "Rentenlücken-Rechner",

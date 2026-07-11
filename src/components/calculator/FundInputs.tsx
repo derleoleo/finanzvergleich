@@ -5,14 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TrendingUp, Building, Percent } from "lucide-react";
-import MultiFundEditor from "./MultiFundEditor";
+import MultiFundEditor, { type FundEntry } from "./MultiFundEditor";
+
+type FundFormData = {
+  depot_funds?: FundEntry[];
+  monthly_contribution?: number;
+  lump_sum?: number;
+  depot_provider?: string;
+  depot_costs_annual?: number;
+};
 
 import { toNum as toNumber } from "@/utils";
 
 type Props = {
-  formData: any;
-  updateFormData: (field: string, value: any) => void;
+  formData: FundFormData;
+  updateFormData: (field: string, value: unknown) => void;
 };
+
 
 export default function FundInputs({ formData, updateFormData }: Props) {
   return (

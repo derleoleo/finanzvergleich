@@ -51,6 +51,10 @@ export default function Datenschutz() {
               Zeitstempel, Browserinformationen) zur Sicherstellung von Sicherheit und Stabilität.
             </p>
             <p className="mt-2 text-slate-500">Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.</p>
+            <p className="mt-2">
+              Schriftarten werden lokal von unseren Servern ausgeliefert. Es werden keine
+              Verbindungen zu Google Fonts oder anderen externen Schriftdiensten aufgebaut.
+            </p>
           </section>
 
           <section>
@@ -113,10 +117,56 @@ export default function Datenschutz() {
             <p className="mt-2">
               Stripe verarbeitet Zahlungsdaten eigenständig als Verantwortlicher.
             </p>
+            <p className="mt-2 text-slate-500">
+              Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).
+            </p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">7. Feedback-Funktion</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">7. E-Mail-Versand</h2>
+            <p>
+              Für den Versand von Transaktions-E-Mails (z. B. Willkommens- und Vertragsmails)
+              nutzen wir:
+            </p>
+            <address className="not-italic mt-2 mb-3 pl-4 border-l-2 border-slate-200 space-y-0.5">
+              <p className="font-medium">Resend Inc.</p>
+              <p>2261 Market Street #5039</p>
+              <p>San Francisco, CA 94114, USA</p>
+            </address>
+            <p>
+              Dabei wird Ihre E-Mail-Adresse verarbeitet. Mit Resend besteht ein
+              Auftragsverarbeitungsvertrag gemäß Art. 28 DSGVO; Datenübermittlungen in die USA
+              erfolgen auf Grundlage der EU-Standardvertragsklauseln (Art. 46 DSGVO).
+            </p>
+            <p className="mt-2 text-slate-500">Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">8. Fehlerdiagnose (Sentry)</h2>
+            <p>
+              Zur Erkennung und Behebung technischer Fehler setzen wir den Dienst Sentry ein:
+            </p>
+            <address className="not-italic mt-2 mb-3 pl-4 border-l-2 border-slate-200 space-y-0.5">
+              <p className="font-medium">Functional Software Inc. (Sentry)</p>
+              <p>45 Fremont Street, 8th Floor</p>
+              <p>San Francisco, CA 94105, USA</p>
+            </address>
+            <p>
+              Bei Anwendungsfehlern werden technische Informationen übertragen (u. a. Fehlermeldung,
+              Browser- und Gerätedaten, IP-Adresse). Die Daten dienen ausschließlich der
+              Fehlerdiagnose und werden nicht zu Werbe- oder Trackingzwecken verwendet.
+              Mit Sentry besteht ein Auftragsverarbeitungsvertrag gemäß Art. 28 DSGVO;
+              Datenübermittlungen in die USA erfolgen auf Grundlage der
+              EU-Standardvertragsklauseln (Art. 46 DSGVO).
+            </p>
+            <p className="mt-2 text-slate-500">
+              Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem
+              stabilen und sicheren Betrieb).
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">9. Feedback-Funktion</h2>
             <p>
               Feedback wird in der Datenbank (Supabase) gespeichert und ist dem jeweiligen
               Nutzerkonto zugeordnet. Optional kann eine E-Mail-Adresse enthalten sein.
@@ -124,7 +174,7 @@ export default function Datenschutz() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">8. Speicherdauer</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">10. Speicherdauer</h2>
             <p>Personenbezogene Daten werden gespeichert:</p>
             <ul className="mt-2 space-y-1 list-disc list-inside">
               <li>solange der Nutzungsvertrag besteht,</li>
@@ -141,7 +191,7 @@ export default function Datenschutz() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">9. Cookies & localStorage</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">11. Cookies & localStorage</h2>
             <p>Es werden ausschließlich technisch notwendige Speichertechnologien verwendet:</p>
             <ul className="mt-2 space-y-1 list-disc list-inside">
               <li>Supabase Session-Token (Authentifizierung)</li>
@@ -155,7 +205,7 @@ export default function Datenschutz() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">10. Datensicherheit</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">12. Datensicherheit</h2>
             <p>Es werden folgende Maßnahmen eingesetzt:</p>
             <ul className="mt-2 space-y-1 list-disc list-inside">
               <li>TLS-Verschlüsselung (HTTPS)</li>
@@ -168,7 +218,7 @@ export default function Datenschutz() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">11. Betroffenenrechte</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">13. Betroffenenrechte</h2>
             <p>
               Rechte gemäß Art. 15–21 DSGVO können per E-Mail geltend gemacht werden:{" "}
               <a href="mailto:info@rentencheck.app" className="text-blue-600 hover:underline">
@@ -176,7 +226,12 @@ export default function Datenschutz() {
               </a>
             </p>
             <p className="mt-2">
-              Zuständige Aufsichtsbehörde: Die Landesbeauftragte für den Datenschutz Niedersachsen.
+              Darüber hinaus besteht gemäß Art. 77 DSGVO das Recht, Beschwerde bei einer
+              Datenschutz-Aufsichtsbehörde einzulegen.
+            </p>
+            <p className="mt-2">
+              Zuständige Aufsichtsbehörde: Die Landesbeauftragte für den Datenschutz Niedersachsen,
+              Prinzenstraße 5, 30159 Hannover.
             </p>
           </section>
 

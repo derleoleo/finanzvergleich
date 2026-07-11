@@ -127,7 +127,7 @@ export default function BestAdviceCalculator() {
     return () => { if (saveTimer.current) window.clearTimeout(saveTimer.current); };
   }, [formData]);
 
-  const update = (field: string, value: any) =>
+  const update = (field: string, value: unknown) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
   const currentAge = getCurrentAge(toNum(formData.birth_year));

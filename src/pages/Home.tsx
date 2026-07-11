@@ -9,7 +9,7 @@ import {
 const calculators = [
   {
     icon: Calculator,
-    title: "Fonds-Sparvertrag",
+    title: "Depot vs. LV (monatlich)",
     description: "Monatliche Sparrate vergleichen: Lebensversicherung vs. Direktanlage im Depot. Inklusive Kostenanalyse und Steuervergleich.",
     href: createPageUrl("Calculator"),
     color: "bg-blue-100 text-blue-600",
@@ -17,7 +17,7 @@ const calculators = [
   },
   {
     icon: DollarSign,
-    title: "Fonds-Einmalanlage",
+    title: "Depot vs. LV (einmalig)",
     description: "Einmalbetrag anlegen: LV vs. Depot. Ideal für Erbschaften, Bonuszahlungen oder vorhandenes Kapital.",
     href: createPageUrl("SinglePaymentCalculator"),
     color: "bg-green-100 text-green-600",

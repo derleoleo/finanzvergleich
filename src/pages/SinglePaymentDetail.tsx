@@ -191,8 +191,8 @@ function SinglePaymentChart({
               <XAxis dataKey="year" tick={{ fontSize: 12 }} />
               <YAxis tickFormatter={formatChartAxis} tick={{ fontSize: 12 }} />
               <Tooltip
-                formatter={(value: any, name: any) => [formatCurrency(Number(value || 0)), name === "lv" ? "LV" : "Depot"]}
-                labelFormatter={(year: any) => {
+                formatter={(value: unknown, name: unknown) => [formatCurrency(Number(value || 0)), name === "lv" ? "LV" : "Depot"]}
+                labelFormatter={(year: unknown) => {
                   const p = series.find((x) => x.year === Number(year));
                   return p ? `Jahr ${year} (Alter ${p.age})` : `Jahr ${year}`;
                 }}
@@ -219,7 +219,8 @@ function SinglePaymentChart({
 export default function SinglePaymentDetail() {
   const navigate = useNavigate();
   const [calculation, setCalculation] = useState<SinglePaymentModel | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const calcId = new URLSearchParams(window.location.search).get("id");
+  const [isLoading, setIsLoading] = useState(!!calcId);
   const [mode, setMode] = useState<Mode>("gross");
   const { isPaid } = useSubscription();
   const [showPDFUpgrade, setShowPDFUpgrade] = useState(false);
@@ -231,14 +232,12 @@ export default function SinglePaymentDetail() {
   };
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get("id");
-    if (!id) { setIsLoading(false); return; }
-
-    SinglePaymentCalculation.get(id).then((calc) => {
+    if (!calcId) return;
+    SinglePaymentCalculation.get(calcId).then((calc) => {
       if (calc) setCalculation(calc);
       setIsLoading(false);
     });
-  }, []);
+  }, [calcId]);
 
   if (isLoading) {
     return (
@@ -387,7 +386,7 @@ export default function SinglePaymentDetail() {
         ]}
         isExporting={isExporting}
         onExport={(ids) =>
-          doExport(ids, `einmalanlage-${calculation.name}`, "Fonds-Einmalanlage")
+          doExport(ids, `einmalanlage-${calculation.name}`, "Depot vs. LV – Einmalige Anlage")
         }
         onClose={closeDialog}
       />

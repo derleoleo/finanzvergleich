@@ -22,11 +22,14 @@ export type CalculationResults = {
   depot_fund_costs: number; // TER im Depot
   depot_depot_costs: number; // Depotgebühren
 
+  li_tax?: number;
+  depot_tax?: number;
+
   // Effektivkosten (Reduction in Yield) in %-Punkten p.a.; ältere Datensätze: undefined
   li_riy_percent?: number;
   depot_riy_percent?: number;
 
-  withdrawal_years: number;
+  withdrawal_years?: number;
 };
 
 export type CalculationModel = {
@@ -39,6 +42,7 @@ export type CalculationModel = {
 
   lv_cost_type: "eur" | "percent";
   life_insurance_acquisition_costs_eur: number;
+  lv_admin_costs_monthly_eur?: number;
   lv_effective_costs_percent: number;
 
   lv_fund_identifier: string;
@@ -48,6 +52,10 @@ export type CalculationModel = {
   depot_fund_initial_charge_percent: number;
   depot_fund_ongoing_costs_percent: number;
 
+  // Multi-Fonds-Konfiguration (neuere Berechnungen)
+  lv_funds?: FundEntry[];
+  depot_funds?: FundEntry[];
+
   depot_costs_annual: number;
   depot_provider: string;
 
@@ -55,7 +63,7 @@ export type CalculationModel = {
   birth_year: number;
   dynamik_percent?: number; // jährliche Beitragssteigerung (%); ältere Datensätze: undefined = 0
 
-  annual_withdrawal: number;
+  annual_withdrawal?: number;
 
   // Multi-Fonds (neuere Datensätze); ältere haben nur die Einzelfonds-Felder
   lv_funds?: FundEntry[];

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Input } from "./input";
 import type { ComponentProps } from "react";
 
@@ -17,15 +17,13 @@ export function NumericInput({ value, onChange, ...rest }: Props) {
     value === 0 ? "" : String(value)
   );
 
-  useEffect(() => {
-    // Nur synchronisieren wenn sich der externe Wert geändert hat
-    // und er nicht mit dem aktuellen Display-String übereinstimmt.
-    const parsed = parseFloat(display);
-    const displayNum = Number.isFinite(parsed) ? parsed : 0;
-    if (value !== displayNum) {
-      setDisplay(value === 0 ? "" : String(value));
-    }
-  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Externe Wertänderung während des Renderns übernehmen (statt in einem
+  // Effect) – nur wenn der Wert nicht zum aktuellen Display-String passt.
+  const parsed = parseFloat(display);
+  const displayNum = Number.isFinite(parsed) ? parsed : 0;
+  if (value !== displayNum) {
+    setDisplay(value === 0 ? "" : String(value));
+  }
 
   return (
     <Input

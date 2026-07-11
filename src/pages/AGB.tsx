@@ -32,10 +32,12 @@ export default function AGB() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">§ 3 Registrierung</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">§ 3 Registrierung & Vertragsschluss</h2>
             <p>
-              Der Vertrag kommt zustande durch Registrierung und Abschluss eines kostenpflichtigen
-              Abonnements.
+              Mit Abschluss der Registrierung kommt ein unentgeltlicher Nutzungsvertrag über den
+              kostenlosen Funktionsumfang (Basis-Plan) zustande. Durch Buchung eines
+              kostenpflichtigen Abonnements wird der Vertrag um die gebuchten Premium-Funktionen
+              erweitert.
             </p>
             <p className="mt-2">
               Der Anbieter ist berechtigt, Registrierungen ohne Angabe von Gründen abzulehnen.
@@ -43,11 +45,17 @@ export default function AGB() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">§ 4 Preise</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">§ 4 Preise & Zahlung</h2>
             <p>
-              Die Preise verstehen sich zuzüglich gesetzlicher Umsatzsteuer, sofern diese anfällt.
+              Es gelten die zum Zeitpunkt der Buchung in der aktuellen Preisübersicht
+              (Seite „Premium") ausgewiesenen Preise. Die Preise verstehen sich zuzüglich
+              gesetzlicher Umsatzsteuer, sofern diese anfällt.
             </p>
-            <p className="mt-2">Die Abrechnung erfolgt im Voraus.</p>
+            <p className="mt-2">Die Abrechnung erfolgt im Voraus über den Zahlungsdienstleister Stripe.</p>
+            <p className="mt-2">
+              Bei Zahlungsverzug ist der Anbieter berechtigt, den Zugang zu den Premium-Funktionen
+              nach vorheriger Ankündigung zu sperren, bis die offenen Beträge beglichen sind.
+            </p>
           </section>
 
           <section>
@@ -59,6 +67,16 @@ export default function AGB() {
             <p className="mt-2">
               Kündigungen können jederzeit über das Kundenportal erfolgen und wirken zum Ende der
               laufenden Abrechnungsperiode.
+            </p>
+            <p className="mt-2">
+              Das Recht beider Parteien zur außerordentlichen Kündigung aus wichtigem Grund bleibt
+              unberührt.
+            </p>
+            <p className="mt-2">
+              Nach Vertragsende kann der Nutzer seinen Account selbst löschen; gespeicherte
+              Berechnungsdaten werden danach gemäß der Datenschutzerklärung innerhalb von
+              30 Tagen gelöscht. Bis zur Account-Löschung bleiben gespeicherte Berechnungen im
+              kostenlosen Funktionsumfang einsehbar.
             </p>
           </section>
 
@@ -93,13 +111,33 @@ export default function AGB() {
 
           <section>
             <h2 className="text-lg font-semibold text-slate-900 mb-3">§ 9 Verfügbarkeit</h2>
-            <p>Angestrebte Jahresverfügbarkeit: 98 %.</p>
-            <p className="mt-2">Kein Anspruch auf ununterbrochene Verfügbarkeit.</p>
+            <p>
+              Der Anbieter strebt eine Verfügbarkeit von 98 % im Jahresmittel an. Nicht in die
+              Berechnung einbezogen werden angekündigte Wartungsfenster sowie Ausfälle, die
+              außerhalb des Einflussbereichs des Anbieters liegen (z. B. höhere Gewalt, Störungen
+              bei Dritt-Infrastruktur).
+            </p>
+            <p className="mt-2">Ein Anspruch auf ununterbrochene Verfügbarkeit besteht nicht.</p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">§ 10 Schlussbestimmungen</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">§ 10 Änderungen der AGB</h2>
+            <p>
+              Der Anbieter kann diese AGB mit Wirkung für die Zukunft ändern, soweit dies für den
+              Nutzer zumutbar ist. Änderungen werden mindestens vier Wochen vor Inkrafttreten in
+              Textform (z. B. per E-Mail) angekündigt. Widerspricht der Nutzer nicht innerhalb der
+              Frist oder nutzt er die Plattform nach Inkrafttreten weiter, gelten die geänderten
+              AGB als angenommen; hierauf wird in der Ankündigung gesondert hingewiesen.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">§ 11 Schlussbestimmungen</h2>
             <p>Es gilt deutsches Recht. Gerichtsstand ist Hannover.</p>
+            <p className="mt-2">
+              Sollten einzelne Bestimmungen dieser AGB unwirksam sein oder werden, bleibt die
+              Wirksamkeit der übrigen Bestimmungen unberührt.
+            </p>
           </section>
 
         </div>

@@ -139,7 +139,7 @@ export default function PensionGapCalculator() {
     return () => { if (saveTimer.current) window.clearTimeout(saveTimer.current); };
   }, [formData]);
 
-  const update = (field: string, value: any) =>
+  const update = (field: string, value: unknown) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
   const currentYear = new Date().getFullYear();

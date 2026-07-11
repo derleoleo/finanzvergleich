@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Calculation } from "@/entities/Calculation";
+import { Calculation, type CalculationModel } from "@/entities/Calculation";
 import {
   UserDefaults,
   depotTaxOptionsFromDefaults,
@@ -37,8 +37,8 @@ import { buildComparisonResults } from "@/lib/finance/series";
 
 export default function CalculatorDetail() {
   const navigate = useNavigate();
-  const [calculation, setCalculation] = useState<any | null>(null);
-  const [formData, setFormData] = useState<any | null>(null);
+  const [calculation, setCalculation] = useState<CalculationModel | null>(null);
+  const [formData, setFormData] = useState<CalculationModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRecalculating, setIsRecalculating] = useState(false);
 
@@ -63,7 +63,7 @@ export default function CalculatorDetail() {
       }
 
       const allCalcs = await Calculation.list();
-      const calc = (allCalcs as any[]).find((c) => String(c.id) === String(id));
+      const calc = allCalcs.find((c) => String(c.id) === String(id));
 
       if (calc) {
         setCalculation(calc);
@@ -76,14 +76,15 @@ export default function CalculatorDetail() {
     loadCalculation();
   }, []);
 
-  const updateFormData = (field: string, value: any) => {
-    setFormData((prev: any) => ({ ...prev, [field]: value }));
+  const updateFormData = (field: string, value: unknown) => {
+    setFormData((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
   // Identische Berechnung wie im Calculator (gemeinsame Engine):
   // berücksichtigt Verwaltungskosten im EUR-Modus, den einheitlichen
   // Kostensplit und Multi-Fonds-Arrays (mit Fallback auf Legacy-Felder).
   const calculateResults = () => {
+    if (!formData) return null;
     const years = Math.max(1, Number(formData.contract_duration_years || 1));
     const months = years * 12;
     const d = UserDefaults.load();
@@ -136,8 +137,10 @@ export default function CalculatorDetail() {
   };
 
   const handleRecalculate = async () => {
+    if (!formData || !calculation) return;
     setIsRecalculating(true);
     const results = calculateResults();
+    if (!results) { setIsRecalculating(false); return; }
     const updatedData = { ...formData, results };
     await Calculation.update(calculation.id, updatedData);
     setCalculation(updatedData);
@@ -383,7 +386,7 @@ export default function CalculatorDetail() {
         ]}
         isExporting={isExporting}
         onExport={(ids) =>
-          doExport(ids, `sparvertrag-${calculation.name}`, "Fonds-Sparvertrag")
+          doExport(ids, `sparvertrag-${calculation.name}`, "Depot vs. LV – Monatliche Anlage")
         }
         onClose={closeDialog}
       />

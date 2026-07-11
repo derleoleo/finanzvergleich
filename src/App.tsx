@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ReactNode } from "react";
+import { ReactNode, Suspense, lazy } from "react";
 import * as Sentry from "@sentry/react";
 import { Button } from "@/components/ui/button";
 
@@ -9,37 +9,46 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import PaidRoute from "@/components/PaidRoute";
 import Layout from "@/Layout";
 import { useAuth } from "@/contexts/AuthContext";
-
-import Login from "@/pages/Login";
-import ResetPassword from "@/pages/ResetPassword";
-import Landing from "@/pages/Landing";
-import Home from "@/pages/Home";
-import Impressum from "@/pages/Impressum";
-import Datenschutz from "@/pages/Datenschutz";
-import AGB from "@/pages/AGB";
-import AVV from "@/pages/AVV";
-import Compliance from "@/pages/Compliance";
 import ConsentGate from "@/components/ConsentGate";
-import Calculator from "@/pages/Calculator";
-import CalculatorDetail from "@/pages/CalculatorDetail";
-import CalculatorCostsDetail from "@/pages/CalculatorCostsDetail";
-import WithdrawalPlan from "@/pages/WithdrawalPlan";
-import WithdrawalPlanDetail from "@/pages/WithdrawalPlanDetail";
-
-import AllResults from "@/pages/AllResults";
-import SinglePaymentCalculator from "@/pages/SinglePaymentCalculator";
-import SinglePaymentDetail from "@/pages/SinglePaymentDetail";
-import BestAdviceCalculator from "@/pages/BestAdviceCalculator";
-import BestAdviceDetail from "@/pages/BestAdviceDetail";
-import NetPolicyCalculator from "@/pages/NetPolicyCalculator";
-import PensionGapCalculator from "@/pages/PensionGapCalculator";
-import PensionGapDetail from "@/pages/PensionGapDetail";
-import Profile from "@/pages/Profile";
-import Defaults from "@/pages/Defaults";
-import Pricing from "@/pages/Pricing";
-
-import SimplePage from "@/pages/SimplePage";
 import CookieBanner from "@/components/CookieBanner";
+
+// Seiten lazy laden → jede Route wird ein eigener Chunk,
+// das Initial-Bundle bleibt klein (v.a. Recharts-lastige Detail-Seiten)
+const Login                   = lazy(() => import("@/pages/Login"));
+const ResetPassword           = lazy(() => import("@/pages/ResetPassword"));
+const Landing                 = lazy(() => import("@/pages/Landing"));
+const Home                    = lazy(() => import("@/pages/Home"));
+const Impressum               = lazy(() => import("@/pages/Impressum"));
+const Datenschutz             = lazy(() => import("@/pages/Datenschutz"));
+const AGB                     = lazy(() => import("@/pages/AGB"));
+const AVV                     = lazy(() => import("@/pages/AVV"));
+const Compliance              = lazy(() => import("@/pages/Compliance"));
+const Calculator              = lazy(() => import("@/pages/Calculator"));
+const CalculatorDetail        = lazy(() => import("@/pages/CalculatorDetail"));
+const CalculatorCostsDetail   = lazy(() => import("@/pages/CalculatorCostsDetail"));
+const WithdrawalPlan          = lazy(() => import("@/pages/WithdrawalPlan"));
+const WithdrawalPlanDetail    = lazy(() => import("@/pages/WithdrawalPlanDetail"));
+const AllResults              = lazy(() => import("@/pages/AllResults"));
+const SinglePaymentCalculator = lazy(() => import("@/pages/SinglePaymentCalculator"));
+const SinglePaymentDetail     = lazy(() => import("@/pages/SinglePaymentDetail"));
+const BestAdviceCalculator    = lazy(() => import("@/pages/BestAdviceCalculator"));
+const BestAdviceDetail        = lazy(() => import("@/pages/BestAdviceDetail"));
+const NetPolicyCalculator     = lazy(() => import("@/pages/NetPolicyCalculator"));
+const PensionGapCalculator    = lazy(() => import("@/pages/PensionGapCalculator"));
+const PensionGapDetail        = lazy(() => import("@/pages/PensionGapDetail"));
+const Profile                 = lazy(() => import("@/pages/Profile"));
+const Defaults                = lazy(() => import("@/pages/Defaults"));
+const Pricing                 = lazy(() => import("@/pages/Pricing"));
+const SimplePage              = lazy(() => import("@/pages/SimplePage"));
+
+/** Dezenter Ladeindikator während ein Seiten-Chunk nachgeladen wird */
+function PageLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+    </div>
+  );
+}
 
 /**
  * Fallback-Seite bei unerwarteten Render-Fehlern (Sentry ErrorBoundary)
@@ -96,6 +105,7 @@ export default function App() {
       <AuthProvider>
         <SubscriptionProvider>
         <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Login (nicht geschützt, kein Layout) */}
           <Route path="/login" element={<Login />} />
@@ -284,6 +294,7 @@ export default function App() {
             }
           />
         </Routes>
+        </Suspense>
         </Sentry.ErrorBoundary>
         </SubscriptionProvider>
         <CookieBanner />

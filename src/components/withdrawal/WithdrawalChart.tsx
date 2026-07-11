@@ -9,7 +9,17 @@ type WithdrawalRow = {
   endCapital: number;
 };
 
-export default function WithdrawalChart({ data }: { data: WithdrawalRow[] }) {
+type Props = {
+  data: WithdrawalRow[];
+  /** Überschrift der Karte (Default: "Kapitalverlauf") */
+  title?: string;
+  /** Linien-/Flächenfarbe, z. B. für Szenario-Vergleich (Default: blau) */
+  color?: string;
+  /** Lesehinweis unter dem Chart anzeigen (Default: true) */
+  showHint?: boolean;
+};
+
+export default function WithdrawalChart({ data, title = "Kapitalverlauf", color = "#3b82f6", showHint = true }: Props) {
   return (
     <Card className="border-0 shadow-lg bg-white">
       <CardHeader className="pb-4">
@@ -17,7 +27,7 @@ export default function WithdrawalChart({ data }: { data: WithdrawalRow[] }) {
           <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center">
             <TrendingDown className="w-4 h-4 text-blue-600" />
           </div>
-          Kapitalverlauf
+          {title}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -37,8 +47,8 @@ export default function WithdrawalChart({ data }: { data: WithdrawalRow[] }) {
                 tickFormatter={formatChartAxis}
               />
               <Tooltip
-                formatter={(value: any, name: any) => [formatCurrency(Number(value)), name === "endCapital" ? "Restkapital" : String(name)]}
-                labelFormatter={(year: any) => `Jahr ${year}`}
+                formatter={(value: unknown, name: unknown) => [formatCurrency(Number(value)), name === "endCapital" ? "Restkapital" : String(name)]}
+                labelFormatter={(year: unknown) => `Jahr ${year}`}
                 contentStyle={{
                   backgroundColor: "white",
                   border: "1px solid #e2e8f0",
@@ -48,8 +58,8 @@ export default function WithdrawalChart({ data }: { data: WithdrawalRow[] }) {
               <Area
                 type="monotone"
                 dataKey="endCapital"
-                stroke="#3b82f6"
-                fill="#3b82f6"
+                stroke={color}
+                fill={color}
                 fillOpacity={0.1}
                 strokeWidth={3}
                 name="Restkapital"
@@ -59,6 +69,7 @@ export default function WithdrawalChart({ data }: { data: WithdrawalRow[] }) {
           </ResponsiveContainer>
         </div>
 
+        {showHint && (
         <div className="mt-4 p-4 bg-slate-50 rounded-xl">
           <h4 className="font-medium text-slate-800 mb-2">Lesehinweis</h4>
           <p className="text-sm text-slate-600">
@@ -66,6 +77,7 @@ export default function WithdrawalChart({ data }: { data: WithdrawalRow[] }) {
             Das Kapital wächst durch die angenommene Rendite und wird durch die Entnahmen reduziert.
           </p>
         </div>
+        )}
       </CardContent>
     </Card>
   );

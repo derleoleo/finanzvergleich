@@ -5,8 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Wallet, Euro } from "lucide-react";
 
 type Props = {
-  formData: any;
-  updateFormData: (field: string, value: any) => void;
+  formData: { annual_withdrawal?: number };
+  updateFormData: (field: string, value: unknown) => void;
 };
 
 export default function WithdrawalInputs({ formData, updateFormData }: Props) {

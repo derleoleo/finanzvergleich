@@ -15,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { Calculator as CalcIcon, TrendingUp, AlertCircle } from "lucide-react";
 
+import AnlageModeToggle from "@/components/calculator/AnlageModeToggle";
 import BasicInputs from "@/components/calculator/BasicInputs";
 import InsuranceInputs from "@/components/calculator/InsuranceInputs";
 import FundInputs from "@/components/calculator/FundInputs";
@@ -202,7 +203,7 @@ export default function Calculator() {
     };
   }, [formData]);
 
-  const updateFormData = (field: string, value: any) => {
+  const updateFormData = (field: string, value: unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -269,7 +270,7 @@ export default function Calculator() {
       const results = calculateResults();
       const payload = { ...formData, results };
 
-      const newCalc = await Calculation.create(payload as any);
+      const newCalc = await Calculation.create(payload);
       incrementCalculationCount();
       navigate(createPageUrl("CalculatorDetail") + `?id=${newCalc.id}`);
     } catch (e) {
@@ -297,12 +298,16 @@ export default function Calculator() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-slate-900">
-                Fonds-Sparvertrag
+                Depot vs. LV
               </h1>
               <p className="text-slate-600 mt-1">
-                Lebensversicherung vs. Direktanlage vergleichen
+                Monatliche Anlage – Lebensversicherung vs. Direktanlage vergleichen
               </p>
             </div>
+          </div>
+
+          <div className="mt-4">
+            <AnlageModeToggle mode="monthly" />
           </div>
 
           {error && (

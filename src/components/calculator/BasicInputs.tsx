@@ -15,7 +15,7 @@ type Props = {
     birth_year: number;
     dynamik_percent: number;
   };
-  updateFormData: (field: string, value: any) => void;
+  updateFormData: (field: string, value: unknown) => void;
 };
 
 function clampNumber(value: number, min: number, max: number) {

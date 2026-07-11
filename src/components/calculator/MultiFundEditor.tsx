@@ -55,8 +55,8 @@ export default function MultiFundEditor({
     onChange(funds.filter((f) => f.id !== id));
   };
 
-  const update = (id: string, field: keyof FundEntry, value: any) => {
-    onChange(funds.map((f) => (f.id === id ? { ...f, [field]: value } : f)));
+  const update = (id: string, field: keyof FundEntry, value: string | number) => {
+    onChange(funds.map((f) => (f.id === id ? { ...f, [field]: value } as FundEntry : f)));
   };
 
   return (

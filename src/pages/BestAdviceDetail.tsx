@@ -119,7 +119,8 @@ function buildSeries(calc: BestAdviceModel, mode: Mode) {
 export default function BestAdviceDetail() {
   const navigate = useNavigate();
   const [calculation, setCalculation] = useState<BestAdviceModel | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const calcId = new URLSearchParams(window.location.search).get("id");
+  const [isLoading, setIsLoading] = useState(!!calcId);
   const [mode, setMode] = useState<Mode>("gross");
   const { isPaid } = useSubscription();
   const [showPDFUpgrade, setShowPDFUpgrade] = useState(false);
@@ -131,13 +132,12 @@ export default function BestAdviceDetail() {
   };
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get("id");
-    if (!id) { setIsLoading(false); return; }
-    BestAdviceCalculation.get(id).then((calc) => {
+    if (!calcId) return;
+    BestAdviceCalculation.get(calcId).then((calc) => {
       if (calc) setCalculation(calc);
       setIsLoading(false);
     });
-  }, []);
+  }, [calcId]);
 
   const series = useMemo(() => {
     if (!calculation) return [];
@@ -345,11 +345,11 @@ export default function BestAdviceDetail() {
                   <XAxis dataKey="year" tick={{ fontSize: 12 }} />
                   <YAxis tickFormatter={formatChartAxis} tick={{ fontSize: 12 }} />
                   <Tooltip
-                    formatter={(value: any, name: any) => [
+                    formatter={(value: unknown, name: unknown) => [
                       formatCurrency(Number(value || 0)),
                       name === "fondsLV" ? "Fonds-LV" : "Bestandsvertrag"
                     ]}
-                    labelFormatter={(year: any) => {
+                    labelFormatter={(year: unknown) => {
                       const p = series.find((x) => x.year === Number(year));
                       return p ? `Jahr ${year} (Alter ${p.age})` : `Jahr ${year}`;
                     }}
