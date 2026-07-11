@@ -5,41 +5,45 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev       # Start Vite dev server with HMR
-npm run build     # TypeScript type check + Vite production build
-npm run lint      # ESLint (flat config v9+)
-npm run preview   # Preview production build locally
+npm run dev        # Start Vite dev server with HMR
+npm run build      # TypeScript type check + Vite production build
+npm run lint       # ESLint (flat config v9+)
+npm run test       # Vitest (unit tests for the calculation engine)
+npm run test:watch # Vitest in watch mode
+npm run preview    # Preview production build locally
 ```
 
-There are no tests in this project.
+CI (`.github/workflows/ci.yml`) runs lint + test + build on pushes to main and PRs.
 
 ## Architecture
 
-React 19 SPA (no backend) for comparing German life insurance (LV/Lebensversicherung) vs. direct fund investment (Depot) strategies. All calculations run client-side; data persists in `localStorage`.
+React 19 SPA for comparing German life insurance (LV/Lebensversicherung) vs. direct fund investment (Depot) strategies. All calculations run client-side.
 
-**Stack:** React 19 + TypeScript 5.9, Vite 7, Tailwind CSS 4, React Router 7, Recharts, Shadcn UI components, Lucide icons.
+**Stack:** React 19 + TypeScript 5.9, Vite 7, Tailwind CSS 4, React Router 7, Recharts, Shadcn-style UI components, Lucide icons, Supabase (Auth + Postgres), Sentry, Stripe/Resend via Vercel functions in `api/`.
 
 **Path alias:** `@/` maps to `src/`.
 
 ## Key Structural Patterns
 
-**Routing** (`src/App.tsx`, `src/utils/index.ts`): Centralized `routes` object + `createPageUrl()` helper for type-safe navigation. All pages are wrapped in `<Layout>` which provides the sidebar.
+**Routing** (`src/App.tsx`, `src/utils/index.ts`): Centralized `routes` object + `createPageUrl()` helper for type-safe navigation. Protected pages are wrapped in `PageShell` (`ProtectedRoute` → `ConsentGate` → `Layout`); paid features additionally in `PaidRoute`. A Sentry `ErrorBoundary` wraps the routes.
 
-**Data layer** (`src/entities/`): No API — all entities provide CRUD helpers (`list()`, `get()`, `create()`, `update()`) backed by `localStorage`:
-- `Calculation.ts` → `finanzvergleich_calculations` (Fonds-Sparvertrag)
-- `SinglePaymentCalculation.ts` → `finanzvergleich_singlepayment` (Einmalanlage)
-- `BestAdviceCalculation.ts` → `finanzvergleich_bestadvice` (BestAdvice)
-- `PensionGapCalculation.ts` → `finanzvergleich_pensiongap` (Rentenlücke)
-- `UserProfile.ts` → `finanzvergleich_userprofile` (simple load/save, no list)
-- `Feedback.ts` → `finanzvergleich_feedback`
+**Data layer** (`src/entities/`): Entities are thin static-class wrappers over the Supabase client (`src/lib/supabase.ts`) with `list(sort?)`, `get()`, `create()`, `update()`, `delete()`:
+- `Calculation.ts` → table `calculations` (Fonds-Sparvertrag)
+- `SinglePaymentCalculation.ts` → `single_payment_calculations` (Einmalanlage)
+- `BestAdviceCalculation.ts` → `best_advice_calculations` (BestAdvice)
+- `PensionGapCalculation.ts` → `pension_gap_calculations` (Rentenlücke)
+- `UserProfile.ts`, `Consent.ts` → Supabase
+
+localStorage is only used for drafts (`fv_*_draft_v1`), `UserDefaults.ts` (`fv_user_defaults_v1`) and the one-time migration flag (`src/utils/migrateLocalData.ts`).
 
 **Calculator state** (`src/pages/Calculator.tsx`): Controlled form with `formData` state and a single `updateFormData(field, value)` handler. Auto-saves drafts with 250ms debounce. `?resume=1` URL param loads the last draft.
 
-**Calculation engine**: Month-by-month simulation loop comparing two products. Key complexity areas:
-- LV acquisition costs distributed over max 60 months (Zillmer amortization)
-- LV effective costs split 70/30 upfront/ongoing (60/40 if contract ≤ 60 months)
-- Tax treatment: LV gets preferential half-income rule if contract ≥ 12 years and payout age ≥ 62
-- Tax calculation helpers live in `src/components/shared/TaxCalculations.ts`
+**Calculation engine** (`src/lib/finance/`): The single source of truth for the month-by-month simulation. Do NOT reimplement simulation loops in pages — use the engine:
+- `simulation.ts`: `simulateLv()` / `simulateDepot()` (savings plan and single payment via `monthly_contribution` / `initial_capital`), `weightedFundCosts()` (multi-fund weighted TER/AA), `splitLvEffectiveCosts()`
+- `series.ts`: `buildYearlySeries()` (chart data), `buildComparisonResults()` (persisted results shape), `buildGuaranteedSeries()` (BestAdvice interpolation)
+- Key rules: LV acquisition costs zillmered over max 60 months (upfront deduction for single payments); LV effective costs split by the sliding rule — years ≤ 5: 60/40 acquisition/admin, years > 5: `adminShare = 0.3·(years−5)/years`
+- Tax helpers in `src/components/shared/TaxCalculations.ts`: LV gets the Halbeinkünfte rule (42.5% of gains × personal rate) if contract ≥ 12 years and payout age ≥ 62; Depot pays Abgeltungsteuer with configurable Teilfreistellung, Sparerpauschbetrag, SolZ, Kirchensteuer (`DepotTaxOptions`, defaults from `UserDefaults` via `depotTaxOptionsFromDefaults()`). No Vorabpauschale (deliberate simplification).
+- Unit tests (`*.test.ts` next to the modules) include golden parity tests; run `npm test` after touching the engine or tax logic.
 
 **UI components** (`src/components/ui/`): Shadcn-style components (Button, Card, Input, Select, Table, etc.) — extend these rather than creating new primitives.
 

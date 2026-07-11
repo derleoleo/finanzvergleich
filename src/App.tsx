@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ReactNode } from "react";
+import * as Sentry from "@sentry/react";
+import { Button } from "@/components/ui/button";
 
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
@@ -39,6 +41,32 @@ import SimplePage from "@/pages/SimplePage";
 import CookieBanner from "@/components/CookieBanner";
 
 /**
+ * Fallback-Seite bei unerwarteten Render-Fehlern (Sentry ErrorBoundary)
+ */
+function ErrorFallback() {
+  return (
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-8 flex items-center justify-center">
+      <div className="max-w-md text-center space-y-4">
+        <h1 className="text-2xl font-bold text-slate-900">
+          Etwas ist schiefgelaufen
+        </h1>
+        <p className="text-slate-600">
+          Ein unerwarteter Fehler ist aufgetreten. Bitte laden Sie die Seite
+          neu. Sollte das Problem bestehen bleiben, kontaktieren Sie uns über
+          das Feedback-Formular.
+        </p>
+        <Button
+          className="bg-slate-800 hover:bg-slate-700 text-white"
+          onClick={() => window.location.reload()}
+        >
+          Seite neu laden
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Wrapper für alle geschützten Seiten
  */
 function PageShell({ children }: { children: ReactNode }) {
@@ -66,6 +94,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <SubscriptionProvider>
+        <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
         <Routes>
           {/* Login (nicht geschützt, kein Layout) */}
           <Route path="/login" element={<Login />} />
@@ -242,6 +271,7 @@ export default function App() {
             }
           />
         </Routes>
+        </Sentry.ErrorBoundary>
         </SubscriptionProvider>
         <CookieBanner />
       </AuthProvider>

@@ -27,3 +27,14 @@ dist-ssr
 
 .vercel
 .env*.local
+
+# Build-Artefakte
+*.tsbuildinfo
+
+# Repo-Fremdkörper (lokale Arbeitsdaten, nicht Teil der App)
+/finanzvergleich-local/
+/my-video/
+/myvideo/
+/entnahmeplan-3.pdf
+/.claude-flow/
+/.mcp.json
