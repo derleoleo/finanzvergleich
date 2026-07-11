@@ -1,3 +1,8 @@
+// src/components/results/ResultsChart.tsx
+// Verlaufschart LV vs. Depot auf Basis der gemeinsamen Simulations-Engine.
+// Einziger Chart für Sparvertrag (CalculatorDetail); unterstützt Multi-Fonds
+// mit Fallback auf die Legacy-Einzelfonds-Felder älterer Datensätze.
+
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,13 +10,13 @@ import {
   formatCurrency,
   formatChartAxis,
 } from "@/components/shared/CurrencyDisplay";
+import { UserDefaults, depotTaxOptionsFromDefaults } from "@/entities/UserDefaults";
 import {
-  calculateAgeAtPayout,
-  calculateCapitalGainsTax,
-  calculateLifeInsuranceTax,
-  calculateMonthlyReturn,
-  calculateZillmerMonths,
-} from "@/components/shared/TaxCalculations";
+  simulateDepot,
+  simulateLv,
+  type FundAllocation,
+} from "@/lib/finance/simulation";
+import { buildYearlySeries, type Mode } from "@/lib/finance/series";
 import {
   LineChart,
   Line,
@@ -24,7 +29,7 @@ import {
 } from "recharts";
 import { TrendingUp } from "lucide-react";
 
-export type Mode = "gross" | "net";
+export type { Mode };
 
 export type Calc = {
   monthly_contribution: number;
@@ -34,6 +39,7 @@ export type Calc = {
 
   lv_cost_type: "eur" | "percent";
   life_insurance_acquisition_costs_eur: number;
+  lv_admin_costs_monthly_eur?: number;
   lv_effective_costs_percent: number;
   lv_fund_ongoing_costs_percent: number;
 
@@ -41,8 +47,11 @@ export type Calc = {
   depot_fund_ongoing_costs_percent: number;
   depot_costs_annual: number;
 
+  // Multi-Fonds (neuere Datensätze); Fallback auf die Legacy-Felder oben
+  lv_funds?: FundAllocation[];
+  depot_funds?: FundAllocation[];
+
   results?: {
-    total_contributions?: number;
     life_insurance_gross: number;
     life_insurance_net: number;
     depot_gross: number;
@@ -50,106 +59,26 @@ export type Calc = {
   };
 };
 
-type SeriesPoint = {
-  year: number;
-  age: number;
-  lv: number;
-  depot: number;
-};
+export function lvFundsOf(calc: Calc): FundAllocation[] {
+  if (Array.isArray(calc.lv_funds) && calc.lv_funds.length > 0) return calc.lv_funds;
+  return [
+    {
+      allocation_eur: Number(calc.monthly_contribution) || 0,
+      ongoing_costs_percent: Number(calc.lv_fund_ongoing_costs_percent) || 0,
+    },
+  ];
+}
 
-function buildSeries(calc: Calc, mode: Mode): SeriesPoint[] {
-  const years = Math.max(1, Math.round(calc.contract_duration_years || 1));
-  const months = years * 12;
-
-  const monthlyContribution = Number(calc.monthly_contribution || 0);
-  const monthlyReturn = calculateMonthlyReturn(
-    Number(calc.assumed_annual_return || 0)
-  );
-
-  // LV
-  let lvCapital = 0;
-  const lvFundMonthlyRate =
-    Number(calc.lv_fund_ongoing_costs_percent || 0) / 100 / 12;
-  const zillmerMonths = calculateZillmerMonths(months);
-  const monthlyZillmer =
-    Number(calc.life_insurance_acquisition_costs_eur || 0) /
-    Math.max(1, zillmerMonths);
-  const lvEffectiveMonthlyRate =
-    Number(calc.lv_effective_costs_percent || 0) / 100 / 12;
-
-  // Depot
-  let depotCapital = 0;
-  const initialChargeRate =
-    Number(calc.depot_fund_initial_charge_percent || 0) / 100;
-  const initialChargeFactor = 1 - initialChargeRate;
-  const depotFundMonthlyRate =
-    Number(calc.depot_fund_ongoing_costs_percent || 0) / 100 / 12;
-  const depotDepotMonthlyRate = Number(calc.depot_costs_annual || 0) / 100 / 12;
-
-  const points: SeriesPoint[] = [];
-  let contributionsSoFar = 0;
-
-  for (let m = 1; m <= months; m++) {
-    contributionsSoFar += monthlyContribution;
-
-    // LV month
-    const lvFundCost = lvCapital * lvFundMonthlyRate;
-    if ((calc.lv_cost_type ?? "eur") === "eur") {
-      const contribAfterZillmer =
-        m <= zillmerMonths
-          ? monthlyContribution - monthlyZillmer
-          : monthlyContribution;
-      lvCapital =
-        lvCapital * (1 + monthlyReturn) + contribAfterZillmer - lvFundCost;
-    } else {
-      const lvEffectiveCost = lvCapital * lvEffectiveMonthlyRate;
-      lvCapital =
-        lvCapital * (1 + monthlyReturn) +
-        monthlyContribution -
-        lvFundCost -
-        lvEffectiveCost;
-    }
-
-    // Depot month
-    const depotFundCost = depotCapital * depotFundMonthlyRate;
-    const depotCost = depotCapital * depotDepotMonthlyRate;
-    const contribAfterInitial = monthlyContribution * initialChargeFactor;
-    depotCapital =
-      depotCapital * (1 + monthlyReturn) +
-      contribAfterInitial -
-      depotFundCost -
-      depotCost;
-
-    // yearly checkpoint
-    if (m % 12 === 0) {
-      const year = m / 12;
-      const age = calculateAgeAtPayout(calc.birth_year, year);
-
-      if (mode === "gross") {
-        points.push({
-          year,
-          age,
-          lv: Math.round(lvCapital),
-          depot: Math.round(depotCapital),
-        });
-      } else {
-        const lvGains = lvCapital - contributionsSoFar;
-        const depotGains = depotCapital - contributionsSoFar;
-
-        const lvTax = calculateLifeInsuranceTax(lvGains, year, age);
-        const depotTax = calculateCapitalGainsTax(depotGains);
-
-        points.push({
-          year,
-          age,
-          lv: Math.round(lvCapital - lvTax),
-          depot: Math.round(depotCapital - depotTax),
-        });
-      }
-    }
-  }
-
-  return points;
+export function depotFundsOf(calc: Calc): FundAllocation[] {
+  if (Array.isArray(calc.depot_funds) && calc.depot_funds.length > 0)
+    return calc.depot_funds;
+  return [
+    {
+      allocation_eur: Number(calc.monthly_contribution) || 0,
+      ongoing_costs_percent: Number(calc.depot_fund_ongoing_costs_percent) || 0,
+      initial_charge_percent: Number(calc.depot_fund_initial_charge_percent) || 0,
+    },
+  ];
 }
 
 type Props = {
@@ -173,10 +102,64 @@ export default function ResultsChart({
     if (mode === undefined) setInternalMode(m);
   };
 
-  const series = useMemo(
-    () => buildSeries(calculation, activeMode),
-    [calculation, activeMode]
-  );
+  const series = useMemo(() => {
+    const years = Math.max(1, Math.round(calculation.contract_duration_years || 1));
+    const months = years * 12;
+    const d = UserDefaults.load();
+
+    const lv = simulateLv({
+      months,
+      annual_return_percent: Number(calculation.assumed_annual_return) || 0,
+      monthly_contribution: Number(calculation.monthly_contribution) || 0,
+      funds: lvFundsOf(calculation),
+      cost:
+        (calculation.lv_cost_type ?? "eur") === "eur"
+          ? {
+              type: "eur",
+              acquisition_costs_eur:
+                Number(calculation.life_insurance_acquisition_costs_eur) || 0,
+              admin_costs_monthly_eur:
+                Number(calculation.lv_admin_costs_monthly_eur) || 0,
+            }
+          : {
+              type: "percent",
+              effective_costs_percent:
+                Number(calculation.lv_effective_costs_percent) || 0,
+            },
+    });
+    const depot = simulateDepot({
+      months,
+      annual_return_percent: Number(calculation.assumed_annual_return) || 0,
+      monthly_contribution: Number(calculation.monthly_contribution) || 0,
+      funds: depotFundsOf(calculation),
+      depot_costs_annual_percent: Number(calculation.depot_costs_annual) || 0,
+    });
+
+    return buildYearlySeries({
+      lv: lv.series,
+      depot: depot.series,
+      mode: activeMode,
+      birth_year: calculation.birth_year,
+      lvTaxOptions: {
+        personalIncomeTaxRate: d.lv_personal_income_tax_rate / 100,
+      },
+      depotTaxOptions: depotTaxOptionsFromDefaults(d),
+    });
+  }, [calculation, activeMode]);
+
+  const end = useMemo(() => {
+    const r = calculation.results;
+    if (!r) return { lv: 0, depot: 0 };
+    return activeMode === "gross"
+      ? {
+          lv: Number(r.life_insurance_gross || 0),
+          depot: Number(r.depot_gross || 0),
+        }
+      : {
+          lv: Number(r.life_insurance_net || 0),
+          depot: Number(r.depot_net || 0),
+        };
+  }, [calculation.results, activeMode]);
 
   return (
     <Card className="border-0 shadow-lg bg-white">
@@ -194,9 +177,7 @@ export default function ResultsChart({
               <Button
                 variant={activeMode === "gross" ? "default" : "outline"}
                 className={
-                  activeMode === "gross"
-                    ? "bg-slate-800 hover:bg-slate-700"
-                    : ""
+                  activeMode === "gross" ? "bg-slate-800 hover:bg-slate-700" : ""
                 }
                 onClick={() => setMode("gross")}
               >
@@ -217,6 +198,27 @@ export default function ResultsChart({
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {calculation.results && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="rounded-xl border border-slate-200 p-4">
+              <div className="text-xs text-slate-500 mb-1">
+                LV Endwert ({activeMode === "gross" ? "Brutto" : "Netto"})
+              </div>
+              <div className="text-xl font-bold text-slate-900">
+                {formatCurrency(end.lv)}
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-200 p-4">
+              <div className="text-xs text-slate-500 mb-1">
+                Depot Endwert ({activeMode === "gross" ? "Brutto" : "Netto"})
+              </div>
+              <div className="text-xl font-bold text-slate-900">
+                {formatCurrency(end.depot)}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="h-90 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
@@ -241,7 +243,7 @@ export default function ResultsChart({
                 type="monotone"
                 dataKey="lv"
                 name="LV"
-                stroke="#00A3FF"
+                stroke="#2563eb"
                 strokeWidth={3}
                 dot={false}
                 isAnimationActive={false}
@@ -250,7 +252,7 @@ export default function ResultsChart({
                 type="monotone"
                 dataKey="depot"
                 name="Depot"
-                stroke="#00C9A7"
+                stroke="#16a34a"
                 strokeWidth={3}
                 dot={false}
                 isAnimationActive={false}
@@ -260,8 +262,8 @@ export default function ResultsChart({
         </div>
 
         <div className="text-sm text-slate-600">
-          Tipp: Mit der Maus über den Graph fahren → du siehst Jahreswerte und
-          Alter. Standard ist <strong>Brutto</strong>.
+          Tipp: Mit der Maus über den Graph fahren → Jahreswerte + Alter.
+          Standard ist <strong>Brutto</strong>.
         </div>
       </CardContent>
     </Card>

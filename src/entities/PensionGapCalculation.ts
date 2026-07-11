@@ -28,11 +28,12 @@ export type PensionGapModel = {
 };
 
 export class PensionGapCalculation {
-  static async list(_sort?: string): Promise<PensionGapModel[]> {
+  static async list(sort?: string): Promise<PensionGapModel[]> {
+    // "created_date" = aufsteigend, "-created_date" (Default) = absteigend
     const { data, error } = await supabase
       .from('pension_gap_calculations')
       .select('*')
-      .order('created_date', { ascending: false })
+      .order('created_date', { ascending: sort === 'created_date' })
     if (error) throw error
     return (data ?? []) as PensionGapModel[]
   }
@@ -68,5 +69,13 @@ export class PensionGapCalculation {
       .single()
     if (error) throw error
     return data as PensionGapModel
+  }
+
+  static async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('pension_gap_calculations')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
   }
 }

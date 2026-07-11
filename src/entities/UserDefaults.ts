@@ -36,7 +36,11 @@ export type UserDefaultsData = {
   withdrawal_end_age: number;
 
   // Steuern
-  lv_personal_income_tax_rate: number; // persönlicher Steuersatz bei TEV (%), z.B. 20
+  lv_personal_income_tax_rate: number; // persönlicher Steuersatz bei Halbeinkünfteverfahren (%), z.B. 20
+  depot_teilfreistellung_percent: number; // Teilfreistellung Depot-Fonds (0/15/30 %)
+  sparerpauschbetrag_eur: number; // Sparerpauschbetrag, einmalig bei Auszahlung
+  apply_solidaritaetszuschlag: boolean; // +5,5 % auf die Steuer
+  kirchensteuer_percent: number; // 0/8/9 % als Zuschlag auf die Steuer
 };
 
 export const SYSTEM_DEFAULTS: UserDefaultsData = {
@@ -69,7 +73,21 @@ export const SYSTEM_DEFAULTS: UserDefaultsData = {
   withdrawal_end_age: 85,
 
   lv_personal_income_tax_rate: 20,
+  depot_teilfreistellung_percent: 30,
+  sparerpauschbetrag_eur: 1000,
+  apply_solidaritaetszuschlag: false,
+  kirchensteuer_percent: 0,
 };
+
+/** Depot-Steueroptionen aus den UserDefaults (für calculateCapitalGainsTax). */
+export function depotTaxOptionsFromDefaults(d: UserDefaultsData = UserDefaults.load()) {
+  return {
+    teilfreistellung_percent: d.depot_teilfreistellung_percent,
+    sparerpauschbetrag_eur: d.sparerpauschbetrag_eur,
+    solidaritaetszuschlag: d.apply_solidaritaetszuschlag,
+    kirchensteuer_percent: d.kirchensteuer_percent,
+  };
+}
 
 export class UserDefaults {
   static load(): UserDefaultsData {

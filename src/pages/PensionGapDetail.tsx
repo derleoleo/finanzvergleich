@@ -12,7 +12,7 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import UpgradePrompt from "@/components/UpgradePrompt";
 
 import { formatCurrency, formatChartAxis } from "@/components/shared/CurrencyDisplay";
-import { calculateMonthlyReturn } from "@/components/shared/TaxCalculations";
+import { simulateDepot } from "@/lib/finance/simulation";
 
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -23,25 +23,25 @@ function buildSavingsGrowthSeries(calc: PensionGapModel) {
   if (!calc.results || calc.results.gap_already_covered) return [];
 
   const r = calc.results;
-  const annual_return = (calc.assumed_annual_return || 0) / 100;
-  const monthly_r = calculateMonthlyReturn(calc.assumed_annual_return || 0);
-  const monthly_savings = r.monthly_savings_needed;
   const years_to_retirement = r.years_to_retirement;
-  const existing = calc.existing_capital || 0;
-
-  const points: { year: number; age: number; capital: number; target: number }[] = [];
   const currentAge = r.current_age;
 
-  let capital = existing;
+  // Kostenfreier Sparplan über die gemeinsame Engine
+  const sim = simulateDepot({
+    months: years_to_retirement * 12,
+    annual_return_percent: calc.assumed_annual_return || 0,
+    monthly_contribution: r.monthly_savings_needed,
+    initial_capital: calc.existing_capital || 0,
+    funds: [],
+    depot_costs_annual_percent: 0,
+  });
+
+  const points: { year: number; age: number; capital: number; target: number }[] = [];
   for (let y = 1; y <= years_to_retirement; y++) {
-    // Grow existing capital + savings contributions
-    for (let m = 0; m < 12; m++) {
-      capital = capital * (1 + monthly_r) + monthly_savings;
-    }
     points.push({
       year: y,
       age: currentAge + y,
-      capital: Math.round(capital),
+      capital: Math.round(sim.series[y * 12 - 1].capital),
       target: Math.round(r.capital_needed_at_retirement),
     });
   }

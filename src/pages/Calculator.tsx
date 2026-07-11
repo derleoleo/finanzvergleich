@@ -20,13 +20,10 @@ import InsuranceInputs from "@/components/calculator/InsuranceInputs";
 import FundInputs from "@/components/calculator/FundInputs";
 import type { FundEntry } from "@/components/calculator/MultiFundEditor";
 
-import {
-  calculateAgeAtPayout,
-  calculateCapitalGainsTax,
-  calculateLifeInsuranceTax,
-  calculateMonthlyReturn,
-  calculateZillmerMonths,
-} from "@/components/shared/TaxCalculations";
+import { simulateDepot, simulateLv } from "@/lib/finance/simulation";
+import { buildComparisonResults } from "@/lib/finance/series";
+import { depotTaxOptionsFromDefaults } from "@/entities/UserDefaults";
+import TaxInputs from "@/components/calculator/TaxInputs";
 
 const DRAFT_KEY = "fv_calculator_draft_v1";
 
@@ -205,224 +202,48 @@ export default function Calculator() {
   };
 
   const calculateResults = () => {
-    const {
-      monthly_contribution,
-      contract_duration_years,
-      lv_cost_type,
-      life_insurance_acquisition_costs_eur,
-      lv_admin_costs_monthly_eur,
-      lv_effective_costs_percent,
-      depot_costs_annual,
-      assumed_annual_return,
-      birth_year,
-      lv_funds,
-      depot_funds,
-    } = formData;
-
-    // Gewichtete TER für LV-Fonds
-    const lvTotalAlloc = Math.max(
-      0.01,
-      lv_funds.reduce((s, f) => s + (Number(f.allocation_eur) || 0), 0)
-    );
-    const lv_fund_ongoing_costs_percent =
-      lv_funds.length === 1
-        ? lv_funds[0].ongoing_costs_percent
-        : lv_funds.reduce(
-            (acc, f) =>
-              acc +
-              ((Number(f.allocation_eur) || 0) / lvTotalAlloc) *
-                f.ongoing_costs_percent,
-            0
-          );
-
-    // Gewichtete Werte für Depot-Fonds
-    const depotTotalAlloc = Math.max(
-      0.01,
-      depot_funds.reduce((s, f) => s + (Number(f.allocation_eur) || 0), 0)
-    );
-    const depot_fund_ongoing_costs_percent =
-      depot_funds.length === 1
-        ? depot_funds[0].ongoing_costs_percent
-        : depot_funds.reduce(
-            (acc, f) =>
-              acc +
-              ((Number(f.allocation_eur) || 0) / depotTotalAlloc) *
-                f.ongoing_costs_percent,
-            0
-          );
-    const depot_fund_initial_charge_percent =
-      depot_funds.length === 1
-        ? depot_funds[0].initial_charge_percent ?? 0
-        : depot_funds.reduce(
-            (acc, f) =>
-              acc +
-              ((Number(f.allocation_eur) || 0) / depotTotalAlloc) *
-                (f.initial_charge_percent ?? 0),
-            0
-          );
-
-    const years = Math.max(1, Number(contract_duration_years || 1));
+    const years = Math.max(1, Number(formData.contract_duration_years || 1));
     const months = years * 12;
-    const total_contributions = monthly_contribution * months;
-    const monthly_return = calculateMonthlyReturn(assumed_annual_return);
+    const d = UserDefaults.load();
 
-    // =========================
-    // LV
-    // =========================
-    let li_capital = 0;
-
-    // Wir speichern getrennte Kosten-Container (für Kosten-Detailseite)
-    let li_acquisition_costs = 0; // Abschluss
-    let li_fund_costs = 0; // Fondskosten
-    let li_admin_costs = 0; // Verwaltung (wir nutzen dafür später li_effective_costs Feld)
-
-    if (lv_cost_type === "eur") {
-      // Abschlusskosten in EUR: Zillmerung über max. 60 Monate
-      const zillmer_months = calculateZillmerMonths(months);
-      const monthly_zillmer =
-        life_insurance_acquisition_costs_eur / Math.max(1, zillmer_months);
-
-      li_acquisition_costs = life_insurance_acquisition_costs_eur;
-
-      const adminMonthly = Number(lv_admin_costs_monthly_eur || 0) || 0;
-
-      for (let m = 1; m <= months; m++) {
-        const contribAfter =
-          m <= zillmer_months
-            ? monthly_contribution - monthly_zillmer
-            : monthly_contribution;
-
-        const fundCost =
-          li_capital * (lv_fund_ongoing_costs_percent / 100 / 12);
-
-        const adminCost = adminMonthly;
-
-        li_fund_costs += fundCost;
-        li_admin_costs += adminCost;
-
-        li_capital =
-          li_capital * (1 + monthly_return) +
-          contribAfter -
-          fundCost -
-          adminCost;
-      }
-    } else {
-      // Effektivkosten % p.a.: monatlicher Abzug vom Kapital
-      const effRate = lv_effective_costs_percent / 100 / 12;
-
-      let totalContractCosts = 0; // Abschluss+Verwaltung zusammen (ohne Fondskosten)
-
-      for (let m = 1; m <= months; m++) {
-        const fundCost =
-          li_capital * (lv_fund_ongoing_costs_percent / 100 / 12);
-        const effCost = li_capital * effRate;
-
-        li_fund_costs += fundCost;
-        totalContractCosts += effCost;
-
-        li_capital =
-          li_capital * (1 + monthly_return) +
-          monthly_contribution -
-          fundCost -
-          effCost;
-      }
-
-      // ✅ SPLIT Abschluss vs Verwaltung nach deiner Regel:
-      // - Laufzeit <= 5: 60% Abschluss / 40% Verwaltung
-      // - Laufzeit > 5: 70% in den ersten 5 Jahren, 30% im Rest (Verwaltung gleichmäßig pro Jahr)
-      let acqShare = 0.6;
-      let adminShare = 0.4;
-
-      if (years > 5) {
-        // 30% der Kosten entfallen anteilig auf die "Verwaltungsphase" (Jahre 6+),
-        // 70% auf die Abschlussphase (erste 5 Jahre). adminShare → 0 bei years=5, → 0.3 bei years→∞.
-        adminShare = (0.3 * (years - 5)) / years;
-        acqShare = 1 - adminShare;
-      }
-
-      li_acquisition_costs = totalContractCosts * acqShare;
-      li_admin_costs = totalContractCosts * adminShare;
-    }
-
-    const li_total_costs =
-      li_acquisition_costs + li_admin_costs + li_fund_costs;
-
-    // =========================
-    // Depot
-    // =========================
-    let depot_capital = 0;
-
-    let depot_initial_charges = 0; // Ausgabeaufschläge (Summe)
-    let depot_fund_costs = 0; // laufende Fondskosten
-    let depot_depot_costs = 0; // Depotkosten
-
-    const initialChargeFactor = 1 - depot_fund_initial_charge_percent / 100;
-
-    for (let m = 1; m <= months; m++) {
-      const initCost =
-        monthly_contribution * (depot_fund_initial_charge_percent / 100);
-      depot_initial_charges += initCost;
-
-      const contribAfterInit = monthly_contribution * initialChargeFactor;
-
-      const depotCost = depot_capital * (depot_costs_annual / 100 / 12);
-      depot_depot_costs += depotCost;
-
-      const fundCost =
-        depot_capital * (depot_fund_ongoing_costs_percent / 100 / 12);
-      depot_fund_costs += fundCost;
-
-      depot_capital =
-        depot_capital * (1 + monthly_return) +
-        contribAfterInit -
-        depotCost -
-        fundCost;
-    }
-
-    const depot_total_costs =
-      depot_initial_charges + depot_fund_costs + depot_depot_costs;
-
-    // =========================
-    // Taxes (Ende)
-    // =========================
-    const age_at_payout = calculateAgeAtPayout(birth_year, years);
-
-    const li_gains = li_capital - total_contributions;
-    const li_tax = calculateLifeInsuranceTax(li_gains, years, age_at_payout, {
-      personalIncomeTaxRate: UserDefaults.load().lv_personal_income_tax_rate / 100,
+    const lv = simulateLv({
+      months,
+      annual_return_percent: formData.assumed_annual_return,
+      monthly_contribution: formData.monthly_contribution,
+      funds: formData.lv_funds,
+      cost:
+        formData.lv_cost_type === "eur"
+          ? {
+              type: "eur",
+              acquisition_costs_eur:
+                formData.life_insurance_acquisition_costs_eur,
+              admin_costs_monthly_eur:
+                Number(formData.lv_admin_costs_monthly_eur || 0) || 0,
+            }
+          : {
+              type: "percent",
+              effective_costs_percent: formData.lv_effective_costs_percent,
+            },
     });
 
-    const depot_gains = depot_capital - total_contributions;
-    const depot_tax = calculateCapitalGainsTax(depot_gains);
+    const depot = simulateDepot({
+      months,
+      annual_return_percent: formData.assumed_annual_return,
+      monthly_contribution: formData.monthly_contribution,
+      funds: formData.depot_funds,
+      depot_costs_annual_percent: formData.depot_costs_annual,
+    });
 
-    const li_net = li_capital - li_tax;
-    const depot_net = depot_capital - depot_tax;
-
-    return {
-      total_contributions: Math.round(total_contributions),
-
-      life_insurance_gross: Math.round(li_capital),
-      life_insurance_net: Math.round(li_net),
-
-      depot_gross: Math.round(depot_capital),
-      depot_net: Math.round(depot_net),
-
-      // totals
-      li_total_costs: Math.round(li_total_costs),
-      depot_total_costs: Math.round(depot_total_costs),
-
-      // breakdown (für Kosten im Detail)
-      li_acquisition_costs: Math.round(li_acquisition_costs),
-      li_fund_costs: Math.round(li_fund_costs),
-      li_effective_costs: Math.round(li_admin_costs), // ✅ Verwaltung (EUR) / Effektiv-Anteil (percent)
-
-      depot_initial_charges: Math.round(depot_initial_charges),
-      depot_fund_costs: Math.round(depot_fund_costs),
-      depot_depot_costs: Math.round(depot_depot_costs),
-
-      li_tax: Math.round(li_tax),
-      depot_tax: Math.round(depot_tax),
-    };
+    return buildComparisonResults({
+      lv,
+      depot,
+      years,
+      birth_year: formData.birth_year,
+      lvTaxOptions: {
+        personalIncomeTaxRate: d.lv_personal_income_tax_rate / 100,
+      },
+      depotTaxOptions: depotTaxOptionsFromDefaults(d),
+    });
   };
 
   const handleCalculate = async () => {
@@ -494,6 +315,8 @@ export default function Calculator() {
             formData={formData}
             updateFormData={updateFormData}
           />
+
+          <TaxInputs />
 
           <Card className="border-0 shadow-lg bg-white">
             <CardContent className="p-8">

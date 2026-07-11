@@ -48,6 +48,26 @@ export default function AllResults() {
 
   useEffect(() => { load(); }, []);
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const deleteCalc = async (item: AnyCalc, e: React.MouseEvent) => {
+    e.stopPropagation(); // Karte nicht öffnen
+    if (!window.confirm(`Berechnung „${item.data.name}" wirklich löschen?`)) return;
+    setDeletingId(item.data.id);
+    try {
+      switch (item.type) {
+        case "sparvertrag": await Calculation.delete(item.data.id); break;
+        case "einmalanlage": await SinglePaymentCalculation.delete(item.data.id); break;
+        case "bestadvice": await BestAdviceCalculation.delete(item.data.id); break;
+        case "pensiongap": await PensionGapCalculation.delete(item.data.id); break;
+      }
+      setItems((prev) => prev.filter((x) => !(x.type === item.type && x.data.id === item.data.id)));
+    } catch (err) {
+      console.error(err);
+    }
+    setDeletingId(null);
+  };
+
   const openCalc = (item: AnyCalc) => {
     switch (item.type) {
       case "sparvertrag": navigate(createPageUrl("CalculatorDetail") + `?id=${item.data.id}`); break;
@@ -157,6 +177,16 @@ export default function AllResults() {
                         )}
                         <div className="text-xs text-slate-400 mt-0.5">{formatDate(item.data.created_date)}</div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => deleteCalc(item, e)}
+                        disabled={deletingId === item.data.id}
+                        className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 shrink-0"
+                        title="Berechnung löschen"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                       <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 shrink-0 transition-colors" />
                     </div>
                   </CardContent>

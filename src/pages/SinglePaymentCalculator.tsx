@@ -21,12 +21,10 @@ import {
 import { looksLikeName } from "@/utils/nameDetection";
 import MultiFundEditor, { type FundEntry } from "@/components/calculator/MultiFundEditor";
 
-import {
-  calculateAgeAtPayout,
-  calculateCapitalGainsTax,
-  calculateLifeInsuranceTax,
-  calculateMonthlyReturn,
-} from "@/components/shared/TaxCalculations";
+import { simulateDepot, simulateLv } from "@/lib/finance/simulation";
+import { buildComparisonResults } from "@/lib/finance/series";
+import { depotTaxOptionsFromDefaults } from "@/entities/UserDefaults";
+import TaxInputs from "@/components/calculator/TaxInputs";
 
 const DRAFT_KEY = "fv_singlepayment_draft_v1";
 
@@ -158,120 +156,54 @@ export default function SinglePaymentCalculator() {
   const currentAge = getCurrentAge(toNum(formData.birth_year));
   const endAge = currentAge > 0 ? currentAge + toNum(formData.contract_duration_years) : 0;
 
+  // Berechnung über die gemeinsame Engine. Der Kostensplit im Prozent-Modus
+  // folgt jetzt der einheitlichen gleitenden Regel (statt fix 70/30).
   const calculateResults = () => {
     const years = Math.max(1, toNum(formData.contract_duration_years));
     const months = years * 12;
-    const monthly_return = calculateMonthlyReturn(toNum(formData.assumed_annual_return));
     const ls = toNum(formData.lump_sum);
+    const d = UserDefaults.load();
 
-    // Gewichtete TER für LV-Fonds
-    const lvFunds = formData.lv_funds;
-    const lvTotalAlloc = Math.max(0.01, lvFunds.reduce((s, f) => s + (Number(f.allocation_eur) || 0), 0));
-    const lv_fund_ter =
-      lvFunds.length === 1
-        ? lvFunds[0].ongoing_costs_percent
-        : lvFunds.reduce(
-            (acc, f) =>
-              acc + ((Number(f.allocation_eur) || 0) / lvTotalAlloc) * f.ongoing_costs_percent,
-            0
-          );
-
-    // Gewichtete Werte für Depot-Fonds
-    const depotFunds = formData.depot_funds;
-    const depotTotalAlloc = Math.max(0.01, depotFunds.reduce((s, f) => s + (Number(f.allocation_eur) || 0), 0));
-    const depot_fund_ter =
-      depotFunds.length === 1
-        ? depotFunds[0].ongoing_costs_percent
-        : depotFunds.reduce(
-            (acc, f) =>
-              acc + ((Number(f.allocation_eur) || 0) / depotTotalAlloc) * f.ongoing_costs_percent,
-            0
-          );
-    const depot_fund_aa =
-      depotFunds.length === 1
-        ? depotFunds[0].initial_charge_percent ?? 0
-        : depotFunds.reduce(
-            (acc, f) =>
-              acc + ((Number(f.allocation_eur) || 0) / depotTotalAlloc) * (f.initial_charge_percent ?? 0),
-            0
-          );
-
-    // LV
-    let li_capital = 0;
-    let li_acquisition_costs = 0;
-    let li_fund_costs = 0;
-    let li_admin_costs = 0;
-
-    if (formData.lv_cost_type === "eur") {
-      const acq = toNum(formData.life_insurance_acquisition_costs_eur);
-      li_acquisition_costs = acq;
-      li_capital = ls - acq;
-      const adminMonthly = toNum(formData.lv_admin_costs_monthly_eur);
-
-      for (let m = 1; m <= months; m++) {
-        const fundCost = li_capital * (lv_fund_ter / 100 / 12);
-        li_fund_costs += fundCost;
-        li_admin_costs += adminMonthly;
-        li_capital = li_capital * (1 + monthly_return) - fundCost - adminMonthly;
-      }
-    } else {
-      li_capital = ls;
-      const effRate = toNum(formData.lv_effective_costs_percent) / 100 / 12;
-      let totalContractCosts = 0;
-
-      for (let m = 1; m <= months; m++) {
-        const fundCost = li_capital * (lv_fund_ter / 100 / 12);
-        const effCost = li_capital * effRate;
-        li_fund_costs += fundCost;
-        totalContractCosts += effCost;
-        li_capital = li_capital * (1 + monthly_return) - fundCost - effCost;
-      }
-
-      const acqShare = years > 5 ? 0.7 : 0.6;
-      li_acquisition_costs = totalContractCosts * acqShare;
-      li_admin_costs = totalContractCosts * (1 - acqShare);
-    }
-
-    // Depot
-    const initCharge = depot_fund_aa / 100;
-    let depot_capital = ls * (1 - initCharge);
-    const depot_initial_charges = ls * initCharge;
-    let depot_fund_costs = 0;
-    let depot_depot_costs = 0;
-
-    for (let m = 1; m <= months; m++) {
-      const depotCost = depot_capital * (toNum(formData.depot_costs_annual) / 100 / 12);
-      const fundCost = depot_capital * (depot_fund_ter / 100 / 12);
-      depot_depot_costs += depotCost;
-      depot_fund_costs += fundCost;
-      depot_capital = depot_capital * (1 + monthly_return) - depotCost - fundCost;
-    }
-
-    // Taxes
-    const age_at_payout = calculateAgeAtPayout(toNum(formData.birth_year), years);
-    const li_tax = calculateLifeInsuranceTax(li_capital - ls, years, age_at_payout, {
-      personalIncomeTaxRate: UserDefaults.load().lv_personal_income_tax_rate / 100,
+    const lv = simulateLv({
+      months,
+      annual_return_percent: toNum(formData.assumed_annual_return),
+      initial_capital: ls,
+      funds: formData.lv_funds,
+      cost:
+        formData.lv_cost_type === "eur"
+          ? {
+              type: "eur",
+              acquisition_costs_eur: toNum(
+                formData.life_insurance_acquisition_costs_eur
+              ),
+              admin_costs_monthly_eur: toNum(formData.lv_admin_costs_monthly_eur),
+            }
+          : {
+              type: "percent",
+              effective_costs_percent: toNum(formData.lv_effective_costs_percent),
+            },
     });
-    const depot_tax = calculateCapitalGainsTax(depot_capital - ls);
 
-    return {
-      lump_sum: Math.round(ls),
-      total_contributions: Math.round(ls),
-      life_insurance_gross: Math.round(li_capital),
-      life_insurance_net: Math.round(li_capital - li_tax),
-      depot_gross: Math.round(depot_capital),
-      depot_net: Math.round(depot_capital - depot_tax),
-      li_total_costs: Math.round(li_acquisition_costs + li_fund_costs + li_admin_costs),
-      depot_total_costs: Math.round(depot_initial_charges + depot_fund_costs + depot_depot_costs),
-      li_acquisition_costs: Math.round(li_acquisition_costs),
-      li_fund_costs: Math.round(li_fund_costs),
-      li_admin_costs: Math.round(li_admin_costs),
-      depot_initial_charges: Math.round(depot_initial_charges),
-      depot_fund_costs: Math.round(depot_fund_costs),
-      depot_depot_costs: Math.round(depot_depot_costs),
-      li_tax: Math.round(li_tax),
-      depot_tax: Math.round(depot_tax),
-    };
+    const depot = simulateDepot({
+      months,
+      annual_return_percent: toNum(formData.assumed_annual_return),
+      initial_capital: ls,
+      funds: formData.depot_funds,
+      depot_costs_annual_percent: toNum(formData.depot_costs_annual),
+    });
+
+    const results = buildComparisonResults({
+      lv,
+      depot,
+      years,
+      birth_year: toNum(formData.birth_year),
+      lvTaxOptions: {
+        personalIncomeTaxRate: d.lv_personal_income_tax_rate / 100,
+      },
+      depotTaxOptions: depotTaxOptionsFromDefaults(d),
+    });
+
+    return { lump_sum: Math.round(ls), ...results };
   };
 
   const handleCalculate = async () => {
@@ -463,7 +395,7 @@ export default function SinglePaymentCalculator() {
 
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="text-sm text-amber-700">
-                  Bei Verträgen ≥12 Jahre und Auszahlung nach dem 62. Lebensjahr gilt das <strong>Teileinkünfteverfahren</strong>.
+                  Bei Verträgen ≥12 Jahre und Auszahlung nach dem 62. Lebensjahr gilt das <strong>Halbeinkünfteverfahren</strong> (42,5 % der Erträge steuerpflichtig).
                 </p>
               </div>
             </CardContent>
@@ -502,11 +434,14 @@ export default function SinglePaymentCalculator() {
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <p className="text-sm text-blue-700">
-                  Gewinne werden mit der <strong>Abgeltungsteuer</strong> (25%) besteuert.
+                  Gewinne werden mit der <strong>Abgeltungsteuer</strong> (25 %) besteuert –
+                  abzüglich Teilfreistellung und Sparerpauschbetrag (siehe Karte „Steuern").
                 </p>
               </div>
             </CardContent>
           </Card>
+
+          <TaxInputs />
 
           {/* CTA */}
           <Card className="border-0 shadow-lg bg-white">

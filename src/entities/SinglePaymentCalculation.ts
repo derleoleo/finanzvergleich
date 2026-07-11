@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { FundEntry } from '@/components/calculator/MultiFundEditor'
 
 export type SinglePaymentResults = {
   lump_sum: number;
@@ -35,15 +36,19 @@ export type SinglePaymentModel = {
   depot_fund_initial_charge_percent: number;
   depot_fund_ongoing_costs_percent: number;
   depot_costs_annual: number;
+  // Multi-Fonds (neuere Datensätze); ältere haben nur die Einzelfonds-Felder
+  lv_funds?: FundEntry[];
+  depot_funds?: FundEntry[];
   results?: SinglePaymentResults;
 };
 
 export class SinglePaymentCalculation {
-  static async list(_sort?: string): Promise<SinglePaymentModel[]> {
+  static async list(sort?: string): Promise<SinglePaymentModel[]> {
+    // "created_date" = aufsteigend, "-created_date" (Default) = absteigend
     const { data, error } = await supabase
       .from('single_payment_calculations')
       .select('*')
-      .order('created_date', { ascending: false })
+      .order('created_date', { ascending: sort === 'created_date' })
     if (error) throw error
     return (data ?? []) as SinglePaymentModel[]
   }
@@ -79,5 +84,13 @@ export class SinglePaymentCalculation {
       .single()
     if (error) throw error
     return data as SinglePaymentModel
+  }
+
+  static async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('single_payment_calculations')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
   }
 }

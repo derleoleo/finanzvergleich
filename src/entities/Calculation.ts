@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { FundEntry } from '@/components/calculator/MultiFundEditor'
 
 export type CalculationResults = {
   life_insurance_gross: number;
@@ -51,15 +52,20 @@ export type CalculationModel = {
 
   annual_withdrawal: number;
 
+  // Multi-Fonds (neuere Datensätze); ältere haben nur die Einzelfonds-Felder
+  lv_funds?: FundEntry[];
+  depot_funds?: FundEntry[];
+
   results?: CalculationResults;
 };
 
 export class Calculation {
-  static async list(_sort?: string): Promise<CalculationModel[]> {
+  static async list(sort?: string): Promise<CalculationModel[]> {
+    // "created_date" = aufsteigend, "-created_date" (Default) = absteigend
     const { data, error } = await supabase
       .from('calculations')
       .select('*')
-      .order('created_date', { ascending: false })
+      .order('created_date', { ascending: sort === 'created_date' })
     if (error) throw error
     return (data ?? []) as CalculationModel[]
   }
@@ -95,5 +101,13 @@ export class Calculation {
       .single()
     if (error) throw error
     return data as CalculationModel
+  }
+
+  static async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('calculations')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
   }
 }

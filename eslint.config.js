@@ -6,11 +6,32 @@ import tseslint from "typescript-eslint";
 import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
-  globalIgnores(["dist"]),
+  globalIgnores([
+    "dist",
+    // Repo-Fremdkörper / Tooling (nicht Teil der App)
+    "finanzvergleich-local",
+    ".claude",
+    ".claude-flow",
+    "my-video",
+    "myvideo",
+  ]),
   {
     files: ["**/*.{ts,tsx}"],
     rules: {
-      "@typescript-eslint/no-explicity-any": "warn",
+      "@typescript-eslint/no-explicit-any": "warn",
+      // Mit Unterstrich-Präfix markierte Variablen/Argumente sind bewusst ungenutzt
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+        },
+      ],
+      "no-empty": ["error", { allowEmptyCatch: true }],
+      // Stilregeln (kein Korrektheitsproblem) – als Warnung statt Fehler
+      "react-hooks/set-state-in-effect": "warn",
+      "react-refresh/only-export-components": "warn",
     },
     extends: [
       js.configs.recommended,

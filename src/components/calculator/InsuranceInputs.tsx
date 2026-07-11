@@ -372,8 +372,9 @@ export default function InsuranceInputs({ formData, updateFormData }: Props) {
           </h4>
           <p className="text-sm text-amber-700">
             Bei Verträgen ≥12 Jahre und Auszahlung nach dem 62. Lebensjahr gilt
-            das <strong>Teileinkünfteverfahren</strong> (nur 50% der Erträge
-            steuerpflichtig). Andernfalls volle Besteuerung.
+            das <strong>Halbeinkünfteverfahren</strong> (50 % × 85 % = 42,5 %
+            der Erträge steuerpflichtig, persönlicher Steuersatz). Andernfalls
+            volle Besteuerung.
           </p>
         </div>
       </CardContent>

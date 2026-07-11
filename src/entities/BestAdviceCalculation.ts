@@ -48,11 +48,12 @@ export type BestAdviceModel = {
 };
 
 export class BestAdviceCalculation {
-  static async list(_sort?: string): Promise<BestAdviceModel[]> {
+  static async list(sort?: string): Promise<BestAdviceModel[]> {
+    // "created_date" = aufsteigend, "-created_date" (Default) = absteigend
     const { data, error } = await supabase
       .from('best_advice_calculations')
       .select('*')
-      .order('created_date', { ascending: false })
+      .order('created_date', { ascending: sort === 'created_date' })
     if (error) throw error
     return (data ?? []) as BestAdviceModel[]
   }
@@ -88,5 +89,13 @@ export class BestAdviceCalculation {
       .single()
     if (error) throw error
     return data as BestAdviceModel
+  }
+
+  static async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('best_advice_calculations')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
   }
 }

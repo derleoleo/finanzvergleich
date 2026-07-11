@@ -15,11 +15,10 @@ import UpgradePrompt from "@/components/UpgradePrompt";
 import { formatCurrency, formatChartAxis } from "@/components/shared/CurrencyDisplay";
 import {
   calculateAgeAtPayout,
-  calculateCapitalGainsTax,
   calculateLifeInsuranceTax,
-  calculateMonthlyReturn,
-  calculateZillmerMonths,
 } from "@/components/shared/TaxCalculations";
+import { simulateLv } from "@/lib/finance/simulation";
+import { buildGuaranteedSeries } from "@/lib/finance/series";
 
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -31,54 +30,87 @@ type Mode = "gross" | "net";
 function buildSeries(calc: BestAdviceModel, mode: Mode) {
   const years = Math.max(1, Math.round(calc.contract_duration_years || 1));
   const months = years * 12;
-  const monthlyReturn = calculateMonthlyReturn(Number(calc.assumed_annual_return || 0));
   const monthlyContrib = Number(calc.current_monthly_contribution || 0);
   const startCapital = Number(calc.current_capital || 0);
-  const guaranteedEnd = Number(calc.guaranteed_end_capital || 0);
-  const total_contributions = startCapital + monthlyContrib * months;
+  const personalIncomeTaxRate =
+    UserDefaults.load().lv_personal_income_tax_rate / 100;
 
-  const lvFundMonthlyRate = Number(calc.lv_fund_ongoing_costs_percent || 0) / 100 / 12;
-  const lvEffectiveMonthlyRate = Number(calc.lv_effective_costs_percent || 0) / 100 / 12;
-  const adminMonthly = Number(calc.lv_admin_costs_monthly_eur || 0);
+  // Fonds-LV über die gemeinsame Engine
+  const lv = simulateLv({
+    months,
+    annual_return_percent: Number(calc.assumed_annual_return || 0),
+    monthly_contribution: monthlyContrib,
+    initial_capital: startCapital,
+    funds: [
+      {
+        allocation_eur: monthlyContrib,
+        ongoing_costs_percent: Number(calc.lv_fund_ongoing_costs_percent || 0),
+      },
+    ],
+    cost:
+      (calc.lv_cost_type ?? "eur") === "eur"
+        ? {
+            type: "eur",
+            acquisition_costs_eur: Number(calc.life_insurance_acquisition_costs_eur || 0),
+            admin_costs_monthly_eur: Number(calc.lv_admin_costs_monthly_eur || 0),
+          }
+        : {
+            type: "percent",
+            effective_costs_percent: Number(calc.lv_effective_costs_percent || 0),
+          },
+  });
 
-  let lvCapital = startCapital;
-  const zillmerMonths = calculateZillmerMonths(months);
-  const monthlyZillmer = Number(calc.life_insurance_acquisition_costs_eur || 0) / Math.max(1, zillmerMonths);
+  // Bestand: lineare Interpolation Kapital → garantiertes Endkapital
+  const bestand = buildGuaranteedSeries({
+    initial_capital: startCapital,
+    monthly_contribution: monthlyContrib,
+    guaranteed_end_capital: Number(calc.guaranteed_end_capital || 0),
+    months,
+  });
 
   const points: { year: number; age: number; fondsLV: number; bestand: number }[] = [];
 
-  for (let m = 1; m <= months; m++) {
-    const lvFundCost = lvCapital * lvFundMonthlyRate;
-    if ((calc.lv_cost_type ?? "eur") === "eur") {
-      const contribAfter = m <= zillmerMonths ? monthlyContrib - monthlyZillmer : monthlyContrib;
-      lvCapital = lvCapital * (1 + monthlyReturn) + contribAfter - lvFundCost - adminMonthly;
+  for (let m = 12; m <= months; m += 12) {
+    const year = m / 12;
+    const age = calculateAgeAtPayout(calc.birth_year, year);
+    const lvPoint = lv.series[m - 1];
+    const bestandPoint = bestand[m - 1];
+
+    if (mode === "gross") {
+      points.push({
+        year,
+        age,
+        fondsLV: Math.round(lvPoint.capital),
+        bestand: Math.round(bestandPoint.capital),
+      });
     } else {
-      const effCost = lvCapital * lvEffectiveMonthlyRate;
-      lvCapital = lvCapital * (1 + monthlyReturn) + monthlyContrib - lvFundCost - effCost;
-    }
+      const lvTax = calculateLifeInsuranceTax(
+        lvPoint.capital - lvPoint.contributions_cum,
+        year,
+        age,
+        { personalIncomeTaxRate }
+      );
 
-    if (m % 12 === 0) {
-      const year = m / 12;
-      const age = calculateAgeAtPayout(calc.birth_year, year);
-      // Bestand: linear interpolation from current_capital to guaranteed_end_capital
-      const bestandValue = startCapital + (guaranteedEnd - startCapital) * (year / years);
-
-      if (mode === "gross") {
-        points.push({ year, age, fondsLV: Math.round(lvCapital), bestand: Math.round(bestandValue) });
-      } else {
-        const lvGains = lvCapital - total_contributions;
-        const lvTax = calculateLifeInsuranceTax(lvGains, year, age, {
-          personalIncomeTaxRate: UserDefaults.load().lv_personal_income_tax_rate / 100,
-        });
-
-        let bestandNet = bestandValue;
-        if (!calc.current_product_tax_free) {
-          const bestandGains = bestandValue - total_contributions;
-          bestandNet = bestandValue - calculateCapitalGainsTax(bestandGains);
-        }
-
-        points.push({ year, age, fondsLV: Math.round(lvCapital - lvTax), bestand: Math.round(bestandNet) });
+      // Bestands-LV ist ebenfalls eine Versicherung → Halbeinkünfte-Regel
+      // (Vertragsbeginn ist im gespeicherten Datensatz nicht verfügbar,
+      // daher Qualifikation über das Checkpoint-Jahr wie bei der Fonds-LV).
+      let bestandNet = bestandPoint.capital;
+      if (!calc.current_product_tax_free) {
+        const bestandTax = calculateLifeInsuranceTax(
+          bestandPoint.capital - bestandPoint.contributions_cum,
+          year,
+          age,
+          { personalIncomeTaxRate }
+        );
+        bestandNet = bestandPoint.capital - bestandTax;
       }
+
+      points.push({
+        year,
+        age,
+        fondsLV: Math.round(lvPoint.capital - lvTax),
+        bestand: Math.round(bestandNet),
+      });
     }
   }
 

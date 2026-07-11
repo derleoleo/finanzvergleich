@@ -22,11 +22,9 @@ import { formatCurrency } from "@/components/shared/CurrencyDisplay";
 
 import {
   calculateAgeAtPayout,
-  calculateCapitalGainsTax,
   calculateLifeInsuranceTax,
-  calculateMonthlyReturn,
-  calculateZillmerMonths,
 } from "@/components/shared/TaxCalculations";
+import { simulateLv } from "@/lib/finance/simulation";
 
 const DRAFT_KEY = "fv_bestadvice_draft_v1";
 
@@ -37,6 +35,10 @@ type ExtraLV = {
   current_capital: number;
   guaranteed_end_capital: number;
   current_product_tax_free: boolean;
+  // Vertragsbeginn (Jahr) für die 12-Jahres-Prüfung des Halbeinkünfteverfahrens;
+  // ohne Angabe wird die Restlaufzeit herangezogen. Nur Formular-State,
+  // wird nicht in Supabase gespeichert.
+  contract_start_year?: number | null;
 };
 
 type FormData = {
@@ -47,6 +49,7 @@ type FormData = {
   contract_duration_years: number;
   current_capital: number;
   guaranteed_end_capital: number;
+  current_contract_start_year: number | null;
   // Weitere Bestandsverträge
   extra_lvs: ExtraLV[];
   // Fonds-LV
@@ -75,6 +78,7 @@ function makeDefaults(): FormData {
     contract_duration_years: d.contract_duration_years,
     current_capital: 10000,
     guaranteed_end_capital: 80000,
+    current_contract_start_year: null,
     extra_lvs: [],
     birth_year: d.birth_year,
     assumed_annual_return: d.assumed_annual_return,
@@ -137,6 +141,7 @@ export default function BestAdviceCalculator() {
       current_capital: toNum(formData.current_capital),
       guaranteed_end_capital: toNum(formData.guaranteed_end_capital),
       current_product_tax_free: formData.current_product_tax_free,
+      contract_start_year: formData.current_contract_start_year,
     },
     ...(formData.extra_lvs ?? []),
   ];
@@ -150,64 +155,68 @@ export default function BestAdviceCalculator() {
   const calculateResults = () => {
     const years = Math.max(1, toNum(formData.contract_duration_years));
     const months = years * 12;
-    const monthly_return = calculateMonthlyReturn(toNum(formData.assumed_annual_return));
+    const personalIncomeTaxRate =
+      UserDefaults.load().lv_personal_income_tax_rate / 100;
 
-    // Fonds-LV: mit effektiven Gesamtwerten aller LVs
-    let li_capital = effectiveCapital;
-    const monthly_contrib = effectiveMonthly;
-    const total_contributions = effectiveCapital + monthly_contrib * months;
-    let li_acquisition_costs = 0;
-    let li_fund_costs = 0;
-    let li_admin_costs = 0;
+    // Fonds-LV: mit effektiven Gesamtwerten aller LVs, über die gemeinsame Engine
+    const lvSim = simulateLv({
+      months,
+      annual_return_percent: toNum(formData.assumed_annual_return),
+      monthly_contribution: effectiveMonthly,
+      initial_capital: effectiveCapital,
+      funds: [
+        {
+          allocation_eur: effectiveMonthly,
+          ongoing_costs_percent: toNum(formData.lv_fund_ongoing_costs_percent),
+        },
+      ],
+      cost:
+        formData.lv_cost_type === "eur"
+          ? {
+              type: "eur",
+              acquisition_costs_eur: toNum(
+                formData.life_insurance_acquisition_costs_eur
+              ),
+              admin_costs_monthly_eur: toNum(formData.lv_admin_costs_monthly_eur),
+            }
+          : {
+              type: "percent",
+              effective_costs_percent: toNum(formData.lv_effective_costs_percent),
+            },
+    });
 
-    if (formData.lv_cost_type === "eur") {
-      const acq = toNum(formData.life_insurance_acquisition_costs_eur);
-      const zillmer_months = calculateZillmerMonths(months);
-      const monthly_zillmer = acq / Math.max(1, zillmer_months);
-      li_acquisition_costs = acq;
-      const adminMonthly = toNum(formData.lv_admin_costs_monthly_eur);
-
-      for (let m = 1; m <= months; m++) {
-        const contribAfter = m <= zillmer_months
-          ? monthly_contrib - monthly_zillmer
-          : monthly_contrib;
-        const fundCost = li_capital * (toNum(formData.lv_fund_ongoing_costs_percent) / 100 / 12);
-        li_fund_costs += fundCost;
-        li_admin_costs += adminMonthly;
-        li_capital = li_capital * (1 + monthly_return) + contribAfter - fundCost - adminMonthly;
-      }
-    } else {
-      const effRate = toNum(formData.lv_effective_costs_percent) / 100 / 12;
-      let totalContractCosts = 0;
-
-      for (let m = 1; m <= months; m++) {
-        const fundCost = li_capital * (toNum(formData.lv_fund_ongoing_costs_percent) / 100 / 12);
-        const effCost = li_capital * effRate;
-        li_fund_costs += fundCost;
-        totalContractCosts += effCost;
-        li_capital = li_capital * (1 + monthly_return) + monthly_contrib - fundCost - effCost;
-      }
-
-      const acqShare = years > 5 ? 0.7 : 0.6;
-      li_acquisition_costs = totalContractCosts * acqShare;
-      li_admin_costs = totalContractCosts * (1 - acqShare);
-    }
+    const li_capital = lvSim.gross_capital;
+    const total_contributions = lvSim.total_contributions;
+    const li_acquisition_costs = lvSim.costs.acquisition;
+    const li_admin_costs = lvSim.costs.admin;
+    const li_fund_costs = lvSim.costs.fund;
 
     // LV-Steuer
     const age_at_payout = calculateAgeAtPayout(toNum(formData.birth_year), years);
     const li_gains = li_capital - total_contributions;
     const li_tax = calculateLifeInsuranceTax(li_gains, years, age_at_payout, {
-      personalIncomeTaxRate: UserDefaults.load().lv_personal_income_tax_rate / 100,
+      personalIncomeTaxRate,
     });
 
-    // Bestandsverträge: jede LV einzeln berechnen
+    // Bestandsverträge: jede LV einzeln berechnen.
+    // Auch Bestands-LVs sind Versicherungen → Halbeinkünfteverfahren statt
+    // Abgeltungsteuer. Für die 12-Jahres-Prüfung zählt die Gesamtlaufzeit
+    // (Auszahlungsjahr − Vertragsbeginn), falls der Vertragsbeginn angegeben
+    // wurde; sonst konservativ die Restlaufzeit.
+    const currentYear = new Date().getFullYear();
+    const payoutYear = currentYear + years;
     const lvs_results = allLVs.map((lv) => {
       const lv_total_contributions = lv.current_capital + lv.monthly_contribution * months;
       const gross = lv.guaranteed_end_capital;
       let tax = 0;
       if (!lv.current_product_tax_free) {
         const gains = gross - lv_total_contributions;
-        tax = calculateCapitalGainsTax(gains);
+        const startYear = toNum(lv.contract_start_year ?? 0);
+        const qualDuration =
+          startYear > 1900 ? payoutYear - startYear : years;
+        tax = calculateLifeInsuranceTax(gains, qualDuration, age_at_payout, {
+          personalIncomeTaxRate,
+        });
       }
       return {
         label: lv.label,
@@ -243,12 +252,14 @@ export default function BestAdviceCalculator() {
     setIsCalculating(true);
     try {
       const results = calculateResults();
-      // extra_lvs + overrides werden nicht separat gespeichert, sondern via results
-      // Die top-level-Felder werden mit den effektiven Gesamtwerten überschrieben
+      // extra_lvs + overrides + Vertragsbeginn werden nicht separat gespeichert,
+      // sondern via results. Die top-level-Felder werden mit den effektiven
+      // Gesamtwerten überschrieben.
       const {
         extra_lvs: _el,
         fonds_lv_monthly_override: _fm,
         fonds_lv_capital_override: _fc,
+        current_contract_start_year: _cs,
         ...formBase
       } = formData;
       const totalGuaranteed = allLVs.reduce((s, lv) => s + lv.guaranteed_end_capital, 0);
@@ -387,13 +398,26 @@ export default function BestAdviceCalculator() {
                       className="bg-white border-slate-300 focus:border-blue-500" />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    <div className="flex items-center gap-2"><Lock className="w-4 h-4" />Garantiertes Endkapital (€)</div>
-                  </Label>
-                  <NumericInput value={formData.guaranteed_end_capital}
-                    onChange={(val) => update("guaranteed_end_capital", val)}
-                    className="bg-white border-slate-300 focus:border-blue-500 md:w-1/2" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      <div className="flex items-center gap-2"><Lock className="w-4 h-4" />Garantiertes Endkapital (€)</div>
+                    </Label>
+                    <NumericInput value={formData.guaranteed_end_capital}
+                      onChange={(val) => update("guaranteed_end_capital", val)}
+                      className="bg-white border-slate-300 focus:border-blue-500" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      <div className="flex items-center gap-2"><Calendar className="w-4 h-4" />Vertragsbeginn (Jahr, optional)</div>
+                    </Label>
+                    <NumericInput value={formData.current_contract_start_year ?? 0}
+                      onChange={(val) => update("current_contract_start_year", val > 1900 ? val : null)}
+                      className="bg-white border-slate-300 focus:border-blue-500" />
+                    <p className="text-xs text-slate-500">
+                      Für die 12-Jahres-Prüfung (Halbeinkünfteverfahren). Ohne Angabe zählt die Restlaufzeit.
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3 pt-1">
                   <Switch
@@ -401,13 +425,13 @@ export default function BestAdviceCalculator() {
                     onCheckedChange={(checked) => update("current_product_tax_free", checked)}
                   />
                   <Label className="text-sm font-medium text-slate-700">
-                    {formData.current_product_tax_free ? "Steuerfrei (z.B. vor 2005)" : "Steuerpflichtig (Abgeltungsteuer)"}
+                    {formData.current_product_tax_free ? "Steuerfrei (z.B. vor 2005)" : "Steuerpflichtig"}
                   </Label>
                 </div>
               </div>
 
               {/* Weitere LVs */}
-              {(formData.extra_lvs ?? []).map((lv, idx) => (
+              {(formData.extra_lvs ?? []).map((lv) => (
                 <div key={lv.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
                   <div className="flex items-center justify-between">
                     <Input
@@ -461,18 +485,33 @@ export default function BestAdviceCalculator() {
                         className="bg-white border-slate-300 focus:border-blue-500" />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">
-                      <div className="flex items-center gap-2"><Lock className="w-4 h-4" />Garantiertes Endkapital (€)</div>
-                    </Label>
-                    <NumericInput value={lv.guaranteed_end_capital}
-                      onChange={(val) => {
-                        const updated = formData.extra_lvs.map((x) =>
-                          x.id === lv.id ? { ...x, guaranteed_end_capital: val } : x
-                        );
-                        update("extra_lvs", updated);
-                      }}
-                      className="bg-white border-slate-300 focus:border-blue-500 md:w-1/2" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">
+                        <div className="flex items-center gap-2"><Lock className="w-4 h-4" />Garantiertes Endkapital (€)</div>
+                      </Label>
+                      <NumericInput value={lv.guaranteed_end_capital}
+                        onChange={(val) => {
+                          const updated = formData.extra_lvs.map((x) =>
+                            x.id === lv.id ? { ...x, guaranteed_end_capital: val } : x
+                          );
+                          update("extra_lvs", updated);
+                        }}
+                        className="bg-white border-slate-300 focus:border-blue-500" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">
+                        <div className="flex items-center gap-2"><Calendar className="w-4 h-4" />Vertragsbeginn (Jahr, optional)</div>
+                      </Label>
+                      <NumericInput value={lv.contract_start_year ?? 0}
+                        onChange={(val) => {
+                          const updated = formData.extra_lvs.map((x) =>
+                            x.id === lv.id ? { ...x, contract_start_year: val > 1900 ? val : null } : x
+                          );
+                          update("extra_lvs", updated);
+                        }}
+                        className="bg-white border-slate-300 focus:border-blue-500" />
+                    </div>
                   </div>
                   <div className="flex items-center gap-3 pt-1">
                     <Switch
@@ -485,7 +524,7 @@ export default function BestAdviceCalculator() {
                       }}
                     />
                     <Label className="text-sm font-medium text-slate-700">
-                      {lv.current_product_tax_free ? "Steuerfrei (z.B. vor 2005)" : "Steuerpflichtig (Abgeltungsteuer)"}
+                      {lv.current_product_tax_free ? "Steuerfrei (z.B. vor 2005)" : "Steuerpflichtig"}
                     </Label>
                   </div>
                 </div>
@@ -634,7 +673,7 @@ export default function BestAdviceCalculator() {
 
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="text-sm text-amber-700">
-                  Bei Verträgen ≥12 Jahre und Auszahlung nach dem 62. Lebensjahr gilt das <strong>Teileinkünfteverfahren</strong>.
+                  Bei Verträgen ≥12 Jahre und Auszahlung nach dem 62. Lebensjahr gilt das <strong>Halbeinkünfteverfahren</strong> (42,5 % der Erträge steuerpflichtig).
                 </p>
               </div>
             </CardContent>

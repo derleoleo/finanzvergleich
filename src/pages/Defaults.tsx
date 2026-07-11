@@ -8,26 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   SlidersHorizontal, Save, CheckCircle, User, Calendar, TrendingUp,
-  Shield, BarChart3, Calculator, DollarSign, TrendingDown, Wallet, RotateCcw, Percent,
+  Shield, BarChart3, Calculator, TrendingDown, Wallet, RotateCcw, Percent,
 } from "lucide-react";
 
 export default function Defaults() {
   const [data, setData] = useState<UserDefaultsData>(() => UserDefaults.load());
   const [saved, setSaved] = useState(false);
 
-  const set = (field: keyof UserDefaultsData, value: string | number) =>
+  const set = (field: keyof UserDefaultsData, value: string | number | boolean) =>
     setData((prev) => ({ ...prev, [field]: value }));
-
-  const n = (val: number, step = 1) => (
-    (field: keyof UserDefaultsData) => (
-      <NumericInput
-        step={step}
-        value={val}
-        onChange={(v) => set(field, v)}
-        className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white"
-      />
-    )
-  );
 
   const inputClass = "bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white";
 
@@ -110,6 +99,69 @@ export default function Defaults() {
                   </p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Steuern (Depot) */}
+          <Card className="border-0 shadow-lg bg-white">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-lg font-bold text-slate-900">
+                <div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center">
+                  <Percent className="w-4 h-4 text-amber-600" />
+                </div>
+                Steuern (Depot)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">Teilfreistellung (%)</Label>
+                  <select
+                    value={String(data.depot_teilfreistellung_percent)}
+                    onChange={(e) => set("depot_teilfreistellung_percent", Number(e.target.value))}
+                    className={`${inputClass} w-full rounded-md border px-3 py-2 text-sm`}
+                  >
+                    <option value="30">30 % – Aktienfonds (≥ 51 % Aktien)</option>
+                    <option value="15">15 % – Mischfonds (≥ 25 % Aktien)</option>
+                    <option value="0">0 % – Sonstige Fonds</option>
+                  </select>
+                  <p className="text-xs text-slate-400">Anteil der Depot-Gewinne, der steuerfrei bleibt (InvStG).</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">Sparerpauschbetrag (€)</Label>
+                  <NumericInput value={data.sparerpauschbetrag_eur}
+                    onChange={(v) => set("sparerpauschbetrag_eur", v)}
+                    className={inputClass} />
+                  <p className="text-xs text-slate-400">Wird einmalig bei Auszahlung von den steuerpflichtigen Gewinnen abgezogen (Vereinfachung).</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">Solidaritätszuschlag</p>
+                    <p className="text-xs text-slate-400 mt-0.5">+5,5 % auf die Steuer</p>
+                  </div>
+                  <Switch
+                    checked={data.apply_solidaritaetszuschlag}
+                    onCheckedChange={(v) => set("apply_solidaritaetszuschlag", v)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">Kirchensteuer (%)</Label>
+                  <select
+                    value={String(data.kirchensteuer_percent)}
+                    onChange={(e) => set("kirchensteuer_percent", Number(e.target.value))}
+                    className={`${inputClass} w-full rounded-md border px-3 py-2 text-sm`}
+                  >
+                    <option value="0">Keine</option>
+                    <option value="8">8 % (Bayern, Baden-Württemberg)</option>
+                    <option value="9">9 % (übrige Bundesländer)</option>
+                  </select>
+                </div>
+              </div>
+              <p className="text-xs text-slate-400">
+                Vereinfachtes Modell: keine Vorabpauschale; Kirchensteuer als Zuschlag auf 25 % KapESt.
+              </p>
             </CardContent>
           </Card>
 

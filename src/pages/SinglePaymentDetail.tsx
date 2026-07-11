@@ -16,11 +16,12 @@ import ResultsSummary, { type Mode } from "@/components/results/ResultsSummary";
 import ComparisonTable from "@/components/results/ComparisonTable";
 import { formatCurrency, formatChartAxis } from "@/components/shared/CurrencyDisplay";
 import {
-  calculateAgeAtPayout,
-  calculateCapitalGainsTax,
-  calculateLifeInsuranceTax,
-  calculateMonthlyReturn,
-} from "@/components/shared/TaxCalculations";
+  simulateDepot,
+  simulateLv,
+  type FundAllocation,
+} from "@/lib/finance/simulation";
+import { buildYearlySeries } from "@/lib/finance/series";
+import { depotTaxOptionsFromDefaults } from "@/entities/UserDefaults";
 
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -30,62 +31,56 @@ import {
 function buildSeries(calc: SinglePaymentModel, mode: Mode) {
   const years = Math.max(1, Math.round(calc.contract_duration_years || 1));
   const months = years * 12;
-  const monthlyReturn = calculateMonthlyReturn(Number(calc.assumed_annual_return || 0));
   const ls = Number(calc.lump_sum || 0);
+  const d = UserDefaults.load();
 
-  const lvFundMonthlyRate = Number(calc.lv_fund_ongoing_costs_percent || 0) / 100 / 12;
-  const lvEffectiveMonthlyRate = Number(calc.lv_effective_costs_percent || 0) / 100 / 12;
+  // Multi-Fonds mit Fallback auf Legacy-Einzelfonds-Felder älterer Datensätze
+  const lvFunds: FundAllocation[] =
+    Array.isArray(calc.lv_funds) && calc.lv_funds.length > 0
+      ? calc.lv_funds
+      : [{ allocation_eur: ls, ongoing_costs_percent: Number(calc.lv_fund_ongoing_costs_percent || 0) }];
+  const depotFunds: FundAllocation[] =
+    Array.isArray(calc.depot_funds) && calc.depot_funds.length > 0
+      ? calc.depot_funds
+      : [{
+          allocation_eur: ls,
+          ongoing_costs_percent: Number(calc.depot_fund_ongoing_costs_percent || 0),
+          initial_charge_percent: Number(calc.depot_fund_initial_charge_percent || 0),
+        }];
 
-  let lvCapital = calc.lv_cost_type === "eur"
-    ? ls - Number(calc.life_insurance_acquisition_costs_eur || 0)
-    : ls;
-  const adminMonthly = Number(calc.lv_admin_costs_monthly_eur || 0);
+  const lv = simulateLv({
+    months,
+    annual_return_percent: Number(calc.assumed_annual_return || 0),
+    initial_capital: ls,
+    funds: lvFunds,
+    cost:
+      (calc.lv_cost_type ?? "eur") === "eur"
+        ? {
+            type: "eur",
+            acquisition_costs_eur: Number(calc.life_insurance_acquisition_costs_eur || 0),
+            admin_costs_monthly_eur: Number(calc.lv_admin_costs_monthly_eur || 0),
+          }
+        : {
+            type: "percent",
+            effective_costs_percent: Number(calc.lv_effective_costs_percent || 0),
+          },
+  });
+  const depot = simulateDepot({
+    months,
+    annual_return_percent: Number(calc.assumed_annual_return || 0),
+    initial_capital: ls,
+    funds: depotFunds,
+    depot_costs_annual_percent: Number(calc.depot_costs_annual || 0),
+  });
 
-  const initCharge = Number(calc.depot_fund_initial_charge_percent || 0) / 100;
-  let depotCapital = ls * (1 - initCharge);
-  const depotFundMonthlyRate = Number(calc.depot_fund_ongoing_costs_percent || 0) / 100 / 12;
-  const depotDepotMonthlyRate = Number(calc.depot_costs_annual || 0) / 100 / 12;
-
-  const points: { year: number; age: number; lv: number; depot: number }[] = [];
-
-  for (let m = 1; m <= months; m++) {
-    // LV
-    const lvFundCost = lvCapital * lvFundMonthlyRate;
-    if ((calc.lv_cost_type ?? "eur") === "eur") {
-      lvCapital = lvCapital * (1 + monthlyReturn) - lvFundCost - adminMonthly;
-    } else {
-      const effCost = lvCapital * lvEffectiveMonthlyRate;
-      lvCapital = lvCapital * (1 + monthlyReturn) - lvFundCost - effCost;
-    }
-
-    // Depot
-    const depotFundCost = depotCapital * depotFundMonthlyRate;
-    const depotCost = depotCapital * depotDepotMonthlyRate;
-    depotCapital = depotCapital * (1 + monthlyReturn) - depotFundCost - depotCost;
-
-    if (m % 12 === 0) {
-      const year = m / 12;
-      const age = calculateAgeAtPayout(calc.birth_year, year);
-
-      if (mode === "gross") {
-        points.push({ year, age, lv: Math.round(lvCapital), depot: Math.round(depotCapital) });
-      } else {
-        const lvGains = lvCapital - ls;
-        const depotGains = depotCapital - ls;
-        const lvTax = calculateLifeInsuranceTax(lvGains, year, age, {
-          personalIncomeTaxRate: UserDefaults.load().lv_personal_income_tax_rate / 100,
-        });
-        const depotTax = calculateCapitalGainsTax(depotGains);
-        points.push({
-          year, age,
-          lv: Math.round(lvCapital - lvTax),
-          depot: Math.round(depotCapital - depotTax),
-        });
-      }
-    }
-  }
-
-  return points;
+  return buildYearlySeries({
+    lv: lv.series,
+    depot: depot.series,
+    mode,
+    birth_year: calc.birth_year,
+    lvTaxOptions: { personalIncomeTaxRate: d.lv_personal_income_tax_rate / 100 },
+    depotTaxOptions: depotTaxOptionsFromDefaults(d),
+  });
 }
 
 function SinglePaymentChart({

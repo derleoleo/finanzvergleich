@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Check, Zap, Loader2, Tag } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
