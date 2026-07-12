@@ -38,3 +38,6 @@ dist-ssr
 /entnahmeplan-3.pdf
 /.claude-flow/
 /.mcp.json
+
+# Claude-Code-Worktrees (temporäre Arbeitskopien)
+/.claude/worktrees/

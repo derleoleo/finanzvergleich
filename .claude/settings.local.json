@@ -37,7 +37,13 @@
       "Bash(curl:*)",
       "Bash(bash)",
       "Bash(cp:*)",
-      "Bash(vercel --prod)"
+      "Bash(vercel --prod)",
+      "WebSearch",
+      "PowerShell(npm test 2>&1)",
+      "PowerShell(npm run lint 2>&1)",
+      "PowerShell(npm run build 2>&1)",
+      "PowerShell(Remove-Item ',' -Confirm:$false)",
+      "PowerShell(git add CLAUDE.md src/components/calculator/TaxInputs.tsx src/components/results/ResultsChart.tsx src/components/shared/TaxCalculations.ts src/components/shared/TaxCalculations.test.ts src/entities/UserDefaults.ts src/lib/finance/series.test.ts src/pages/BestAdviceCalculator.tsx src/pages/BestAdviceDetail.tsx src/pages/Calculator.tsx src/pages/CalculatorDetail.tsx src/pages/Defaults.tsx src/pages/SinglePaymentCalculator.tsx src/pages/SinglePaymentDetail.tsx)"
     ]
   },
   "enableAllProjectMcpServers": true,
