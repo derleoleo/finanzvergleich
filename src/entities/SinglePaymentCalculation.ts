@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { FundEntry } from '@/components/calculator/MultiFundEditor'
+import type { StoredTaxSettings } from '@/entities/UserDefaults'
 
 export type SinglePaymentResults = {
   lump_sum: number;
@@ -21,6 +22,8 @@ export type SinglePaymentResults = {
   // Effektivkosten (Reduction in Yield) in %-Punkten p.a.; ältere Datensätze: undefined
   li_riy_percent?: number;
   depot_riy_percent?: number;
+  // Steuer-Annahmen zum Berechnungszeitpunkt; ältere Datensätze: undefined
+  tax_settings?: StoredTaxSettings;
 };
 
 export type SinglePaymentModel = {

@@ -6,6 +6,7 @@ import {
   UserDefaults,
   depotTaxOptionsFromDefaults,
   lvTaxOptionsFromDefaults,
+  taxSettingsSnapshot,
 } from "@/entities/UserDefaults";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -120,20 +121,24 @@ export default function CalculatorDetail() {
       depot_costs_annual_percent: Number(formData.depot_costs_annual) || 0,
     });
 
-    return buildComparisonResults({
-      lv,
-      depot,
-      years,
-      birth_year: formData.birth_year,
-      lvTaxOptions: lvTaxOptionsFromDefaults(d),
-      depotTaxOptions: depotTaxOptionsFromDefaults(d),
-      riyInputs: {
-        annual_return_percent: Number(formData.assumed_annual_return) || 0,
-        monthly_contribution: Number(formData.monthly_contribution) || 0,
-        months,
-        dynamik_percent: Number(formData.dynamik_percent) || 0,
-      },
-    });
+    return {
+      ...buildComparisonResults({
+        lv,
+        depot,
+        years,
+        birth_year: formData.birth_year,
+        lvTaxOptions: lvTaxOptionsFromDefaults(d),
+        depotTaxOptions: depotTaxOptionsFromDefaults(d),
+        riyInputs: {
+          annual_return_percent: Number(formData.assumed_annual_return) || 0,
+          monthly_contribution: Number(formData.monthly_contribution) || 0,
+          months,
+          dynamik_percent: Number(formData.dynamik_percent) || 0,
+        },
+      }),
+      // Neu berechnen aktualisiert den Snapshot mit den aktuellen Annahmen
+      tax_settings: taxSettingsSnapshot(d),
+    };
   };
 
   const handleRecalculate = async () => {

@@ -2,7 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl, toNum } from "@/utils";
 import { BestAdviceCalculation } from "@/entities/BestAdviceCalculation";
-import { UserDefaults, lvTaxOptionsFromDefaults } from "@/entities/UserDefaults";
+import {
+  UserDefaults,
+  lvTaxOptionsFromSettings,
+  taxSettingsSnapshot,
+} from "@/entities/UserDefaults";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -155,7 +159,8 @@ export default function BestAdviceCalculator() {
   const calculateResults = () => {
     const years = Math.max(1, toNum(formData.contract_duration_years));
     const months = years * 12;
-    const lvTaxOptions = lvTaxOptionsFromDefaults();
+    const tax_settings = taxSettingsSnapshot();
+    const lvTaxOptions = lvTaxOptionsFromSettings(tax_settings);
 
     // Fonds-LV: mit effektiven Gesamtwerten aller LVs, über die gemeinsame Engine
     const lvSim = simulateLv({
@@ -249,6 +254,8 @@ export default function BestAdviceCalculator() {
       depot_net,
       depot_tax,
       lvs_results,
+      // Annahmen zum Berechnungszeitpunkt mitspeichern → geräteunabhängige Anzeige
+      tax_settings,
     };
   };
 

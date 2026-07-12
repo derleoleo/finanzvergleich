@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { StoredTaxSettings } from '@/entities/UserDefaults'
 
 export type LVResult = {
   label: string;
@@ -24,6 +25,8 @@ export type BestAdviceResults = {
   depot_tax: number;
   // Multi-LV: per-policy breakdown (optional, only for new calculations)
   lvs_results?: LVResult[];
+  // Steuer-Annahmen zum Berechnungszeitpunkt; ältere Datensätze: undefined
+  tax_settings?: StoredTaxSettings;
 };
 
 export type BestAdviceModel = {

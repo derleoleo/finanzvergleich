@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { FundEntry } from '@/components/calculator/MultiFundEditor'
+import type { StoredTaxSettings } from '@/entities/UserDefaults'
 
 export type CalculationResults = {
   life_insurance_gross: number;
@@ -28,6 +29,10 @@ export type CalculationResults = {
   // Effektivkosten (Reduction in Yield) in %-Punkten p.a.; ältere Datensätze: undefined
   li_riy_percent?: number;
   depot_riy_percent?: number;
+
+  // Steuer-Annahmen zum Berechnungszeitpunkt; ältere Datensätze: undefined
+  // (dann Fallback auf die lokalen UserDefaults)
+  tax_settings?: StoredTaxSettings;
 
   withdrawal_years?: number;
 };

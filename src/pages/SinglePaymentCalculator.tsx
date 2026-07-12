@@ -27,6 +27,7 @@ import { buildComparisonResults } from "@/lib/finance/series";
 import {
   depotTaxOptionsFromDefaults,
   lvTaxOptionsFromDefaults,
+  taxSettingsSnapshot,
 } from "@/entities/UserDefaults";
 import TaxInputs from "@/components/calculator/TaxInputs";
 
@@ -210,7 +211,12 @@ export default function SinglePaymentCalculator() {
       },
     });
 
-    return { lump_sum: Math.round(ls), ...results };
+    return {
+      lump_sum: Math.round(ls),
+      ...results,
+      // Annahmen zum Berechnungszeitpunkt mitspeichern → geräteunabhängige Anzeige
+      tax_settings: taxSettingsSnapshot(d),
+    };
   };
 
   const handleCalculate = async () => {

@@ -87,22 +87,58 @@ export const SYSTEM_DEFAULTS: UserDefaultsData = {
   kirchensteuer_percent: 0,
 };
 
+/**
+ * Snapshot der Steuer-/Anzeige-Annahmen zum Berechnungszeitpunkt.
+ * Wird mit jeder Berechnung in results gespeichert, damit gespeicherte
+ * Berechnungen auf jedem Gerät identisch dargestellt werden — unabhängig
+ * von den lokalen UserDefaults des anzeigenden Geräts.
+ */
+export type StoredTaxSettings = {
+  lv_personal_income_tax_rate: number; // %
+  depot_teilfreistellung_percent: number; // %
+  apply_solidaritaetszuschlag: boolean;
+  kirchensteuer_percent: number; // %
+  inflation_percent: number; // % (für die "Real"-Anzeige)
+};
+
+export function taxSettingsSnapshot(
+  d: UserDefaultsData = UserDefaults.load()
+): StoredTaxSettings {
+  return {
+    lv_personal_income_tax_rate: d.lv_personal_income_tax_rate,
+    depot_teilfreistellung_percent: d.depot_teilfreistellung_percent,
+    apply_solidaritaetszuschlag: d.apply_solidaritaetszuschlag,
+    kirchensteuer_percent: d.kirchensteuer_percent,
+    inflation_percent: d.inflation_percent,
+  };
+}
+
+/** Depot-Steueroptionen aus einem Settings-Snapshot (für calculateCapitalGainsTax). */
+export function depotTaxOptionsFromSettings(s: StoredTaxSettings) {
+  return {
+    teilfreistellung_percent: s.depot_teilfreistellung_percent,
+    solidaritaetszuschlag: s.apply_solidaritaetszuschlag,
+    kirchensteuer_percent: s.kirchensteuer_percent,
+  };
+}
+
+/** LV-Steueroptionen aus einem Settings-Snapshot (für calculateLifeInsuranceTax). */
+export function lvTaxOptionsFromSettings(s: StoredTaxSettings) {
+  return {
+    personalIncomeTaxRate: s.lv_personal_income_tax_rate / 100,
+    solidaritaetszuschlag: s.apply_solidaritaetszuschlag,
+    kirchensteuer_percent: s.kirchensteuer_percent,
+  };
+}
+
 /** Depot-Steueroptionen aus den UserDefaults (für calculateCapitalGainsTax). */
 export function depotTaxOptionsFromDefaults(d: UserDefaultsData = UserDefaults.load()) {
-  return {
-    teilfreistellung_percent: d.depot_teilfreistellung_percent,
-    solidaritaetszuschlag: d.apply_solidaritaetszuschlag,
-    kirchensteuer_percent: d.kirchensteuer_percent,
-  };
+  return depotTaxOptionsFromSettings(taxSettingsSnapshot(d));
 }
 
 /** LV-Steueroptionen aus den UserDefaults (für calculateLifeInsuranceTax). */
 export function lvTaxOptionsFromDefaults(d: UserDefaultsData = UserDefaults.load()) {
-  return {
-    personalIncomeTaxRate: d.lv_personal_income_tax_rate / 100,
-    solidaritaetszuschlag: d.apply_solidaritaetszuschlag,
-    kirchensteuer_percent: d.kirchensteuer_percent,
-  };
+  return lvTaxOptionsFromSettings(taxSettingsSnapshot(d));
 }
 
 export class UserDefaults {

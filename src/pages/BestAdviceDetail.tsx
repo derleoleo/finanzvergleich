@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { BestAdviceCalculation, type BestAdviceModel, type LVResult } from "@/entities/BestAdviceCalculation";
-import { lvTaxOptionsFromDefaults } from "@/entities/UserDefaults";
+import {
+  lvTaxOptionsFromSettings,
+  taxSettingsSnapshot,
+} from "@/entities/UserDefaults";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,7 +35,10 @@ function buildSeries(calc: BestAdviceModel, mode: Mode) {
   const months = years * 12;
   const monthlyContrib = Number(calc.current_monthly_contribution || 0);
   const startCapital = Number(calc.current_capital || 0);
-  const lvTaxOptions = lvTaxOptionsFromDefaults();
+  // Gespeicherter Steuer-Snapshot; Alt-Datensätze: Fallback auf lokale Defaults
+  const lvTaxOptions = lvTaxOptionsFromSettings(
+    calc.results?.tax_settings ?? taxSettingsSnapshot()
+  );
 
   // Fonds-LV über die gemeinsame Engine
   const lv = simulateLv({

@@ -26,6 +26,7 @@ import { buildComparisonResults } from "@/lib/finance/series";
 import {
   depotTaxOptionsFromDefaults,
   lvTaxOptionsFromDefaults,
+  taxSettingsSnapshot,
 } from "@/entities/UserDefaults";
 import TaxInputs from "@/components/calculator/TaxInputs";
 
@@ -242,20 +243,24 @@ export default function Calculator() {
       depot_costs_annual_percent: formData.depot_costs_annual,
     });
 
-    return buildComparisonResults({
-      lv,
-      depot,
-      years,
-      birth_year: formData.birth_year,
-      lvTaxOptions: lvTaxOptionsFromDefaults(d),
-      depotTaxOptions: depotTaxOptionsFromDefaults(d),
-      riyInputs: {
-        annual_return_percent: formData.assumed_annual_return,
-        monthly_contribution: formData.monthly_contribution,
-        months,
-        dynamik_percent: formData.dynamik_percent,
-      },
-    });
+    return {
+      ...buildComparisonResults({
+        lv,
+        depot,
+        years,
+        birth_year: formData.birth_year,
+        lvTaxOptions: lvTaxOptionsFromDefaults(d),
+        depotTaxOptions: depotTaxOptionsFromDefaults(d),
+        riyInputs: {
+          annual_return_percent: formData.assumed_annual_return,
+          monthly_contribution: formData.monthly_contribution,
+          months,
+          dynamik_percent: formData.dynamik_percent,
+        },
+      }),
+      // Annahmen zum Berechnungszeitpunkt mitspeichern → geräteunabhängige Anzeige
+      tax_settings: taxSettingsSnapshot(d),
+    };
   };
 
   const handleCalculate = async () => {

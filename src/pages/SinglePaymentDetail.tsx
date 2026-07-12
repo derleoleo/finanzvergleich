@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { SinglePaymentCalculation, type SinglePaymentModel } from "@/entities/SinglePaymentCalculation";
-import { UserDefaults } from "@/entities/UserDefaults";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,8 +21,9 @@ import {
 } from "@/lib/finance/simulation";
 import { buildYearlySeries } from "@/lib/finance/series";
 import {
-  depotTaxOptionsFromDefaults,
-  lvTaxOptionsFromDefaults,
+  depotTaxOptionsFromSettings,
+  lvTaxOptionsFromSettings,
+  taxSettingsSnapshot,
 } from "@/entities/UserDefaults";
 
 import {
@@ -38,7 +38,8 @@ function buildSeries(calc: SinglePaymentModel, mode: Mode, annualReturnOverride?
   const years = Math.max(1, Math.round(calc.contract_duration_years || 1));
   const months = years * 12;
   const ls = Number(calc.lump_sum || 0);
-  const d = UserDefaults.load();
+  // Gespeicherter Steuer-Snapshot; Alt-Datensätze: Fallback auf lokale Defaults
+  const taxSettings = calc.results?.tax_settings ?? taxSettingsSnapshot();
   const annualReturn = annualReturnOverride ?? Number(calc.assumed_annual_return || 0);
 
   // Multi-Fonds mit Fallback auf Legacy-Einzelfonds-Felder älterer Datensätze
@@ -85,8 +86,8 @@ function buildSeries(calc: SinglePaymentModel, mode: Mode, annualReturnOverride?
     depot: depot.series,
     mode,
     birth_year: calc.birth_year,
-    lvTaxOptions: lvTaxOptionsFromDefaults(d),
-    depotTaxOptions: depotTaxOptionsFromDefaults(d),
+    lvTaxOptions: lvTaxOptionsFromSettings(taxSettings),
+    depotTaxOptions: depotTaxOptionsFromSettings(taxSettings),
   });
 }
 
@@ -99,7 +100,11 @@ function SinglePaymentChart({
 }) {
   const [showReal, setShowReal] = useState(false);
   const [showScenarios, setShowScenarios] = useState(false);
-  const inflationPercent = Number(UserDefaults.load().inflation_percent) || 0;
+  const inflationPercent =
+    Number(
+      calculation.results?.tax_settings?.inflation_percent ??
+        taxSettingsSnapshot().inflation_percent
+    ) || 0;
 
   const series = useMemo(() => {
     const main = buildSeries(calculation, mode);

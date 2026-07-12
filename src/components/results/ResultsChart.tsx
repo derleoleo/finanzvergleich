@@ -11,9 +11,10 @@ import {
   formatChartAxis,
 } from "@/components/shared/CurrencyDisplay";
 import {
-  UserDefaults,
-  depotTaxOptionsFromDefaults,
-  lvTaxOptionsFromDefaults,
+  depotTaxOptionsFromSettings,
+  lvTaxOptionsFromSettings,
+  taxSettingsSnapshot,
+  type StoredTaxSettings,
 } from "@/entities/UserDefaults";
 import {
   simulateDepot,
@@ -65,6 +66,7 @@ export type Calc = {
     life_insurance_net: number;
     depot_gross: number;
     depot_net: number;
+    tax_settings?: StoredTaxSettings;
   };
 };
 
@@ -113,12 +115,17 @@ export default function ResultsChart({
     if (mode === undefined) setInternalMode(m);
   };
 
-  const inflationPercent = Number(UserDefaults.load().inflation_percent) || 0;
+  // Gespeicherter Steuer-Snapshot der Berechnung; ältere Datensätze ohne
+  // Snapshot fallen auf die lokalen UserDefaults zurück
+  const taxSettings = useMemo(
+    () => calculation.results?.tax_settings ?? taxSettingsSnapshot(),
+    [calculation]
+  );
+  const inflationPercent = Number(taxSettings.inflation_percent) || 0;
 
   const series = useMemo(() => {
     const years = Math.max(1, Math.round(calculation.contract_duration_years || 1));
     const months = years * 12;
-    const d = UserDefaults.load();
     const baseReturn = Number(calculation.assumed_annual_return) || 0;
 
     const run = (annualReturn: number) => {
@@ -156,8 +163,8 @@ export default function ResultsChart({
         depot: depot.series,
         mode: activeMode,
         birth_year: calculation.birth_year,
-        lvTaxOptions: lvTaxOptionsFromDefaults(d),
-        depotTaxOptions: depotTaxOptionsFromDefaults(d),
+        lvTaxOptions: lvTaxOptionsFromSettings(taxSettings),
+        depotTaxOptions: depotTaxOptionsFromSettings(taxSettings),
       });
     };
 
@@ -165,7 +172,7 @@ export default function ResultsChart({
     const low = showScenarios ? run(baseReturn - SCENARIO_DELTA) : null;
     const high = showScenarios ? run(baseReturn + SCENARIO_DELTA) : null;
 
-    const inflationRate = (Number(d.inflation_percent) || 0) / 100;
+    const inflationRate = inflationPercent / 100;
     const deflate = (value: number, year: number) =>
       showReal ? Math.round(value / Math.pow(1 + inflationRate, year)) : value;
 
@@ -184,7 +191,7 @@ export default function ResultsChart({
           }
         : {}),
     }));
-  }, [calculation, activeMode, showReal, showScenarios]);
+  }, [calculation, activeMode, showReal, showScenarios, taxSettings, inflationPercent]);
 
   // Endwerte aus dem letzten Kurvenpunkt, damit Karten und Graph immer
   // übereinstimmen (die persistierten results können mit anderen
