@@ -129,21 +129,14 @@ function SinglePaymentChart({
     }));
   }, [calculation, mode, showReal, showScenarios, inflationPercent]);
 
+  // Endwerte aus dem letzten Kurvenpunkt, damit Karten und Graph immer
+  // übereinstimmen (persistierte results können mit anderen
+  // Steuer-Voreinstellungen berechnet worden sein)
   const end = useMemo(() => {
-    const r = calculation.results;
-    if (!r) return { lv: 0, depot: 0 };
-    const nominal =
-      mode === "gross"
-        ? { lv: r.life_insurance_gross, depot: r.depot_gross }
-        : { lv: r.life_insurance_net, depot: r.depot_net };
-    if (!showReal) return nominal;
-    const years = Math.max(1, Math.round(calculation.contract_duration_years || 1));
-    const factor = Math.pow(1 + inflationPercent / 100, years);
-    return {
-      lv: Math.round(nominal.lv / factor),
-      depot: Math.round(nominal.depot / factor),
-    };
-  }, [calculation, mode, showReal, inflationPercent]);
+    const last = series[series.length - 1];
+    if (!last) return { lv: 0, depot: 0 };
+    return { lv: last.lv, depot: last.depot };
+  }, [series]);
 
   return (
     <Card className="border-0 shadow-lg bg-white">
@@ -191,7 +184,7 @@ function SinglePaymentChart({
               <XAxis dataKey="year" tick={{ fontSize: 12 }} />
               <YAxis tickFormatter={formatChartAxis} tick={{ fontSize: 12 }} />
               <Tooltip
-                formatter={(value: unknown, name: unknown) => [formatCurrency(Number(value || 0)), name === "lv" ? "LV" : "Depot"]}
+                formatter={(value: unknown, name: unknown) => [formatCurrency(Number(value || 0)), String(name)]}
                 labelFormatter={(year: unknown) => {
                   const p = series.find((x) => x.year === Number(year));
                   return p ? `Jahr ${year} (Alter ${p.age})` : `Jahr ${year}`;

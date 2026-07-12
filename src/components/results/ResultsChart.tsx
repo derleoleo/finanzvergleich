@@ -186,27 +186,15 @@ export default function ResultsChart({
     }));
   }, [calculation, activeMode, showReal, showScenarios]);
 
+  // Endwerte aus dem letzten Kurvenpunkt, damit Karten und Graph immer
+  // übereinstimmen (die persistierten results können mit anderen
+  // Steuer-Voreinstellungen berechnet worden sein, z. B. auf einem
+  // anderen Gerät)
   const end = useMemo(() => {
-    const r = calculation.results;
-    if (!r) return { lv: 0, depot: 0 };
-    const nominal =
-      activeMode === "gross"
-        ? {
-            lv: Number(r.life_insurance_gross || 0),
-            depot: Number(r.depot_gross || 0),
-          }
-        : {
-            lv: Number(r.life_insurance_net || 0),
-            depot: Number(r.depot_net || 0),
-          };
-    if (!showReal) return nominal;
-    const years = Math.max(1, Math.round(calculation.contract_duration_years || 1));
-    const factor = Math.pow(1 + inflationPercent / 100, years);
-    return {
-      lv: Math.round(nominal.lv / factor),
-      depot: Math.round(nominal.depot / factor),
-    };
-  }, [calculation, activeMode, showReal, inflationPercent]);
+    const last = series[series.length - 1];
+    if (!last) return { lv: 0, depot: 0 };
+    return { lv: last.lv, depot: last.depot };
+  }, [series]);
 
   return (
     <Card className="border-0 shadow-lg bg-white">
@@ -263,7 +251,7 @@ export default function ResultsChart({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {calculation.results && (
+        {series.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="rounded-xl border border-slate-200 p-4">
               <div className="text-xs text-slate-500 mb-1">
@@ -297,8 +285,7 @@ export default function ResultsChart({
               <YAxis tickFormatter={formatChartAxis} tick={{ fontSize: 12 }} />
               <Tooltip
                 formatter={(value: unknown, name: unknown) => {
-                  const label = name === "lv" ? "LV" : "Depot";
-                  return [formatCurrency(Number(value || 0)), label];
+                  return [formatCurrency(Number(value || 0)), String(name)];
                 }}
                 labelFormatter={(year: unknown) => {
                   const p = series.find((x) => x.year === Number(year));

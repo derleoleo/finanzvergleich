@@ -365,7 +365,7 @@ export default function NetPolicyCalculator() {
                     <Tooltip
                       formatter={(value: any, name: any) => [
                         formatCurrency(Number(value || 0)),
-                        name === "netto" ? "Nettopolice" : "Bruttopolice",
+                        String(name),
                       ]}
                       labelFormatter={(year: any) => {
                         const p = results.series.find((x) => x.year === Number(year));
