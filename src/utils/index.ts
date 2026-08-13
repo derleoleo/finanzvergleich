@@ -13,6 +13,8 @@ const routes: Record<string, string> = {
 
   NetPolicyCalculator: "/net-policy",
 
+  AvdCalculator: "/altersvorsorgedepot",
+
   PensionGapCalculator: "/pension-gap",
   PensionGapDetail: "/pension-gap/detail",
 

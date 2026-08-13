@@ -3,7 +3,7 @@ import { createPageUrl } from "@/utils";
 import { Card } from "@/components/ui/card";
 import { UserDefaults } from "@/entities/UserDefaults";
 import {
-  Calculator, DollarSign, Target, TrendingDown, Wallet, ArrowRight, Handshake,
+  Calculator, DollarSign, Target, TrendingDown, Wallet, ArrowRight, Handshake, PiggyBank,
 } from "lucide-react";
 
 const calculators = [
@@ -38,6 +38,14 @@ const calculators = [
     href: createPageUrl("PensionGapCalculator"),
     color: "bg-red-100 text-red-600",
     badge: null,
+  },
+  {
+    icon: PiggyBank,
+    title: "Altersvorsorgedepot",
+    description: "Geförderte Altersvorsorge ab 2027: Zulagen, Steuervorteil und Förderquote berechnen – inklusive Vergleich mit dem freien Depot.",
+    href: createPageUrl("AvdCalculator"),
+    color: "bg-teal-100 text-teal-600",
+    badge: "Neu",
   },
   {
     icon: Wallet,

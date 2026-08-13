@@ -34,6 +34,7 @@ const SinglePaymentDetail     = lazy(() => import("@/pages/SinglePaymentDetail")
 const BestAdviceCalculator    = lazy(() => import("@/pages/BestAdviceCalculator"));
 const BestAdviceDetail        = lazy(() => import("@/pages/BestAdviceDetail"));
 const NetPolicyCalculator     = lazy(() => import("@/pages/NetPolicyCalculator"));
+const AvdCalculator           = lazy(() => import("@/pages/AvdCalculator"));
 const PensionGapCalculator    = lazy(() => import("@/pages/PensionGapCalculator"));
 const PensionGapDetail        = lazy(() => import("@/pages/PensionGapDetail"));
 const Profile                 = lazy(() => import("@/pages/Profile"));
@@ -194,6 +195,18 @@ export default function App() {
               <PageShell>
                 <PaidRoute featureName="Netto- vs. Bruttopolice">
                   <NetPolicyCalculator />
+                </PaidRoute>
+              </PageShell>
+            }
+          />
+
+          {/* Altersvorsorgedepot (gefördert, ab Beitragsjahr 2027) */}
+          <Route
+            path="/altersvorsorgedepot"
+            element={
+              <PageShell>
+                <PaidRoute featureName="Altersvorsorgedepot-Rechner">
+                  <AvdCalculator />
                 </PaidRoute>
               </PageShell>
             }
