@@ -147,14 +147,20 @@ export function guenstigerpruefung(p: GuenstigerEingabe): GuenstigerErgebnis {
   const eigenbeitrag = Math.max(0, Number(p.eigenbeitrag) || 0);
   const zulage = Math.max(0, Number(p.zulageGesamt) || 0);
 
-  if ((p.berechtigung ?? 'unmittelbar') === 'keine') {
+  // Der Sonderausgabenabzug steht nur unmittelbar Berechtigten zu. Beim
+  // mittelbar Berechtigten (Par. 79 S. 2) laeuft der Abzug ueber den
+  // unmittelbar berechtigten Ehegatten (Par. 10a Abs. 3 S. 2-4) - dort werden
+  // die Beitraege und Zulagen beider Ehegatten beruecksichtigt.
+  if ((p.berechtigung ?? 'unmittelbar') !== 'unmittelbar') {
+    // Die Zulage selbst fliesst weiterhin in den Vertrag, nur der eigene
+    // Sonderausgabenabzug entfaellt.
     return {
       sonderausgabenVolumen: 0,
       steuerentlastung: 0,
       zusaetzlicheErstattung: 0,
       ergebnis: 'zulage',
-      gesamtfoerderung: 0,
-      foerderquote: 0,
+      gesamtfoerderung: zulage,
+      foerderquote: eigenbeitrag > 0 ? zulage / eigenbeitrag : 0,
     };
   }
 

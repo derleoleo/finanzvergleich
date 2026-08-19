@@ -144,6 +144,16 @@ export type Hinweis = {
   text: string;
 };
 
+/**
+ * Deflator fuer die Realwert-Umrechnung. Guard gegen Inflationsraten <= -100 %,
+ * die sonst eine Division durch 0 und damit Infinity erzeugen.
+ */
+export function deflatorFuer(inflation: number, jahre: number): number {
+  const i = Number(inflation) || 0;
+  if (i <= -1) return 1;
+  return Math.pow(1 + i, jahre);
+}
+
 /** Validierungen nach Abschnitt 9 der Spezifikation. */
 export function pruefeEingabe(e: AvdEingabe): Hinweis[] {
   const h: Hinweis[] = [];
@@ -195,6 +205,19 @@ export function pruefeEingabe(e: AvdEingabe): Hinweis[] {
     h.push({
       art: 'fehler',
       text: `Die Teilkapitalauszahlung ist auf ${GESETZ.TEILKAPITAL_MAX_ANTEIL * 100} % begrenzt (§ 1 Abs. 1 Nr. 4 AltZertG).`,
+    });
+  }
+  const alterBeiStart = e.beitragsjahrStart - e.geburtsjahr;
+  if (e.auszahlungsbeginnAlter - alterBeiStart < 1) {
+    h.push({
+      art: 'fehler',
+      text: `Zwischen Beitragsbeginn (Alter ${alterBeiStart}) und Auszahlungsbeginn (Alter ${e.auszahlungsbeginnAlter}) liegt kein volles Beitragsjahr – bitte Geburtsjahr, Startjahr oder Auszahlungsalter prüfen.`,
+    });
+  }
+  if (e.berechtigung === 'mittelbar') {
+    h.push({
+      art: 'info',
+      text: 'Mittelbar Zulageberechtigte erhalten die Zulage, aber keinen eigenen Sonderausgabenabzug – dieser läuft über den unmittelbar berechtigten Ehegatten (§ 10a Abs. 3 EStG).',
     });
   }
   if (e.berechtigung === 'keine') {
@@ -343,7 +366,7 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
       kapitalGefoerdert: kapitalGef,
       kapitalUngefoerdert: kapitalUngef,
       kapitalGesamt,
-      kapitalGesamtReal: kapitalGesamt / Math.pow(1 + (e.inflationPaJahr || 0), t + 1),
+      kapitalGesamtReal: kapitalGesamt / deflatorFuer(e.inflationPaJahr, t + 1),
       depotKapital,
     });
   }
@@ -373,7 +396,7 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
 
   const summeFoerderung = summeZulagen + summeErstattung;
   const endkapitalNachSteuer = nachSteuerKapital(e, kapitalGef, kapitalUngef, flags);
-  const deflator = Math.pow(1 + (e.inflationPaJahr || 0), jahreBisAuszahlung);
+  const deflator = deflatorFuer(e.inflationPaJahr, jahreBisAuszahlung);
 
   return {
     jahre,
@@ -495,7 +518,8 @@ export function berechneAuszahlung(
     monatsrenteBrutto,
     monatsrenteNetto: Math.max(0, monatsrenteBrutto - steuerProMonat - kvBeitrag),
     gesetzlicheMindestrate,
-    kleinbetragsrenteMoeglich: monatsrenteBrutto <= kleinbetragsgrenze,
+    kleinbetragsrenteMoeglich:
+      monatsrenteBrutto > 0 && monatsrenteBrutto <= kleinbetragsgrenze,
     kvBeitrag,
     steuerProMonat,
   };

@@ -15,7 +15,13 @@ import {
   guenstigerpruefung,
 } from './zulagen';
 import { GESETZ, ertragsanteilFuer, basiszinsFuer } from './config';
-import { pruefeEingabe, simuliereAvd, foerderquotenKurve, type AvdEingabe } from './simulation';
+import {
+  pruefeEingabe,
+  simuliereAvd,
+  foerderquotenKurve,
+  deflatorFuer,
+  type AvdEingabe,
+} from './simulation';
 
 const zulage = (p: Parameters<typeof berechneZulagen>[0]) =>
   berechneZulagen(p).zulageGesamt;
@@ -501,6 +507,88 @@ describe('Validierung (Abschnitt 9)', () => {
   it('Beitrag unter 120 € warnt vor dem Zulagenverlust', () => {
     const h = pruefeEingabe(eingabe({ eigenbeitragMonatlich: 5 }));
     expect(h.some((x) => x.art === 'warnung' && x.text.includes('120'))).toBe(true);
+  });
+});
+
+describe('Randfälle (über die UI erreichbar)', () => {
+  it('mittelbar Berechtigte bekommen die Zulage, aber keinen eigenen SA-Abzug', () => {
+    // § 10a Abs. 3: Der Abzug läuft über den unmittelbar berechtigten Ehegatten
+    const g = guenstigerpruefung({
+      eigenbeitrag: 1800,
+      zulageGesamt: 175,
+      berechtigung: 'mittelbar',
+      zvE: 48000,
+    });
+    expect(g.sonderausgabenVolumen).toBe(0);
+    expect(g.steuerentlastung).toBe(0);
+    expect(g.zusaetzlicheErstattung).toBe(0);
+    expect(g.gesamtfoerderung).toBe(175); // Zulage fließt weiterhin
+  });
+
+  it('ohne Berechtigung gibt es weder Zulage noch Abzug', () => {
+    const g = guenstigerpruefung({
+      eigenbeitrag: 1800,
+      zulageGesamt: 0,
+      berechtigung: 'keine',
+      zvE: 100000,
+    });
+    expect(g.gesamtfoerderung).toBe(0);
+    expect(g.steuerentlastung).toBe(0);
+  });
+
+  it('Inflation ≤ −100 % erzeugt kein Infinity', () => {
+    expect(deflatorFuer(-1, 30)).toBe(1);
+    expect(deflatorFuer(-2, 30)).toBe(1);
+    expect(deflatorFuer(0.02, 10)).toBeCloseTo(Math.pow(1.02, 10), 10);
+    const r = simuliereAvd(eingabe({ inflationPaJahr: -1 }));
+    expect(Number.isFinite(r.endkapitalReal)).toBe(true);
+    expect(Number.isFinite(r.endkapitalNachSteuerReal)).toBe(true);
+    expect(r.jahre.every((j) => Number.isFinite(j.kapitalGesamtReal))).toBe(true);
+  });
+
+  it('kein Ansparzeitraum mehr: Fehlerhinweis statt stiller Ein-Jahres-Rechnung', () => {
+    // 2027 minus Geburtsjahr 1951 = Alter 76, Auszahlung mit 67
+    const h = pruefeEingabe(eingabe({ geburtsjahr: 1951 }));
+    expect(h.some((x) => x.art === 'fehler' && x.text.includes('Beitragsjahr'))).toBe(true);
+    const ok = pruefeEingabe(eingabe({ geburtsjahr: 1990 }));
+    expect(ok.some((x) => x.art === 'fehler')).toBe(false);
+  });
+
+  it('Rente 0 löst keinen Kleinbetragsrenten-Hinweis aus', () => {
+    const r = simuliereAvd(
+      eingabe({ auszahlform: 'leibrente', rentenfaktorProZehntausend: 0 })
+    );
+    expect(r.auszahlung.monatsrenteBrutto).toBe(0);
+    expect(r.auszahlung.kleinbetragsrenteMoeglich).toBe(false);
+  });
+
+  it('Beitrag 0 liefert durchgehend endliche Werte', () => {
+    const r = simuliereAvd(eingabe({ eigenbeitragMonatlich: 0 }));
+    for (const v of [
+      r.endkapitalNominal, r.endkapitalNachSteuer, r.foerderquoteGesamt,
+      r.auszahlung.monatsrenteBrutto, r.auszahlung.monatsrenteNetto,
+      r.depot.monatsentnahmeVergleich, r.vorteilGegenDepot,
+    ]) {
+      expect(Number.isFinite(v)).toBe(true);
+    }
+  });
+
+  it('negative Rendite und Kosten über der Rendite bleiben rechenbar', () => {
+    for (const e of [
+      eingabe({ renditeBruttoPaJahr: -0.02 }),
+      eingabe({ effektivkostenPaJahr: 0.1 }),
+      eingabe({ fixkostenProJahr: 5000 }),
+    ]) {
+      const r = simuliereAvd(e);
+      expect(Number.isFinite(r.endkapitalNominal)).toBe(true);
+      expect(r.endkapitalNominal).toBeGreaterThanOrEqual(0);
+      expect(Number.isFinite(r.auszahlung.monatsrenteBrutto)).toBe(true);
+    }
+  });
+
+  it('negativer Steuersatz im Alter wird auf 0 geklemmt', () => {
+    const r = simuliereAvd(eingabe({ steuersatzImAlter: -0.1 }));
+    expect(r.endkapitalNachSteuer).toBeCloseTo(r.endkapitalNominal, 6);
   });
 });
 

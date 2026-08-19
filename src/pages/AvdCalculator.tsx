@@ -14,6 +14,7 @@ import { UserDefaults } from '@/entities/UserDefaults';
 import {
   simuliereAvd,
   foerderquotenKurve,
+  deflatorFuer,
   type AvdEingabe,
 } from '@/lib/finance/avd/simulation';
 import { GESETZ, RECHTS_FLAGS_DEFAULT, ANNAHMEN } from '@/lib/finance/avd/config';
@@ -144,7 +145,8 @@ export default function AvdCalculator() {
     avd: Math.round(showReal ? j.kapitalGesamtReal : j.kapitalGesamt),
     depot: Math.round(
       showReal
-        ? j.depotKapital / Math.pow(1 + formData.inflationPaJahr, j.alter - (ergebnis.jahre[0].alter - 1))
+        ? j.depotKapital /
+            deflatorFuer(formData.inflationPaJahr, j.alter - (ergebnis.jahre[0].alter - 1))
         : j.depotKapital
     ),
     eingezahlt: Math.round(
@@ -154,7 +156,8 @@ export default function AvdCalculator() {
 
   const endAvd = showReal ? ergebnis.endkapitalNachSteuerReal : ergebnis.endkapitalNachSteuer;
   const endDepot = showReal
-    ? ergebnis.depot.endkapitalNetto / Math.pow(1 + formData.inflationPaJahr, ergebnis.jahreBisAuszahlung)
+    ? ergebnis.depot.endkapitalNetto /
+      deflatorFuer(formData.inflationPaJahr, ergebnis.jahreBisAuszahlung)
     : ergebnis.depot.endkapitalNetto;
 
   return (
