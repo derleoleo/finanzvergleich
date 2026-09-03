@@ -21,6 +21,7 @@ import {
   User,
   LogOut,
   Lock,
+  PiggyBank,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +75,11 @@ const calculatorItems: NavItem[] = [
     url: createPageUrl("PensionGapCalculator"),
     icon: TrendingDown,
   },
+  {
+    title: "Altersvorsorgedepot",
+    url: createPageUrl("AvdCalculator"),
+    icon: PiggyBank,
+  },
   { title: "Entnahmeplan", url: createPageUrl("WithdrawalPlan"), icon: Wallet },
 ];
 
@@ -92,6 +98,7 @@ type Props = {
 };
 
 const PAID_ONLY_URLS = [
+  createPageUrl("AvdCalculator"),
   createPageUrl("BestAdviceCalculator"),
   createPageUrl("PensionGapCalculator"),
   createPageUrl("WithdrawalPlan"),
