@@ -24,6 +24,12 @@ import {
   type RechtsFlags,
 } from './config';
 import { berechneZulagen, guenstigerpruefung, type Berechtigung } from './zulagen';
+import {
+  simuliereRiesterAlt,
+  sockelbetragsSchwelle,
+  type RiesterAltEingabeVergleich,
+  type RiesterAltErgebnis,
+} from './riester';
 import type { SteuerZuschlaege } from './tarif';
 
 export type AvdEingabe = {
@@ -61,10 +67,14 @@ export type AvdEingabe = {
   rentenfaktorProZehntausend: number;
   kvStatusImAlter: 'pflicht' | 'freiwillig' | 'privat';
 
-  // Vergleichsdepot
+  // Vergleich
+  /** Womit wird das AVD verglichen? Default: freies Depot. */
+  vergleichspartner?: 'depot' | 'riester_alt';
   depotKostenPaJahr: number;
   vergleichsmodus: 'gleicher_nettoaufwand' | 'gleicher_bruttobeitrag';
   sparerpauschbetrag?: number;
+  /** Nur bei vergleichspartner === 'riester_alt'. */
+  riester?: RiesterAltEingabeVergleich;
 
   // Modell
   inflationPaJahr: number;
@@ -134,8 +144,12 @@ export type AvdErgebnis = {
   ungefoerderterKapitalanteil: number;
   auszahlung: AuszahlErgebnis;
   depot: DepotVergleich;
+  /** Nur gesetzt, wenn gegen einen Riester-Bestandsvertrag verglichen wird. */
+  riesterAlt?: RiesterAltErgebnis;
   /** Netto-Kapitalvorteil des AVD gegenüber dem freien Depot (beide nach Steuern). */
   vorteilGegenDepot: number;
+  /** Vorteil gegenüber dem aktiven Vergleichspartner (Depot oder Riester alt). */
+  vorteilGegenVergleich: number;
   hinweise: Hinweis[];
 };
 
@@ -398,6 +412,47 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
   const endkapitalNachSteuer = nachSteuerKapital(e, kapitalGef, kapitalUngef, flags);
   const deflator = deflatorFuer(e.inflationPaJahr, jahreBisAuszahlung);
 
+  // Vergleich gegen einen Riester-Bestandsvertrag (Foerderregime "alt")
+  const riesterAlt =
+    e.vergleichspartner === 'riester_alt' && e.riester
+      ? simuliereRiesterAlt({
+          jahre: jahreBisAuszahlung,
+          eigenbeitragMonatlichStart: e.eigenbeitragMonatlich,
+          beitragsdynamikPaJahr: e.beitragsdynamikPaJahr,
+          kinderGesamt: e.kinder,
+          alterBeiStart,
+          zvEJahr: e.zvEJahr,
+          splitting: e.splitting,
+          zuschlaege,
+          steuersatzImAlter: e.steuersatzImAlter,
+          fixkostenProJahr: e.fixkostenProJahr,
+          zulagenZuflussVerzoegerungJahre: e.zulagenZuflussVerzoegerungJahre,
+          erstattungReinvestieren: e.erstattungReinvestieren,
+          riester: e.riester,
+        })
+      : undefined;
+
+  if (riesterAlt) {
+    if (riesterAlt.summeFoerderung > summeFoerderung) {
+      const schwelle = sockelbetragsSchwelle(
+        Math.max(0, e.kinder - (e.riester?.kinderGeborenVor2008 ?? 0)),
+        e.riester?.kinderGeborenVor2008 ?? 0
+      );
+      hinweise.push({
+        art: 'warnung',
+        text: `Die alte Riester-Foerderung ist hier hoeher als die neue. Das betrifft den Bereich niedriges Einkommen (bis rund ${Math.round(schwelle).toLocaleString('de-DE')} €) plus Kinder plus Beitrag nahe am Sockelbetrag – hier schadet ein Wechsel der Foerdersystematik.`,
+      });
+    }
+    hinweise.push({
+      art: 'info',
+      text: 'Steuerlich aendert sich beim Wechsel nichts: Beide Vertraege sind in der Ansparphase steuerfrei und werden in der Auszahlphase voll nachgelagert besteuert (§ 22 Nr. 5 EStG), beide ohne Teilfreistellung. Der Unterschied liegt in Foerderhoehe, Kosten und Renditepotenzial.',
+    });
+    hinweise.push({
+      art: 'warnung',
+      text: 'Der Wechsel der Foerdersystematik ist unwiderruflich und gilt einheitlich fuer alle Altersvorsorgevertraege des Haushalts, ggf. auch fuer den Ehegatten (§ 52 Abs. 50a EStG). Ein Rueckweg besteht nicht.',
+    });
+  }
+
   return {
     jahre,
     jahreBisAuszahlung,
@@ -414,7 +469,11 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
     ungefoerderterKapitalanteil: kapitalUngef,
     auszahlung,
     depot,
+    riesterAlt,
     vorteilGegenDepot: endkapitalNachSteuer - depot.endkapitalNetto,
+    vorteilGegenVergleich:
+      endkapitalNachSteuer -
+      (riesterAlt ? riesterAlt.endkapitalNachSteuer : depot.endkapitalNetto),
     hinweise,
   };
 }

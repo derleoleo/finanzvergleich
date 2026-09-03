@@ -15,6 +15,7 @@ import {
   guenstigerpruefung,
 } from './zulagen';
 import { GESETZ, ertragsanteilFuer, basiszinsFuer } from './config';
+import { sockelbetragsSchwelle } from './riester';
 import {
   pruefeEingabe,
   simuliereAvd,
@@ -589,6 +590,107 @@ describe('Randfälle (über die UI erreichbar)', () => {
   it('negativer Steuersatz im Alter wird auf 0 geklemmt', () => {
     const r = simuliereAvd(eingabe({ steuersatzImAlter: -0.1 }));
     expect(r.endkapitalNachSteuer).toBeCloseTo(r.endkapitalNominal, 6);
+  });
+});
+
+describe('Vergleich gegen Riester-Bestandsvertrag', () => {
+  const mitRiester = (over: Partial<AvdEingabe> = {}, riesterOver = {}) =>
+    simuliereAvd(
+      eingabe({
+        vergleichspartner: 'riester_alt',
+        riester: {
+          beitragspflEinnahmenVorjahr: 45000,
+          kinderGeborenVor2008: 0,
+          effektivkostenPaJahr: 0.02, // Versicherungsmantel
+          renditeBruttoPaJahr: 0.03, // garantiebedingt niedriger
+          ...riesterOver,
+        },
+        ...over,
+      })
+    );
+
+  it('rechnet beide Seiten und weist den Vorteil gegen Riester aus', () => {
+    const r = mitRiester();
+    expect(r.riesterAlt).toBeDefined();
+    expect(r.vorteilGegenVergleich).toBeCloseTo(
+      r.endkapitalNachSteuer - r.riesterAlt!.endkapitalNachSteuer,
+      6
+    );
+    // Der Depot-Vergleich bleibt zusätzlich verfügbar
+    expect(r.vorteilGegenDepot).toBeCloseTo(
+      r.endkapitalNachSteuer - r.depot.endkapitalNetto,
+      6
+    );
+  });
+
+  it('ohne Riester-Parameter bleibt es beim Depot-Vergleich', () => {
+    const r = simuliereAvd(eingabe());
+    expect(r.riesterAlt).toBeUndefined();
+    expect(r.vorteilGegenVergleich).toBeCloseTo(r.vorteilGegenDepot, 6);
+  });
+
+  it('45.000 € Einkommen, 1.800 € Beitrag: alt 175 €, neu 540 €', () => {
+    const r = mitRiester();
+    expect(r.riesterAlt!.zulageJahr1).toBe(175);
+    expect(r.jahre[0].zulage).toBe(540);
+    expect(r.riesterAlt!.gekuerztJahr1).toBe(false);
+  });
+
+  it('2 Kinder ab 2008: alt 775 €, neu 1.140 €', () => {
+    const r = mitRiester({ kinder: 2 });
+    expect(r.riesterAlt!.zulageJahr1).toBe(775);
+    expect(r.jahre[0].zulage).toBe(1140);
+  });
+
+  it('Kinder vor 2008 bringen alt nur 185 € statt 300 €', () => {
+    const r = mitRiester({ kinder: 2 }, { kinderGeborenVor2008: 2 });
+    expect(r.riesterAlt!.zulagenanspruchJahr1).toBe(545); // 175 + 2 × 185
+    expect(r.jahre[0].zulage).toBe(1140); // neu unverändert
+  });
+
+  it('anteilige Kürzung bei zu kleinem Beitrag (70.000 € Einkommen)', () => {
+    const r = mitRiester({}, { beitragspflEinnahmenVorjahr: 70000 });
+    expect(r.riesterAlt!.mindesteigenbeitragJahr1).toBe(1925);
+    expect(Math.round(r.riesterAlt!.zulageJahr1)).toBe(164);
+    expect(r.riesterAlt!.gekuerztJahr1).toBe(true);
+  });
+
+  it('niedriges Einkommen + Kinder + Sockelbeitrag: alt schlägt neu, mit Warnung', () => {
+    // 12.000 € Einkommen, 2 Kinder, 120 €/Jahr → alt 775 €, neu 300 €
+    const r = mitRiester(
+      { kinder: 2, eigenbeitragMonatlich: 10 },
+      { beitragspflEinnahmenVorjahr: 12000 }
+    );
+    expect(r.riesterAlt!.zulageJahr1).toBe(775);
+    expect(r.jahre[0].zulage).toBe(300);
+    expect(r.riesterAlt!.summeFoerderung).toBeGreaterThan(r.summeFoerderung);
+    expect(
+      r.hinweise.some((h) => h.art === 'warnung' && h.text.includes('alte Riester'))
+    ).toBe(true);
+  });
+
+  it('Kopplungs- und Steuerhinweise erscheinen im Riester-Modus', () => {
+    const r = mitRiester();
+    expect(r.hinweise.some((h) => h.text.includes('unwiderruflich'))).toBe(true);
+    expect(r.hinweise.some((h) => h.text.includes('§ 22 Nr. 5'))).toBe(true);
+    // im Depot-Modus nicht
+    expect(simuliereAvd(eingabe()).hinweise.some((h) => h.text.includes('unwiderruflich'))).toBe(false);
+  });
+
+  it('höhere Kosten und niedrigere Rendite lassen den Altvertrag zurückfallen', () => {
+    const teuer = mitRiester();
+    const guenstig = mitRiester({}, { effektivkostenPaJahr: 0.004, renditeBruttoPaJahr: 0.07 });
+    expect(guenstig.riesterAlt!.endkapitalNominal).toBeGreaterThan(
+      teuer.riesterAlt!.endkapitalNominal
+    );
+    expect(teuer.vorteilGegenVergleich).toBeGreaterThan(guenstig.vorteilGegenVergleich);
+  });
+
+  it('Sockelbetrags-Schwelle nach Kinderzahl', () => {
+    expect(sockelbetragsSchwelle(0, 0)).toBe(5875);
+    expect(sockelbetragsSchwelle(1, 0)).toBe(13375);
+    expect(sockelbetragsSchwelle(2, 0)).toBe(20875);
+    expect(sockelbetragsSchwelle(0, 2)).toBe(25 * (175 + 370 + 60));
   });
 });
 

@@ -67,7 +67,14 @@ function makeDefaults(): FormData {
     auszahlplanEndalter: 85,
     rentenfaktorProZehntausend: ANNAHMEN.RENTENFAKTOR_PRO_10K,
     kvStatusImAlter: 'pflicht',
+    vergleichspartner: 'depot',
     depotKostenPaJahr: d.depot_costs_annual / 100,
+    riester: {
+      beitragspflEinnahmenVorjahr: 45000,
+      kinderGeborenVor2008: 0,
+      effektivkostenPaJahr: 0.02,
+      renditeBruttoPaJahr: 0.03,
+    },
     vergleichsmodus: 'gleicher_nettoaufwand',
     sparerpauschbetrag: ANNAHMEN.SPARERPAUSCHBETRAG,
     inflationPaJahr: d.inflation_percent / 100,
@@ -136,18 +143,38 @@ export default function AvdCalculator() {
     [formData]
   );
 
+  const updateRiester = <K extends keyof NonNullable<FormData['riester']>>(
+    field: K,
+    value: NonNullable<FormData['riester']>[K]
+  ) => {
+    const aktuell = formData.riester ?? {
+      beitragspflEinnahmenVorjahr: 45000,
+      kinderGeborenVor2008: 0,
+      effektivkostenPaJahr: 0.02,
+      renditeBruttoPaJahr: 0.03,
+    };
+    update('riester', { ...aktuell, [field]: value });
+  };
+
   const jahresbeitrag = formData.eigenbeitragMonatlich * 12;
   const hatFehler = ergebnis.hinweise.some((h) => h.art === 'fehler');
+  const gegenRiester = formData.vergleichspartner === 'riester_alt';
+  const riester = formData.riester;
+  const vergleichName = gegenRiester ? 'Riester-Bestandsvertrag' : 'Freies Depot';
 
-  const verlaufsdaten = ergebnis.jahre.map((j) => ({
+  const verlaufsdaten = ergebnis.jahre.map((j, i) => ({
     jahr: j.jahr,
     alter: j.alter,
     avd: Math.round(showReal ? j.kapitalGesamtReal : j.kapitalGesamt),
     depot: Math.round(
-      showReal
-        ? j.depotKapital /
-            deflatorFuer(formData.inflationPaJahr, j.alter - (ergebnis.jahre[0].alter - 1))
-        : j.depotKapital
+      (() => {
+        const nominal =
+          ergebnis.riesterAlt?.kapitalProJahr[i] ?? j.depotKapital;
+        return showReal
+          ? nominal /
+              deflatorFuer(formData.inflationPaJahr, j.alter - (ergebnis.jahre[0].alter - 1))
+          : nominal;
+      })()
     ),
     eingezahlt: Math.round(
       ergebnis.jahre.slice(0, j.jahr - ergebnis.jahre[0].jahr + 1).reduce((s, x) => s + x.eigenbeitrag, 0)
@@ -155,10 +182,13 @@ export default function AvdCalculator() {
   }));
 
   const endAvd = showReal ? ergebnis.endkapitalNachSteuerReal : ergebnis.endkapitalNachSteuer;
-  const endDepot = showReal
-    ? ergebnis.depot.endkapitalNetto /
-      deflatorFuer(formData.inflationPaJahr, ergebnis.jahreBisAuszahlung)
+  const endVergleichNominal = ergebnis.riesterAlt
+    ? ergebnis.riesterAlt.endkapitalNachSteuer
     : ergebnis.depot.endkapitalNetto;
+  const endDepot = showReal
+    ? endVergleichNominal /
+      deflatorFuer(formData.inflationPaJahr, ergebnis.jahreBisAuszahlung)
+    : endVergleichNominal;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
@@ -181,6 +211,42 @@ export default function AvdCalculator() {
             <FileDown className="w-4 h-4 mr-2" />
             {isExporting ? 'Exportiere…' : 'PDF'}
           </Button>
+        </div>
+
+        {/* Vergleichspartner – bestimmt, wogegen das AVD gerechnet wird */}
+        <div data-pdf-section="vergleichspartner">
+          <Card className="border-0 shadow-lg bg-white">
+            <CardContent className="p-4 md:p-5">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    Altersvorsorgedepot vergleichen mit
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {gegenRiester
+                      ? 'Beide Seiten sind gefördert und werden in der Auszahlphase identisch besteuert – es entscheiden Förderhöhe, Kosten und Rendite.'
+                      : 'Ungefördertes Depot mit Abgeltungsteuer, Teilfreistellung und Vorabpauschale.'}
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0" data-pdf-hide>
+                  <Button
+                    variant={!gegenRiester ? 'default' : 'outline'}
+                    className={!gegenRiester ? 'bg-slate-800 hover:bg-slate-700' : ''}
+                    onClick={() => update('vergleichspartner', 'depot')}
+                  >
+                    Freies Depot
+                  </Button>
+                  <Button
+                    variant={gegenRiester ? 'default' : 'outline'}
+                    className={gegenRiester ? 'bg-slate-800 hover:bg-slate-700' : ''}
+                    onClick={() => update('vergleichspartner', 'riester_alt')}
+                  >
+                    Alte Riester-Förderung
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Schritt 1: Förderberechtigung */}
@@ -378,7 +444,8 @@ export default function AvdCalculator() {
             <CardHeader className="pb-4">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <CardTitle className="text-lg font-bold text-slate-900">
-                  3. Vergleich mit dem freien Depot
+                  3. Vergleich mit{' '}
+                  {gegenRiester ? 'dem Riester-Bestandsvertrag' : 'dem freien Depot'}
                 </CardTitle>
                 <div className="flex flex-wrap gap-2" data-pdf-hide>
                   <Button
@@ -401,22 +468,102 @@ export default function AvdCalculator() {
                   <Label className="text-sm font-medium text-slate-700">Effektivkosten AVD p.a. (%)</Label>
                   <NumericInput step={0.05} value={formData.effektivkostenPaJahr * 100} onChange={(v) => update('effektivkostenPaJahr', v / 100)} className={inputClass} />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">Kosten freies Depot p.a. (%)</Label>
-                  <NumericInput step={0.05} value={formData.depotKostenPaJahr * 100} onChange={(v) => update('depotKostenPaJahr', v / 100)} className={inputClass} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">Vergleichsbasis</Label>
-                  <select
-                    value={formData.vergleichsmodus}
-                    onChange={(e) => update('vergleichsmodus', e.target.value as FormData['vergleichsmodus'])}
-                    className={selectClass}
-                  >
-                    <option value="gleicher_nettoaufwand">gleicher Netto-Aufwand</option>
-                    <option value="gleicher_bruttobeitrag">gleicher Bruttobeitrag</option>
-                  </select>
-                </div>
+                {gegenRiester ? (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Kosten Altvertrag p.a. (%)</Label>
+                    <NumericInput
+                      step={0.05}
+                      value={(riester?.effektivkostenPaJahr ?? 0.02) * 100}
+                      onChange={(v) => updateRiester('effektivkostenPaJahr', v / 100)}
+                      className={inputClass}
+                    />
+                    <p className="text-xs text-slate-400">Versicherungsmantel typisch 1,5–2,5 %</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Kosten freies Depot p.a. (%)</Label>
+                    <NumericInput step={0.05} value={formData.depotKostenPaJahr * 100} onChange={(v) => update('depotKostenPaJahr', v / 100)} className={inputClass} />
+                  </div>
+                )}
+                {gegenRiester ? (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Rendite Altvertrag p.a. (%)</Label>
+                    <NumericInput
+                      step={0.1}
+                      value={(riester?.renditeBruttoPaJahr ?? 0.03) * 100}
+                      onChange={(v) => updateRiester('renditeBruttoPaJahr', v / 100)}
+                      className={inputClass}
+                    />
+                    <p className="text-xs text-slate-400">Beitragsgarantie begrenzt die Aktienquote</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Vergleichsbasis</Label>
+                    <select
+                      value={formData.vergleichsmodus}
+                      onChange={(e) => update('vergleichsmodus', e.target.value as FormData['vergleichsmodus'])}
+                      className={selectClass}
+                    >
+                      <option value="gleicher_nettoaufwand">gleicher Netto-Aufwand</option>
+                      <option value="gleicher_bruttobeitrag">gleicher Bruttobeitrag</option>
+                    </select>
+                  </div>
+                )}
               </div>
+
+              {gegenRiester && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">Beitragspfl. Einnahmen Vorjahr (€)</Label>
+                      <NumericInput
+                        value={riester?.beitragspflEinnahmenVorjahr ?? 0}
+                        onChange={(v) => updateRiester('beitragspflEinnahmenVorjahr', v)}
+                        className={inputClass}
+                      />
+                      <p className="text-xs text-slate-400">Basis des Mindesteigenbeitrags (4 %, § 86 a.F.)</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-slate-700">davon Kinder vor 2008</Label>
+                      <NumericInput
+                        value={riester?.kinderGeborenVor2008 ?? 0}
+                        onChange={(v) =>
+                          updateRiester(
+                            'kinderGeborenVor2008',
+                            Math.max(0, Math.min(Math.round(v), formData.kinder))
+                          )
+                        }
+                        className={inputClass}
+                      />
+                      <p className="text-xs text-slate-400">Nur 185 € statt 300 € Zulage</p>
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 p-4">
+                    <div className="text-xs text-slate-500">Förderung im ersten Jahr</div>
+                    <div className="text-sm text-slate-900 mt-1">
+                      Alte Riester-Zulage{' '}
+                      <span className="font-semibold">
+                        {formatCurrency(ergebnis.riesterAlt?.zulageJahr1 ?? 0)}
+                      </span>
+                      {ergebnis.riesterAlt?.gekuerztJahr1 && (
+                        <span className="text-amber-700">
+                          {' '}– anteilig gekürzt, Mindesteigenbeitrag{' '}
+                          {formatCurrency(ergebnis.riesterAlt.mindesteigenbeitragJahr1)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-slate-900 mt-1">
+                      Neue Förderung{' '}
+                      <span className="font-semibold">
+                        {formatCurrency(ergebnis.jahre[0]?.zulage ?? 0)}
+                      </span>{' '}
+                      Zulage
+                      {(ergebnis.jahre[0]?.steuererstattung ?? 0) > 0 &&
+                        ` + ${formatCurrency(ergebnis.jahre[0].steuererstattung)} Erstattung`}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="rounded-xl border border-slate-200 p-4">
@@ -430,17 +577,19 @@ export default function AvdCalculator() {
                 </div>
                 <div className="rounded-xl border border-slate-200 p-4">
                   <div className="text-xs text-slate-500 mb-1">
-                    Freies Depot nach Steuern{showReal ? ' (real)' : ''}
+                    {vergleichName} nach Steuern{showReal ? ' (real)' : ''}
                   </div>
                   <div className="text-2xl font-bold text-slate-900">{formatCurrency(endDepot)}</div>
                   <div className="text-xs text-slate-500 mt-1">
-                    inkl. Vorabpauschale {formatCurrency(ergebnis.depot.summeVorabpauschaleSteuer)}
+                    {ergebnis.riesterAlt
+                      ? `Förderung gesamt ${formatCurrency(ergebnis.riesterAlt.summeFoerderung)}`
+                      : `inkl. Vorabpauschale ${formatCurrency(ergebnis.depot.summeVorabpauschaleSteuer)}`}
                   </div>
                 </div>
-                <div className={`rounded-xl border p-4 ${ergebnis.vorteilGegenDepot >= 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                <div className={`rounded-xl border p-4 ${ergebnis.vorteilGegenVergleich >= 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
                   <div className="text-xs text-slate-500 mb-1">Vorteil AVD</div>
-                  <div className={`text-2xl font-bold ${ergebnis.vorteilGegenDepot >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                    {formatCurrency(showReal ? endAvd - endDepot : ergebnis.vorteilGegenDepot)}
+                  <div className={`text-2xl font-bold ${ergebnis.vorteilGegenVergleich >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                    {formatCurrency(showReal ? endAvd - endDepot : ergebnis.vorteilGegenVergleich)}
                   </div>
                   <div className="text-xs text-slate-500 mt-1">
                     Förderung gesamt {formatCurrency(ergebnis.summeFoerderung)}
@@ -463,16 +612,15 @@ export default function AvdCalculator() {
                     />
                     <Legend />
                     <Line type="monotone" dataKey="avd" name="Altersvorsorgedepot" stroke="#2563eb" strokeWidth={3} dot={false} isAnimationActive={false} />
-                    <Line type="monotone" dataKey="depot" name="Freies Depot" stroke="#16a34a" strokeWidth={3} dot={false} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="depot" name={vergleichName} stroke="#16a34a" strokeWidth={3} dot={false} isAnimationActive={false} />
                     <Line type="monotone" dataKey="eingezahlt" name="Eigenbeiträge" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 4" dot={false} isAnimationActive={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
               <p className="text-xs text-slate-500">
-                Beide Seiten nach Steuern: Das AVD wird nachgelagert voll besteuert (§ 22 Nr. 5 EStG,
-                keine Teilfreistellung), das freie Depot mit Abgeltungsteuer, 30 % Teilfreistellung und
-                jährlicher Vorabpauschale. Kein Sparerpauschbetrag angesetzt (kann anderweitig
-                verbraucht sein).
+                {gegenRiester
+                  ? 'Beide Seiten nach Steuern. Steuerlich sind AVD und Riester-Altvertrag identisch: in der Ansparphase steuerfrei, in der Auszahlphase voll nachgelagert besteuert (§ 22 Nr. 5 EStG), beide ohne Teilfreistellung. Der Unterschied entsteht allein aus Förderhöhe, Kosten und Renditepotenzial – bereits gezahlte Zulagen und Steuervorteile bleiben beim Wechsel erhalten (§ 3 Nr. 55c EStG).'
+                  : 'Beide Seiten nach Steuern: Das AVD wird nachgelagert voll besteuert (§ 22 Nr. 5 EStG, keine Teilfreistellung), das freie Depot mit Abgeltungsteuer, 30 % Teilfreistellung und jährlicher Vorabpauschale. Kein Sparerpauschbetrag angesetzt (kann anderweitig verbraucht sein).'}
               </p>
             </CardContent>
           </Card>
@@ -619,6 +767,7 @@ export default function AvdCalculator() {
       {dialogOpen && (
         <PDFSectionDialog
           sections={[
+            { id: 'vergleichspartner', label: 'Vergleichspartner' },
             { id: 'berechtigung', label: 'Förderberechtigung' },
             { id: 'foerderung', label: 'Beitrag und Förderung' },
             { id: 'vergleich', label: 'Vergleich freies Depot' },
