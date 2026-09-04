@@ -16,6 +16,7 @@ import {
 } from './zulagen';
 import { GESETZ, ertragsanteilFuer, basiszinsFuer } from './config';
 import { sockelbetragsSchwelle } from './riester';
+import { besteOption, zillmerungsverlust } from './optionen';
 import {
   pruefeEingabe,
   simuliereAvd,
@@ -721,5 +722,146 @@ describe('Förderquoten-Kurve', () => {
     });
     const bei300 = mitKindern.find((p) => p.beitrag === 300)!;
     expect(bei300.foerderquote).toBeGreaterThan(2);
+  });
+});
+
+describe('Vier Handlungsoptionen (A–D)', () => {
+  const bestand = {
+    aktuellerVertragswert: 20000,
+    summeBeitraegeUndZulagenBisher: 24000,
+    garantiertesKapitalZuRentenbeginn: 0,
+    wechselgebuehr: 150,
+    ruhendStellenKostenProJahr: 0,
+    fruehesterZugriffAlter: 62,
+  };
+  const mitOptionen = (over: Partial<AvdEingabe> = {}, bestandOver = {}) =>
+    simuliereAvd(
+      eingabe({
+        vergleichspartner: 'riester_alt',
+        riester: {
+          beitragspflEinnahmenVorjahr: 45000,
+          kinderGeborenVor2008: 0,
+          effektivkostenPaJahr: 0.02,
+          renditeBruttoPaJahr: 0.03,
+        },
+        bestandsvertrag: { ...bestand, ...bestandOver },
+        ...over,
+      })
+    );
+
+  it('liefert genau vier Optionen mit stabilen IDs', () => {
+    const o = mitOptionen().handlungsoptionen!;
+    expect(o.map((x) => x.id)).toEqual(['A', 'B', 'C', 'D']);
+  });
+
+  it('nur A nutzt die alte Förderung, B–D die neue', () => {
+    const o = mitOptionen().handlungsoptionen!;
+    expect(o[0].foerderregime).toBe('alt');
+    expect(o.slice(1).every((x) => x.foerderregime === 'neu')).toBe(true);
+    // Bei 1.800 € Beitrag und 45.000 € Einkommen: alt 175 €, neu 540 € + Erstattung
+    expect(o[1].summeFoerderung).toBeGreaterThan(o[0].summeFoerderung);
+  });
+
+  it('B kostet nichts und behält den frühen Zugriff des Altvertrags', () => {
+    const o = mitOptionen().handlungsoptionen!;
+    const b = o.find((x) => x.id === 'B')!;
+    expect(b.einmalkosten).toBe(0);
+    expect(b.fruehesterZugriffAlter).toBe(62);
+    // gleiches Produkt wie A → gleiche Rendite, nur mehr Förderung
+    expect(b.endkapitalNominal).toBeGreaterThan(o[0].endkapitalNominal);
+  });
+
+  it('D trägt die Wechselgebühr und verliert die Beitragsgarantie', () => {
+    const o = mitOptionen({}, { garantiertesKapitalZuRentenbeginn: 60000 }).handlungsoptionen!;
+    const d = o.find((x) => x.id === 'D')!;
+    expect(d.einmalkosten).toBe(150);
+    expect(d.garantiertMindestens).toBe(0);
+    expect(o.find((x) => x.id === 'A')!.garantiertMindestens).toBe(60000);
+    expect(d.fruehesterZugriffAlter).toBe(65); // AVD frühestens 65
+  });
+
+  it('nur A ist umkehrbar', () => {
+    const o = mitOptionen().handlungsoptionen!;
+    expect(o.filter((x) => x.umkehrbar).map((x) => x.id)).toEqual(['A']);
+  });
+
+  it('Garantie greift als Untergrenze bei A/B/C', () => {
+    const o = mitOptionen(
+      { renditeBruttoPaJahr: 0.07 },
+      { garantiertesKapitalZuRentenbeginn: 500000 }
+    ).handlungsoptionen!;
+    for (const id of ['A', 'B']) {
+      expect(o.find((x) => x.id === id)!.endkapitalNominal).toBeGreaterThanOrEqual(500000);
+    }
+    // D kennt keine Garantie
+    expect(o.find((x) => x.id === 'D')!.endkapitalNominal).toBeLessThan(500000);
+  });
+
+  it('teurer Altvertrag mit langer Restlaufzeit: D schlägt B', () => {
+    const o = mitOptionen({ geburtsjahr: 1997 }).handlungsoptionen!; // 30 Jahre alt
+    const b = o.find((x) => x.id === 'B')!;
+    const d = o.find((x) => x.id === 'D')!;
+    expect(d.endkapitalNachSteuer).toBeGreaterThan(b.endkapitalNachSteuer);
+    expect(besteOption(o).id).toBe('D');
+  });
+
+  it('günstiger Altvertrag mit guter Rendite: B schlägt D', () => {
+    const o = mitOptionen({
+      riester: {
+        beitragspflEinnahmenVorjahr: 45000,
+        kinderGeborenVor2008: 0,
+        effektivkostenPaJahr: 0.003,
+        renditeBruttoPaJahr: 0.07,
+      },
+    }).handlungsoptionen!;
+    const b = o.find((x) => x.id === 'B')!;
+    const d = o.find((x) => x.id === 'D')!;
+    expect(b.endkapitalNachSteuer).toBeGreaterThan(d.endkapitalNachSteuer);
+  });
+
+  it('C summiert ruhenden Altvertrag und neues AVD', () => {
+    const o = mitOptionen().handlungsoptionen!;
+    const c = o.find((x) => x.id === 'C')!;
+    // Beiträge fließen nur ins neue AVD
+    expect(c.summeEigenbeitraege).toBeCloseTo(
+      o.find((x) => x.id === 'D')!.summeEigenbeitraege,
+      6
+    );
+    expect(c.endkapitalNominal).toBeGreaterThan(0);
+  });
+
+  it('laufende Kosten eines ruhenden Vertrags mindern Option C', () => {
+    const ohne = mitOptionen().handlungsoptionen!.find((x) => x.id === 'C')!;
+    const mit = mitOptionen({}, { ruhendStellenKostenProJahr: 200 })
+      .handlungsoptionen!.find((x) => x.id === 'C')!;
+    expect(mit.endkapitalNominal).toBeLessThan(ohne.endkapitalNominal);
+  });
+
+  it('Zillmerungsverlust ist sunk cost, kein Wechselargument', () => {
+    expect(zillmerungsverlust(bestand)).toBe(4000);
+    expect(zillmerungsverlust({ ...bestand, aktuellerVertragswert: 30000 })).toBe(0);
+  });
+
+  it('ohne Bestandsvertragsdaten gibt es keine Optionsmatrix', () => {
+    expect(simuliereAvd(eingabe()).handlungsoptionen).toBeUndefined();
+    expect(
+      simuliereAvd(
+        eingabe({
+          vergleichspartner: 'riester_alt',
+          riester: {
+            beitragspflEinnahmenVorjahr: 45000,
+            kinderGeborenVor2008: 0,
+            effektivkostenPaJahr: 0.02,
+            renditeBruttoPaJahr: 0.03,
+          },
+        })
+      ).handlungsoptionen
+    ).toBeUndefined();
+  });
+
+  it('warnt bei fehlendem Vertragswert und frühem Zugriff des Altvertrags', () => {
+    const r = mitOptionen({}, { aktuellerVertragswert: 0 });
+    expect(r.hinweise.some((h) => h.text.includes('Standmitteilung'))).toBe(true);
+    expect(r.hinweise.some((h) => h.text.includes('Optionen C und D'))).toBe(true);
   });
 });

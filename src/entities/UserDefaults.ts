@@ -40,6 +40,10 @@ export type UserDefaultsData = {
   // Honorarberatung (schaltet den Netto- vs. Bruttopolice-Rechner frei)
   honorarberatung_enabled: boolean;
 
+  // Wechselanalyse: schaltet die Vier-Optionen-Matrix (A-D) im
+  // Altersvorsorgedepot-Rechner frei
+  handlungsoptionen_enabled: boolean;
+
   // Steuern
   lv_personal_income_tax_rate: number; // persönlicher Steuersatz bei Halbeinkünfteverfahren (%), z.B. 20
   depot_teilfreistellung_percent: number; // Teilfreistellung Depot-Fonds (0/15/30 %)
@@ -79,6 +83,7 @@ export const SYSTEM_DEFAULTS: UserDefaultsData = {
   withdrawal_end_age: 85,
 
   honorarberatung_enabled: false,
+  handlungsoptionen_enabled: false,
 
   lv_personal_income_tax_rate: 20,
   depot_teilfreistellung_percent: 30,

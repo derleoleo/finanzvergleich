@@ -326,10 +326,10 @@ export default function Defaults() {
                 <div className="w-9 h-9 bg-teal-100 rounded-xl flex items-center justify-center">
                   <Percent className="w-4 h-4 text-teal-600" />
                 </div>
-                Honorarberatung
+                Zusatzmodule
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               <div className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
                 <div>
                   <p className="text-sm font-medium text-slate-700">Honorarberatung anbieten</p>
@@ -340,6 +340,20 @@ export default function Defaults() {
                 <Switch
                   checked={data.honorarberatung_enabled}
                   onCheckedChange={(v) => set("honorarberatung_enabled", v)}
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Wechselanalyse Riester</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Zeigt im Altersvorsorgedepot-Rechner die vier Handlungsoptionen
+                    (behalten, Förderung wechseln, ruhen lassen, übertragen) samt
+                    Garantieniveau und Einmalkosten.
+                  </p>
+                </div>
+                <Switch
+                  checked={data.handlungsoptionen_enabled}
+                  onCheckedChange={(v) => set("handlungsoptionen_enabled", v)}
                 />
               </div>
             </CardContent>

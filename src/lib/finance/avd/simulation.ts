@@ -30,6 +30,11 @@ import {
   type RiesterAltEingabeVergleich,
   type RiesterAltErgebnis,
 } from './riester';
+import {
+  berechneHandlungsoptionen,
+  type BestandsvertragEingabe,
+  type OptionsErgebnis,
+} from './optionen';
 import type { SteuerZuschlaege } from './tarif';
 
 export type AvdEingabe = {
@@ -75,6 +80,11 @@ export type AvdEingabe = {
   sparerpauschbetrag?: number;
   /** Nur bei vergleichspartner === 'riester_alt'. */
   riester?: RiesterAltEingabeVergleich;
+  /**
+   * Bestandsvertragsdaten fuer die Vier-Optionen-Matrix (A-D).
+   * Gesetzt nur, wenn die Wechselanalyse in den Voreinstellungen aktiv ist.
+   */
+  bestandsvertrag?: BestandsvertragEingabe;
 
   // Modell
   inflationPaJahr: number;
@@ -146,6 +156,8 @@ export type AvdErgebnis = {
   depot: DepotVergleich;
   /** Nur gesetzt, wenn gegen einen Riester-Bestandsvertrag verglichen wird. */
   riesterAlt?: RiesterAltErgebnis;
+  /** Vier Handlungsoptionen A-D; nur bei aktiver Wechselanalyse. */
+  handlungsoptionen?: OptionsErgebnis[];
   /** Netto-Kapitalvorteil des AVD gegenüber dem freien Depot (beide nach Steuern). */
   vorteilGegenDepot: number;
   /** Vorteil gegenüber dem aktiven Vergleichspartner (Depot oder Riester alt). */
@@ -432,6 +444,45 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
         })
       : undefined;
 
+  // Vier Handlungsoptionen A-D (nur mit Bestandsvertragsdaten)
+  const handlungsoptionen =
+    e.vergleichspartner === 'riester_alt' && e.riester && e.bestandsvertrag
+      ? berechneHandlungsoptionen({
+          jahre: jahreBisAuszahlung,
+          eigenbeitragMonatlichStart: e.eigenbeitragMonatlich,
+          beitragsdynamikPaJahr: e.beitragsdynamikPaJahr,
+          kinderGesamt: e.kinder,
+          kinderGeborenVor2008: e.riester.kinderGeborenVor2008,
+          alterBeiStart,
+          zvEJahr: e.zvEJahr,
+          splitting: e.splitting,
+          zuschlaege,
+          steuersatzImAlter: e.steuersatzImAlter,
+          zulagenZuflussVerzoegerungJahre: e.zulagenZuflussVerzoegerungJahre,
+          erstattungReinvestieren: e.erstattungReinvestieren,
+          altRenditePaJahr: e.riester.renditeBruttoPaJahr,
+          altKostenPaJahr: e.riester.effektivkostenPaJahr,
+          avdRenditePaJahr: e.renditeBruttoPaJahr,
+          avdKostenPaJahr: e.effektivkostenPaJahr,
+          bestand: e.bestandsvertrag,
+        })
+      : undefined;
+
+  if (handlungsoptionen && e.bestandsvertrag) {
+    if (e.bestandsvertrag.aktuellerVertragswert <= 0) {
+      hinweise.push({
+        art: 'warnung',
+        text: 'Ohne den aktuellen Vertragswert aus der Standmitteilung ist der Optionsvergleich wertlos – der Wert darf nicht geschaetzt werden.',
+      });
+    }
+    if (e.bestandsvertrag.fruehesterZugriffAlter < GESETZ.AUSZAHLUNG_ALTER_MIN) {
+      hinweise.push({
+        art: 'info',
+        text: `Der Altvertrag erlaubt den Auszahlungsbeginn bereits ab ${e.bestandsvertrag.fruehesterZugriffAlter}. Das Altersvorsorgedepot erst ab ${GESETZ.AUSZAHLUNG_ALTER_MIN} – bei gewuenschtem frueherem Zugriff scheiden die Optionen C und D aus.`,
+      });
+    }
+  }
+
   if (riesterAlt) {
     if (riesterAlt.summeFoerderung > summeFoerderung) {
       const schwelle = sockelbetragsSchwelle(
@@ -470,6 +521,7 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
     auszahlung,
     depot,
     riesterAlt,
+    handlungsoptionen,
     vorteilGegenDepot: endkapitalNachSteuer - depot.endkapitalNetto,
     vorteilGegenVergleich:
       endkapitalNachSteuer -

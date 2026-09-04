@@ -18,6 +18,7 @@ import {
   type AvdEingabe,
 } from '@/lib/finance/avd/simulation';
 import { GESETZ, RECHTS_FLAGS_DEFAULT, ANNAHMEN } from '@/lib/finance/avd/config';
+import { besteOption, zillmerungsverlust } from '@/lib/finance/avd/optionen';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,6 +76,14 @@ function makeDefaults(): FormData {
       effektivkostenPaJahr: 0.02,
       renditeBruttoPaJahr: 0.03,
     },
+    bestandsvertrag: {
+      aktuellerVertragswert: 0,
+      summeBeitraegeUndZulagenBisher: 0,
+      garantiertesKapitalZuRentenbeginn: 0,
+      wechselgebuehr: 150,
+      ruhendStellenKostenProJahr: 0,
+      fruehesterZugriffAlter: 62,
+    },
     vergleichsmodus: 'gleicher_nettoaufwand',
     sparerpauschbetrag: ANNAHMEN.SPARERPAUSCHBETRAG,
     inflationPaJahr: d.inflation_percent / 100,
@@ -121,9 +130,20 @@ export default function AvdCalculator() {
     if (saveTimer.current) clearTimeout(saveTimer.current);
   }, []);
 
+  // Wechselanalyse wird in den Voreinstellungen freigeschaltet
+  const optionenAktiv = useMemo(
+    () => UserDefaults.load().handlungsoptionen_enabled,
+    []
+  );
+
   const ergebnis = useMemo(
-    () => simuliereAvd({ ...formData, flags: RECHTS_FLAGS_DEFAULT }),
-    [formData]
+    () =>
+      simuliereAvd({
+        ...formData,
+        bestandsvertrag: optionenAktiv ? formData.bestandsvertrag : undefined,
+        flags: RECHTS_FLAGS_DEFAULT,
+      }),
+    [formData, optionenAktiv]
   );
 
   const kurve = useMemo(
@@ -159,6 +179,22 @@ export default function AvdCalculator() {
   const jahresbeitrag = formData.eigenbeitragMonatlich * 12;
   const hatFehler = ergebnis.hinweise.some((h) => h.art === 'fehler');
   const gegenRiester = formData.vergleichspartner === 'riester_alt';
+  const bestand = formData.bestandsvertrag;
+  const optionen = ergebnis.handlungsoptionen;
+  const updateBestand = <K extends keyof NonNullable<FormData['bestandsvertrag']>>(
+    field: K,
+    value: NonNullable<FormData['bestandsvertrag']>[K]
+  ) => {
+    const aktuell = formData.bestandsvertrag ?? {
+      aktuellerVertragswert: 0,
+      summeBeitraegeUndZulagenBisher: 0,
+      garantiertesKapitalZuRentenbeginn: 0,
+      wechselgebuehr: 150,
+      ruhendStellenKostenProJahr: 0,
+      fruehesterZugriffAlter: 62,
+    };
+    update('bestandsvertrag', { ...aktuell, [field]: value });
+  };
   const riester = formData.riester;
   const vergleichName = gegenRiester ? 'Riester-Bestandsvertrag' : 'Freies Depot';
 
@@ -626,6 +662,214 @@ export default function AvdCalculator() {
           </Card>
         </div>
 
+        {/* Wechselanalyse: vier Handlungsoptionen (per Voreinstellung freigeschaltet) */}
+        {optionenAktiv && gegenRiester && (
+          <div data-pdf-section="optionen">
+            <Card className="border-0 shadow-lg bg-white">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg font-bold text-slate-900">
+                  Wechselanalyse: vier Handlungsoptionen
+                </CardTitle>
+                <p className="text-xs text-slate-500 mt-1">
+                  Förderregime und Produktmantel sind unabhängig wählbar. Daraus ergeben
+                  sich vier Wege – nicht nur „behalten oder wechseln".
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      Aktueller Vertragswert (€)
+                    </Label>
+                    <NumericInput
+                      value={bestand?.aktuellerVertragswert ?? 0}
+                      onChange={(v) => updateBestand('aktuellerVertragswert', v)}
+                      className={inputClass}
+                    />
+                    <p className="text-xs text-slate-400">
+                      Übertragungswert laut Standmitteilung – bitte nicht schätzen
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      Beiträge + Zulagen bisher (€)
+                    </Label>
+                    <NumericInput
+                      value={bestand?.summeBeitraegeUndZulagenBisher ?? 0}
+                      onChange={(v) => updateBestand('summeBeitraegeUndZulagenBisher', v)}
+                      className={inputClass}
+                    />
+                    <p className="text-xs text-slate-400">
+                      {zillmerungsverlust(
+                        bestand ?? {
+                          aktuellerVertragswert: 0,
+                          summeBeitraegeUndZulagenBisher: 0,
+                          garantiertesKapitalZuRentenbeginn: 0,
+                          wechselgebuehr: 0,
+                          ruhendStellenKostenProJahr: 0,
+                          fruehesterZugriffAlter: 62,
+                        }
+                      ) > 0
+                        ? `Zillmerungsverlust bereits eingetreten: ${formatCurrency(
+                            zillmerungsverlust(bestand!)
+                          )}`
+                        : 'Für den Ausweis des bereits eingetretenen Verlusts'}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      Garantiertes Kapital (€)
+                    </Label>
+                    <NumericInput
+                      value={bestand?.garantiertesKapitalZuRentenbeginn ?? 0}
+                      onChange={(v) => updateBestand('garantiertesKapitalZuRentenbeginn', v)}
+                      className={inputClass}
+                    />
+                    <p className="text-xs text-slate-400">zu Rentenbeginn, laut Standmitteilung</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      Frühester Zugriff (Alter)
+                    </Label>
+                    <NumericInput
+                      value={bestand?.fruehesterZugriffAlter ?? 62}
+                      onChange={(v) => updateBestand('fruehesterZugriffAlter', v)}
+                      className={inputClass}
+                    />
+                    <p className="text-xs text-slate-400">60 bei Abschluss bis 2011, sonst 62</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Wechselgebühr (€)</Label>
+                    <NumericInput
+                      value={bestand?.wechselgebuehr ?? 150}
+                      onChange={(v) => updateBestand('wechselgebuehr', v)}
+                      className={inputClass}
+                    />
+                    <p className="text-xs text-slate-400">max. 150 € (§ 1 Abs. 1 S. 3 AltZertG)</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      Kosten ruhender Vertrag (€/Jahr)
+                    </Label>
+                    <NumericInput
+                      value={bestand?.ruhendStellenKostenProJahr ?? 0}
+                      onChange={(v) => updateBestand('ruhendStellenKostenProJahr', v)}
+                      className={inputClass}
+                    />
+                    <p className="text-xs text-slate-400">Stückkosten bei Beitragsfreistellung</p>
+                  </div>
+                </div>
+
+                {optionen && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200">
+                          <th className="text-left py-2 pr-3 font-medium text-slate-500 text-xs">
+                            &nbsp;
+                          </th>
+                          {optionen.map((o) => (
+                            <th key={o.id} className="text-left py-2 px-3 min-w-[150px]">
+                              <div className="font-bold text-slate-900">
+                                {o.id}: {o.bezeichnung}
+                              </div>
+                              <div className="text-xs font-normal text-slate-500 mt-0.5">
+                                {o.kurzbeschreibung}
+                              </div>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-slate-100">
+                          <td className="py-2 pr-3 text-slate-500 text-xs">Förderregime</td>
+                          {optionen.map((o) => (
+                            <td key={o.id} className="py-2 px-3 text-slate-900">
+                              {o.foerderregime === 'alt' ? 'alt (Riester)' : 'neu (ab 2027)'}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="py-2 pr-3 text-slate-500 text-xs">Förderung gesamt</td>
+                          {optionen.map((o) => (
+                            <td key={o.id} className="py-2 px-3 text-slate-900">
+                              {formatCurrency(o.summeFoerderung)}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b border-slate-100 bg-slate-50">
+                          <td className="py-2 pr-3 text-slate-500 text-xs">
+                            Endkapital nach Steuern
+                          </td>
+                          {optionen.map((o) => {
+                            const beste = besteOption(optionen).id === o.id;
+                            return (
+                              <td
+                                key={o.id}
+                                className={`py-2 px-3 font-bold ${beste ? 'text-green-700' : 'text-slate-900'}`}
+                              >
+                                {formatCurrency(o.endkapitalNachSteuer)}
+                                {beste && <span className="ml-1 text-xs font-normal">★</span>}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="py-2 pr-3 text-slate-500 text-xs">
+                            garantiert mindestens
+                          </td>
+                          {optionen.map((o) => (
+                            <td key={o.id} className="py-2 px-3 text-slate-900">
+                              {o.garantiertMindestens > 0
+                                ? formatCurrency(o.garantiertMindestens)
+                                : '– keine Garantie'}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="py-2 pr-3 text-slate-500 text-xs">Einmalkosten</td>
+                          {optionen.map((o) => (
+                            <td key={o.id} className="py-2 px-3 text-slate-900">
+                              {formatCurrency(o.einmalkosten)}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr className="border-b border-slate-100">
+                          <td className="py-2 pr-3 text-slate-500 text-xs">frühester Zugriff</td>
+                          {optionen.map((o) => (
+                            <td key={o.id} className="py-2 px-3 text-slate-900">
+                              mit {o.fruehesterZugriffAlter}
+                            </td>
+                          ))}
+                        </tr>
+                        <tr>
+                          <td className="py-2 pr-3 text-slate-500 text-xs">umkehrbar?</td>
+                          {optionen.map((o) => (
+                            <td
+                              key={o.id}
+                              className={`py-2 px-3 font-medium ${o.umkehrbar ? 'text-slate-900' : 'text-amber-700'}`}
+                            >
+                              {o.umkehrbar ? 'ja' : 'nein'}
+                            </td>
+                          ))}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <p className="text-xs text-slate-500">
+                  Option B wird am häufigsten übersehen: Sie kostet nichts, lässt Produkt und
+                  Garantien unangetastet und hebt trotzdem die Förderung. Der bereits
+                  eingetretene Zillmerungsverlust ist gegenüber allen vier Optionen versunken
+                  und damit kein Argument gegen einen Wechsel – was bei einer Übertragung
+                  tatsächlich verloren geht, ist die Beitragsgarantie plus die Wechselgebühr.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Schritt 4: Auszahlphase */}
         <div data-pdf-section="auszahlung">
           <Card className="border-0 shadow-lg bg-white">
@@ -770,7 +1014,10 @@ export default function AvdCalculator() {
             { id: 'vergleichspartner', label: 'Vergleichspartner' },
             { id: 'berechtigung', label: 'Förderberechtigung' },
             { id: 'foerderung', label: 'Beitrag und Förderung' },
-            { id: 'vergleich', label: 'Vergleich freies Depot' },
+            { id: 'vergleich', label: 'Vergleich' },
+            ...(optionenAktiv && gegenRiester
+              ? [{ id: 'optionen', label: 'Wechselanalyse (4 Optionen)' }]
+              : []),
             { id: 'auszahlung', label: 'Auszahlphase' },
           ]}
           isExporting={isExporting}
