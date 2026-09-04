@@ -1,150 +1,1145 @@
-%PDF-1.4
-%“Œ‹ž ReportLab Generated PDF document http://www.reportlab.com
-1 0 obj
-<<
-/F1 2 0 R /F2 3 0 R
->>
-endobj
-2 0 obj
-<<
-/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font
->>
-endobj
+%PDF-1.3
+%ºß¬à
 3 0 obj
-<<
-/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /Name /F2 /Subtype /Type1 /Type /Font
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 4 0 R
 >>
 endobj
 4 0 obj
 <<
-/Contents 12 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 11 0 R /Resources <<
-/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
->> /Rotate 0 /Trans <<
-
->> 
-  /Type /Page
+/Length 8046
 >>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F2 19 Tf
+21.8499999999999979 TL
+0.059 0.09 0.165 rg
+56.6929133858267775 785.1970866141732586 Td
+(Auftragsverarbeitungsvertrag) Tj
+ET
+BT
+/F2 13 Tf
+14.9499999999999993 TL
+0.278 0.333 0.412 rg
+56.6929133858267775 762.5199212598424765 Td
+(gemäß Art. 28 DSGVO · inkl. technischer und organisatorischer Maßnahmen) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.278 0.333 0.412 rg
+56.6929133858267775 739.8427559055118081 Td
+(rentencheck.app · Stand: August 2026 · Version 2026-08) Tj
+ET
+0.8 0.84 0.88 RG
+56.6929133858267775 717.1655905511810261 m
+538.5826771653544256 717.1655905511810261 l
+S
+BT
+/F2 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 694.4884251968503577 Td
+(Auftragnehmer) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 681.4490551181102092 Td
+(Luisa Brandt, Ernst-Bähre-Str. 3, 30453 Hannover) Tj
+ET
+BT
+/F2 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 662.7403937007873083 Td
+(Auftraggeber) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 649.7010236220471597 Td
+(Der bei rentencheck.app registrierte Nutzer als Unternehmer im Sinne des § 14 BGB. Der AVV wird mit der) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 636.6616535433070112 Td
+(Registrierung Bestandteil des Nutzungsvertrags.) Tj
+ET
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+0.059 0.09 0.165 rg
+56.6929133858267775 615.1183464566929615 Td
+(§ 1 Gegenstand und Dauer der Auftragsverarbeitung) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 596.9766141732283131 Td
+(Dieser Auftragsverarbeitungsvertrag \(nachfolgend „AVV"\) regelt die Verarbeitung personenbezogener Daten) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 583.9372440944881646 Td
+(durch den Auftragnehmer \(Anbieter der Plattform rentencheck.app, Luisa Brandt, Hannover\) im Auftrag des) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 570.8978740157481298 Td
+(Auftraggebers \(registrierter Nutzer als Unternehmer i. S. d. § 14 BGB\) im Rahmen der Nutzung der) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 557.8585039370079812 Td
+(SaaS-Plattform.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 540.5671653543307684 Td
+(Der AVV gilt für die Dauer des Nutzungsvertrags und endet automatisch mit dessen Beendigung. Bei) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 527.5277952755906199 Td
+(Vertragsende werden alle personenbezogenen Daten des Auftraggebers innerhalb von 30 Tagen gelöscht,) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 514.4884251968504714 Td
+(sofern keine gesetzliche Aufbewahrungspflicht besteht.) Tj
+ET
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+0.059 0.09 0.165 rg
+56.6929133858267775 483.023858267716605 Td
+(§ 2 Art und Zweck der Verarbeitung) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 464.8821259842520703 Td
+(Der Auftragnehmer verarbeitet personenbezogene Daten ausschließlich zur Bereitstellung der) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 451.8427559055119218 Td
+(SaaS-Plattform für die modellhafte Simulation und Analyse von Altersvorsorge- und Investmentszenarien.) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 434.5514173228347659 Td
+(Eine Verarbeitung für eigene Zwecke des Auftragnehmers findet nicht statt. Die Verarbeitung erfolgt) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 421.5120472440946173 Td
+(ausschließlich auf dokumentierte Weisung des Auftraggebers.) Tj
+ET
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+0.059 0.09 0.165 rg
+56.6929133858267775 390.0474803149608078 Td
+(§ 3 Kategorien betroffener Personen und Datenkategorien) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 371.9057480314962163 Td
+(Folgende Datenkategorien können verarbeitet werden:) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 354.6144094488190603 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 354.6144094488190603 Td
+(Profildaten des Nutzers \(Name, Unternehmen, E-Mail-Adresse\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 339.3073228346457881 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 339.3073228346457881 Td
+(In Berechnungen eingegebene Parameterdaten \(modellhafte Annahmen, keine echten Kundendaten) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 326.2679527559056396 Td
+(erforderlich\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 310.9608661417324811 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 310.9608661417324811 Td
+(Technische Zugriffsdaten \(Session-Token, IP-Adresse, Browser-Informationen\)) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.278 0.333 0.412 rg
+56.6929133858267775 289.9844881889764565 Td
+(Hinweis: Die Plattform ist für modellhafte Simulationen ausgelegt. Es wird empfohlen, keine echten personenbezogenen) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.278 0.333 0.412 rg
+56.6929133858267775 276.945118110236308 Td
+(Kundendaten einzugeben.) Tj
+ET
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+0.059 0.09 0.165 rg
+56.6929133858267775 249.7325196850395059 Td
+(§ 4 Pflichten des Auftragnehmers) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 231.5907874015749712 Td
+(Der Auftragnehmer verpflichtet sich:) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 214.2994488188977584 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 214.2994488188977584 Td
+(Daten nur auf dokumentierte Weisung des Auftraggebers zu verarbeiten) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 198.9923622047244862 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 198.9923622047244862 Td
+(Zur Verschwiegenheit aller mit der Verarbeitung beauftragten Personen) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 183.6852755905513277 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 183.6852755905513277 Td
+(Alle erforderlichen technischen und organisatorischen Maßnahmen gemäß Art. 32 DSGVO zu ergreifen) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 168.3781889763780555 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 168.3781889763780555 Td
+(Subprozessoren nur nach vorheriger schriftlicher Genehmigung einzusetzen \(Generalerlaubnis gemäß § 6) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 155.338818897637907 Td
+(dieses AVV erteilt\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 140.0317322834646347 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 140.0317322834646347 Td
+(Den Auftraggeber bei der Erfüllung von Betroffenenrechten zu unterstützen) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 124.7246456692913625 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 124.7246456692913625 Td
+(Den Auftraggeber unverzüglich zu informieren, sobald ihm eine Verletzung des Schutzes) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 111.685275590551214 Td
+(personenbezogener Daten bekannt wird, und ihn bei den Pflichten nach Art. 32 bis 36 DSGVO zu) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 98.6459055118109518 Td
+(unterstützen \(Art. 28 Abs. 3 lit. f DSGVO\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 83.3388188976376796 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 83.3388188976376796 Td
+(Dem Auftraggeber alle zum Nachweis der Einhaltung dieser Pflichten erforderlichen Informationen zur) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.58 0.639 0.722 rg
+56.6929133858267775 34.0159842519684616 Td
+(rentencheck.app · AVV & TOM · Version 2026-08) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.58 0.639 0.722 rg
+492.1826771653543915 34.0159842519684616 Td
+(Seite 1 von 3) Tj
+ET
+endstream
 endobj
 5 0 obj
-<<
-/Contents 13 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 11 0 R /Resources <<
-/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
->> /Rotate 0 /Trans <<
-
->> 
-  /Type /Page
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 6 0 R
 >>
 endobj
 6 0 obj
 <<
-/Contents 14 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 11 0 R /Resources <<
-/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
->> /Rotate 0 /Trans <<
-
->> 
-  /Type /Page
+/Length 6965
 >>
+stream
+0.5670000000000001 w
+0.8 0.84 0.88 RG
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 785.1970866141732586 Td
+(Verfügung zu stellen und Überprüfungen einschließlich Inspektionen zu ermöglichen und dazu beizutragen) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 772.1577165354329964 Td
+(\(Art. 28 Abs. 3 lit. h DSGVO\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 756.8506299212598378 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 756.8506299212598378 Td
+(Den Auftraggeber unverzüglich zu informieren, wenn eine Weisung nach seiner Auffassung gegen die) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 743.8112598425196893 Td
+(DSGVO oder andere Datenschutzvorschriften verstößt \(Art. 28 Abs. 3 Satz 3 DSGVO\)) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 728.5041732283464171 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 728.5041732283464171 Td
+(Nach Vertragsende alle Daten zu löschen oder zurückzugeben) Tj
+ET
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+0.059 0.09 0.165 rg
+56.6929133858267775 696.1892125984252289 Td
+(§ 5 Pflichten des Auftraggebers) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 678.0474803149605805 Td
+(Der Auftraggeber verpflichtet sich:) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 660.7561417322833677 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 660.7561417322833677 Td
+(Den Auftragnehmer unverzüglich zu informieren, wenn in seinen Weisungen Fehler festgestellt werden) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 645.4490551181102092 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 645.4490551181102092 Td
+(Die Verarbeitung personenbezogener Daten im Rahmen der Plattform auf das notwendige Minimum zu) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 632.4096850393700606 Td
+(beschränken) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 617.1025984251969021 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 617.1025984251969021 Td
+(Zugangsdaten vertraulich zu behandeln und nicht weiterzugeben) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 601.7955118110236299 Td
+(•) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+70.8661417322834666 601.7955118110236299 Td
+(Datenpannen, die seinen Verantwortungsbereich betreffen, unverzüglich zu melden) Tj
+ET
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+0.059 0.09 0.165 rg
+56.6929133858267775 569.4805511811024417 Td
+(§ 6 Subprozessoren) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 551.3388188976377933 Td
+(Der Auftraggeber erteilt hiermit eine allgemeine Genehmigung für den Einsatz der nachfolgend genannten) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 538.2994488188976447 Td
+(Subprozessoren. Der Auftragnehmer informiert den Auftraggeber über geplante Änderungen mit) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 525.2600787401574962 Td
+(angemessener Vorlaufzeit.) Tj
+ET
+0.95 0.96 0.98 rg
+56.6929133858267775 515.3388188976377933 481.8897637795275841 -18.1417322834645702 re
+f
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.059 0.09 0.165 rg
+60.944881889763785 505.1340944881890778 Td
+(Subprozessor) Tj
+ET
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.059 0.09 0.165 rg
+208.3464566929134207 505.1340944881890778 Td
+(Zweck) Tj
+ET
+BT
+/F2 9 Tf
+10.3499999999999996 TL
+0.059 0.09 0.165 rg
+429.4488188976378638 505.1340944881890778 Td
+(Sitz / Server) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+60.944881889763785 485.8585039370079812 Td
+(Supabase Inc.) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+208.3464566929134207 485.8585039370079812 Td
+(Datenbank, Authentifizierung) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+429.4488188976378638 485.8585039370079812 Td
+(USA / EU \(Frankfurt\)) Tj
+ET
+0.89 0.91 0.94 RG
+56.6929133858267775 477.3545669291339095 m
+538.5826771653544256 477.3545669291339095 l
+S
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+60.944881889763785 469.9844881889764565 Td
+(Vercel Inc.) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+208.3464566929134207 469.9844881889764565 Td
+(Hosting, CDN) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+429.4488188976378638 469.9844881889764565 Td
+(USA / EU \(Frankfurt\)) Tj
+ET
+0.89 0.91 0.94 RG
+56.6929133858267775 461.4805511811023848 m
+538.5826771653544256 461.4805511811023848 l
+S
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+60.944881889763785 454.1104724409449318 Td
+(Stripe Inc.) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+208.3464566929134207 454.1104724409449318 Td
+(Zahlungsabwicklung) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+429.4488188976378638 454.1104724409449318 Td
+(USA / EU \(Dublin\)) Tj
+ET
+0.89 0.91 0.94 RG
+56.6929133858267775 445.606535433070917 m
+538.5826771653544256 445.606535433070917 l
+S
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+60.944881889763785 438.2364566929134639 Td
+(Resend Inc.) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+208.3464566929134207 438.2364566929134639 Td
+(Transaktionsmails) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+429.4488188976378638 438.2364566929134639 Td
+(USA / EU) Tj
+ET
+0.89 0.91 0.94 RG
+56.6929133858267775 429.7325196850394491 m
+538.5826771653544256 429.7325196850394491 l
+S
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+60.944881889763785 422.3624409448819961 Td
+(Functional Software, Inc. \(Sentry\)) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+208.3464566929134207 422.3624409448819961 Td
+(Fehlerdiagnose, Stabilitätsüberwachung) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.118 0.161 0.231 rg
+429.4488188976378638 422.3624409448819961 Td
+(USA / EU \(Frankfurt\)) Tj
+ET
+0.89 0.91 0.94 RG
+56.6929133858267775 413.8585039370079812 m
+538.5826771653544256 413.8585039370079812 l
+S
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.278 0.333 0.412 rg
+56.6929133858267775 397.9844881889765134 Td
+(Nicht als Subprozessor eingesetzt wird Formspree, Inc. \(USA\). Der Dienst stellt ausschließlich Rückmeldungen des) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.278 0.333 0.412 rg
+56.6929133858267775 384.9451181102363648 Td
+(Auftraggebers über das Feedback-Formular per E-Mail zu und erhält dabei keinen Zugriff auf Daten, die der Auftraggeber) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.278 0.333 0.412 rg
+56.6929133858267775 371.9057480314962163 Td
+(im Rahmen dieses AVV verarbeiten lässt.) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.58 0.639 0.722 rg
+56.6929133858267775 34.0159842519684616 Td
+(rentencheck.app · AVV & TOM · Version 2026-08) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.58 0.639 0.722 rg
+492.1826771653543915 34.0159842519684616 Td
+(Seite 2 von 3) Tj
+ET
+endstream
 endobj
 7 0 obj
-<<
-/Contents 15 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 11 0 R /Resources <<
-/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
->> /Rotate 0 /Trans <<
-
->> 
-  /Type /Page
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 8 0 R
 >>
 endobj
 8 0 obj
 <<
-/Contents 16 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 11 0 R /Resources <<
-/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
->> /Rotate 0 /Trans <<
-
->> 
-  /Type /Page
+/Length 3638
+>>
+stream
+0.5670000000000001 w
+0.89 0.91 0.94 RG
+BT
+/F2 15 Tf
+17.25 TL
+0.059 0.09 0.165 rg
+56.6929133858267775 785.1970866141732586 Td
+(Technische und organisatorische Maßnahmen) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.278 0.333 0.412 rg
+56.6929133858267775 765.3545669291338527 Td
+(gemäß Art. 32 DSGVO) Tj
+ET
+BT
+/F2 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 742.6774015748030706 Td
+(Zugangskontrolle) Tj
+ET
+BT
+/F1 9.5 Tf
+10.9249999999999989 TL
+0.2 0.255 0.333 rg
+56.6929133858267775 728.5041732283464171 Td
+(Authentifizierung über Supabase Auth \(E-Mail + Passwort\). Passwörter werden ausschließlich als bcrypt-Hash) Tj
+ET
+BT
+/F1 9.5 Tf
+10.9249999999999989 TL
+0.2 0.255 0.333 rg
+56.6929133858267775 715.4648031496062686 Td
+(gespeichert. Row-Level-Security \(RLS\) stellt sicher, dass Nutzer nur auf eigene Daten zugreifen.) Tj
+ET
+BT
+/F2 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 693.9214960629921052 Td
+(Transportverschlüsselung) Tj
+ET
+BT
+/F1 9.5 Tf
+10.9249999999999989 TL
+0.2 0.255 0.333 rg
+56.6929133858267775 679.748267716535338 Td
+(Alle Verbindungen erfolgen ausschließlich über HTTPS/TLS 1.2+. Unverschlüsselte Verbindungen werden) Tj
+ET
+BT
+/F1 9.5 Tf
+10.9249999999999989 TL
+0.2 0.255 0.333 rg
+56.6929133858267775 666.7088976377951894 Td
+(automatisch weitergeleitet.) Tj
+ET
+BT
+/F2 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 645.1655905511810261 Td
+(Verschlüsselung ruhender Daten) Tj
+ET
+BT
+/F1 9.5 Tf
+10.9249999999999989 TL
+0.2 0.255 0.333 rg
+56.6929133858267775 630.9923622047243725 Td
+(Datenbank-Volumes bei Supabase sind AES-256-verschlüsselt.) Tj
+ET
+BT
+/F2 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 609.4490551181102092 Td
+(Pseudonymisierung) Tj
+ET
+BT
+/F1 9.5 Tf
+10.9249999999999989 TL
+0.2 0.255 0.333 rg
+56.6929133858267775 595.2758267716535556 Td
+(Berechnungen und Profildaten werden unter UUIDs \(User-IDs\) gespeichert, nicht unter Klarnamen im) Tj
+ET
+BT
+/F1 9.5 Tf
+10.9249999999999989 TL
+0.2 0.255 0.333 rg
+56.6929133858267775 582.2364566929134071 Td
+(Systemkontext.) Tj
+ET
+BT
+/F2 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 560.69314960629913 Td
+(Backup & Wiederherstellung) Tj
+ET
+BT
+/F1 9.5 Tf
+10.9249999999999989 TL
+0.2 0.255 0.333 rg
+56.6929133858267775 546.5199212598424765 Td
+(Tägliche automatische Backups durch Supabase mit Point-in-Time-Recovery. Wiederherstellungszeit \(RTO\) < 4) Tj
+ET
+BT
+/F1 9.5 Tf
+10.9249999999999989 TL
+0.2 0.255 0.333 rg
+56.6929133858267775 533.480551181102328 Td
+(Stunden.) Tj
+ET
+BT
+/F2 10 Tf
+11.5 TL
+0.118 0.161 0.231 rg
+56.6929133858267775 511.9372440944882214 Td
+(Incident-Management) Tj
+ET
+BT
+/F1 9.5 Tf
+10.9249999999999989 TL
+0.2 0.255 0.333 rg
+56.6929133858267775 497.7640157480315111 Td
+(Sicherheitsvorfälle werden gemäß Art. 33 DSGVO innerhalb von 72 Stunden an die zuständige Aufsichtsbehörde) Tj
+ET
+BT
+/F1 9.5 Tf
+10.9249999999999989 TL
+0.2 0.255 0.333 rg
+56.6929133858267775 484.7246456692913625 Td
+(gemeldet. Betroffene Nutzer werden unverzüglich informiert.) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.278 0.333 0.412 rg
+56.6929133858267775 457.5120472440945036 Td
+(Diese Maßnahmen werden regelmäßig überprüft und an den Stand der Technik angepasst. Der Auftragnehmer) Tj
+ET
+BT
+/F1 9 Tf
+10.3499999999999996 TL
+0.278 0.333 0.412 rg
+56.6929133858267775 444.472677165354412 Td
+(dokumentiert Änderungen und stellt sie dem Auftraggeber auf Anfrage zur Verfügung.) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.58 0.639 0.722 rg
+56.6929133858267775 34.0159842519684616 Td
+(rentencheck.app · AVV & TOM · Version 2026-08) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.58 0.639 0.722 rg
+492.1826771653543915 34.0159842519684616 Td
+(Seite 3 von 3) Tj
+ET
+endstream
+endobj
+1 0 obj
+<</Type /Pages
+/Kids [3 0 R 5 0 R 7 0 R ]
+/Count 3
 >>
 endobj
 9 0 obj
 <<
-/PageMode /UseNone /Pages 11 0 R /Type /Catalog
+/Type /Font
+/BaseFont /Helvetica
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
 >>
 endobj
 10 0 obj
 <<
-/Author (\(anonymous\)) /CreationDate (D:20260220095130+00'00') /Creator (\(unspecified\)) /Keywords () /ModDate (D:20260220095130+00'00') /Producer (ReportLab PDF Library - www.reportlab.com) 
-  /Subject (\(unspecified\)) /Title (\(anonymous\)) /Trapped /False
+/Type /Font
+/BaseFont /Helvetica-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
 >>
 endobj
 11 0 obj
 <<
-/Count 5 /Kids [ 4 0 R 5 0 R 6 0 R 7 0 R 8 0 R ] /Type /Pages
+/Type /Font
+/BaseFont /Helvetica-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
 >>
 endobj
 12 0 obj
 <<
-/Filter [ /ASCII85Decode /FlateDecode ] /Length 1032
+/Type /Font
+/BaseFont /Helvetica-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
 >>
-stream
-Gau0B;01GN&:Vs/fLO?jT4KN\qK1(0D5Xq6\VA;@n06Tp<c(L4/An!-rN4id+;\G,%-&4X^"V$2mC0\_".q3sh3/IZ3eQ>X)6a*Q$XhcM0RJ>^g""D!p:PD[_2'm#MT-6ROMUAoApHhZlm3W3Q4teK(:d7-huZb@k4=DQZP7`C;-?kj1/)^a<#*W0?jNBH=VXi5":)CsDb=1XXOQMRAj9\s!=!m*#h`R,mA$Ek_)&Z(VI?hhSHdBO*(19]n#OThVNr`c8[GWj/F+#h@:GJ0;;HkO$1m$7l"PU[!W*YF+V,("A&17c0b9i]O0WP<Ca"uNbqTVcj/mj89g%4YG&Q\#EdP,faf\0^LL:2tH4Qs>0I][%88A$@-WQ'n6R!J'=nrKJ@HuYd<SP?3*cdhi*'@Eb6+Ae-5/.E_Mbm$Lp=ok%#[)NXW>>>Se!3_7.A*A_fo>10c'Lq)ds3qa4IBTK&:PKq%7#fJ'4FfR`rPWQpP&nQEW=""#S;>P[*dfu-N@j0=^+.j&Cq]=U6\cS#`j:?f>8Z;NIb!*=;70*O<6U-Z73@sK1;[k;53ip7TaMsY;[n$b^-*[Xj%I`h7Be)Ksc&_>.7$++=YfL*fda]^UMoqCYVQ/<#\bnk\]KTkpiO;"e,7pG;N[Cn5.SQG.OT(2q.FD(/e=R#o%rggW-'Sr6_31$HLmn3]'=`L?CXC]f@$kp9rgI*tS+?T1<s[#*V`k0kH2W5t^4f=\t6D>+phYeOu\fR:>Jm>9]/pR38KZnPL&ki?]B16pHb&B8dd>lQ7<43X*D5]-R<Fki]e^eL*@,eV^H$DOQcDd[`%>q!Jhgnm"#0H;4@nLBm\1P.;+\6m\r`ghT"qgs,VWb]feRa*aVGTOFP*g%:?c5pr*pkib/n:.%4V,bLXkkOJAFCSFW3,>,?!%%P7X@aLH04m9NB\#(d!NCcq?>,CZ](+X7ncLHRDiC2p(ptg;fB4G.&Q-g!(ArWT>-P(=\c4s2a#nM?]:G<//3`gq-cBWap1_rZS]!LB2!P%t:%h6J1~>endstream
 endobj
 13 0 obj
 <<
-/Filter [ /ASCII85Decode /FlateDecode ] /Length 534
+/Type /Font
+/BaseFont /Courier
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
 >>
-stream
-Gau1+9lHLd&;KZQ'm"IHiNdt7*ud(;%Z[!HD(AUk(,CWHn`&tlU\t!!,][nS39#Hh6=P^qB:bN")#/2Ts"*mEf,Qu'@DDs&>@>i&!ksC.55R-G04-%T,ggXpVQ5qDaPcds?-UHWS`Ik3:Jq4MoMTBN1_1D<Z)j3IAW>Wt"15WPoI=[XT.fY$*eoLaoc=k/F8kjXjB#EuIfo_tAb(i+GrEKZ&\V`Hg;Ljlkq04@VseiocZ>BtB;,@)YMqA2\&o7EQ\"/mIGCJK"(,]t&(JPPjC&Z=K8ieEdGAnmT=omCZRM:HlJn9"Ke\Xj[be,?[HqUb;El0Q*2S20*CM%Z_C'!^bCFTDRLjG:4q;P\5'h!,@cM$%3\B_4+`>l\/s,?$G`aOKVBd+ZO!FP`.P8,6;]nf1cGM&.]5A[DgVRT3;&)FbYX!?!/m_:E2c(SdpG3??Qo9l.NU.G)nbgG6#hPg+\V$T!hL,&U=NOUW1SW&ApW?<\jG79!c+[t$[mO_\OEJXU7VRiD4A[]U.k[4f"k=Q)0E~>endstream
 endobj
 14 0 obj
 <<
-/Filter [ /ASCII85Decode /FlateDecode ] /Length 565
+/Type /Font
+/BaseFont /Courier-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
 >>
-stream
-GasId9iHZu&A@Zcp>f1cM?s`+3;QLe`e,#ui:I'f/!bo.W#bj0/g42oU6B;tIJ_m`m3\YpE)H4t/cgtW3'<s$4c#\[17(:K%?nkYFf8l3"cSl<$5!PC@"Oc!Si`mIgN"]I@OVhGQr9Y21ghqhlXZiM%p>3PQ>.M9(PiRd,GqtoO.jG`lnR<q&@d+@H-Z1Cs6@*XT`M(\I7IcSARc6?!J_g:d1W#\*&led//WclRmtU5LiMk9&Tlaei!4CSK-QXlZBDfJ7YaH]dLmW[10sh'ncICJ_CATIKs!JThknSJd>#DB`CX<,\5]H^n%l;*j%?<s<f>p*;-'*R_e_$;)rA__<iF]#^H8L2$]j3W:_?=uf%2\_De.Mp;Pu;Ma-l%tIeM]!Y4CS#.94o:a,4UnZU&hVdUsS=a\GiK.g\/>WE[5MXUG&T>s82GXH>]bchUbhb;e0cl(S[f\3m%$e2cBZRI#s;qY=IVkG@pHhO\3a2XP9cReM\*%\^^pKua`j^*l_HLX'NJ_k=t<ggV,-)#c<0%"ebZN1#:j^+JOT@DI2ui7';s4ol);rVH~>endstream
 endobj
 15 0 obj
 <<
-/Filter [ /ASCII85Decode /FlateDecode ] /Length 1047
+/Type /Font
+/BaseFont /Courier-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
 >>
-stream
-GatU2gMY_1&:N^ljtThllPm:+:XE>f67r]_Pp3soYVn--RdR>2lEB[C#)FGA'd-.?G\1UOS=)0C$VYq!rB&7)"sJB-[D9'kN59ND(W%?NKWX,`C[L?ki4C!S#eC&.5_H$F4DEbWCE!`ojqu7\+?EJp!aTmVka/R8,S=sZ'0`+h/=HL4?:&b]+-31?)o>qnISgp]^h<C^.kp>_ja/>XlY]FPo!6i'+\#BXB'[BA=/hS4.>&M_iN\U^jd=7/F(B;kE1*P9j\Zsh2M3/)(u[7fTQMS]defE=lRG>q\B#<*As@3fI<Mb,OO-+1>W6[C+8T4\?jCX6\f3l-"V])e+XlY6n`0H$D/o8DSWC?&.eEbmCrP+^[<(k.m&mf2qag-,"7@S#,UCgkK5lke=AgaY7bNGq"hJ)AY)1(PV)c2MH*.OpFhs=:>J[a)^JKZFhrf*m0Z\9K1ih_>-PBp(?L.l&C7u1.@fMW-gH_hdjZU,5*8fj39.:9@)-=lg_A4*CS)t=-(p34O`HN4cem]_(I)f'3Y%@:;_HQV?[%plAWhAYM:-W-?@6ciDcC%!_e'1^S>e`t/O>P.F?X7Uq6:P%c-!SG)Fdo4*.1FN[dq/Ag[=m;M<\<r`/`@UeO,0!OV[.W9,qn7[X5\E,P9/L(B/NiU3E@"O0]2un7?f3pFsHWSE2ji-S^KNW]cR'\::W+hdrPTFJT.G%a`FP<ZIE!qkI#npm*-/tD1_>0T/7;Xs&*"i9W>l[d,u%;l79OR2@*!)gLrW<.W_?(1=Ka2RD@+9;Y(e4m$oUac[\kQ.Brt7UBgoKb>$+^Ok%b26(]GV.Omj&ZP4/I%JgaGHV,F]LT4H+q<dRVnWbG""\EA`3R4$caDW3A3I(r,"q2`so+3>D7LpQ^FM;XS6n#9^1DEGfI9*R:Gq.8:=Z&bg$4n298oRd9Jga[P<EkKf`>DTjSB=HR:9[n0,Ho5d%]&^rFdIO5Z3hNFZVOk-!D]MDiB57<eK'hHi#4&uqga8%@18t^(+"n/_[4rK"MM[M#6?7.N3MA!G\I$Z'EH"Q~>endstream
 endobj
 16 0 obj
 <<
-/Filter [ /ASCII85Decode /FlateDecode ] /Length 362
+/Type /Font
+/BaseFont /Courier-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
 >>
-stream
-GarnQb>,r/&A70Vp/mC^Z'2W\'hTbt/graRi[3Eu,dtnM#)TNr)bL^-.SH)0R@VA*aS:SUD@F<J%JLeB6:/?j;5=BF0CVpgmtj"YQR+2@H!6N7Os_*f-@i[\B>n#6#7X<t(7Cu@UX3h>6Ik^<oR;QZBOde(d,%%d#5.B2kEXAC00)gdPLfuF-s('F=q%t:aha7J.>OF6X>P<W7qW=,<joiV[2Yi+)cY20!^HU6FOLJ.d6JG2D./&YMMaZ2P&"n*XKX;)<.J-D>@LXPh1=>tHLGOs4s2h>+^ic'm@0^3<M2=)8FVJco&",H@]&g[F%k+-HoQ^j4-80O5T'Kd1fNa#D"At-lRntLbCejp4jnm?~>endstream
+endobj
+17 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Roman
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+18 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+19 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Italic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+20 0 obj
+<<
+/Type /Font
+/BaseFont /Times-BoldItalic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+21 0 obj
+<<
+/Type /Font
+/BaseFont /ZapfDingbats
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+22 0 obj
+<<
+/Type /Font
+/BaseFont /Symbol
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+2 0 obj
+<<
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+/Font <<
+/F1 9 0 R
+/F2 10 0 R
+/F3 11 0 R
+/F4 12 0 R
+/F5 13 0 R
+/F6 14 0 R
+/F7 15 0 R
+/F8 16 0 R
+/F9 17 0 R
+/F10 18 0 R
+/F11 19 0 R
+/F12 20 0 R
+/F13 21 0 R
+/F14 22 0 R
+>>
+/XObject <<
+>>
+>>
+endobj
+23 0 obj
+<<
+/Producer (jsPDF 4.1.0)
+/CreationDate (D:20260904101729+02'00')
+>>
+endobj
+24 0 obj
+<<
+/Type /Catalog
+/Pages 1 0 R
+/OpenAction [3 0 R /FitH null]
+/PageLayout /OneColumn
+>>
 endobj
 xref
-0 17
+0 25
 0000000000 65535 f 
-0000000073 00000 n 
-0000000114 00000 n 
-0000000221 00000 n 
-0000000333 00000 n 
-0000000538 00000 n 
-0000000743 00000 n 
-0000000948 00000 n 
-0000001153 00000 n 
-0000001358 00000 n 
-0000001427 00000 n 
-0000001711 00000 n 
-0000001795 00000 n 
-0000002919 00000 n 
-0000003544 00000 n 
-0000004200 00000 n 
-0000005339 00000 n 
+0000019231 00000 n 
+0000021064 00000 n 
+0000000015 00000 n 
+0000000152 00000 n 
+0000008250 00000 n 
+0000008387 00000 n 
+0000015404 00000 n 
+0000015541 00000 n 
+0000019300 00000 n 
+0000019425 00000 n 
+0000019556 00000 n 
+0000019690 00000 n 
+0000019828 00000 n 
+0000019952 00000 n 
+0000020081 00000 n 
+0000020213 00000 n 
+0000020349 00000 n 
+0000020477 00000 n 
+0000020604 00000 n 
+0000020733 00000 n 
+0000020866 00000 n 
+0000020968 00000 n 
+0000021316 00000 n 
+0000021402 00000 n 
 trailer
 <<
-/ID 
-[<baaa374c0b94bc7246024f2144c206a4><baaa374c0b94bc7246024f2144c206a4>]
-% ReportLab generated PDF document -- digest (http://www.reportlab.com)
-
-/Info 10 0 R
-/Root 9 0 R
-/Size 17
+/Size 25
+/Root 24 0 R
+/Info 23 0 R
+/ID [ <5698CEFD759E1D11FD5E3186CB5BB9BA> <5698CEFD759E1D11FD5E3186CB5BB9BA> ]
 >>
 startxref
-5792
+21506
 %%EOF
