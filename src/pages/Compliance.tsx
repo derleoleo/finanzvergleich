@@ -13,7 +13,7 @@ export default function Compliance() {
           <Shield className="w-7 h-7 text-slate-700" />
           <h1 className="text-3xl font-bold text-slate-900">Compliance & Datenschutz</h1>
         </div>
-        <p className="text-sm text-slate-500 mb-8">Stand: Februar 2026</p>
+        <p className="text-sm text-slate-500 mb-8">Stand: August 2026</p>
 
         <a
           href="/compliance.pdf"
@@ -111,6 +111,21 @@ export default function Compliance() {
                     <td className="p-3 border border-slate-200">Transaktionsmails (Bestätigung, Willkommen)</td>
                     <td className="p-3 border border-slate-200">EU (AWS eu-west-1)</td>
                     <td className="p-3 border border-slate-200">SCC + DPA</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 border border-slate-200 font-medium">Functional Software, Inc. (Sentry)</td>
+                    <td className="p-3 border border-slate-200">Fehlerdiagnose, Stabilitätsüberwachung</td>
+                    <td className="p-3 border border-slate-200">EU (Frankfurt)</td>
+                    <td className="p-3 border border-slate-200">SCC + DPA</td>
+                  </tr>
+                  <tr className="bg-slate-50">
+                    <td className="p-3 border border-slate-200 font-medium">Formspree, Inc.</td>
+                    <td className="p-3 border border-slate-200">
+                      Zustellung des Feedback-Formulars per E-Mail (kein Zugriff auf Mandantendaten,
+                      daher kein Subprozessor im Sinne des AVV)
+                    </td>
+                    <td className="p-3 border border-slate-200">USA</td>
+                    <td className="p-3 border border-slate-200">SCC</td>
                   </tr>
                 </tbody>
               </table>

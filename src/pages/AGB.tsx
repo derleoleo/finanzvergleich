@@ -10,7 +10,7 @@ export default function AGB() {
         </Link>
 
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Allgemeine Geschäftsbedingungen</h1>
-        <p className="text-sm text-slate-500 mb-8">Stand: Februar 2026</p>
+        <p className="text-sm text-slate-500 mb-8">Stand: August 2026</p>
 
         <div className="space-y-8 text-slate-700 text-sm leading-relaxed">
 

@@ -10,7 +10,7 @@ export default function Datenschutz() {
         </Link>
 
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Datenschutzerklärung</h1>
-        <p className="text-sm text-slate-500 mb-8">Stand: Februar 2026</p>
+        <p className="text-sm text-slate-500 mb-8">Stand: August 2026</p>
 
         <div className="space-y-8 text-slate-700 text-sm leading-relaxed">
 
@@ -168,8 +168,32 @@ export default function Datenschutz() {
           <section>
             <h2 className="text-lg font-semibold text-slate-900 mb-3">9. Feedback-Funktion</h2>
             <p>
-              Feedback wird in der Datenbank (Supabase) gespeichert und ist dem jeweiligen
-              Nutzerkonto zugeordnet. Optional kann eine E-Mail-Adresse enthalten sein.
+              Über das Feedback-Formular übermittelte Angaben (Feedback-Art, Nachrichtentext und
+              optional eine E-Mail-Adresse für Rückfragen) werden ausschließlich per E-Mail an uns
+              weitergeleitet. Eine Speicherung in unserer Datenbank oder eine Zuordnung zu Ihrem
+              Nutzerkonto findet nicht statt.
+            </p>
+            <p className="mt-3">
+              Für die Zustellung nutzen wir den Formular-Dienst:
+            </p>
+            <p className="mt-2">
+              <strong>Formspree, Inc.</strong>
+              <br />
+              2810 N Church St, Wilmington, DE 19802, USA
+            </p>
+            <p className="mt-3">
+              Dabei werden die von Ihnen eingegebenen Inhalte sowie technische Verbindungsdaten
+              (u. a. IP-Adresse) verarbeitet. Datenübermittlungen in die USA erfolgen auf Grundlage
+              der EU-Standardvertragsklauseln (Art. 46 DSGVO).
+              Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der
+              Entgegennahme und Bearbeitung von Rückmeldungen zur Anwendung); bei Angabe einer
+              E-Mail-Adresse zusätzlich Art. 6 Abs. 1 lit. a DSGVO (Einwilligung durch freiwillige
+              Angabe).
+            </p>
+            <p className="mt-3 text-sm text-slate-600">
+              Die Angabe einer E-Mail-Adresse ist freiwillig und nur erforderlich, wenn Sie eine
+              Antwort wünschen. Bitte übermitteln Sie über dieses Formular keine personenbezogenen
+              Daten Ihrer eigenen Kunden.
             </p>
           </section>
 

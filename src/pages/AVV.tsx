@@ -10,7 +10,7 @@ export default function AVV() {
         </Link>
 
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Auftragsverarbeitungsvertrag (AVV)</h1>
-        <p className="text-sm text-slate-500 mb-2">Stand: Februar 2026 · Version 2026-02</p>
+        <p className="text-sm text-slate-500 mb-2">Stand: August 2026 · Version 2026-08</p>
         <p className="text-sm text-slate-500 mb-8">
           gemäß Art. 28 DSGVO ·{" "}
           <Link to="/compliance" className="text-blue-600 hover:underline">Technische und organisatorische Maßnahmen</Link>
@@ -78,6 +78,21 @@ export default function AVV() {
               <li>Alle erforderlichen technischen und organisatorischen Maßnahmen gemäß Art. 32 DSGVO zu ergreifen</li>
               <li>Subprozessoren nur nach vorheriger schriftlicher Genehmigung einzusetzen (Generalerlaubnis gemäß § 6 dieses AVV erteilt)</li>
               <li>Den Auftraggeber bei der Erfüllung von Betroffenenrechten zu unterstützen</li>
+              <li>
+                Den Auftraggeber unverzüglich zu informieren, sobald ihm eine Verletzung des
+                Schutzes personenbezogener Daten bekannt wird, und ihn bei den Pflichten nach
+                Art. 32 bis 36 DSGVO zu unterstützen (Art. 28 Abs. 3 lit. f DSGVO)
+              </li>
+              <li>
+                Dem Auftraggeber alle zum Nachweis der Einhaltung dieser Pflichten erforderlichen
+                Informationen zur Verfügung zu stellen und Überprüfungen einschließlich Inspektionen
+                zu ermöglichen und dazu beizutragen (Art. 28 Abs. 3 lit. h DSGVO)
+              </li>
+              <li>
+                Den Auftraggeber unverzüglich zu informieren, wenn eine Weisung nach seiner
+                Auffassung gegen die DSGVO oder andere Datenschutzvorschriften verstößt
+                (Art. 28 Abs. 3 Satz 3 DSGVO)
+              </li>
               <li>Nach Vertragsende alle Daten zu löschen oder zurückzugeben</li>
             </ul>
           </section>
@@ -129,6 +144,11 @@ export default function AVV() {
                     <td className="p-2 border border-slate-200">Resend Inc.</td>
                     <td className="p-2 border border-slate-200">Transaktionsmails</td>
                     <td className="p-2 border border-slate-200">USA / EU</td>
+                  </tr>
+                  <tr>
+                    <td className="p-2 border border-slate-200">Functional Software, Inc. (Sentry)</td>
+                    <td className="p-2 border border-slate-200">Fehlerdiagnose, Stabilitätsüberwachung</td>
+                    <td className="p-2 border border-slate-200">USA / EU (Frankfurt)</td>
                   </tr>
                 </tbody>
               </table>
