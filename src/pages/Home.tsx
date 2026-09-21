@@ -118,9 +118,9 @@ export default function Home() {
         <div className="mt-10 p-6 bg-white rounded-2xl shadow-lg border-0">
           <h3 className="font-semibold text-slate-900 mb-2">Hinweis</h3>
           <p className="text-sm text-slate-600">
-            Alle Berechnungen erfolgen lokal in Ihrem Browser. Es werden keine Daten an externe Server
-            übermittelt. Die Ergebnisse dienen der Orientierung und ersetzen keine individuelle
-            Finanzberatung.
+            Alle Berechnungen laufen in Ihrem Browser. Gespeicherte Berechnungen liegen in unserer
+            Datenbank in der EU (Frankfurt) – bitte keine Klarnamen von Mandanten verwenden. Die
+            Ergebnisse dienen der Orientierung und ersetzen keine individuelle Finanzberatung.
           </p>
         </div>
       </div>

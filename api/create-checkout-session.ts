@@ -4,6 +4,16 @@ import { createClient } from "@supabase/supabase-js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
+// Nur die aktuell verkauften Preise dürfen einen Checkout starten. Ohne diese
+// Liste würde jede Preis-ID aus dem Stripe-Konto akzeptiert, die der Browser
+// schickt – auch vergessene Test- oder Altpreise.
+const ERLAUBTE_PREISE = new Set(
+  [
+    process.env.VITE_STRIPE_PRICE_PREMIUM_MONTHLY,
+    process.env.VITE_STRIPE_PRICE_PREMIUM_YEARLY,
+  ].filter((id): id is string => Boolean(id))
+);
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
@@ -22,6 +32,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { priceId } = req.body as { priceId: string };
   if (!priceId) return res.status(400).json({ error: "priceId required" });
+  if (!ERLAUBTE_PREISE.has(priceId)) {
+    return res.status(400).json({ error: "Unbekannter Tarif" });
+  }
 
   // Service-Role für Lese-/Schreibzugriff auf subscriptions
   const supabaseAdmin = createClient(
@@ -51,6 +64,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     customer: customerId,
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
+    // Pflichtangaben für Rechnungen über 250 € (§ 14 Abs. 4 UStG): Name und
+    // Anschrift des Leistungsempfängers. Die Angaben werden am Stripe-Kunden
+    // gespeichert und erscheinen so auf allen Folgerechnungen.
+    billing_address_collection: "required",
+    name_collection: { business: { enabled: true, optional: false } },
+    customer_update: { address: "auto", name: "auto" },
+    locale: "de",
     subscription_data: {
       trial_period_days: 30,
       metadata: { supabase_user_id: user.id },

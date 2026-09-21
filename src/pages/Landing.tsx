@@ -2,8 +2,15 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
+  KLEINUNTERNEHMER_HINWEIS,
+  PREIS_JAHR,
+  PREIS_MONAT,
+  ersparnisEtikett,
+  eur,
+} from "@/utils/preise";
+import {
   Shield, Check, ArrowRight, ChevronDown, FileDown, BarChart3, Users,
-  Calculator, DollarSign, Target, TrendingDown, Wallet, Lock,
+  Calculator, DollarSign, Target, TrendingDown, Wallet, Lock, PiggyBank,
 } from "lucide-react";
 
 const faq = [
@@ -21,7 +28,7 @@ const faq = [
   },
   {
     q: "Gibt es eine kostenlose Testversion?",
-    a: "Ja. Der Free-Plan ist dauerhaft kostenlos und beinhaltet die grundlegenden Rechner (Fonds-Sparvertrag, Einmalanlage). Der Premium-Plan startet mit einem 30-tägigen kostenlosen Testzeitraum – keine Kreditkarte erforderlich.",
+    a: "Ja. Der Free-Plan ist dauerhaft kostenlos, ohne Zahlungsdaten, und beinhaltet die grundlegenden Rechner (Fonds-Sparvertrag, Einmalanlage). Der Premium-Plan startet mit einem 30-tägigen kostenlosen Testzeitraum. Dafür hinterlegen Sie eine Zahlungsmethode – belastet wird erst nach Ablauf der 30 Tage, eine Kündigung vorher ist kostenlos.",
   },
   {
     q: "Was passiert nach der Probezeit?",
@@ -39,7 +46,7 @@ function BrowserFrame({ src, alt }: { src: string; alt: string }) {
           <div className="w-3 h-3 rounded-full bg-[#28c840]" />
         </div>
         <div className="flex-1 mx-3 bg-white rounded-md px-3 py-0.5 text-xs text-slate-400 text-center truncate">
-          app.rentencheck.de
+          www.rentencheck.app
         </div>
       </div>
       <img src={src} alt={alt} className="w-full block" />
@@ -90,7 +97,7 @@ export default function Landing() {
               für Finanzberater
             </h1>
             <p className="text-lg text-slate-500 mb-8 leading-relaxed">
-              Vergleichen Sie Lebensversicherung mit Fondsdepot — transparent, nachvollziehbar und mandantensicher. 5 Simulationsrechner in einem Tool.
+              Vergleichen Sie Lebensversicherung mit Fondsdepot — transparent, nachvollziehbar und mandantensicher. 6 Simulationsrechner in einem Tool.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 mb-10">
               <Link
@@ -126,7 +133,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto flex flex-wrap justify-center gap-8 text-sm text-slate-500 font-medium">
           {[
             { icon: Shield, text: "DSGVO-konform" },
-            { icon: Lock, text: "Lokale Datenhaltung" },
+            { icon: Lock, text: "Datenhaltung in der EU (Frankfurt)" },
             { icon: Check, text: "Kein Drittanbieter-Tracking" },
             { icon: Users, text: "Nur für zugelassene Berater" },
           ].map(({ icon: Icon, text }) => (
@@ -248,7 +255,7 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-xs font-bold text-brand-cyan uppercase tracking-widest mb-3">Module</p>
-            <h2 className="text-3xl font-bold text-slate-900 mb-3">5 Simulationsrechner</h2>
+            <h2 className="text-3xl font-bold text-slate-900 mb-3">6 Simulationsrechner</h2>
             <p className="text-sm text-slate-500">Von der Erstberatung bis zur Bestandsanalyse — alle Szenarien abgedeckt.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -258,6 +265,7 @@ export default function Landing() {
               { icon: Target, name: "BestAdvice", desc: "Bestandsvertrag vs. Umschichtung in Fonds-LV", free: false },
               { icon: TrendingDown, name: "Rentenlücke", desc: "Versorgungslücke im Ruhestand berechnen", free: false },
               { icon: Wallet, name: "Entnahmeplan", desc: "Kapitalverzehr im Ruhestand simulieren", free: false },
+              { icon: PiggyBank, name: "Altersvorsorgedepot", desc: "Förderung ab 2027 – inkl. Vergleich mit Riester und freiem Depot", free: false },
             ].map((item) => (
               <div
                 key={item.name}
@@ -370,12 +378,14 @@ export default function Landing() {
                 ALLES INKLUSIVE
               </div>
               <p className="text-xs font-bold text-blue-200 uppercase tracking-widest mb-4">Premium</p>
-              <div className="text-3xl font-black text-white mb-1">59 €</div>
-              <p className="text-sm text-blue-300 mb-1">pro Monat, zzgl. MwSt.</p>
-              <p className="text-xs text-blue-400 mb-6">oder 599,99 €/Jahr (spare 2 Monate)</p>
+              <div className="text-3xl font-black text-white mb-1">{eur(PREIS_MONAT)}</div>
+              <p className="text-sm text-blue-300 mb-1">pro Monat · Endpreis, keine USt.</p>
+              <p className="text-xs text-blue-400 mb-6">
+                oder {eur(PREIS_JAHR)}/Jahr ({ersparnisEtikett()})
+              </p>
               <ul className="space-y-2.5 text-sm text-blue-100 flex-1 mb-8">
                 {[
-                  "Alle 5 Simulationsrechner",
+                  "Alle 6 Simulationsrechner",
                   "Unbegrenzte Berechnungen",
                   "PDF-Export mit Branding",
                   "BestAdvice & Rentenlücke",
@@ -396,7 +406,8 @@ export default function Landing() {
             </div>
           </div>
           <p className="text-center mt-6 text-sm text-slate-500">
-            Kündigung jederzeit möglich. Nach dem Testzeitraum 59 €/Monat zzgl. MwSt.
+            Kündigung jederzeit möglich. Nach dem Testzeitraum {eur(PREIS_MONAT)}/Monat.{" "}
+            {KLEINUNTERNEHMER_HINWEIS}.
           </p>
         </div>
       </section>

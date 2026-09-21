@@ -6,6 +6,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Consent } from "@/entities/Consent";
 import { LEGAL_DOC_VERSION, REQUIRED_CONSENT_TYPES } from "@/utils/legalVersion";
+import {
+  ERSPARNIS_JAHR,
+  KLEINUNTERNEHMER_HINWEIS,
+  MONATSAEQUIVALENT_JAHR,
+  PREIS_JAHR,
+  PREIS_MONAT,
+  ersparnisEtikett,
+  eur,
+} from "@/utils/preise";
 
 type Billing = "monthly" | "yearly";
 
@@ -16,6 +25,7 @@ const PREMIUM_FEATURES = [
   "BestAdvice Analyse",
   "Rentenlücken-Rechner",
   "Entnahmeplan",
+  "Altersvorsorgedepot-Rechner (Förderung ab 2027)",
   "PDF-Export",
   "Voreinstellungen",
   "Unbegrenzte Berechnungen",
@@ -186,7 +196,7 @@ export default function Pricing() {
 
   const gateCanSubmit = gateConsentB2B && gateConsentAVV && gateConsentAGB;
 
-  const monthlyEquivalent = billing === "yearly" ? "50 €" : null;
+  const monthlyEquivalent = billing === "yearly" ? eur(MONATSAEQUIVALENT_JAHR) : null;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
@@ -232,7 +242,7 @@ export default function Pricing() {
               Jährlich
             </span>
             <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">
-              2 Monate gratis
+              {ersparnisEtikett()}
             </span>
           </div>
         </div>
@@ -258,7 +268,7 @@ export default function Pricing() {
 
             <div className="flex items-end gap-1 mt-2">
               <span className="text-3xl font-bold text-white">
-                {billing === "monthly" ? "59 €" : "599,99 €"}
+                {billing === "monthly" ? eur(PREIS_MONAT) : eur(PREIS_JAHR)}
               </span>
               <span className="text-sm mb-1 text-slate-300">
                 {billing === "monthly" ? "/ pro Monat" : "/ pro Jahr"}
@@ -267,15 +277,13 @@ export default function Pricing() {
 
             {billing === "yearly" && monthlyEquivalent && (
               <p className="text-xs mt-1 font-medium text-blue-300">
-                entspricht {monthlyEquivalent}/Monat – spare 108 €
+                entspricht {monthlyEquivalent}/Monat – spare {eur(ERSPARNIS_JAHR)}
               </p>
             )}
-            {billing === "monthly" && (
-              <p className="text-xs mt-1 text-slate-400">zzgl. MwSt.</p>
-            )}
-            {billing === "yearly" && (
-              <p className="text-xs mt-1 text-slate-400">zzgl. MwSt. · statt 708 €</p>
-            )}
+            <p className="text-xs mt-1 text-slate-400">
+              {KLEINUNTERNEHMER_HINWEIS}
+              {billing === "yearly" && ` · statt ${eur(PREIS_MONAT * 12)}`}
+            </p>
           </div>
 
           <div className="px-6 pb-6 flex flex-col flex-1 space-y-4">

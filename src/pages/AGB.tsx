@@ -10,7 +10,7 @@ export default function AGB() {
         </Link>
 
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Allgemeine Geschäftsbedingungen</h1>
-        <p className="text-sm text-slate-500 mb-8">Stand: August 2026</p>
+        <p className="text-sm text-slate-500 mb-8">Stand: September 2026</p>
 
         <div className="space-y-8 text-slate-700 text-sm leading-relaxed">
 
@@ -48,8 +48,15 @@ export default function AGB() {
             <h2 className="text-lg font-semibold text-slate-900 mb-3">§ 4 Preise & Zahlung</h2>
             <p>
               Es gelten die zum Zeitpunkt der Buchung in der aktuellen Preisübersicht
-              (Seite „Premium") ausgewiesenen Preise. Die Preise verstehen sich zuzüglich
-              gesetzlicher Umsatzsteuer, sofern diese anfällt.
+              (Seite „Premium") ausgewiesenen Preise. Die ausgewiesenen Preise sind Endpreise.
+              Der Anbieter wendet die Kleinunternehmerregelung nach § 19 UStG an; Umsatzsteuer
+              wird daher nicht berechnet und nicht ausgewiesen.
+            </p>
+            <p className="mt-2">
+              Entfallen die Voraussetzungen der Kleinunternehmerregelung, erhöhen sich die Preise
+              für Leistungszeiträume ab diesem Zeitpunkt um die gesetzliche Umsatzsteuer. Der
+              Anbieter informiert den Kunden hierüber unverzüglich in Textform. Der Kunde kann den
+              Vertrag in diesem Fall mit Wirkung zum Zeitpunkt der Erhöhung kündigen.
             </p>
             <p className="mt-2">Die Abrechnung erfolgt im Voraus über den Zahlungsdienstleister Stripe.</p>
             <p className="mt-2">

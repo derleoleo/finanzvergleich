@@ -19,8 +19,16 @@ const PRICE_TO_PLAN: Record<string, "professional" | "business"> = {
   [process.env.VITE_STRIPE_PRICE_UNLIMITED_YEARLY!]: "business",
 };
 
-function getPlan(priceId: string): "professional" | "business" {
-  return PRICE_TO_PLAN[priceId] ?? "professional";
+// Unbekannte Preise schalten bewusst KEINEN bezahlten Plan frei. Früher fiel
+// jede nicht zugeordnete Preis-ID auf "professional" zurück – damit hätte
+// jeder beliebige Preis im Stripe-Konto vollen Zugang gewährt.
+function getPlan(priceId: string): "professional" | "business" | "free" {
+  const plan = PRICE_TO_PLAN[priceId];
+  if (!plan) {
+    console.error(`[stripe-webhook] Unbekannte Preis-ID ${priceId} – kein Plan vergeben`);
+    return "free";
+  }
+  return plan;
 }
 
 async function getRawBody(req: VercelRequest): Promise<Buffer> {
