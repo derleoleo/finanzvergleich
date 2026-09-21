@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://www.rentencheck.app/sitemap.xml
+Sitemap: https://www.vorsorgewaage.de/sitemap.xml

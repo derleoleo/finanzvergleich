@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import BrandLogo, { MARKE } from "@/components/BrandLogo";
 import {
   KLEINUNTERNEHMER_HINWEIS,
   PREIS_JAHR,
@@ -15,12 +16,12 @@ import {
 
 const faq = [
   {
-    q: "Ist RentenCheck für Privatpersonen geeignet?",
+    q: "Ist Vorsorgewaage für Privatpersonen geeignet?",
     a: "Nein. Die Plattform richtet sich ausschließlich an Finanz- und Versicherungsberater – also Makler, Vermittler und Agenturen. Ein Vertragsschluss mit Privatpersonen ist ausgeschlossen.",
   },
   {
     q: "Handelt es sich um Finanzberatung?",
-    a: "Nein. RentenCheck erstellt ausschließlich modellhafte Simulationen auf Basis der vom Nutzer eingegebenen Parameter. Es erfolgt keine Finanz-, Steuer- oder Rechtsberatung. Die Ergebnisse sind Werkzeuge zur internen Analyse und Kundenkommunikation.",
+    a: "Nein. Vorsorgewaage erstellt ausschließlich modellhafte Simulationen auf Basis der vom Nutzer eingegebenen Parameter. Es erfolgt keine Finanz-, Steuer- oder Rechtsberatung. Die Ergebnisse sind Werkzeuge zur internen Analyse und Kundenkommunikation.",
   },
   {
     q: "Wo werden meine Daten gespeichert?",
@@ -46,7 +47,7 @@ function BrowserFrame({ src, alt }: { src: string; alt: string }) {
           <div className="w-3 h-3 rounded-full bg-[#28c840]" />
         </div>
         <div className="flex-1 mx-3 bg-white rounded-md px-3 py-0.5 text-xs text-slate-400 text-center truncate">
-          www.rentencheck.app
+          www.vorsorgewaage.de
         </div>
       </div>
       <img src={src} alt={alt} className="w-full block" />
@@ -63,7 +64,7 @@ export default function Landing() {
       {/* ── Navbar ───────────────────────────────────────────────── */}
       <nav className="border-b border-slate-100 bg-white/90 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <img src="/rentencheck-logo.png" alt="RentenCheck" className="h-8 w-auto" />
+          <BrandLogo markClassName="h-8 w-8" textClassName="text-xl text-slate-900" />
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
             <a href="#funktionen" className="hover:text-slate-900 transition-colors">Funktionen</a>
             <a href="#rechner" className="hover:text-slate-900 transition-colors">Rechner</a>
@@ -122,7 +123,7 @@ export default function Landing() {
           <div className="hidden lg:block">
             <BrowserFrame
               src="/screenshots/screenshot-results.png"
-              alt="RentenCheck Ergebnis-Ansicht: LV vs. Direktanlage"
+              alt={`${MARKE} Ergebnis-Ansicht: LV vs. Direktanlage`}
             />
           </div>
         </div>
@@ -196,7 +197,7 @@ export default function Landing() {
           </p>
           <BrowserFrame
             src="/screenshots/screenshot-results.png"
-            alt="RentenCheck Ergebnis-Ansicht: LV vs. Direktanlage Vergleich"
+            alt={`${MARKE} Ergebnis-Ansicht: LV vs. Direktanlage Vergleich`}
           />
         </div>
       </section>
@@ -296,7 +297,7 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-xs font-bold text-brand-cyan uppercase tracking-widest mb-3">Zielgruppe</p>
-            <h2 className="text-3xl font-bold text-slate-900 mb-3">Für wen ist RentenCheck?</h2>
+            <h2 className="text-3xl font-bold text-slate-900 mb-3">Für wen ist {MARKE}?</h2>
             <p className="text-sm text-slate-500">Ausschließlich für Finanz- und Versicherungsberater.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -459,7 +460,7 @@ export default function Landing() {
       {/* ── Footer ───────────────────────────────────────────────── */}
       <footer className="bg-slate-950 text-slate-500 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <img src="/rentencheck-logo.png" alt="RentenCheck" className="h-7 w-auto opacity-50" />
+          <BrandLogo className="opacity-60" markClassName="h-7 w-7" textClassName="text-lg text-white" />
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-xs">
             <Link to="/impressum" className="hover:text-white transition-colors">Impressum</Link>
             <Link to="/datenschutz" className="hover:text-white transition-colors">Datenschutz</Link>

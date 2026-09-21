@@ -125,7 +125,7 @@ export default function ConsentGate({ children }: { children: ReactNode }) {
 
             <p className="text-xs text-slate-400 text-center">
               Ohne Zustimmung kann die Plattform nicht genutzt werden.{" "}
-              <a href="mailto:info@rentencheck.app" className="hover:underline">Support kontaktieren</a>
+              <a href="mailto:info@vorsorgewaage.de" className="hover:underline">Support kontaktieren</a>
             </p>
           </div>
         </div>

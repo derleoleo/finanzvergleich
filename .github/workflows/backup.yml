@@ -60,7 +60,7 @@ jobs:
           print(f"\nAlle Tabellen gesichert in {backup_dir}/")
           EOF
 
-          tar -czf "rentencheck_backup_$(date +%Y%m%d_%H%M%S).tar.gz" backup_*/
+          tar -czf "vorsorgewaage_backup_$(date +%Y%m%d_%H%M%S).tar.gz" backup_*/
           echo "Fertig."
 
       - name: Backup als Artifact hochladen

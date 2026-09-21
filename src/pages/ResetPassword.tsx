@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
+import { BrandMark, MARKE } from '@/components/BrandLogo'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
@@ -55,8 +56,8 @@ export default function ResetPassword() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-3 mb-8">
-          <img src="/favicon.svg" alt="RentenCheck" className="w-12 h-12" />
-          <h1 className="text-2xl font-bold text-slate-900">RentenCheck</h1>
+          <BrandMark className="w-12 h-12" />
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{MARKE}</h1>
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-8">

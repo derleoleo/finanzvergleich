@@ -13,15 +13,15 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-const STAND = 'August 2026';
-const VERSION = '2026-08';
+const STAND = 'September 2026';
+const VERSION = '2026-09';
 const ANBIETER = 'Luisa Brandt, Ernst-Bähre-Str. 3, 30453 Hannover';
 
 const avvParagraphen = [
   {
     titel: '§ 1 Gegenstand und Dauer der Auftragsverarbeitung',
     absaetze: [
-      'Dieser Auftragsverarbeitungsvertrag (nachfolgend „AVV") regelt die Verarbeitung personenbezogener Daten durch den Auftragnehmer (Anbieter der Plattform rentencheck.app, Luisa Brandt, Hannover) im Auftrag des Auftraggebers (registrierter Nutzer als Unternehmer i. S. d. § 14 BGB) im Rahmen der Nutzung der SaaS-Plattform.',
+      'Dieser Auftragsverarbeitungsvertrag (nachfolgend „AVV") regelt die Verarbeitung personenbezogener Daten durch den Auftragnehmer (Anbieter der Plattform vorsorgewaage.de, Luisa Brandt, Hannover) im Auftrag des Auftraggebers (registrierter Nutzer als Unternehmer i. S. d. § 14 BGB) im Rahmen der Nutzung der SaaS-Plattform.',
       'Der AVV gilt für die Dauer des Nutzungsvertrags und endet automatisch mit dessen Beendigung. Bei Vertragsende werden alle personenbezogenen Daten des Auftraggebers innerhalb von 30 Tagen gelöscht, sofern keine gesetzliche Aufbewahrungspflicht besteht.',
     ],
   },
@@ -230,7 +230,7 @@ doc.text('gemäß Art. 28 DSGVO · inkl. technischer und organisatorischer Maßn
 y += 8;
 doc.setFont('helvetica', 'normal');
 doc.setFontSize(10);
-doc.text(`rentencheck.app · Stand: ${STAND} · Version ${VERSION}`, RAND, y);
+doc.text(`vorsorgewaage.de · Stand: ${STAND} · Version ${VERSION}`, RAND, y);
 y += 8;
 doc.setDrawColor(203, 213, 225);
 doc.line(RAND, y, RAND + BREITE, y);
@@ -241,7 +241,7 @@ text(ANBIETER);
 y += 2;
 text('Auftraggeber', { style: 'bold' });
 text(
-  'Der bei rentencheck.app registrierte Nutzer als Unternehmer im Sinne des § 14 BGB. Der AVV wird mit der Registrierung Bestandteil des Nutzungsvertrags.'
+  'Der bei vorsorgewaage.de registrierte Nutzer als Unternehmer im Sinne des § 14 BGB. Der AVV wird mit der Registrierung Bestandteil des Nutzungsvertrags.'
 );
 
 // --- AVV ----------------------------------------------------------------------
@@ -300,7 +300,7 @@ for (let i = 1; i <= seiten; i++) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(148, 163, 184);
-  doc.text(`rentencheck.app · AVV & TOM · Version ${VERSION}`, RAND, 297 - 12);
+  doc.text(`vorsorgewaage.de · AVV & TOM · Version ${VERSION}`, RAND, 297 - 12);
   doc.text(`Seite ${i} von ${seiten}`, 210 - RAND, 297 - 12, { align: 'right' });
 }
 

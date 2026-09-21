@@ -24,7 +24,7 @@ export default function Impressum() {
           <section>
             <h2 className="text-lg font-semibold text-slate-900 mb-2">Kontakt</h2>
             <p>
-              E-Mail: <a href="mailto:info@rentencheck.app" className="text-blue-600 hover:underline">info@rentencheck.app</a>
+              E-Mail: <a href="mailto:info@vorsorgewaage.de" className="text-blue-600 hover:underline">info@vorsorgewaage.de</a>
             </p>
           </section>
 
@@ -42,7 +42,7 @@ export default function Impressum() {
             <p className="text-sm">
               Die Inhalte dieser Website wurden mit größtmöglicher Sorgfalt erstellt. Für die Richtigkeit,
               Vollständigkeit und Aktualität der Inhalte übernehme ich jedoch keine Gewähr. Die Berechnungen
-              und Ergebnisse auf RentenCheck dienen ausschließlich der Orientierung und stellen keine
+              und Ergebnisse auf Vorsorgewaage dienen ausschließlich der Orientierung und stellen keine
               individuelle Finanz- oder Anlageberatung dar.
             </p>
           </section>

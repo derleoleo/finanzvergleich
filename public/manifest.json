@@ -1,6 +1,6 @@
 {
-  "name": "RentenCheck",
-  "short_name": "RentenCheck",
+  "name": "Vorsorgewaage",
+  "short_name": "Vorsorgewaage",
   "description": "Professionelle Vergleichsrechner für Finanzberater",
   "start_url": "/",
   "display": "standalone",

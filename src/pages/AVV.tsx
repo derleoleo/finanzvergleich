@@ -10,7 +10,7 @@ export default function AVV() {
         </Link>
 
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Auftragsverarbeitungsvertrag (AVV)</h1>
-        <p className="text-sm text-slate-500 mb-2">Stand: August 2026 · Version 2026-08</p>
+        <p className="text-sm text-slate-500 mb-2">Stand: September 2026 · Version 2026-09</p>
         <p className="text-sm text-slate-500 mb-8">
           gemäß Art. 28 DSGVO ·{" "}
           <Link to="/compliance" className="text-blue-600 hover:underline">Technische und organisatorische Maßnahmen</Link>
@@ -31,7 +31,7 @@ export default function AVV() {
             <h2 className="text-lg font-semibold text-slate-900 mb-3">§ 1 Gegenstand und Dauer der Auftragsverarbeitung</h2>
             <p>
               Dieser Auftragsverarbeitungsvertrag (nachfolgend „AVV") regelt die Verarbeitung
-              personenbezogener Daten durch den Auftragnehmer (Anbieter der Plattform rentencheck.app,
+              personenbezogener Daten durch den Auftragnehmer (Anbieter der Plattform vorsorgewaage.de,
               Luisa Brandt, Hannover) im Auftrag des Auftraggebers (registrierter Nutzer als
               Unternehmer i.S.d. § 14 BGB) im Rahmen der Nutzung der SaaS-Plattform.
             </p>

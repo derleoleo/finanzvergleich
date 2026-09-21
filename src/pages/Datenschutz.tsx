@@ -10,7 +10,7 @@ export default function Datenschutz() {
         </Link>
 
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Datenschutzerklärung</h1>
-        <p className="text-sm text-slate-500 mb-8">Stand: August 2026</p>
+        <p className="text-sm text-slate-500 mb-8">Stand: September 2026</p>
 
         <div className="space-y-8 text-slate-700 text-sm leading-relaxed">
 
@@ -20,7 +20,7 @@ export default function Datenschutz() {
               <p>Luisa Brandt, Einzelunternehmer</p>
               <p>Ernst-Bähre-Str. 3</p>
               <p>30453 Hannover</p>
-              <p>E-Mail: <a href="mailto:info@rentencheck.app" className="text-blue-600 hover:underline">info@rentencheck.app</a></p>
+              <p>E-Mail: <a href="mailto:info@vorsorgewaage.de" className="text-blue-600 hover:underline">info@vorsorgewaage.de</a></p>
             </address>
           </section>
 
@@ -245,8 +245,8 @@ export default function Datenschutz() {
             <h2 className="text-lg font-semibold text-slate-900 mb-3">13. Betroffenenrechte</h2>
             <p>
               Rechte gemäß Art. 15–21 DSGVO können per E-Mail geltend gemacht werden:{" "}
-              <a href="mailto:info@rentencheck.app" className="text-blue-600 hover:underline">
-                info@rentencheck.app
+              <a href="mailto:info@vorsorgewaage.de" className="text-blue-600 hover:underline">
+                info@vorsorgewaage.de
               </a>
             </p>
             <p className="mt-2">

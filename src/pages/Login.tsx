@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Consent } from '@/entities/Consent'
 import { LEGAL_DOC_VERSION, REQUIRED_CONSENT_TYPES } from '@/utils/legalVersion'
 import { Button } from '@/components/ui/button'
+import { BrandMark, MARKE } from '@/components/BrandLogo'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
@@ -82,8 +83,8 @@ export default function Login() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-3 mb-8">
-          <img src="/favicon.svg" alt="RentenCheck" className="w-12 h-12" />
-          <h1 className="text-2xl font-bold text-slate-900">RentenCheck</h1>
+          <BrandMark className="w-12 h-12" />
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{MARKE}</h1>
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-8">
@@ -214,7 +215,7 @@ export default function Login() {
           <Link to="/datenschutz" className="hover:text-slate-600">Datenschutz</Link>
           <Link to="/agb" className="hover:text-slate-600">AGB</Link>
           <Link to="/legal/avv" className="hover:text-slate-600">AVV</Link>
-          <a href="mailto:info@rentencheck.app" className="hover:text-slate-600">Support</a>
+          <a href="mailto:info@vorsorgewaage.de" className="hover:text-slate-600">Support</a>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import BrandLogo from "@/components/BrandLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 
@@ -163,7 +164,7 @@ export default function Layout({ children }: Props) {
               to={createPageUrl("Home")}
               className="hover:opacity-80 transition-opacity block"
             >
-              <img src="/rentencheck-logo.png" alt="RentenCheck" className="w-full h-auto" />
+              <BrandLogo markClassName="h-9 w-9" textClassName="text-xl text-slate-900" />
             </Link>
           </SidebarHeader>
 
@@ -377,7 +378,7 @@ export default function Layout({ children }: Props) {
           <header className="bg-white border-b border-slate-200 px-4 py-3 md:hidden shrink-0 print:hidden">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200 shrink-0" />
-              <img src="/rentencheck-logo.png" alt="RentenCheck" className="h-7 w-auto max-w-[220px]" />
+              <BrandLogo markClassName="h-7 w-7" textClassName="text-lg text-slate-900" />
             </div>
           </header>
 
