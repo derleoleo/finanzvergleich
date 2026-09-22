@@ -205,6 +205,37 @@ ${button("Einladung annehmen")}
 ${funktionen}`,
   },
 
+  "password-changed.html": {
+    vorlage: "Password changed (Security notifications)",
+    betreff: "Ihr Passwort wurde geändert – Vorsorgewaage",
+    titel: "Passwort geändert",
+    ueberschrift: "Passwort wurde geändert",
+    unterzeile: "Sicherheitshinweis zu Ihrem Konto",
+    inhalt: `            ${p("Guten Tag,")}
+            ${p(`das Passwort Ihres Vorsorgewaage-Kontos <strong style="color:#1A1A2E;">{{ .Email }}</strong> wurde soeben geändert.`)}
+            ${p("Haben Sie die Änderung selbst vorgenommen, ist alles in Ordnung – Sie müssen nichts tun.")}
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0 0;">
+              <tr>
+                <td style="background:#FFF8EC;border-left:4px solid #F59E0B;border-radius:8px;padding:16px 20px;">
+                  <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#8A5A00;">Das waren nicht Sie?</p>
+                  <p style="margin:0;font-size:13px;color:#8A5A00;line-height:1.6;">
+                    Setzen Sie Ihr Passwort sofort über den Button zurück und informieren Sie uns unter
+                    <a href="mailto:info@vorsorgewaage.de" style="color:#8A5A00;text-decoration:underline;">info@vorsorgewaage.de</a>.
+                  </p>
+                </td>
+              </tr>
+            </table>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 0;">
+              <tr>
+                <td align="center">
+                  <a href="https://www.vorsorgewaage.de/reset-password" style="display:inline-block;background:#0057FF;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:10px;">
+                    Passwort zurücksetzen
+                  </a>
+                </td>
+              </tr>
+            </table>`,
+  },
+
   "reauthentication.html": {
     vorlage: "Reauthentication",
     betreff: "Ihr Bestätigungscode – Vorsorgewaage",
