@@ -183,7 +183,7 @@ export default function Defaults() {
                   <Label className="text-sm font-medium text-slate-700">LV-Fonds Name</Label>
                   <Input value={data.lv_fund_identifier}
                     onChange={(e) => set("lv_fund_identifier", e.target.value)}
-                    placeholder="z.B. Debeka Global Shares" className={inputClass} />
+                    placeholder="z.B. Aktienfonds global" className={inputClass} />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">LV-Fondskosten p.a. (%)</Label>

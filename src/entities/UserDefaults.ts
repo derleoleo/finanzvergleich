@@ -62,7 +62,7 @@ export const SYSTEM_DEFAULTS: UserDefaultsData = {
   lv_admin_costs_monthly_eur: 6,
   lv_effective_costs_percent: 0.7,
   lv_fund_ongoing_costs_percent: 0.3,
-  lv_fund_identifier: "Debeka Global Shares",
+  lv_fund_identifier: "Musterfonds LV",
 
   depot_provider: "Musterdepot",
   depot_fund_identifier: "Musterfonds",
