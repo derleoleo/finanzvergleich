@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>E-Mail-Adresse bestätigen – Vorsorgewaage</title>
+<title>Einladung – Vorsorgewaage</title>
 </head>
 <!--
-  Supabase → Authentication → Emails → Templates → „Confirm signup“
-  Betreff: Bitte bestätigen Sie Ihre E-Mail-Adresse – Vorsorgewaage
+  Supabase → Authentication → Emails → Templates → „Invite user“
+  Betreff: Einladung zu Vorsorgewaage
   Erzeugt von scripts/generate-email-templates.mjs – dort ändern, nicht hier.
 -->
 <body style="margin:0;padding:0;background-color:#F7F9FF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
@@ -28,20 +28,20 @@
         <tr>
           <td style="background:#ffffff;border-radius:16px;padding:48px 40px 40px;box-shadow:0 1px 4px rgba(0,60,180,0.07),0 8px 32px rgba(0,60,180,0.06);">
 
-            <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;color:#1A1A2E;text-align:center;letter-spacing:-0.5px;">Fast geschafft!</h1>
-            <p style="margin:0 0 32px;font-size:15px;color:#8899BB;text-align:center;line-height:1.5;">Bitte bestätigen Sie Ihre E-Mail-Adresse.</p>
+            <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;color:#1A1A2E;text-align:center;letter-spacing:-0.5px;">Sie wurden eingeladen</h1>
+            <p style="margin:0 0 32px;font-size:15px;color:#8899BB;text-align:center;line-height:1.5;">Ihr Zugang zu Vorsorgewaage ist vorbereitet.</p>
 
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 32px;"><tr><td style="height:1px;background:#E0E8F5;font-size:0;line-height:0;">&nbsp;</td></tr></table>
             <p style="margin:0 0 16px;font-size:15px;color:#445566;line-height:1.7;">Guten Tag,</p>
-            <p style="margin:0 0 16px;font-size:15px;color:#445566;line-height:1.7;margin-bottom:0;">vielen Dank für Ihre Registrierung bei Vorsorgewaage – den Vergleichsrechnern für Finanz- und
-              Versicherungsberater. Damit Sie loslegen können, bestätigen Sie bitte Ihre E-Mail-Adresse
-              <strong style="color:#1A1A2E;">{{ .Email }}</strong>:</p>
+            <p style="margin:0 0 16px;font-size:15px;color:#445566;line-height:1.7;margin-bottom:0;">Sie wurden eingeladen, Vorsorgewaage zu nutzen – die Vergleichsrechner für Finanz- und
+              Versicherungsberater. Nehmen Sie die Einladung für <strong style="color:#1A1A2E;">{{ .Email }}</strong>
+              an und legen Sie Ihr Passwort fest:</p>
 
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0;">
               <tr>
                 <td align="center">
                   <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#0057FF;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:10px;">
-                    E-Mail-Adresse bestätigen
+                    Einladung annehmen
                   </a>
                 </td>
               </tr>
@@ -50,7 +50,7 @@
             <p style="margin:0 0 24px;font-size:12px;line-height:1.5;text-align:center;word-break:break-all;">
               <a href="{{ .ConfirmationURL }}" style="color:#0057FF;text-decoration:underline;">{{ .ConfirmationURL }}</a>
             </p>
-            <p style="margin:0 0 8px;font-size:13px;color:#8899BB;line-height:1.6;text-align:center;">Der Link ist aus Sicherheitsgründen nur begrenzt gültig. Falls Sie sich nicht registriert haben, können Sie diese E-Mail ignorieren.</p>
+            <p style="margin:0 0 8px;font-size:13px;color:#8899BB;line-height:1.6;text-align:center;">Der Link ist nur begrenzt gültig. Falls Sie keine Einladung erwartet haben, können Sie diese E-Mail ignorieren.</p>
 
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 28px;"><tr><td style="height:1px;background:#E0E8F5;font-size:0;line-height:0;">&nbsp;</td></tr></table>
             <table width="100%" cellpadding="0" cellspacing="0" border="0">

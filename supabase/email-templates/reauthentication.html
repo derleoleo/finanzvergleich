@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bestätigungscode – Vorsorgewaage</title>
+</head>
+<!--
+  Supabase → Authentication → Emails → Templates → „Reauthentication“
+  Betreff: Ihr Bestätigungscode – Vorsorgewaage
+  Erzeugt von scripts/generate-email-templates.mjs – dort ändern, nicht hier.
+-->
+<body style="margin:0;padding:0;background-color:#F7F9FF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F7F9FF;padding:40px 16px;">
+  <tr>
+    <td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+
+        <!-- LOGO -->
+        <tr>
+          <td align="center" style="padding-bottom:32px;">
+            <img src="https://www.vorsorgewaage.de/email-logo.png" alt="Vorsorgewaage" width="220" height="48" style="display:block;border:0;outline:none;text-decoration:none;">
+          </td>
+        </tr>
+
+        <!-- KARTE -->
+        <tr>
+          <td style="background:#ffffff;border-radius:16px;padding:48px 40px 40px;box-shadow:0 1px 4px rgba(0,60,180,0.07),0 8px 32px rgba(0,60,180,0.06);">
+
+            <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;color:#1A1A2E;text-align:center;letter-spacing:-0.5px;">Ihr Bestätigungscode</h1>
+            <p style="margin:0 0 32px;font-size:15px;color:#8899BB;text-align:center;line-height:1.5;">Zur Bestätigung einer sicherheitsrelevanten Änderung.</p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 32px;"><tr><td style="height:1px;background:#E0E8F5;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+            <p style="margin:0 0 16px;font-size:15px;color:#445566;line-height:1.7;">Guten Tag,</p>
+            <p style="margin:0 0 16px;font-size:15px;color:#445566;line-height:1.7;margin-bottom:0;">bitte geben Sie diesen Code in Vorsorgewaage ein, um fortzufahren:</p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0;">
+              <tr>
+                <td align="center">
+                  <div style="display:inline-block;background:#F0F5FF;border-radius:10px;padding:16px 32px;font-size:32px;font-weight:700;letter-spacing:8px;color:#1A1A2E;font-family:'SFMono-Regular',Consolas,monospace;">{{ .Token }}</div>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:0 0 8px;font-size:13px;color:#8899BB;line-height:1.6;text-align:center;">Der Code ist nur kurz gültig. Geben Sie ihn niemandem weiter – auch nicht uns. Falls Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren – es ändert sich nichts.</p>
+          </td>
+        </tr>
+
+        <!-- FUSSZEILE -->
+        <tr>
+          <td style="padding:28px 0 0;text-align:center;">
+            <p style="margin:0 0 8px;font-size:12px;color:#8899BB;line-height:1.6;">
+              Bei Fragen erreichen Sie uns unter <a href="mailto:info@vorsorgewaage.de" style="color:#0057FF;text-decoration:none;">info@vorsorgewaage.de</a>
+            </p>
+            <p style="margin:0;font-size:11px;color:#B0BFCC;">
+              © 2026 Vorsorgewaage ·
+              <a href="https://www.vorsorgewaage.de/impressum" style="color:#B0BFCC;text-decoration:none;">Impressum</a> ·
+              <a href="https://www.vorsorgewaage.de/datenschutz" style="color:#B0BFCC;text-decoration:none;">Datenschutz</a>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>
