@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Mail-Adresse bestätigen – Vorsorgewaage</title>
+</head>
+<!--
+  Supabase → Authentication → Emails → Templates → „Confirm signup“
+  Betreff: Bitte bestätigen Sie Ihre E-Mail-Adresse – Vorsorgewaage
+  Hinweis: Nur Supabase-Platzhalter verwenden, die es gibt ({{ .ConfirmationURL }}, {{ .SiteURL }}, {{ .Email }}).
+-->
+<body style="margin:0;padding:0;background-color:#F7F9FF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F7F9FF;padding:40px 16px;">
+  <tr>
+    <td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+
+        <!-- LOGO -->
+        <tr>
+          <td align="center" style="padding-bottom:32px;">
+            <img src="https://www.vorsorgewaage.de/email-logo.png" alt="Vorsorgewaage" width="220" height="48" style="display:block;border:0;outline:none;text-decoration:none;">
+          </td>
+        </tr>
+
+        <!-- KARTE -->
+        <tr>
+          <td style="background:#ffffff;border-radius:16px;padding:48px 40px 40px;box-shadow:0 1px 4px rgba(0,60,180,0.07),0 8px 32px rgba(0,60,180,0.06);">
+
+            <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;color:#1A1A2E;text-align:center;letter-spacing:-0.5px;">Fast geschafft!</h1>
+            <p style="margin:0 0 32px;font-size:15px;color:#8899BB;text-align:center;line-height:1.5;">Bitte bestätigen Sie Ihre E-Mail-Adresse.</p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="height:1px;background:#E0E8F5;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+
+            <p style="margin:32px 0 16px;font-size:15px;color:#445566;line-height:1.7;">Guten Tag,</p>
+            <p style="margin:0 0 16px;font-size:15px;color:#445566;line-height:1.7;">
+              vielen Dank für Ihre Registrierung bei Vorsorgewaage – den Vergleichsrechnern für Finanz- und
+              Versicherungsberater. Damit Sie loslegen können, bestätigen Sie bitte Ihre E-Mail-Adresse
+              <strong style="color:#1A1A2E;">{{ .Email }}</strong>:
+            </p>
+
+            <!-- BUTTON -->
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0;">
+              <tr>
+                <td align="center">
+                  <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#0057FF;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:10px;">
+                    E-Mail-Adresse bestätigen
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0 0 8px;font-size:13px;color:#8899BB;line-height:1.6;text-align:center;">
+              Funktioniert der Button nicht? Kopieren Sie diesen Link in Ihren Browser:
+            </p>
+            <p style="margin:0 0 24px;font-size:12px;line-height:1.5;text-align:center;word-break:break-all;">
+              <a href="{{ .ConfirmationURL }}" style="color:#0057FF;text-decoration:underline;">{{ .ConfirmationURL }}</a>
+            </p>
+            <p style="margin:0;font-size:13px;color:#8899BB;line-height:1.6;text-align:center;">
+              Der Link ist aus Sicherheitsgründen nur begrenzt gültig. Falls Sie sich nicht registriert haben,
+              können Sie diese E-Mail ignorieren.
+            </p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 28px;"><tr><td style="height:1px;background:#E0E8F5;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+
+            <!-- FUNKTIONEN -->
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td width="33%" style="padding:0 6px 0 0;vertical-align:top;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:#F7F9FF;border-radius:10px;padding:16px;text-align:center;">
+                    <div style="font-size:12px;font-weight:600;color:#1A1A2E;margin-bottom:4px;">LV oder Depot?</div>
+                    <div style="font-size:11px;color:#8899BB;line-height:1.5;">Nach Kosten und Steuern transparent abgewogen</div>
+                  </td></tr></table>
+                </td>
+                <td width="34%" style="padding:0 3px;vertical-align:top;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:#F7F9FF;border-radius:10px;padding:16px;text-align:center;">
+                    <div style="font-size:12px;font-weight:600;color:#1A1A2E;margin-bottom:4px;">6 Rechner</div>
+                    <div style="font-size:11px;color:#8899BB;line-height:1.5;">Von BestAdvice bis Altersvorsorgedepot</div>
+                  </td></tr></table>
+                </td>
+                <td width="33%" style="padding:0 0 0 6px;vertical-align:top;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:#F7F9FF;border-radius:10px;padding:16px;text-align:center;">
+                    <div style="font-size:12px;font-weight:600;color:#1A1A2E;margin-bottom:4px;">Daten in der EU</div>
+                    <div style="font-size:11px;color:#8899BB;line-height:1.5;">Gespeichert in Frankfurt am Main</div>
+                  </td></tr></table>
+                </td>
+              </tr>
+            </table>
+
+          </td>
+        </tr>
+
+        <!-- FUSSZEILE -->
+        <tr>
+          <td style="padding:28px 0 0;text-align:center;">
+            <p style="margin:0 0 8px;font-size:12px;color:#8899BB;line-height:1.6;">
+              Bei Fragen erreichen Sie uns unter <a href="mailto:info@vorsorgewaage.de" style="color:#0057FF;text-decoration:none;">info@vorsorgewaage.de</a>
+            </p>
+            <p style="margin:0;font-size:11px;color:#B0BFCC;">
+              © 2026 Vorsorgewaage ·
+              <a href="https://www.vorsorgewaage.de/impressum" style="color:#B0BFCC;text-decoration:none;">Impressum</a> ·
+              <a href="https://www.vorsorgewaage.de/datenschutz" style="color:#B0BFCC;text-decoration:none;">Datenschutz</a>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>
