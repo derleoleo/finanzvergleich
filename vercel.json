@@ -1,9 +1,9 @@
 {
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/(.*)",
       "has": [{ "type": "host", "value": "rentencheck.vercel.app" }],
-      "destination": "https://www.vorsorgewaage.de/:path*",
+      "destination": "https://www.vorsorgewaage.de/$1",
       "permanent": true
     }
   ],
