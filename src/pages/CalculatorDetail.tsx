@@ -383,7 +383,7 @@ export default function CalculatorDetail() {
     {dialogOpen && (
       <PDFSectionDialog
         sections={[
-          { id: "ergebnis", label: "Ergebnisse (Brutto/Netto)" },
+          { id: "ergebnis", label: "Ergebnisse & Vorsorgewaage" },
           { id: "grafik", label: "Verlaufsgrafik" },
           { id: "vergleich", label: "Vergleichstabelle" },
           { id: "kosten", label: "Kosten im Detail", defaultChecked: false },

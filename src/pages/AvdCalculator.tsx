@@ -26,6 +26,7 @@ import { NumericInput } from '@/components/ui/numeric-input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { formatCurrency, formatChartAxis } from '@/components/shared/CurrencyDisplay';
+import Vorsorgewaage from '@/components/results/Vorsorgewaage';
 import { usePDFExport } from '@/utils/usePDFExport';
 import PDFSectionDialog from '@/components/pdf/PDFSectionDialog';
 import {
@@ -601,37 +602,25 @@ export default function AvdCalculator() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="rounded-xl border border-slate-200 p-4">
-                  <div className="text-xs text-slate-500 mb-1">
-                    AVD nach Steuern{showReal ? ' (real)' : ''}
-                  </div>
-                  <div className="text-2xl font-bold text-slate-900">{formatCurrency(endAvd)}</div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    brutto {formatCurrency(showReal ? ergebnis.endkapitalReal : ergebnis.endkapitalNominal)}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 p-4">
-                  <div className="text-xs text-slate-500 mb-1">
-                    {vergleichName} nach Steuern{showReal ? ' (real)' : ''}
-                  </div>
-                  <div className="text-2xl font-bold text-slate-900">{formatCurrency(endDepot)}</div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    {ergebnis.riesterAlt
-                      ? `Förderung gesamt ${formatCurrency(ergebnis.riesterAlt.summeFoerderung)}`
-                      : `inkl. Vorabpauschale ${formatCurrency(ergebnis.depot.summeVorabpauschaleSteuer)}`}
-                  </div>
-                </div>
-                <div className={`rounded-xl border p-4 ${ergebnis.vorteilGegenVergleich >= 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-                  <div className="text-xs text-slate-500 mb-1">Vorteil AVD</div>
-                  <div className={`text-2xl font-bold ${ergebnis.vorteilGegenVergleich >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                    {formatCurrency(showReal ? endAvd - endDepot : ergebnis.vorteilGegenVergleich)}
-                  </div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    Förderung gesamt {formatCurrency(ergebnis.summeFoerderung)}
-                  </div>
-                </div>
-              </div>
+              <Vorsorgewaage
+                basis={`Altersvorsorgedepot vs. ${vergleichName} · nach Steuern${showReal ? ' · real (inflationsbereinigt)' : ''}`}
+                links={{
+                  name: 'Altersvorsorgedepot',
+                  imSatz: 'dem Altersvorsorgedepot',
+                  wert: endAvd,
+                  farbe: '#2563eb',
+                  detail: `brutto ${formatCurrency(showReal ? ergebnis.endkapitalReal : ergebnis.endkapitalNominal)} · Förderung gesamt ${formatCurrency(ergebnis.summeFoerderung)}`,
+                }}
+                rechts={{
+                  name: vergleichName,
+                  imSatz: gegenRiester ? 'dem Riester-Bestandsvertrag' : 'dem freien Depot',
+                  wert: endDepot,
+                  farbe: '#16a34a',
+                  detail: ergebnis.riesterAlt
+                    ? `Förderung gesamt ${formatCurrency(ergebnis.riesterAlt.summeFoerderung)}`
+                    : `inkl. Vorabpauschale ${formatCurrency(ergebnis.depot.summeVorabpauschaleSteuer)}`,
+                }}
+              />
 
               <div className="h-80 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1014,7 +1003,7 @@ export default function AvdCalculator() {
             { id: 'vergleichspartner', label: 'Vergleichspartner' },
             { id: 'berechtigung', label: 'Förderberechtigung' },
             { id: 'foerderung', label: 'Beitrag und Förderung' },
-            { id: 'vergleich', label: 'Vergleich' },
+            { id: 'vergleich', label: 'Vergleich & Vorsorgewaage' },
             ...(optionenAktiv && gegenRiester
               ? [{ id: 'optionen', label: 'Wechselanalyse (4 Optionen)' }]
               : []),

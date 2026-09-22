@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { formatCurrency, formatChartAxis } from "@/components/shared/CurrencyDisplay";
+import Vorsorgewaage from "@/components/results/Vorsorgewaage";
 import { usePDFExport } from "@/utils/usePDFExport";
 import PDFSectionDialog from "@/components/pdf/PDFSectionDialog";
 import { Handshake, FileDown, ArrowLeft } from "lucide-react";
@@ -312,39 +313,26 @@ export default function NetPolicyCalculator() {
 
         {/* Ergebnis */}
         <div data-pdf-section="ergebnis">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="border-0 shadow-lg bg-white">
-              <CardContent className="p-6">
-                <div className="text-xs text-slate-500 mb-1">Bruttopolice (netto nach Steuern)</div>
-                <div className="text-2xl font-bold text-slate-900">{formatCurrency(results.brutto_net)}</div>
-                <div className="text-sm text-slate-600 mt-1">
-                  Kosten {formatCurrency(results.brutto_costs)} · Effektivkosten{" "}
-                  {results.brutto_riy.toLocaleString("de-DE", { minimumFractionDigits: 2 })} %-Pkt. p.a.
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-lg bg-white">
-              <CardContent className="p-6">
-                <div className="text-xs text-slate-500 mb-1">Nettopolice (netto, inkl. Honorar-Abzug)</div>
-                <div className="text-2xl font-bold text-slate-900">{formatCurrency(results.netto_net)}</div>
-                <div className="text-sm text-slate-600 mt-1">
-                  Kosten inkl. Honorar {formatCurrency(results.netto_costs)} · Effektivkosten{" "}
-                  {results.netto_riy.toLocaleString("de-DE", { minimumFractionDigits: 2 })} %-Pkt. p.a.
-                </div>
-              </CardContent>
-            </Card>
-            <Card className={`border-0 shadow-lg ${results.advantage >= 0 ? "bg-green-50" : "bg-red-50"}`}>
-              <CardContent className="p-6">
-                <div className="text-xs text-slate-500 mb-1">Vorteil Nettopolice</div>
-                <div className={`text-2xl font-bold ${results.advantage >= 0 ? "text-green-700" : "text-red-700"}`}>
-                  {formatCurrency(results.advantage)}
-                </div>
-                <div className="text-sm text-slate-600 mt-1">
-                  Beiträge gesamt {formatCurrency(results.total_contributions)}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Vorsorgewaage
+            alsKarte
+            basis="Bruttopolice vs. Nettopolice · netto nach Steuern"
+            links={{
+              name: "Bruttopolice",
+              imSatz: "der Bruttopolice",
+              wert: results.brutto_net,
+              eingezahlt: results.total_contributions,
+              farbe: "#2563eb",
+              detail: `Kosten ${formatCurrency(results.brutto_costs)} · Effektivkosten ${results.brutto_riy.toLocaleString("de-DE", { minimumFractionDigits: 2 })} %-Pkt. p.a.`,
+            }}
+            rechts={{
+              name: "Nettopolice",
+              imSatz: "der Nettopolice (inkl. Honorar)",
+              wert: results.netto_net,
+              eingezahlt: results.total_contributions,
+              farbe: "#0d9488",
+              detail: `Kosten inkl. Honorar ${formatCurrency(results.netto_costs)} · Effektivkosten ${results.netto_riy.toLocaleString("de-DE", { minimumFractionDigits: 2 })} %-Pkt. p.a.`,
+            }}
+          />
         </div>
 
         {/* Verlauf */}
@@ -394,7 +382,7 @@ export default function NetPolicyCalculator() {
         <PDFSectionDialog
           sections={[
             { id: "eingaben", label: "Eingaben" },
-            { id: "ergebnis", label: "Ergebnis" },
+            { id: "ergebnis", label: "Ergebnis (Vorsorgewaage)" },
             { id: "verlauf", label: "Verlauf" },
           ]}
           isExporting={isExporting}

@@ -2,6 +2,17 @@ import { toJpeg } from "html-to-image";
 import { jsPDF } from "jspdf";
 import { UserProfile, type UserProfileData } from "@/entities/UserProfile";
 
+// Bildmarke (Waage) in Weiß für den dunklen PDF-Kopf – Geometrie wie BrandMark
+const MARKE_WEISS = `<svg viewBox="0 0 48 48" width="28" height="28" fill="white" stroke="white">
+  <rect x="15" y="42" width="18" height="4" rx="2" stroke="none"/>
+  <rect x="22" y="10" width="4" height="34" rx="2" stroke="none"/>
+  <rect x="8" y="9.5" width="32" height="4" rx="2" stroke="none" transform="rotate(10 24 11.5)"/>
+  <circle cx="24" cy="11.5" r="3.5" stroke="none"/>
+  <path d="M8.2 8.7 L2.5 24 M8.2 8.7 L13.9 24 M39.8 14.3 L34.1 30 M39.8 14.3 L45.5 30" fill="none" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M1.5 24 H14.9 A6.7 5 0 0 1 1.5 24 Z" stroke="none" opacity="0.7"/>
+  <path d="M33.1 30 H46.5 A6.7 5 0 0 1 33.1 30 Z" stroke="none"/>
+</svg>`;
+
 function buildProfileHeader(profile: UserProfileData, title: string): HTMLElement {
   const el = document.createElement("div");
   el.style.cssText = [
@@ -26,7 +37,7 @@ function buildProfileHeader(profile: UserProfileData, title: string): HTMLElemen
 
   el.innerHTML = `
     <div>
-      <div style="font-size:20px;font-weight:700;margin-bottom:4px;">Vorsorgewaage</div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;margin-bottom:4px;">${MARKE_WEISS}Vorsorgewaage</div>
       <div style="font-size:13px;color:#94a3b8;">${title}</div>
     </div>
     <div style="text-align:right;font-size:12px;color:#cbd5e1;line-height:1.8;">

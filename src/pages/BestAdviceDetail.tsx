@@ -16,6 +16,7 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import UpgradePrompt from "@/components/UpgradePrompt";
 
 import { formatCurrency, formatChartAxis } from "@/components/shared/CurrencyDisplay";
+import Vorsorgewaage from "@/components/results/Vorsorgewaage";
 import {
   calculateAgeAtPayout,
   calculateLifeInsuranceTax,
@@ -171,8 +172,6 @@ export default function BestAdviceDetail() {
 
   const fondsLVEnd = mode === "gross" ? r.life_insurance_gross : r.life_insurance_net;
   const bestandEnd = mode === "gross" ? r.depot_gross : r.depot_net;
-  const difference = fondsLVEnd - bestandEnd;
-  const fondsLVBetter = difference > 0;
 
   return (
     <>
@@ -207,22 +206,34 @@ export default function BestAdviceDetail() {
           )}
         </div>
 
-        {/* Empfehlung */}
+        {/* Ergebnis-Waage */}
         <div data-pdf-section="empfehlung">
-        <Card className={`border-0 shadow-lg ${fondsLVBetter ? "bg-linear-to-r from-blue-50 to-blue-100" : "bg-linear-to-r from-amber-50 to-amber-100"}`}>
-          <CardContent className="p-6 text-center">
-            <div className={`text-2xl font-bold mb-2 ${fondsLVBetter ? "text-blue-700" : "text-amber-700"}`}>
-              {fondsLVBetter ? "Empfehlung: Umschichten in Fonds-LV" : "Empfehlung: Bestandsvertrag behalten"}
-            </div>
-            <div className="text-lg text-slate-700">
-              Unterschied ({mode === "gross" ? "Brutto" : "Netto"}):
-              <span className={`font-bold ml-2 ${fondsLVBetter ? "text-blue-700" : "text-amber-700"}`}>
-                {fondsLVBetter ? "+" : ""}{formatCurrency(difference)}
-              </span>
-              {" "}zugunsten {fondsLVBetter ? "der Fonds-LV" : "des Bestandsvertrags"}
-            </div>
-          </CardContent>
-        </Card>
+          <Vorsorgewaage
+            alsKarte
+            basis={`Bestandsvertrag vs. Fonds-LV · ${mode === "gross" ? "brutto vor Steuern" : "netto nach Steuern"}`}
+            aktionen={
+              <div className="flex gap-2" data-pdf-hide>
+                <Button variant={mode === "gross" ? "default" : "outline"}
+                  className={mode === "gross" ? "bg-slate-800 hover:bg-slate-700" : ""}
+                  onClick={() => setMode("gross")}>Brutto</Button>
+                <Button variant={mode === "net" ? "default" : "outline"}
+                  className={mode === "net" ? "bg-slate-800 hover:bg-slate-700" : ""}
+                  onClick={() => setMode("net")}>Netto</Button>
+              </div>
+            }
+            links={{
+              name: "Bestandsvertrag",
+              imSatz: "dem Bestandsvertrag",
+              wert: bestandEnd,
+              farbe: "#d97706",
+            }}
+            rechts={{
+              name: "Fonds-LV",
+              imSatz: "der Umschichtung in die Fonds-LV",
+              wert: fondsLVEnd,
+              farbe: "#2563eb",
+            }}
+          />
         </div>
 
         {/* Vergleich-Kacheln */}
@@ -406,7 +417,7 @@ export default function BestAdviceDetail() {
     {dialogOpen && (
       <PDFSectionDialog
         sections={[
-          { id: "empfehlung", label: "Empfehlung" },
+          { id: "empfehlung", label: "Vorsorgewaage (Ergebnis)" },
           { id: "vergleich", label: "Vergleich (Bestand vs. Fonds-LV)" },
           { id: "lv-aufschluesselung", label: "LV-Aufschlüsselung" },
           { id: "grafik", label: "Verlaufsgrafik" },

@@ -377,7 +377,7 @@ export default function SinglePaymentDetail() {
     {dialogOpen && (
       <PDFSectionDialog
         sections={[
-          { id: "ergebnis", label: "Ergebnisse (Brutto/Netto)" },
+          { id: "ergebnis", label: "Ergebnisse & Vorsorgewaage" },
           { id: "grafik", label: "Verlaufsgrafik" },
           { id: "vergleich", label: "Vergleichstabelle" },
           { id: "kosten", label: "Kostenübersicht" },

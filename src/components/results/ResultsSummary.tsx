@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import SummaryGrid from "@/components/results/SummaryGrid";
 import SummaryCard from "@/components/results/SummaryCard";
 import { formatCurrency } from "@/components/shared/CurrencyDisplay";
+import Vorsorgewaage from "@/components/results/Vorsorgewaage";
 
 export type Mode = "gross" | "net";
 
@@ -36,9 +37,6 @@ export default function ResultsSummary({ results, mode, onModeChange }: Props) {
   const percentageDifference = (difference / base) * 100;
 
   const lvBetter = difference >= 0;
-  const headline = lvBetter
-    ? "Lebensversicherung ist besser"
-    : "Direktanlage ist besser";
 
   const deltaText = lvBetter
     ? `Das LV-Ergebnis liegt um ${Math.abs(percentageDifference).toFixed(
@@ -112,33 +110,27 @@ export default function ResultsSummary({ results, mode, onModeChange }: Props) {
             )}`}
             subtext={deltaText}
             icon={<TrendingUp className="w-5 h-5" />}
-            // ✅ kein "danger" nutzen – nur Töne, die du schon hast
-            tone={lvBetter ? "success" : "info"}
+            tone="neutral"
           />
         </SummaryGrid>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 text-center">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <TrendingUp
-              className={`w-6 h-6 ${
-                lvBetter ? "text-green-600" : "text-red-600"
-              }`}
-            />
-            <div className="text-lg font-bold text-slate-900">{headline}</div>
-          </div>
-
-          {/* ✅ LV besser => positiv + grün, Depot besser => negativ + rot */}
-          <div
-            className={`text-3xl font-bold mb-1 ${
-              lvBetter ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {lvBetter ? "+" : "-"}
-            {formatCurrency(Math.abs(difference))}
-          </div>
-
-          <div className="text-slate-600">{deltaText}</div>
-        </div>
+        <Vorsorgewaage
+          basis={`LV vs. Depot · ${mode === "gross" ? "brutto vor Steuern" : "netto nach Steuern"}`}
+          links={{
+            name: "Lebensversicherung",
+            imSatz: "der Lebensversicherung",
+            wert: li,
+            eingezahlt: results.total_contributions ?? 0,
+            farbe: "#2563eb",
+          }}
+          rechts={{
+            name: "Depot",
+            imSatz: "dem Depot",
+            wert: depot,
+            eingezahlt: results.total_contributions ?? 0,
+            farbe: "#16a34a",
+          }}
+        />
       </CardContent>
     </Card>
   );
