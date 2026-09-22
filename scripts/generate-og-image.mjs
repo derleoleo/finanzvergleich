@@ -1,4 +1,5 @@
-// Erzeugt public/og-image.png (1200×630, Vorschaubild für LinkedIn, WhatsApp & Co.).
+// Erzeugt public/og-image.png (1200×630, Vorschaubild für LinkedIn, WhatsApp & Co.)
+// und public/email-logo.png (Logo für Mail-Vorlagen, 440×96 = 220×48 in 2x).
 // Aufruf: node scripts/generate-og-image.mjs  (nutzt Playwright mit lokal installiertem Chrome)
 import { chromium } from "playwright";
 import path from "node:path";
@@ -57,5 +58,17 @@ const page = await browser.newPage({ viewport: { width: 1200, height: 630 } });
 await page.setContent(html, { waitUntil: "load" });
 await page.evaluate(() => document.fonts.ready);
 await page.screenshot({ path: ziel });
+
+// Mail-Logo: Mailprogramme zeigen SVG oft nicht an, daher PNG in doppelter Auflösung
+const logoHtml = `<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face { font-family: Inter; src: url("${font("inter-latin.woff2")}") format("woff2"); font-weight: 100 900; }
+* { margin: 0; } body { width: 220px; height: 48px; background: transparent; font-family: Inter, sans-serif; }
+.marke { display: flex; align-items: center; gap: 8px; height: 48px; font-size: 22px; font-weight: 700;
+  letter-spacing: -0.02em; color: #0f172a; padding-left: 3px; }
+</style></head><body><div class="marke">${mark(36)}Vorsorgewaage</div></body></html>`;
+const logoPage = await browser.newPage({ viewport: { width: 220, height: 48 }, deviceScaleFactor: 2 });
+await logoPage.setContent(logoHtml, { waitUntil: "load" });
+await logoPage.evaluate(() => document.fonts.ready);
+await logoPage.screenshot({ path: path.join(root, "public/email-logo.png"), omitBackground: true });
 await browser.close();
 console.log("og-image geschrieben:", ziel);
