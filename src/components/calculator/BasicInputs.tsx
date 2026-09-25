@@ -2,9 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Euro, Calendar, User, FileText, AlertTriangle } from "lucide-react";
 import { looksLikeName } from "@/utils/nameDetection";
+import EndalterHinweis, { aktuellesAlter } from "@/components/calculator/EndalterHinweis";
 
 type Props = {
   formData: {
@@ -18,31 +18,10 @@ type Props = {
   updateFormData: (field: string, value: unknown) => void;
 };
 
-function clampNumber(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function getCurrentAge(birthYear: number) {
-  const yearNow = new Date().getFullYear();
-  if (!birthYear || birthYear < 1900 || birthYear > yearNow) return 0;
-  return yearNow - birthYear;
-}
-
 export default function BasicInputs({ formData, updateFormData }: Props) {
   const birthYear = Number(formData.birth_year || 0);
-  const durationYears = Number(formData.contract_duration_years || 0);
 
-  const currentAge = getCurrentAge(birthYear);
-  const endAge = currentAge > 0 ? currentAge + durationYears : 0;
-
-  const applyPresetEndAge = (targetEndAge: number) => {
-    const ageNow = getCurrentAge(Number(formData.birth_year || 0));
-    // wenn birthYear noch nicht plausibel ist, nichts ändern
-    if (!ageNow) return;
-
-    const newDuration = clampNumber(targetEndAge - ageNow, 1, 80);
-    updateFormData("contract_duration_years", newDuration);
-  };
+  const currentAge = aktuellesAlter(birthYear);
 
   return (
     <Card className="border-0 shadow-lg bg-white">
@@ -136,36 +115,18 @@ export default function BasicInputs({ formData, updateFormData }: Props) {
               </div>
             </Label>
 
-            <div className="flex gap-2">
-              <NumericInput
-                id="contract_duration_years"
-                value={formData.contract_duration_years}
-                onChange={(val) => updateFormData("contract_duration_years", val)}
-                className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200"
-              />
+            <NumericInput
+              id="contract_duration_years"
+              value={formData.contract_duration_years}
+              onChange={(val) => updateFormData("contract_duration_years", val)}
+              className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white transition-all duration-200"
+            />
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => applyPresetEndAge(67)}
-                disabled={!currentAge}
-                className="whitespace-nowrap"
-                title="Setzt die Laufzeit so, dass das Endalter 67 ist"
-              >
-                Ende mit 67
-              </Button>
-            </div>
-
-            <div className="text-xs text-slate-500">
-              {endAge > 0 ? (
-                <>
-                  Endalter:{" "}
-                  <span className="font-semibold text-slate-700">{endAge}</span>
-                </>
-              ) : (
-                "Endalter wird aus Geburtsjahr + Laufzeit berechnet."
-              )}
-            </div>
+            <EndalterHinweis
+              geburtsjahr={formData.birth_year}
+              laufzeitJahre={formData.contract_duration_years}
+              onLaufzeitChange={(jahre) => updateFormData("contract_duration_years", jahre)}
+            />
           </div>
         </div>
 

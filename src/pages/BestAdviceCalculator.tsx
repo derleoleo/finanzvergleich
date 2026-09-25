@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import EndalterHinweis from "@/components/calculator/EndalterHinweis";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl, toNum } from "@/utils";
 import { BestAdviceCalculation } from "@/entities/BestAdviceCalculation";
@@ -135,7 +136,6 @@ export default function BestAdviceCalculator() {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
   const currentAge = getCurrentAge(toNum(formData.birth_year));
-  const endAge = currentAge > 0 ? currentAge + toNum(formData.contract_duration_years) : 0;
 
   // Alle LVs als einheitliche Liste
   const allLVs = [
@@ -359,7 +359,12 @@ export default function BestAdviceCalculator() {
                   <NumericInput value={formData.contract_duration_years}
                     onChange={(val) => update("contract_duration_years", val)}
                     className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white" />
-                  {endAge > 0 && <div className="text-xs text-slate-500">Endalter: <span className="font-semibold text-slate-700">{endAge}</span></div>}
+                  <EndalterHinweis
+                    geburtsjahr={formData.birth_year}
+                    laufzeitJahre={formData.contract_duration_years}
+                    onLaufzeitChange={(jahre) => update("contract_duration_years", jahre)}
+                    hinweisOhneGeburtsjahr="Endalter wird aus Geburtsjahr + Restlaufzeit berechnet."
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">

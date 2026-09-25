@@ -9,6 +9,7 @@
 // Nur sichtbar, wenn in den Voreinstellungen "Honorarberatung" aktiviert ist.
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import EndalterHinweis from "@/components/calculator/EndalterHinweis";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl, toNum } from "@/utils";
 import { UserDefaults, lvTaxOptionsFromDefaults } from "@/entities/UserDefaults";
@@ -257,6 +258,11 @@ export default function NetPolicyCalculator() {
                   <Label className="text-sm font-medium text-slate-700">Laufzeit (Jahre)</Label>
                   <NumericInput value={formData.contract_duration_years}
                     onChange={(v) => updateFormData("contract_duration_years", v)} className={inputClass} />
+                  <EndalterHinweis
+                    geburtsjahr={formData.birth_year}
+                    laufzeitJahre={formData.contract_duration_years}
+                    onLaufzeitChange={(jahre) => updateFormData("contract_duration_years", jahre)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">Rendite p.a. (%)</Label>
