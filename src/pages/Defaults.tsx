@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import {
   SlidersHorizontal, Save, CheckCircle, User, Calendar, TrendingUp,
   Shield, BarChart3, Calculator, TrendingDown, Wallet, RotateCcw, Percent,
@@ -202,14 +203,15 @@ export default function Defaults() {
                       : "Effektivkosten in Prozent"}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className={data.lv_cost_type === "eur" ? "font-semibold text-slate-800" : "text-slate-400"}>EUR</span>
-                  <Switch
-                    checked={data.lv_cost_type === "percent"}
-                    onCheckedChange={(v) => set("lv_cost_type", v ? "percent" : "eur")}
-                  />
-                  <span className={data.lv_cost_type === "percent" ? "font-semibold text-slate-800" : "text-slate-400"}>%</span>
-                </div>
+                <SegmentedToggle
+                  ariaLabel="Kostentyp"
+                  value={data.lv_cost_type === "percent" ? "percent" : "eur"}
+                  onChange={(wert) => set("lv_cost_type", wert)}
+                  options={[
+                    { value: "eur", label: "EUR" },
+                    { value: "percent", label: "%" },
+                  ]}
+                />
               </div>
 
               {data.lv_cost_type === "eur" ? (

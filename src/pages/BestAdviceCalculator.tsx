@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Switch } from "@/components/ui/switch";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 
 import {
   Target, TrendingUp, AlertCircle, Shield, Percent,
@@ -432,13 +432,16 @@ export default function BestAdviceCalculator() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 pt-1">
-                  <Switch
-                    checked={formData.current_product_tax_free}
-                    onCheckedChange={(checked) => update("current_product_tax_free", checked)}
+                  <Label className="text-sm font-medium text-slate-700">Besteuerung</Label>
+                  <SegmentedToggle
+                    ariaLabel="Besteuerung des Bestandsvertrags"
+                    value={formData.current_product_tax_free ? "frei" : "pflichtig"}
+                    onChange={(wert) => update("current_product_tax_free", wert === "frei")}
+                    options={[
+                      { value: "frei", label: "Steuerfrei (z.B. vor 2005)" },
+                      { value: "pflichtig", label: "Steuerpflichtig" },
+                    ]}
                   />
-                  <Label className="text-sm font-medium text-slate-700">
-                    {formData.current_product_tax_free ? "Steuerfrei (z.B. vor 2005)" : "Steuerpflichtig"}
-                  </Label>
                 </div>
               </div>
 
@@ -526,18 +529,21 @@ export default function BestAdviceCalculator() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 pt-1">
-                    <Switch
-                      checked={lv.current_product_tax_free}
-                      onCheckedChange={(checked) => {
+                    <Label className="text-sm font-medium text-slate-700">Besteuerung</Label>
+                    <SegmentedToggle
+                      ariaLabel="Besteuerung dieses Bestandsvertrags"
+                      value={lv.current_product_tax_free ? "frei" : "pflichtig"}
+                      onChange={(wert) => {
                         const updated = formData.extra_lvs.map((x) =>
-                          x.id === lv.id ? { ...x, current_product_tax_free: checked } : x
+                          x.id === lv.id ? { ...x, current_product_tax_free: wert === "frei" } : x
                         );
                         update("extra_lvs", updated);
                       }}
+                      options={[
+                        { value: "frei", label: "Steuerfrei (z.B. vor 2005)" },
+                        { value: "pflichtig", label: "Steuerpflichtig" },
+                      ]}
                     />
-                    <Label className="text-sm font-medium text-slate-700">
-                      {lv.current_product_tax_free ? "Steuerfrei (z.B. vor 2005)" : "Steuerpflichtig"}
-                    </Label>
                   </div>
                 </div>
               ))}
@@ -632,18 +638,15 @@ export default function BestAdviceCalculator() {
               <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                 <div className="flex items-center justify-between mb-4">
                   <Label className="text-sm font-medium text-slate-700">Kostentyp</Label>
-                  <div className="flex items-center gap-2">
-                    <Label className={`text-sm ${formData.lv_cost_type === "eur" ? "font-semibold text-slate-800" : "text-slate-500"}`}>
-                      Tatsächliche Kosten (€)
-                    </Label>
-                    <Switch
-                      checked={formData.lv_cost_type === "percent"}
-                      onCheckedChange={(checked) => update("lv_cost_type", checked ? "percent" : "eur")}
-                    />
-                    <Label className={`text-sm ${formData.lv_cost_type === "percent" ? "font-semibold text-slate-800" : "text-slate-500"}`}>
-                      Effektivkosten (%)
-                    </Label>
-                  </div>
+                  <SegmentedToggle
+                    ariaLabel="Kostentyp"
+                    value={formData.lv_cost_type === "percent" ? "percent" : "eur"}
+                    onChange={(wert) => update("lv_cost_type", wert)}
+                    options={[
+                      { value: "eur", label: "Tatsächliche Kosten (€)" },
+                      { value: "percent", label: "Effektivkosten (%)" },
+                    ]}
+                  />
                 </div>
 
                 {formData.lv_cost_type === "eur" ? (

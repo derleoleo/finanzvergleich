@@ -4,8 +4,8 @@ import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Shield, Percent } from "lucide-react";
 import MultiFundEditor, { type FundEntry } from "./MultiFundEditor";
 
@@ -74,38 +74,18 @@ export default function InsuranceInputs({ formData, updateFormData }: Props) {
             <Label className="text-sm font-medium text-slate-700">
               Kostentyp
             </Label>
-            <div className="flex items-center gap-2">
-              <Label
-                htmlFor="cost-type-switch"
-                className={`text-sm ${
-                  formData.lv_cost_type === "eur"
-                    ? "font-semibold text-slate-800"
-                    : "text-slate-500"
-                }`}
-              >
-                Tatsächliche Kosten (€)
-              </Label>
-
-              <Switch
-                id="cost-type-switch"
-                checked={formData.lv_cost_type === "percent"}
-                onCheckedChange={(checked: boolean) => {
-                  updateFormData("lv_cost_type", checked ? "percent" : "eur");
-                  if (checked) setShowEffectiveDetails(false);
-                }}
-              />
-
-              <Label
-                htmlFor="cost-type-switch"
-                className={`text-sm ${
-                  formData.lv_cost_type === "percent"
-                    ? "font-semibold text-slate-800"
-                    : "text-slate-500"
-                }`}
-              >
-                Effektivkosten (%)
-              </Label>
-            </div>
+            <SegmentedToggle
+              ariaLabel="Kostentyp"
+              value={formData.lv_cost_type === "percent" ? "percent" : "eur"}
+              onChange={(wert) => {
+                updateFormData("lv_cost_type", wert);
+                if (wert === "percent") setShowEffectiveDetails(false);
+              }}
+              options={[
+                { value: "eur", label: "Tatsächliche Kosten (€)" },
+                { value: "percent", label: "Effektivkosten (%)" },
+              ]}
+            />
           </div>
 
           {/* EUR = tatsächliche Kosten */}

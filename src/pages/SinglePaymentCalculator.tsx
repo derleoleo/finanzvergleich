@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Switch } from "@/components/ui/switch";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 
 import {
   DollarSign, TrendingUp, AlertCircle, Shield, Percent,
@@ -355,18 +355,15 @@ export default function SinglePaymentCalculator() {
               <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                 <div className="flex items-center justify-between mb-4">
                   <Label className="text-sm font-medium text-slate-700">Kostentyp</Label>
-                  <div className="flex items-center gap-2">
-                    <Label className={`text-sm ${formData.lv_cost_type === "eur" ? "font-semibold text-slate-800" : "text-slate-500"}`}>
-                      Tatsächliche Kosten (€)
-                    </Label>
-                    <Switch
-                      checked={formData.lv_cost_type === "percent"}
-                      onCheckedChange={(checked) => update("lv_cost_type", checked ? "percent" : "eur")}
-                    />
-                    <Label className={`text-sm ${formData.lv_cost_type === "percent" ? "font-semibold text-slate-800" : "text-slate-500"}`}>
-                      Effektivkosten (%)
-                    </Label>
-                  </div>
+                  <SegmentedToggle
+                    ariaLabel="Kostentyp"
+                    value={formData.lv_cost_type === "percent" ? "percent" : "eur"}
+                    onChange={(wert) => update("lv_cost_type", wert)}
+                    options={[
+                      { value: "eur", label: "Tatsächliche Kosten (€)" },
+                      { value: "percent", label: "Effektivkosten (%)" },
+                    ]}
+                  />
                 </div>
 
                 {formData.lv_cost_type === "eur" ? (
