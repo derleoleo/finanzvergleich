@@ -352,8 +352,12 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
 
     // --- Vergleichsdepot ---
     const nettoAufwand = eigenbeitrag - g.zusaetzlicheErstattung;
+    // Beide Seiten müssen denselben Betrag aus eigener Tasche kosten.
+    // Wird die Erstattung wieder eingezahlt, bleibt der eigene Aufwand der
+    // volle Eigenbeitrag – dann bekommt auch das Depot diesen Betrag.
+    const eigenerAufwand = e.erstattungReinvestieren ? eigenbeitrag : nettoAufwand;
     const depotBeitrag =
-      e.vergleichsmodus === 'gleicher_nettoaufwand' ? nettoAufwand : eigenbeitrag;
+      e.vergleichsmodus === 'gleicher_nettoaufwand' ? eigenerAufwand : eigenbeitrag;
     const depotWertJahresanfang = depotKapital;
     for (let m = 1; m <= 12; m++) {
       depotKapital = depotKapital * (1 + rDepotMonat) + depotBeitrag / 12;

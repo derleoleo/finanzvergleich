@@ -63,8 +63,8 @@ export default function CalculatorDetail() {
         return;
       }
 
-      const allCalcs = await Calculation.list();
-      const calc = allCalcs.find((c) => String(c.id) === String(id));
+      // Direkt über die ID laden, statt alle Berechnungen zu holen und zu suchen
+      const calc = await Calculation.get(id);
 
       if (calc) {
         setCalculation(calc);
@@ -153,10 +153,27 @@ export default function CalculatorDetail() {
     setIsRecalculating(false);
   };
 
-  if (isLoading || !calculation || !formData) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-8 flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-slate-300 border-t-slate-800 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Ohne Datensatz nicht endlos weiterdrehen, sondern sagen, was los ist
+  if (!calculation || !formData) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-8 flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <p className="text-slate-700">Diese Berechnung wurde nicht gefunden.</p>
+          <p className="text-sm text-slate-500">
+            Möglicherweise wurde sie gelöscht oder gehört zu einem anderen Konto.
+          </p>
+          <Button variant="outline" onClick={() => navigate(createPageUrl("Results"))}>
+            Zu allen Ergebnissen
+          </Button>
+        </div>
       </div>
     );
   }

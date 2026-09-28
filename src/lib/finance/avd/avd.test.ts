@@ -890,3 +890,15 @@ describe('Auszahlvergleich AVD vs. Depot (F01)', () => {
     expect(r.depot.monatsentnahmeVergleich).toBeGreaterThan(r.depot.endkapitalNetto / monate);
   });
 });
+
+describe('Budgetgleichheit bei reinvestierter Erstattung (F05)', () => {
+  it('gibt dem Vergleichsdepot denselben Eigenaufwand', () => {
+    const basis = eingabe({ vergleichsmodus: 'gleicher_nettoaufwand', erstattungReinvestieren: false });
+    const reinvest = eingabe({ vergleichsmodus: 'gleicher_nettoaufwand', erstattungReinvestieren: true });
+    const ohne = simuliereAvd(basis);
+    const mit = simuliereAvd(reinvest);
+    // Wird die Erstattung wieder angelegt, zahlt der Kunde den vollen
+    // Eigenbeitrag – das Vergleichsdepot bekommt dann mehr als vorher.
+    expect(mit.depot.eingezahlt).toBeGreaterThan(ohne.depot.eingezahlt);
+  });
+});

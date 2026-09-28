@@ -41,23 +41,49 @@ jobs:
               "single_payment_calculations",
               "best_advice_calculations",
               "pension_gap_calculations",
+              "finanzvergleich_consents",
+              "redeemed_codes",
           ]
+
+          # Supabase liefert pro Anfrage hoechstens 1000 Zeilen. Ohne Blaettern
+          # wuerde der Export ab dieser Groesse unbemerkt abgeschnitten.
+          SEITE = 1000
 
           for table in tables:
               print(f"Exportiere: {table}")
-              r = requests.get(
-                  f"{url}/rest/v1/{table}?select=*",
-                  headers=headers,
-                  timeout=30,
-              )
-              if not r.ok:
-                  print(f"FEHLER bei {table}: HTTP {r.status_code} – {r.text}")
+              zeilen = []
+              start = 0
+              while True:
+                  r = requests.get(
+                      f"{url}/rest/v1/{table}?select=*",
+                      headers={**headers, "Range": f"{start}-{start + SEITE - 1}",
+                               "Prefer": "count=exact"},
+                      timeout=60,
+                  )
+                  if not r.ok:
+                      print(f"FEHLER bei {table}: HTTP {r.status_code} – {r.text}")
+                      sys.exit(1)
+                  teil = r.json()
+                  zeilen.extend(teil)
+                  bereich = r.headers.get("content-range", "")
+                  if len(teil) < SEITE:
+                      break
+                  start += SEITE
+
+              # Gegenprobe: Zeilenzahl der Datenbank gegen den Export
+              erwartet = None
+              if "/" in bereich and bereich.split("/")[-1].isdigit():
+                  erwartet = int(bereich.split("/")[-1])
+              if erwartet is not None and erwartet != len(zeilen):
+                  print(f"FEHLER bei {table}: {len(zeilen)} exportiert, {erwartet} laut Datenbank")
                   sys.exit(1)
-              data = r.json()
-              (backup_dir / f"{table}.json").write_text(json.dumps(data, indent=2, ensure_ascii=False))
-              print(f"  → {len(data)} Zeilen exportiert")
+
+              (backup_dir / f"{table}.json").write_text(json.dumps(zeilen, indent=2, ensure_ascii=False))
+              print(f"  → {len(zeilen)} Zeilen exportiert")
 
           print(f"\nAlle Tabellen gesichert in {backup_dir}/")
+          print("Hinweis: Auth-Benutzer, Schema und Zugriffsregeln (RLS) sind hier nicht")
+          print("enthalten - dafuer den Supabase-Dump nutzen, siehe supabase/README.md.")
           EOF
 
           tar -czf "vorsorgewaage_backup_$(date +%Y%m%d_%H%M%S).tar.gz" backup_*/

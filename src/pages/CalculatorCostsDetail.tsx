@@ -78,10 +78,7 @@ export default function CalculatorCostsDetail() {
         return;
       }
 
-      const all = await Calculation.list();
-      const found = all.find((x) => String(x.id) === String(id));
-
-      setCalc(found ?? null);
+      setCalc(await Calculation.get(id));
       setIsLoading(false);
     };
 

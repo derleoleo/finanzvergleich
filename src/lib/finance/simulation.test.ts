@@ -10,6 +10,7 @@ import {
   splitLvEffectiveCosts,
   weightedFundCosts,
 } from "./simulation";
+import { reductionInYield } from "./riy";
 import {
   calculateMonthlyReturn,
   calculateZillmerMonths,
@@ -54,18 +55,19 @@ function legacyLvSavingsPercent(args: {
   effectivePercent: number;
   fundTerPercent: number;
 }) {
+  // Effektivkosten mindern die Rendite (PRIIPs), sie sind keine Bestandsgebühr
   const r = calculateMonthlyReturn(args.annualReturn);
-  const effRate = args.effectivePercent / 100 / 12;
+  const rNetto = calculateMonthlyReturn(args.annualReturn - args.effectivePercent);
   let capital = 0;
   let fundCosts = 0;
   let totalContractCosts = 0;
   for (let m = 1; m <= args.months; m++) {
-    const fundCost = capital * (args.fundTerPercent / 100 / 12);
-    const effCost = capital * effRate;
+    const basis = Math.max(0, capital);
+    const fundCost = basis * (args.fundTerPercent / 100 / 12);
+    const effCost = basis * (r - rNetto);
     fundCosts += fundCost;
     totalContractCosts += effCost;
-    capital =
-      capital * (1 + r) + args.monthlyContribution - fundCost - effCost;
+    capital = capital * (1 + rNetto) + args.monthlyContribution - fundCost;
   }
   return { capital, fundCosts, totalContractCosts };
 }
@@ -457,5 +459,52 @@ describe("weightedFundCosts", () => {
       ongoing_costs_percent: 0,
       initial_charge_percent: 0,
     });
+  });
+});
+
+describe("Effektivkosten als Renditeminderung (F03)", () => {
+  it("eine Eingabe von 1,0 ergibt auch 1,0 Prozentpunkte Effektivkosten", () => {
+    const eingabe = {
+      months: 360,
+      annual_return_percent: 6,
+      monthly_contribution: 300,
+      funds: [{ allocation_eur: 300, ongoing_costs_percent: 0 }],
+      cost: { type: "percent" as const, effective_costs_percent: 1 },
+    };
+    const ergebnis = simulateLv(eingabe);
+    const riy = reductionInYield(ergebnis.gross_capital, 6, {
+      months: eingabe.months,
+      monthly_contribution: eingabe.monthly_contribution,
+    });
+    expect(riy).toBeCloseTo(1, 3);
+  });
+
+  it("ohne Kosten bleibt die Rendite unverändert", () => {
+    const ergebnis = simulateLv({
+      months: 120,
+      annual_return_percent: 5,
+      monthly_contribution: 100,
+      funds: [{ allocation_eur: 100, ongoing_costs_percent: 0 }],
+      cost: { type: "percent", effective_costs_percent: 0 },
+    });
+    const riy = reductionInYield(ergebnis.gross_capital, 5, {
+      months: 120,
+      monthly_contribution: 100,
+    });
+    expect(riy).toBeCloseTo(0, 6);
+  });
+});
+
+describe("Keine Kostengutschrift bei negativem Kapital (F07)", () => {
+  it("Fondskosten bleiben null, wenn das Kapital negativ ist", () => {
+    const ergebnis = simulateLv({
+      months: 12,
+      annual_return_percent: 5,
+      monthly_contribution: 1,
+      funds: [{ allocation_eur: 1, ongoing_costs_percent: 1 }],
+      cost: { type: "eur", acquisition_costs_eur: 1200, admin_costs_monthly_eur: 0 },
+    });
+    expect(ergebnis.costs.fund).toBeGreaterThanOrEqual(0);
+    expect(ergebnis.gross_capital).toBeLessThan(0); // Kosten bleiben sichtbar
   });
 });

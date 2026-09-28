@@ -170,7 +170,7 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
           ? contribution - monthlyZillmer
           : contribution;
 
-      const fundCost = capital * fundMonthlyRate;
+      const fundCost = Math.max(0, capital) * fundMonthlyRate;
       fundCosts += fundCost;
       adminCosts += adminMonthly;
 
@@ -184,23 +184,33 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
       });
     }
   } else {
-    const effRate = (Number(input.cost.effective_costs_percent) || 0) / 100 / 12;
+    // Effektivkosten sind eine Renditeminderung in Prozentpunkten p.a.
+    // (PRIIPs/Produktinformationsstelle), keine Bestandsgebühr auf das Kapital.
+    // Deshalb wird der Wert von der Rendite abgezogen; so ergibt eine Eingabe
+    // von 1,0 auch eine ausgewiesene Effektivkostenquote von 1,0 Prozentpunkten.
+    const effPercent = Number(input.cost.effective_costs_percent) || 0;
+    const netMonthlyReturn = calculateMonthlyReturn(
+      Number(input.annual_return_percent || 0) - effPercent
+    );
     let totalContractCosts = 0;
 
     for (let m = 1; m <= months; m++) {
       if (m > 1 && (m - 1) % 12 === 0) contribution *= dynamikFactor;
       contributionsCum += contribution;
 
-      const fundCost = capital * fundMonthlyRate;
-      const effCost = capital * effRate;
+      // Kosten nur auf positives Kapital – sonst entstünde eine Gutschrift
+      const basis = Math.max(0, capital);
+      const fundCost = basis * fundMonthlyRate;
+      // Ausgewiesener Kostenbetrag: der Teil des Wachstums, der durch die
+      // Renditeminderung verloren geht.
+      const effCost = basis * (monthlyReturn - netMonthlyReturn);
       fundCosts += fundCost;
       totalContractCosts += effCost;
 
       capital =
-        capital * (1 + monthlyReturn) +
+        capital * (1 + netMonthlyReturn) +
         contribution -
-        fundCost -
-        effCost;
+        fundCost;
 
       series.push({
         month: m,
@@ -260,7 +270,7 @@ export function simulateDepot(input: DepotSimulationInput): DepotSimulationResul
     const contribAfterInit = contribution - initCost;
 
     const depotCost = capital * depotMonthlyRate;
-    const fundCost = capital * fundMonthlyRate;
+    const fundCost = Math.max(0, capital) * fundMonthlyRate;
     depotCosts += depotCost;
     fundCosts += fundCost;
 

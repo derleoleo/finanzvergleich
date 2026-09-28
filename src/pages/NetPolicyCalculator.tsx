@@ -156,14 +156,19 @@ export default function NetPolicyCalculator() {
     const bruttoTax = taxOf(brutto.gross_capital, brutto.total_contributions);
     const nettoTax = taxOf(netto.gross_capital, netto.total_contributions);
     const bruttoNet = brutto.gross_capital - bruttoTax;
-    // Honorar separat gezahlt → ohne Verzinsung vom Netto-Ergebnis abgezogen
-    const nettoNet = netto.gross_capital - nettoTax - honorar;
+    // Das Honorar wird zu Beginn zusätzlich gezahlt. Für einen Vergleich bei
+    // gleichem Gesamtaufwand zählt nicht nur der Betrag, sondern auch die
+    // Rendite, die dieses Geld bis zum Ablauf erwirtschaftet hätte.
+    const honorarEndwert = honorar * Math.pow(1 + annualReturn / 100, years);
+    const nettoNet = netto.gross_capital - nettoTax - honorarEndwert;
 
     const stream = {
       monthly_contribution: monthly,
       months,
       dynamik_percent: toNum(formData.dynamik_percent),
     };
+    // Aufwandsseite der Nettopolice: Beiträge plus Honorar zu Beginn
+    const streamNetto = { ...stream, initial_capital: honorar };
 
     // Jahres-Serie (netto nach Steuern; Nettopolice inkl. Honorar-Abzug)
     const series: { year: number; age: number; brutto: number; netto: number }[] = [];
@@ -172,6 +177,7 @@ export default function NetPolicyCalculator() {
       const age = calculateAgeAtPayout(toNum(formData.birth_year), year);
       const b = brutto.series[m - 1];
       const n = netto.series[m - 1];
+      const honorarBisHier = honorar * Math.pow(1 + annualReturn / 100, year);
       const bTax = calculateLifeInsuranceTax(
         b.capital - b.contributions_cum, year, age, lvTaxOptions
       );
@@ -182,7 +188,7 @@ export default function NetPolicyCalculator() {
         year,
         age,
         brutto: Math.round(b.capital - bTax),
-        netto: Math.round(n.capital - nTax - honorar),
+        netto: Math.round(n.capital - nTax - honorarBisHier),
       });
     }
 
@@ -198,8 +204,10 @@ export default function NetPolicyCalculator() {
       netto_gross: Math.round(netto.gross_capital),
       netto_net: Math.round(nettoNet),
       netto_costs: Math.round(netto.costs.total + honorar),
+      honorar_endwert: Math.round(honorarEndwert),
+      // Honorar zählt zum Aufwand und verschlechtert damit auch die Effektivkosten
       netto_riy:
-        Math.round(reductionInYield(netto.gross_capital, annualReturn, stream) * 100) / 100,
+        Math.round(reductionInYield(netto.gross_capital, annualReturn, streamNetto) * 100) / 100,
       advantage: Math.round(nettoNet - bruttoNet),
       series,
     };
@@ -336,7 +344,7 @@ export default function NetPolicyCalculator() {
               wert: results.netto_net,
               eingezahlt: results.total_contributions,
               farbe: "#0d9488",
-              detail: `Kosten inkl. Honorar ${formatCurrency(results.netto_costs)} · Effektivkosten ${results.netto_riy.toLocaleString("de-DE", { minimumFractionDigits: 2 })} %-Pkt. p.a.`,
+              detail: `Kosten inkl. Honorar ${formatCurrency(results.netto_costs)} · Effektivkosten ${results.netto_riy.toLocaleString("de-DE", { minimumFractionDigits: 2 })} %-Pkt. p.a. · Honorar mit entgangener Rendite ${formatCurrency(results.honorar_endwert)}`,
             }}
           />
         </div>
