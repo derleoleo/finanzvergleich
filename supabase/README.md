@@ -36,6 +36,16 @@ npx supabase db dump --schema public --data-only=false --role-only -f supabase/r
 Danach die erzeugte Datei durchsehen: Enthält sie Daten oder Schlüssel, diese
 entfernen – hier gehört nur die Struktur hinein.
 
+## Stand der Zugriffsregeln (geprüft am 28.09.2026)
+
+Alle acht Tabellen haben RLS aktiv. Nutzer sehen und schreiben nur Zeilen mit
+`auth.uid() = user_id`. Auf `subscriptions` gibt es ausschließlich Leserechte –
+den Plan setzt nur der Stripe-Webhook über den Service-Role-Schlüssel.
+`redeemed_codes` hat RLS ohne Regeln, ist für Nutzer also komplett gesperrt.
+
+Offen war nur Kosmetik und der Nachweisschutz für Einwilligungen; beides
+behebt `migrations/20260928120000_rls_haerten.sql`.
+
 ## Worauf bei den Zugriffsregeln zu achten ist
 
 Für jede Tabelle mit Nutzerdaten (`calculations`, `single_payment_calculations`,
