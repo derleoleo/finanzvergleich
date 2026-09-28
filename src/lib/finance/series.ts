@@ -37,14 +37,21 @@ export function buildYearlySeries(args: {
   birth_year: number;
   lvTaxOptions?: LifeInsuranceTaxOptions;
   depotTaxOptions?: DepotTaxOptions;
+  /**
+   * Heutiges Alter zum Stichtag der gespeicherten Berechnung. Ohne diesen Wert
+   * wandert das Alter mit dem Kalenderjahr, und eine gespeicherte Berechnung
+   * zeigt im Folgejahr andere Steuern (Audit F13).
+   */
+  alter_heute?: number;
 }): YearPoint[] {
-  const { lv, depot, mode, birth_year, lvTaxOptions, depotTaxOptions } = args;
+  const { lv, depot, mode, birth_year, lvTaxOptions, depotTaxOptions, alter_heute } = args;
   const months = Math.min(lv.length, depot.length);
   const points: YearPoint[] = [];
 
   for (let m = 12; m <= months; m += 12) {
     const year = m / 12;
-    const age = calculateAgeAtPayout(birth_year, year);
+    const age =
+      alter_heute !== undefined ? alter_heute + year : calculateAgeAtPayout(birth_year, year);
     const lvPoint = lv[m - 1];
     const depotPoint = depot[m - 1];
 

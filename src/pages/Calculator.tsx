@@ -1,6 +1,8 @@
 // src/pages/Calculator.tsx
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { modellStempel } from "@/lib/finance/modell";
+import { calculateAgeAtPayout } from "@/components/shared/TaxCalculations";
 import { speicherFehlerText } from "@/utils/speicherFehler";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -261,6 +263,9 @@ export default function Calculator() {
       }),
       // Annahmen zum Berechnungszeitpunkt mitspeichern → geräteunabhängige Anzeige
       tax_settings: taxSettingsSnapshot(d),
+      // Modellstand und Stichtag – sonst driften gespeicherte und neu
+      // gezeichnete Werte auseinander (Audit F13)
+      ...modellStempel(calculateAgeAtPayout(formData.birth_year, years)),
     };
   };
 

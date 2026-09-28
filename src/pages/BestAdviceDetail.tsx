@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import ModellHinweis from "@/components/results/ModellHinweis";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { BestAdviceCalculation, type BestAdviceModel, type LVResult } from "@/entities/BestAdviceCalculation";
@@ -207,6 +208,8 @@ export default function BestAdviceDetail() {
         </div>
 
         {/* Ergebnis-Waage */}
+        <ModellHinweis stempel={calculation.results} />
+
         <div data-pdf-section="empfehlung">
           <Vorsorgewaage
             alsKarte

@@ -34,6 +34,13 @@ export type CalculationResults = {
   // (dann Fallback auf die lokalen UserDefaults)
   tax_settings?: StoredTaxSettings;
 
+  // Modellstand, Stichtag und Rechtsstand der Berechnung (Audit F13);
+  // ältere Datensätze: undefined
+  modell_version?: string;
+  bewertet_am?: string;
+  rechtsstand?: string;
+  alter_bei_auszahlung?: number;
+
   withdrawal_years?: number;
 };
 

@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { modellStempel } from "@/lib/finance/modell";
+import ModellHinweis from "@/components/results/ModellHinweis";
+import { calculateAgeAtPayout } from "@/components/shared/TaxCalculations";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Calculation, type CalculationModel } from "@/entities/Calculation";
@@ -138,6 +141,7 @@ export default function CalculatorDetail() {
       }),
       // Neu berechnen aktualisiert den Snapshot mit den aktuellen Annahmen
       tax_settings: taxSettingsSnapshot(d),
+      ...modellStempel(calculateAgeAtPayout(Number(formData.birth_year) || 0, years)),
     };
   };
 
@@ -220,6 +224,12 @@ export default function CalculatorDetail() {
             />
           )}
         </div>
+
+        <ModellHinweis
+          stempel={calculation.results}
+          onNeuBerechnen={handleRecalculate}
+          neuBerechnenLaeuft={isRecalculating}
+        />
 
         {/* ✅ Ergebnisse: Kacheln + Graph synchron (Brutto/Netto) */}
         {calculation.results && (

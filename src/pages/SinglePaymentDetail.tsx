@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import ModellHinweis from "@/components/results/ModellHinweis";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { SinglePaymentCalculation, type SinglePaymentModel } from "@/entities/SinglePaymentCalculation";
@@ -301,6 +302,8 @@ export default function SinglePaymentDetail() {
 
         {summaryResults && (
           <>
+            <ModellHinweis stempel={calculation.results} />
+
             <div data-pdf-section="ergebnis">
               <ResultsSummary results={summaryResults} mode={mode} />
             </div>

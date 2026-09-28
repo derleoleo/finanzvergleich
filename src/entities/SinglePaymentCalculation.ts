@@ -24,6 +24,13 @@ export type SinglePaymentResults = {
   depot_riy_percent?: number;
   // Steuer-Annahmen zum Berechnungszeitpunkt; ältere Datensätze: undefined
   tax_settings?: StoredTaxSettings;
+
+  // Modellstand, Stichtag und Rechtsstand der Berechnung (Audit F13);
+  // ältere Datensätze: undefined
+  modell_version?: string;
+  bewertet_am?: string;
+  rechtsstand?: string;
+  alter_bei_auszahlung?: number;
 };
 
 export type SinglePaymentModel = {

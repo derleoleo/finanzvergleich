@@ -1,0 +1,66 @@
+// Stempel für gespeicherte Berechnungen: Mit welchem Rechenmodell und zu
+// welchem Stichtag wurde gerechnet?
+//
+// Warum: Ergebnisse werden gespeichert, die Grafik wird beim Öffnen aber neu
+// gezeichnet. Ändert sich das Modell (z. B. Effektivkosten als Renditeminderung
+// statt Bestandsgebühr) oder der Kalender (Alter aus Geburtsjahr), passen
+// gespeicherte und neu gerechnete Werte sonst unbemerkt nicht mehr zusammen.
+//
+// Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
+// und eine Zeile in MODELL_HISTORIE ergänzen.
+
+export const MODELL_VERSION = "2026-09-28" as const;
+
+export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-09-28",
+    aenderung:
+      "Effektivkosten wirken als Renditeminderung (vorher Abzug vom Kapital); " +
+      "Honorar der Nettopolice mit Zeitwert; AVD-Depotentnahme mit Verzinsung; " +
+      "keine Kosten auf negatives Kapital.",
+  },
+  { version: "vor 2026-09-28", aenderung: "Ausgangsstand ohne Modellstempel." },
+];
+
+/** Rechtsstand, auf dem Steuer- und Förderlogik beruhen. */
+export const RECHTSSTAND =
+  "EStG-Tarif 2026 (§ 32a); Altersvorsorgereformgesetz, BGBl. 2026 I Nr. 156";
+
+export type ModellStempel = {
+  /** Version des Rechenmodells zum Zeitpunkt des Speicherns. */
+  modell_version: string;
+  /** Stichtag der Bewertung (ISO-Datum). */
+  bewertet_am: string;
+  /** Rechtsstand als Klartext für Auswertungen und PDF. */
+  rechtsstand: string;
+  /** Alter bei Auszahlung zum Stichtag – sonst wandert es mit dem Kalenderjahr. */
+  alter_bei_auszahlung?: number;
+};
+
+export function modellStempel(alterBeiAuszahlung?: number): ModellStempel {
+  return {
+    modell_version: MODELL_VERSION,
+    bewertet_am: new Date().toISOString().slice(0, 10),
+    rechtsstand: RECHTSSTAND,
+    ...(alterBeiAuszahlung !== undefined
+      ? { alter_bei_auszahlung: Math.round(alterBeiAuszahlung) }
+      : {}),
+  };
+}
+
+/** True, wenn die Berechnung mit einem anderen Modell erstellt wurde als dem heutigen. */
+export function stammtAusAelteremModell(stempel?: Partial<ModellStempel>): boolean {
+  return (stempel?.modell_version ?? "") !== MODELL_VERSION;
+}
+
+/** Anzeigetext für den Hinweis über abweichende Modellstände. */
+export function modellHinweis(stempel?: Partial<ModellStempel>): string {
+  const stand = stempel?.bewertet_am
+    ? `vom ${new Date(stempel.bewertet_am).toLocaleDateString("de-DE")}`
+    : "aus einer früheren Fassung";
+  return (
+    `Diese Berechnung stammt ${stand} und wurde mit einem älteren Rechenmodell erstellt. ` +
+    `Die gespeicherten Werte bleiben unverändert erhalten; Grafik und Tabelle zeichnet die App ` +
+    `mit dem aktuellen Modell. Für eine durchgehend aktuelle Auswertung neu berechnen.`
+  );
+}

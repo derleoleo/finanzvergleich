@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { modellStempel } from "@/lib/finance/modell";
 import { speicherFehlerText } from "@/utils/speicherFehler";
 import EndalterHinweis from "@/components/calculator/EndalterHinweis";
 import { useNavigate } from "react-router-dom";
@@ -257,6 +258,7 @@ export default function BestAdviceCalculator() {
       lvs_results,
       // Annahmen zum Berechnungszeitpunkt mitspeichern → geräteunabhängige Anzeige
       tax_settings,
+      ...modellStempel(age_at_payout),
     };
   };
 

@@ -67,6 +67,9 @@ export type Calc = {
     depot_gross: number;
     depot_net: number;
     tax_settings?: StoredTaxSettings;
+    modell_version?: string;
+    bewertet_am?: string;
+    alter_bei_auszahlung?: number;
   };
 };
 
@@ -165,6 +168,13 @@ export default function ResultsChart({
         birth_year: calculation.birth_year,
         lvTaxOptions: lvTaxOptionsFromSettings(taxSettings),
         depotTaxOptions: depotTaxOptionsFromSettings(taxSettings),
+        // Alter zum Stichtag der Berechnung, damit die Kurve im Folgejahr
+        // nicht plötzlich andere Steuern zeigt
+        alter_heute:
+          calculation.results?.alter_bei_auszahlung !== undefined
+            ? calculation.results.alter_bei_auszahlung -
+              Math.max(1, Math.round(lv.series.length / 12))
+            : undefined,
       });
     };
 
