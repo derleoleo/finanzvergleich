@@ -24,13 +24,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { NumericInput } from '@/components/ui/numeric-input';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { AvdCalculation } from '@/entities/AvdCalculation';
+import { modellStempel } from '@/lib/finance/modell';
+import { speicherFehlerText } from '@/utils/speicherFehler';
 import { Switch } from '@/components/ui/switch';
 import { formatCurrency, formatChartAxis } from '@/components/shared/CurrencyDisplay';
 import Vorsorgewaage from '@/components/results/Vorsorgewaage';
 import { usePDFExport } from '@/utils/usePDFExport';
 import PDFSectionDialog from '@/components/pdf/PDFSectionDialog';
 import {
-  PiggyBank, FileDown, ArrowLeft, AlertTriangle, Info, CheckCircle2,
+  PiggyBank, FileDown, ArrowLeft, AlertTriangle, Info, CheckCircle2, Save,
 } from 'lucide-react';
 import {
   ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid,
@@ -111,6 +115,25 @@ export default function AvdCalculator() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>(() => loadDraft());
   const [showReal, setShowReal] = useState(false);
+
+  // Speichern (Audit F14): ohne ?id= neu anlegen, mit ?id= aktualisieren
+  const [name, setName] = useState(
+    () => `Altersvorsorgedepot ${new Date().toLocaleDateString('de-DE')}`
+  );
+  const [gespeicherteId, setGespeicherteId] = useState<string | null>(null);
+  const [speichertGerade, setSpeichertGerade] = useState(false);
+  const [speicherHinweis, setSpeicherHinweis] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('id');
+    if (!id) return;
+    AvdCalculation.get(id).then((eintrag) => {
+      if (!eintrag) return;
+      setFormData((prev) => ({ ...prev, ...(eintrag.form as Partial<FormData>) }));
+      setName(eintrag.name);
+      setGespeicherteId(eintrag.id);
+    });
+  }, []);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isExporting, dialogOpen, openDialog, closeDialog, doExport } = usePDFExport();
 
@@ -227,6 +250,37 @@ export default function AvdCalculator() {
       deflatorFuer(formData.inflationPaJahr, ergebnis.jahreBisAuszahlung)
     : endVergleichNominal;
 
+  const speichern = async () => {
+    setSpeichertGerade(true);
+    setSpeicherHinweis(null);
+    try {
+      const nutzlast = {
+        name: name.trim() || 'Altersvorsorgedepot',
+        form: formData as unknown as Record<string, unknown>,
+        results: {
+          endkapital_nach_steuer: Math.round(endAvd),
+          vergleich_nach_steuer: Math.round(endDepot),
+          vergleich_name: vergleichName,
+          summe_foerderung: Math.round(ergebnis.summeFoerderung),
+          ...modellStempel(),
+        },
+      };
+      if (gespeicherteId) {
+        await AvdCalculation.update(gespeicherteId, nutzlast);
+        setSpeicherHinweis('Gespeichert.');
+      } else {
+        const neu = await AvdCalculation.create(nutzlast);
+        setGespeicherteId(neu.id);
+        window.history.replaceState(null, '', `?id=${neu.id}`);
+        setSpeicherHinweis('Gespeichert – jetzt unter „Alle Ergebnisse“ zu finden.');
+      }
+    } catch (e) {
+      console.error(e);
+      setSpeicherHinweis(speicherFehlerText(e));
+    }
+    setSpeichertGerade(false);
+  };
+
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-6" data-pdf-root>
@@ -244,10 +298,30 @@ export default function AvdCalculator() {
               </p>
             </div>
           </div>
-          <Button onClick={openDialog} disabled={isExporting} className="bg-slate-800 hover:bg-slate-700 text-white">
-            <FileDown className="w-4 h-4 mr-2" />
-            {isExporting ? 'Exportiere…' : 'PDF'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={speichern} disabled={speichertGerade} variant="outline">
+              <Save className="w-4 h-4 mr-2" />
+              {speichertGerade ? 'Speichere…' : gespeicherteId ? 'Aktualisieren' : 'Speichern'}
+            </Button>
+            <Button onClick={openDialog} disabled={isExporting} className="bg-slate-800 hover:bg-slate-700 text-white">
+              <FileDown className="w-4 h-4 mr-2" />
+              {isExporting ? 'Exportiere…' : 'PDF'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3" data-pdf-hide>
+          <Label htmlFor="avd-name" className="text-sm font-medium text-slate-700 shrink-0">
+            Name der Berechnung
+          </Label>
+          <Input
+            id="avd-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Bitte keine Klarnamen"
+            className={`${inputClass} sm:max-w-md`}
+          />
+          {speicherHinweis && <span className="text-sm text-slate-600">{speicherHinweis}</span>}
         </div>
 
         {/* Vergleichspartner – bestimmt, wogegen das AVD gerechnet wird */}

@@ -5,7 +5,8 @@
 //
 // Vereinfachung: Das Honorar wird separat gezahlt (nicht aus dem Vertrag
 // entnommen) und ohne Verzinsungseffekt vom Netto-Endwert abgezogen.
-// v1 ohne Supabase-Persistenz: nur localStorage-Draft + PDF-Export.
+// Berechnungen lassen sich speichern (Tabelle net_policy_calculations) und
+// über "Alle Ergebnisse" wieder öffnen; ungespeichertes bleibt als Draft lokal.
 // Nur sichtbar, wenn in den Voreinstellungen "Honorarberatung" aktiviert ist.
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -27,8 +28,12 @@ import { Label } from "@/components/ui/label";
 import { formatCurrency, formatChartAxis } from "@/components/shared/CurrencyDisplay";
 import Vorsorgewaage from "@/components/results/Vorsorgewaage";
 import { usePDFExport } from "@/utils/usePDFExport";
+import { NetPolicyCalculation } from "@/entities/NetPolicyCalculation";
+import { modellStempel } from "@/lib/finance/modell";
+import { speicherFehlerText } from "@/utils/speicherFehler";
+import { Input } from "@/components/ui/input";
 import PDFSectionDialog from "@/components/pdf/PDFSectionDialog";
-import { Handshake, FileDown, ArrowLeft } from "lucide-react";
+import { Handshake, FileDown, ArrowLeft, Save } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend,
@@ -88,6 +93,25 @@ export default function NetPolicyCalculator() {
   const [formData, setFormData] = useState<FormData>(() => loadDraft());
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isExporting, dialogOpen, openDialog, closeDialog, doExport } = usePDFExport();
+
+  // Speichern (Audit F14): ohne ?id= wird neu angelegt, mit ?id= aktualisiert
+  const [name, setName] = useState(
+    () => `Netto- vs. Bruttopolice ${new Date().toLocaleDateString("de-DE")}`
+  );
+  const [gespeicherteId, setGespeicherteId] = useState<string | null>(null);
+  const [speichertGerade, setSpeichertGerade] = useState(false);
+  const [speicherHinweis, setSpeicherHinweis] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("id");
+    if (!id) return;
+    NetPolicyCalculation.get(id).then((eintrag) => {
+      if (!eintrag) return;
+      setFormData((prev) => ({ ...prev, ...(eintrag.form as Partial<FormData>) }));
+      setName(eintrag.name);
+      setGespeicherteId(eintrag.id);
+    });
+  }, []);
 
   const updateFormData = (field: keyof FormData, value: number) => {
     setFormData((prev) => {
@@ -213,6 +237,37 @@ export default function NetPolicyCalculator() {
     };
   }, [formData]);
 
+  const speichern = async () => {
+    setSpeichertGerade(true);
+    setSpeicherHinweis(null);
+    try {
+      const nutzlast = {
+        name: name.trim() || "Netto- vs. Bruttopolice",
+        form: formData as unknown as Record<string, unknown>,
+        results: {
+          brutto_net: results.brutto_net,
+          netto_net: results.netto_net,
+          vorteil_nettopolice: results.advantage,
+          honorar: results.honorar,
+          ...modellStempel(),
+        },
+      };
+      if (gespeicherteId) {
+        await NetPolicyCalculation.update(gespeicherteId, nutzlast);
+        setSpeicherHinweis("Gespeichert.");
+      } else {
+        const neu = await NetPolicyCalculation.create(nutzlast);
+        setGespeicherteId(neu.id);
+        window.history.replaceState(null, "", `?id=${neu.id}`);
+        setSpeicherHinweis("Gespeichert – jetzt unter „Alle Ergebnisse“ zu finden.");
+      }
+    } catch (e) {
+      console.error(e);
+      setSpeicherHinweis(speicherFehlerText(e));
+    }
+    setSpeichertGerade(false);
+  };
+
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-6" data-pdf-root>
@@ -229,14 +284,36 @@ export default function NetPolicyCalculator() {
               </p>
             </div>
           </div>
-          <Button
-            onClick={openDialog}
-            disabled={isExporting}
-            className="bg-slate-800 hover:bg-slate-700 text-white"
-          >
-            <FileDown className="w-4 h-4 mr-2" />
-            {isExporting ? "Exportiere…" : "PDF"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={speichern} disabled={speichertGerade} variant="outline">
+              <Save className="w-4 h-4 mr-2" />
+              {speichertGerade ? "Speichere…" : gespeicherteId ? "Aktualisieren" : "Speichern"}
+            </Button>
+            <Button
+              onClick={openDialog}
+              disabled={isExporting}
+              className="bg-slate-800 hover:bg-slate-700 text-white"
+            >
+              <FileDown className="w-4 h-4 mr-2" />
+              {isExporting ? "Exportiere…" : "PDF"}
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3" data-pdf-hide>
+          <Label htmlFor="np-name" className="text-sm font-medium text-slate-700 shrink-0">
+            Name der Berechnung
+          </Label>
+          <Input
+            id="np-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Bitte keine Klarnamen"
+            className={`${inputClass} sm:max-w-md`}
+          />
+          {speicherHinweis && (
+            <span className="text-sm text-slate-600">{speicherHinweis}</span>
+          )}
         </div>
 
         {/* Eingaben */}

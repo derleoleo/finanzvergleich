@@ -5,17 +5,21 @@ import { Calculation, type CalculationModel } from "@/entities/Calculation";
 import { SinglePaymentCalculation, type SinglePaymentModel } from "@/entities/SinglePaymentCalculation";
 import { BestAdviceCalculation, type BestAdviceModel } from "@/entities/BestAdviceCalculation";
 import { PensionGapCalculation, type PensionGapModel } from "@/entities/PensionGapCalculation";
+import { AvdCalculation, type AvdModel } from "@/entities/AvdCalculation";
+import { NetPolicyCalculation, type NetPolicyModel } from "@/entities/NetPolicyCalculation";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Calculator, DollarSign, Target, TrendingDown, ArrowRight, Trash2 } from "lucide-react";
+import { BarChart3, Calculator, DollarSign, Target, TrendingDown, ArrowRight, Trash2, PiggyBank, Handshake } from "lucide-react";
 import { formatCurrency } from "@/components/shared/CurrencyDisplay";
 
 type AnyCalc =
   | { type: "sparvertrag"; data: CalculationModel }
   | { type: "einmalanlage"; data: SinglePaymentModel }
   | { type: "bestadvice"; data: BestAdviceModel }
-  | { type: "pensiongap"; data: PensionGapModel };
+  | { type: "pensiongap"; data: PensionGapModel }
+  | { type: "avd"; data: AvdModel }
+  | { type: "nettopolice"; data: NetPolicyModel };
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -32,12 +36,16 @@ export default function AllResults() {
       SinglePaymentCalculation.list("-created_date"),
       BestAdviceCalculation.list("-created_date"),
       PensionGapCalculation.list("-created_date"),
-    ]).then(([sparvertraege, einmalanlagen, bestAdvice, pensionGaps]) => {
+      AvdCalculation.list("-created_date"),
+      NetPolicyCalculation.list("-created_date"),
+    ]).then(([sparvertraege, einmalanlagen, bestAdvice, pensionGaps, avd, nettopolicen]) => {
       const all: AnyCalc[] = [
         ...sparvertraege.map((d): AnyCalc => ({ type: "sparvertrag", data: d })),
         ...einmalanlagen.map((d): AnyCalc => ({ type: "einmalanlage", data: d })),
         ...bestAdvice.map((d): AnyCalc => ({ type: "bestadvice", data: d })),
         ...pensionGaps.map((d): AnyCalc => ({ type: "pensiongap", data: d })),
+        ...avd.map((d): AnyCalc => ({ type: "avd", data: d })),
+        ...nettopolicen.map((d): AnyCalc => ({ type: "nettopolice", data: d })),
       ];
 
       all.sort((a, b) => new Date(b.data.created_date).getTime() - new Date(a.data.created_date).getTime());
@@ -58,6 +66,8 @@ export default function AllResults() {
         case "einmalanlage": await SinglePaymentCalculation.delete(item.data.id); break;
         case "bestadvice": await BestAdviceCalculation.delete(item.data.id); break;
         case "pensiongap": await PensionGapCalculation.delete(item.data.id); break;
+        case "avd": await AvdCalculation.delete(item.data.id); break;
+        case "nettopolice": await NetPolicyCalculation.delete(item.data.id); break;
       }
       setItems((prev) => prev.filter((x) => !(x.type === item.type && x.data.id === item.data.id)));
     } catch (err) {
@@ -72,6 +82,9 @@ export default function AllResults() {
       case "einmalanlage": navigate(createPageUrl("SinglePaymentDetail") + `?id=${item.data.id}`); break;
       case "bestadvice": navigate(createPageUrl("BestAdviceDetail") + `?id=${item.data.id}`); break;
       case "pensiongap": navigate(createPageUrl("PensionGapDetail") + `?id=${item.data.id}`); break;
+      // AVD und Nettopolice haben keine eigene Detailseite: der Rechner lädt die Eingaben
+      case "avd": navigate(createPageUrl("AvdCalculator") + `?id=${item.data.id}`); break;
+      case "nettopolice": navigate(createPageUrl("NetPolicyCalculator") + `?id=${item.data.id}`); break;
     }
   };
 
@@ -81,6 +94,8 @@ export default function AllResults() {
       case "einmalanlage": return "Depot vs. LV (einmalig)";
       case "bestadvice": return "BestAdvice";
       case "pensiongap": return "Rentenlücke";
+      case "avd": return "Altersvorsorgedepot";
+      case "nettopolice": return "Netto- vs. Bruttopolice";
     }
   };
 
@@ -90,6 +105,8 @@ export default function AllResults() {
       case "einmalanlage": return { Icon: DollarSign, color: "bg-green-100 text-green-600" };
       case "bestadvice": return { Icon: Target, color: "bg-purple-100 text-purple-600" };
       case "pensiongap": return { Icon: TrendingDown, color: "bg-red-100 text-red-600" };
+      case "avd": return { Icon: PiggyBank, color: "bg-teal-100 text-teal-600" };
+      case "nettopolice": return { Icon: Handshake, color: "bg-amber-100 text-amber-600" };
     }
   };
 
@@ -110,6 +127,14 @@ export default function AllResults() {
       const r = item.data.results;
       if (r.gap_already_covered) return "Keine Rentenlücke";
       return `Lücke: ${formatCurrency(r.monthly_gap)}/Monat · Sparrate benötigt: ${formatCurrency(r.monthly_savings_needed)}/Monat`;
+    }
+    if (item.type === "avd" && item.data.results) {
+      const r = item.data.results;
+      return `AVD: ${formatCurrency(r.endkapital_nach_steuer)} · ${r.vergleich_name}: ${formatCurrency(r.vergleich_nach_steuer)} (nach Steuern)`;
+    }
+    if (item.type === "nettopolice" && item.data.results) {
+      const r = item.data.results;
+      return `Nettopolice: ${formatCurrency(r.netto_net)} · Bruttopolice: ${formatCurrency(r.brutto_net)} (netto)`;
     }
     return null;
   };
