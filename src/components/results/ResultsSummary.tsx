@@ -38,13 +38,13 @@ export default function ResultsSummary({ results, mode, onModeChange }: Props) {
 
   const lvBetter = difference >= 0;
 
+  const prozentText = Math.abs(percentageDifference).toLocaleString("de-DE", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
   const deltaText = lvBetter
-    ? `Das LV-Ergebnis liegt um ${Math.abs(percentageDifference).toFixed(
-        1
-      )}% über dem Depot.`
-    : `Das Depot-Ergebnis liegt um ${Math.abs(percentageDifference).toFixed(
-        1
-      )}% über der LV.`;
+    ? `Das LV-Ergebnis liegt um ${prozentText} % über dem Depot.`
+    : `Das Depot-Ergebnis liegt um ${prozentText} % über der LV.`;
 
   return (
     <Card className="bg-linear-to-r from-white to-slate-50 border-0 shadow-lg">

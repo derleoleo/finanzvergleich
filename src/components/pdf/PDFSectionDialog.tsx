@@ -36,12 +36,25 @@ export default function PDFSectionDialog({ sections, isExporting, onExport, onCl
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+    <div
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      // Klick auf den abgedunkelten Rand schließt, wie bei Dialogen üblich
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pdf-dialog-titel"
+        tabIndex={-1}
+        ref={(el) => el?.focus()}
+        onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4 outline-none"
+      >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900">PDF erstellen</h2>
+          <h2 id="pdf-dialog-titel" className="text-lg font-bold text-slate-900">PDF erstellen</h2>
           <button
             onClick={onClose}
+            aria-label="Dialog schließen"
             className="text-slate-400 hover:text-slate-600 transition-colors"
           >
             <X className="w-5 h-5" />

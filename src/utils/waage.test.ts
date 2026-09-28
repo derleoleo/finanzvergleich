@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   MAX_NEIGUNG_GRAD,
+  MIN_NEIGUNG_GRAD,
   istGleichauf,
   mehrProzent,
   relativerUnterschied,
@@ -27,10 +28,16 @@ describe("waageNeigung", () => {
     expect(waageNeigung(80_000, 100_000)).toBeCloseTo(-waageNeigung(100_000, 80_000));
   });
 
-  it("wächst linear bis zum Vollausschlag bei 20 %", () => {
-    // 10 % bezogen auf die größere Seite → 0,5 × 12° = 6°
-    expect(waageNeigung(90_000, 100_000)).toBeCloseTo(6);
+  it("wächst von der Mindestneigung bis zum Vollausschlag bei 20 %", () => {
+    // 10 % bezogen auf die größere Seite → 2,5° + 0,5 × (12° − 2,5°) = 7,25°
+    expect(waageNeigung(90_000, 100_000)).toBeCloseTo(7.25);
     expect(waageNeigung(80_000, 100_000)).toBeCloseTo(MAX_NEIGUNG_GRAD);
+  });
+
+  it("neigt sich auch bei kleinen Unterschieden sichtbar", () => {
+    // 1 % wäre ohne Mindestneigung nur 0,6° – praktisch unsichtbar
+    expect(waageNeigung(100_000, 101_000)).toBeGreaterThanOrEqual(MIN_NEIGUNG_GRAD);
+    expect(waageNeigung(100_000, 101_000)).toBeLessThan(MIN_NEIGUNG_GRAD + 1);
   });
 
   it("begrenzt die Neigung", () => {

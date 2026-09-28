@@ -8,6 +8,12 @@ export const MAX_NEIGUNG_GRAD = 12;
 export const VOLLAUSSCHLAG_AB = 0.2;
 /** Unterhalb dieses relativen Unterschieds gelten beide Seiten als gleichauf (0,5 %). */
 export const GLEICHAUF_BIS = 0.005;
+/**
+ * Mindestneigung, sobald die Seiten nicht mehr gleichauf sind. Ohne sie wären
+ * kleine Unterschiede (z. B. 1 %) mit 0,6° praktisch unsichtbar, obwohl die
+ * Waage eine Aussage trifft.
+ */
+export const MIN_NEIGUNG_GRAD = 2.5;
 
 /**
  * Relativer Unterschied bezogen auf die größere Seite (−1 … 1).
@@ -30,7 +36,8 @@ export function istGleichauf(links: number, rechts: number): boolean {
 export function waageNeigung(links: number, rechts: number): number {
   const rel = relativerUnterschied(links, rechts);
   if (Math.abs(rel) < GLEICHAUF_BIS) return 0;
-  const grad = (Math.min(Math.abs(rel), VOLLAUSSCHLAG_AB) / VOLLAUSSCHLAG_AB) * MAX_NEIGUNG_GRAD;
+  const anteil = Math.min(Math.abs(rel), VOLLAUSSCHLAG_AB) / VOLLAUSSCHLAG_AB;
+  const grad = MIN_NEIGUNG_GRAD + anteil * (MAX_NEIGUNG_GRAD - MIN_NEIGUNG_GRAD);
   return Math.sign(rel) * grad;
 }
 
