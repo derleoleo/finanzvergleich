@@ -17,6 +17,13 @@ as $$
     from public.subscriptions s
     where s.user_id = p_user_id
       and s.status in ('active', 'trialing')
+      -- Ohne Stripe-Abo (Testcode) beendet kein Ereignis den Zugang,
+      -- deshalb zählt dort das Enddatum.
+      and (
+        s.stripe_subscription_id is not null
+        or s.current_period_end is null
+        or s.current_period_end > now()
+      )
   );
 $$;
 

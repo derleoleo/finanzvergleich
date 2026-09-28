@@ -65,11 +65,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: "Interner Fehler" });
   }
 
+  // Ein laufendes bezahltes Abo darf ein Testcode nicht überschreiben
+  const { data: bestehend } = await supabaseAdmin
+    .from("subscriptions")
+    .select("status, stripe_subscription_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (bestehend?.stripe_subscription_id && bestehend.status === "active") {
+    return res.status(400).json({ error: "Sie haben bereits ein aktives Abo." });
+  }
+
   // Subscription auf Premium (30 Tage) setzen
   const trialEnd = new Date();
   trialEnd.setDate(trialEnd.getDate() + 30);
 
-  await supabaseAdmin.from("subscriptions").upsert(
+  const { error: upsertError } = await supabaseAdmin.from("subscriptions").upsert(
     {
       user_id: user.id,
       plan: "business",
@@ -80,6 +91,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     },
     { onConflict: "user_id" }
   );
+
+  if (upsertError) {
+    console.error("redeem-code: Freischaltung fehlgeschlagen", upsertError);
+    return res.status(500).json({
+      error: "Der Code wurde registriert, die Freischaltung schlug aber fehl. Bitte melden Sie sich bei info@vorsorgewaage.de.",
+    });
+  }
 
   return res.status(200).json({ success: true });
 }

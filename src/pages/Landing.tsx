@@ -105,7 +105,7 @@ export default function Landing() {
                 to="/login"
                 className="inline-flex items-center justify-center gap-2 bg-brand-cyan hover:bg-brand-blue text-white font-semibold px-6 py-3 rounded-lg transition-colors text-sm"
               >
-                Demo starten <ArrowRight className="w-4 h-4" />
+                Kostenlos starten <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 to={createPageUrl("Pricing")}
@@ -314,8 +314,8 @@ export default function Landing() {
               },
               {
                 icon: Shield,
-                title: "Teams & Agenturen",
-                desc: "Unbegrenzte Berechnungen, gemeinsame Voreinstellungen und Branding für das gesamte Team.",
+                title: "Viel-Rechner",
+                desc: "Unbegrenzte Berechnungen, eigene Voreinstellungen und das eigene Logo auf jeder Auswertung.",
               },
             ].map((item) => (
               <div key={item.title} className="p-6 rounded-2xl border border-slate-100 bg-slate-50">
@@ -452,7 +452,7 @@ export default function Landing() {
             to="/login"
             className="inline-flex items-center gap-2 bg-white text-brand-blue hover:bg-blue-50 font-bold px-8 py-3.5 rounded-xl transition-colors"
           >
-            Demo starten <ArrowRight className="w-4 h-4" />
+            Kostenlos starten <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </section>

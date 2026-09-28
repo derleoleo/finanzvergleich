@@ -2,6 +2,8 @@
 
 Stand: 28. September 2026. Zielgruppe laut Auftrag: Finanzberater und Vermittler allgemein. Produktphase: erste Testnutzer/Pilotkunden.
 
+**Abschließender Statusabgleich:** Während der Prüfung wurde parallel am Produkt weitergearbeitet. Die Befunde dokumentieren deshalb auch zuvor reproduzierte Zustände. F02 (genannte Ertragsanteile) ist korrigiert. F01 ist teilweise korrigiert: Das Depot nutzt inzwischen ebenfalls eine Annuitätenformel; Erträge während der Depot-Auszahlphase bleiben aber laut neuem Code ausdrücklich unversteuert. Ein vollständiger Nettovergleich ist damit weiterhin offen. F08 prüft inzwischen das Ablaufdatum in Frontend und SQL, und Code-Upsert-Fehler werden gemeldet; atomare Codeeinlösung und der Nachweis der ausgerollten Migration bleiben offen. F09 meldet inzwischen Subscription-Schreibfehler mit HTTP 500; Schutz gegen doppelte/veraltete Ereignisse und Mehrfachabos bleibt offen. Diese Änderungen stammen nicht aus diesem Audit. Der nachfolgende Text und die Browserzahlen belegen die jeweils untersuchten Zustände, nicht eine Behauptung, alle Fehler seien im neuesten Arbeitsstand noch unverändert vorhanden.
+
 ## Entscheidungsvorlage
 
 Vorsorgewaage besitzt bereits mehr Module, als ein fokussierter MVP benötigt. Die größte Lücke liegt zwischen dem Versprechen eines nachvollziehbaren Beratungsvergleichs und der Absicherung dieses Vergleichs: einheitliche Zahlungsströme, korrekte Kostenbegriffe, reproduzierbare Ergebnisse, vollständige Speicherung und zuverlässiger Betrieb.
@@ -14,7 +16,7 @@ Empfehlung: zunächst einen klar abgegrenzten Beratungsfall hervorragend lösen:
 
 - Gelesen: Routing, Authentifizierung, Abomodell, API-Funktionen, Datenzugriff, zentrale Rechenmodule, Rechnerseiten, Ergebnisdarstellung, Exportcode, lokale Speicherung, CI/Backup und ausgewählte Rechtstexte.
 - Ausgeführt: vorhandene Unit-Tests, Produktionsbuild, ESLint und zusätzliche lokale Rechenproben.
-- Im Browser geprüft: lokale Landingpage und Anmeldeseite. Keine Anmeldung, keine bezahlten Aktionen und keine produktiven Kundendatensätze benutzt.
+- Im Browser geprüft: lokale Landingpage, Anmeldung durch den Nutzer, anschließend ein synthetischer Sparplan im bereitgestellten Testkonto, Netto-Umschaltung, PDF-Dialog und Wiederöffnung nach Neuladen, AVD-Ergebnisdarstellung, Rentenbeginn-Grenzfall und Verlustszenario im Entnahmeplan. Keine bezahlten Aktionen oder echten Mandantendaten als Rechenbeispiele benutzt; vorhandene fremde Berechnungen wurden nicht geöffnet oder verändert.
 - Marktvergleich: öffentlich zugängliche Anbieterinformationen; keine gekauften Testkonten, keine unabhängige Zertifizierung der Wettbewerberrechnungen. Anbieterbehauptungen sind als solche zu verstehen.
 - Nicht verifiziert: tatsächlich ausgerollte Datenbankregeln, Stripe-Konfiguration, E-Mail-Zustellung, Restore eines Cloudbackups, eingeloggte End-to-End-Abläufe und PDF-Layout aller Rechner.
 - Während der Untersuchung lagen umfangreiche fremde/uncommittete Änderungen vor. Der Bericht bezieht sich auf den gelesenen Arbeitsstand, nicht auf eine unveränderliche Releaseversion. Keine Produktdateien wurden durch diesen Audit absichtlich geändert; hinzugefügt wurden Bericht und Rechenproben.
@@ -25,7 +27,7 @@ Sieben implementierte Rechner: Sparvertrag, Einmalanlage, BestAdvice, Netto-/Bru
 
 Positiv: gemeinsame monatliche LV-/Depot-Engine, separate Steuerfunktionen, gewichtete Fondskosten, Dynamik, Ergebnisdiagramme, neutrale Waagenvisualisierung, Steuer-Snapshots für neuere Berechnungen, PDF-Branding, Supabase-Anmeldung, Stripe-Preisliste mit Allowlist und signierte Webhooks. Das AVD trennt gefördertes und ungefördertes Kapital. Das sind brauchbare Grundlagen.
 
-Aktueller Prüfstatus: **146 Tests in sechs Dateien bestanden; Lint ohne Fehler, mit sechs Warnungen; Build bestanden.** Der zuvor beobachtete jsPDF-Typfehler ist im neueren Arbeitsstand nicht mehr reproduzierbar. Der Build warnt weiterhin vor zyklischen Recharts-Chunks und einem initialen Chunk über 500 kB. Bestandene Tests bestätigen die geprüften Fälle, nicht die fachliche Vollständigkeit.
+Prüfstatus: Zunächst **146 Tests in sechs Dateien bestanden; Lint ohne Fehler, mit sechs Warnungen; Build bestanden.** Nach parallel eingegangenen Korrekturen wurden um 23:23 Uhr erneut **150 Tests in sechs Dateien erfolgreich ausgeführt**. Build und Lint beziehen sich auf den vorherigen Prüfstand; sie wurden nach diesen letzten externen Änderungen nicht erneut ausgeführt. Der zuvor beobachtete jsPDF-Typfehler war beim erfolgreichen Build nicht mehr reproduzierbar. Der Build warnte weiterhin vor zyklischen Recharts-Chunks und einem initialen Chunk über 500 kB. Bestandene Tests bestätigen die geprüften Fälle, nicht die fachliche Vollständigkeit.
 
 ## Priorisierte Befunde
 
@@ -39,11 +41,11 @@ P1: vor breiterem Vertrieb bzw. Verwendung der betroffenen Aussage beheben. P2: 
 
 Abhilfe: identische Auszahlungsdauer und Renditebasis; je Hülle Kosten, steuerliche Zahlungsströme und Restkapital modellieren. Leibrente separat behandeln, weil lebenslange Zahlung und endlicher Entnahmeplan unterschiedliche Leistungen sind. Abnahme: bei ausgeschalteten Steuern und identischen Kosten/Kapital/Renditen identische Entnahmebeträge.
 
-**F02 – Mehrere Ertragsanteile in der AVD-Tabelle sind falsch. Abgleich mit amtlicher Tabelle.**
+**F02 – Mehrere Ertragsanteile waren falsch; im Verlauf des Audits anderweitig korrigiert.**
 
 `src/lib/finance/avd/config.ts`: beispielsweise Alter 61 = 21 %, 66 = 17 %, 70 = 14 %. In der amtlichen Tabelle stehen für 60–61 Jahre 22 %, für 65–66 Jahre 18 % und für 69–70 Jahre 15 %. Alter 66 und 70 liegen unmittelbar im vorgesehenen AVD-Auszahlungsbereich. [§ 22 EStG](https://www.gesetze-im-internet.de/estg/__22.html).
 
-Abhilfe: vollständige Tabelle und Grenzalter anhand der Quelle testen. Zusätzlich fachlich klären, wann Ertragsanteil, Unterschiedsbetrag oder andere Regeln auf ungeförderte Leistungen anwendbar sind. Das bloße Korrigieren der Tabelle validiert noch nicht das gesamte Auszahlungsmodell.
+Nachprüfung um ca. 23:14 Uhr: Die Werte 61, 66 und 70 sind im aktuellen Arbeitsstand auf 22 %, 18 % und 15 % korrigiert. Diesen Teil nicht mehr als offenen Fehler zählen. Weiterhin vollständige Tabelle und Grenzalter anhand der Quelle testen. Zusätzlich fachlich klären, wann Ertragsanteil, Unterschiedsbetrag oder andere Regeln auf ungeförderte Leistungen anwendbar sind. Das bloße Korrigieren der Tabelle validiert noch nicht das gesamte Auszahlungsmodell.
 
 **F03 – „Effektivkosten“ werden als laufender Kapitalabzug umgesetzt. Reproduziert.**
 
@@ -129,7 +131,33 @@ Abhilfe: geeigneter Datenbank-/Auth-Backupplan, paginierter Export falls weiter 
 
 **F21 – Testabdeckung deckt noch keinen Beratungsabschluss ab.** Sechs Unit-Testdateien, aber keine nachgewiesenen durchgängigen Auth-, Abrechnungs-, RLS-, Speichern/Wiederöffnen- oder PDF-Tests. `api/` ist nicht in den gelesenen TypeScript-Projekt-Includes enthalten. API-Typecheck und wenige aussagekräftige End-to-End-Tests sind wichtiger als viele weitere rein interne Rechentests.
 
-**F22 – Export ist eine Bildschirmaufnahme, kein eigenständiger Reportdatensatz.** Der PDF-Code verändert temporär DOM-Layout und rendert sichtbare Abschnitte. Das kann funktionieren, muss aber für lange Tabellen, kleine Fenster, Logos und mehrere Seiten geprüft werden. Ein unveränderlicher Report aus einem gespeicherten Berechnungssnapshot wäre zuverlässiger. PDF-Layout wurde hinter Anmeldung nicht verifiziert.
+**F22 – Export ist eine Bildschirmaufnahme, kein eigenständiger Reportdatensatz.** Der PDF-Code verändert temporär DOM-Layout und rendert sichtbare Abschnitte auf eine einzelne PDF-Seite mit variabler Höhe. Das kann funktionieren, muss aber für lange Tabellen, kleine Fenster, Logos und Druck auf A4 geprüft werden. Ein unveränderlicher Report aus einem gespeicherten Berechnungssnapshot wäre zuverlässiger. Im Browserdialog sind die Eingaben standardmäßig nicht ausgewählt. Der Exportversuch schloss den Dialog ohne sichtbare Fehlermeldung; im automatisierten Browser war danach weder ein Download noch ein PDF-Tab auffindbar. Der Code versucht zuerst ein Blob-Popup und erst bei blockiertem Popup einen Download. Damit ist der Export in dieser Browserumgebung nicht bestätigt; das beweist noch keinen allgemeinen Exportfehler. Eine visuelle Prüfung der erzeugten PDF war mangels zugänglicher Datei nicht möglich.
+
+### Ergänzung: tatsächlicher Browser-Test
+
+Der synthetische Datensatz `AUDIT-2026-09-28-Testfall` wurde im Testkonto gespeichert und bleibt für die Nachprüfung erhalten. 200 €/Monat, 25 Jahre, 5 % Rendite; LV 2.000 € Abschlusskosten, 6 €/Monat Verwaltung und 0,3 % TER; Depot 0,5 % TER plus 0,25 % Depotkosten. Ergebnis: 60.000 € Beiträge; LV brutto 103.088 €, netto 99.224 €; Depot brutto 104.917 €, netto 96.624 €. Netto-Kacheln, Chart-Endwerte und Tabelle stimmen für diesen Fall überein. Neuladen ruft denselben Fall erfolgreich wieder auf. Das bestätigt den grundlegenden Speichern-/Laden-Ablauf, nicht die Isolation zwischen zwei Nutzern. Screenshot: `audit-testfall-2026-09-28.png` neben diesem Bericht.
+
+Weitere Browserbefunde:
+
+- AVD-Beispiel mit 150 €/Monat, Start 2027, Geburtsjahr 1985, 5 % Rendite und Auszahlung 67–85: 571 € Nettoleistung neben 305 € Depotentnahme. Die unterschiedlichen Berechnungsgrundlagen aus F01 sind somit unmittelbar im UI wirksam. Die Zahlen sind beobachtete Modellausgaben, keine validierte Empfehlung.
+- Zweiter gespeicherter Testfall `AUDIT-2026-09-28-Rentenbeginn`: Geburtsjahr 1959, Renteneintritt 67 im Jahr 2026, 3.000 € Bedarf, 1.500 € Rente, 20.000 € Kapital, 5 % Rendite. Das UI zeigt 248.309 € Kapitalbedarf und 228.309 € verbleibende Lücke, zugleich **„Empfohlene Sparrate 0 €/Monat“**. F15 ist damit praktisch reproduziert. Diese falsche Handlungsaussage sollte wie P1 behandelt werden. Korrekt wäre ein Hinweis auf fehlende Ansparzeit und eine gesonderte Sofortkapital-/Entnahmebetrachtung.
+- Entnahmeplan mit 100.000 € Startkapital und −5 % Rendite: Jahr 0 fällt auf 95.000 €, Jahr 1 nach 12.000 € Entnahme auf 78.850 €. Die Spalte „Wachstum“ zeigt jeweils einen Strich statt des Verlusts. Verlustdarstellung aus F15 bestätigt. Die Oberfläche erklärt immerhin ausdrücklich Jahr 0 ohne Entnahme und die Schlussentnahme. Nach dem Test wurden manuelles Kapital und Rendite auf ihre vorherigen lokalen Werte zurückgesetzt.
+- In AVD und Rentenlücke haben viele Zahlenfelder im Accessibility-Baum keine Namen, obwohl sichtbare Beschriftungen vorhanden sind. Die Labels sollten über `htmlFor`/`id` oder `aria-labelledby` zugeordnet werden; anschließend Tastatur- und Screenreaderprüfung.
+
+**F23 – AVD-Chart und Netto-Aussage verwenden unterschiedliche Größen. P1, im Code und Seitenkontext bestätigt.** `verlaufsdaten` nutzt beim AVD `kapitalGesamt`, beim Depot das laufende Kapital nach Vorabsteuer, aber vor Schlussbesteuerung. Direkt unter dem Chart steht „Beide Seiten nach Steuern“, während die Waage darüber Nachsteuer-Endwerte nutzt. Abhilfe: Diagramm eindeutig als Ansparvermögen vor Auszahlungs-/Veräußerungssteuer kennzeichnen oder eine fachlich definierte Netto-Serie verwenden. Abnahme: Beschriftung, Tooltip, Schlusswert und Waage sind konsistent; insbesondere keine steuerlich frei verfügbare AVD-Kapitalauszahlung suggerieren.
+
+## Konkretes Umsetzungsbacklog
+
+| Reihenfolge | Arbeitspaket | Fertig, wenn |
+|---|---|---|
+| 1 | Vergleichsvertrag festlegen: gleiche Budgets, Zeitpunkte, Renditen und Endzustände | Alle Module benennen Brutto/Netto, Garantie/Projektion und Kostenquelle eindeutig; F01/F23 verschwinden |
+| 2 | Rechenkern korrigieren und Referenzfälle absichern | F03/F04/F05/F07 sowie Rentenbeginn-Grenzfall fachlich geprüft; Tests beruhen auf unabhängigen Sollwerten |
+| 3 | Cloud- und Abrechnungsschutz nachweisen | Zwei-Nutzer-RLS-Test, abgelaufener Trial, fehlerhafter/redundanter Webhook und Restore geprüft |
+| 4 | Einheitlichen Beratungsfall mit Varianten einführen | Eingaben, Annahmen und Modellversion bleiben beim Wiederöffnen unverändert; Neubewertung erstellt eine neue Version |
+| 5 | Kernstrecke und Report vereinfachen | Beispiel ohne Anmeldung erreichbar; erster Vergleich ohne Hilfe; Pflichtannahmen im Export; A4-Druck und Download geprüft |
+| 6 | Pilot gegen bisheriges Werkzeug messen | Zeitgewinn, wiederholte Nutzung und konkrete Zahlungsentscheidung statt bloßer positiver Rückmeldung vorliegen |
+
+Die Reihenfolge priorisiert Ergebnisvertrauen vor Wachstum. Konkrete Zeit-/Kostenabschätzungen sollten erst nach Fachentscheidung zum Modell und Einsicht in das Cloudschema erfolgen.
 
 ## Mitbewerber und Ersatzlösungen
 

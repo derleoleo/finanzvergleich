@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { migrateLocalDataToSupabase } from '@/utils/migrateLocalData'
+import { lokaleDatenFuerNutzerPruefen, lokaleDatenLoeschen } from '@/utils/lokaleDaten'
 
 type AuthContextType = {
   user: User | null
@@ -32,6 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
+        // Entwürfe des vorigen Kontos in diesem Browser nicht weiterreichen
+        lokaleDatenFuerNutzerPruefen(session.user.id)
         await migrateLocalDataToSupabase()
 
         // Willkommens-E-Mail beim ersten Anmelden senden (fire-and-forget)
@@ -69,6 +72,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut()
+    // Entwürfe und Voreinstellungen enthalten Mandantenangaben – sie bleiben
+    // nicht für die nächste Person am selben Gerät liegen.
+    lokaleDatenLoeschen()
   }
 
   return (

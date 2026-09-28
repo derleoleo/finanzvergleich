@@ -18,6 +18,7 @@ import { GESETZ, ertragsanteilFuer, basiszinsFuer } from './config';
 import { sockelbetragsSchwelle } from './riester';
 import { besteOption, zillmerungsverlust } from './optionen';
 import {
+  monatlicheEntnahme,
   pruefeEingabe,
   simuliereAvd,
   foerderquotenKurve,
@@ -863,5 +864,29 @@ describe('Vier Handlungsoptionen (A–D)', () => {
     const r = mitOptionen({}, { aktuellerVertragswert: 0 });
     expect(r.hinweise.some((h) => h.text.includes('Standmitteilung'))).toBe(true);
     expect(r.hinweise.some((h) => h.text.includes('Optionen C und D'))).toBe(true);
+  });
+});
+
+describe('Auszahlvergleich AVD vs. Depot (F01)', () => {
+  it('nutzt auf beiden Seiten dieselbe Entnahmeformel', () => {
+    // Ohne Steuern und Kosten müssen gleiche Kapitalien zur gleichen Rate führen
+    const kapital = 100_000;
+    const rMonat = Math.pow(1.05, 1 / 12) - 1;
+    const monate = 240;
+    const rate = monatlicheEntnahme(kapital, rMonat, monate);
+    expect(rate).toBeGreaterThan(kapital / monate); // Verzinsung erhöht die Rate
+    expect(rate * monate).toBeGreaterThan(kapital);
+  });
+
+  it('teilt ohne Rendite schlicht auf die Monate auf', () => {
+    expect(monatlicheEntnahme(120_000, 0, 240)).toBeCloseTo(500);
+    expect(monatlicheEntnahme(120_000, -0.01, 240)).toBeCloseTo(500);
+  });
+
+  it('rechnet die Depot-Entnahme nicht mehr ohne Verzinsung', () => {
+    const e = eingabe({ auszahlform: 'auszahlplan', auszahlplanEndalter: 85 });
+    const r = simuliereAvd(e);
+    const monate = Math.round((e.auszahlplanEndalter - e.auszahlungsbeginnAlter) * 12);
+    expect(r.depot.monatsentnahmeVergleich).toBeGreaterThan(r.depot.endkapitalNetto / monate);
   });
 });

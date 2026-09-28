@@ -592,10 +592,7 @@ export function berechneAuszahlung(
     const rMonat = calculateMonthlyReturn(
       ((e.renditeBruttoPaJahr || 0) - (e.effektivkostenPaJahr || 0)) * 100
     );
-    monatsrenteBrutto =
-      rMonat > 0
-        ? (restkapital * rMonat) / (1 - Math.pow(1 + rMonat, -monate))
-        : restkapital / monate;
+    monatsrenteBrutto = monatlicheEntnahme(restkapital, rMonat, monate);
   }
 
   // Steuer auf die laufende Leistung
@@ -636,6 +633,18 @@ export function berechneAuszahlung(
   };
 }
 
+/**
+ * Monatliche Entnahme, die ein Kapital über `monate` gleichmäßig aufbraucht.
+ * Wird für beide Seiten verwendet (AVD-Auszahlplan und freies Depot), damit der
+ * Vergleich nicht allein aus unterschiedlichen Rechenwegen entsteht.
+ */
+export function monatlicheEntnahme(kapital: number, rMonat: number, monate: number): number {
+  if (monate <= 0) return 0;
+  return rMonat > 0
+    ? (kapital * rMonat) / (1 - Math.pow(1 + rMonat, -monate))
+    : kapital / monate;
+}
+
 /** Freies Depot am Laufzeitende: Verkauf mit Teilfreistellung, abzüglich
  *  bereits über die Vorabpauschale versteuerter Beträge. */
 function berechneDepotVergleich(
@@ -660,13 +669,20 @@ function berechneDepotVergleich(
     Math.round((e.auszahlplanEndalter - e.auszahlungsbeginnAlter) * 12)
   );
 
+  // Gleiche Entnahmelogik wie beim AVD-Auszahlplan: Das Restkapital bleibt
+  // während der Auszahlphase investiert. Vereinfachung: Erträge der Auszahlphase
+  // bleiben im Depot unversteuert (die AVD-Rente wird dagegen besteuert).
+  const rMonatDepot = calculateMonthlyReturn(
+    ((e.renditeBruttoPaJahr || 0) - (e.depotKostenPaJahr || 0)) * 100
+  );
+
   return {
     eingezahlt,
     endkapitalVorSteuer: endkapital,
     steuerBeimVerkauf: steuer,
     summeVorabpauschaleSteuer: summeVorabSteuer,
     endkapitalNetto: netto,
-    monatsentnahmeVergleich: netto / monate,
+    monatsentnahmeVergleich: monatlicheEntnahme(netto, rMonatDepot, monate),
   };
 }
 

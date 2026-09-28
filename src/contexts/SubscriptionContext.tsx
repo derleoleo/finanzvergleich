@@ -45,12 +45,20 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       // Plan laden
       const { data: sub } = await supabase
         .from("subscriptions")
-        .select("plan, status")
+        .select("plan, status, current_period_end, stripe_subscription_id")
         .eq("user_id", user.id)
         .single();
 
+      // Bei Stripe-Abos ist der Status maßgeblich – das Enddatum kann kurz
+      // veralten, wenn ein Webhook verzögert ankommt. Ohne Stripe-Abo (Testcode)
+      // gibt es kein Ereignis, das den Zugang beendet: Da zählt das Enddatum.
+      const perStripe = Boolean(sub?.stripe_subscription_id);
+      const nochGueltig =
+        perStripe ||
+        !sub?.current_period_end ||
+        new Date(sub.current_period_end).getTime() > Date.now();
       const activePlan =
-        sub && (sub.status === "active" || sub.status === "trialing")
+        sub && (sub.status === "active" || sub.status === "trialing") && nochGueltig
           ? (sub.plan as Plan)
           : "free";
       setPlan(activePlan);

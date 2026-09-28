@@ -66,6 +66,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  /**
+   * Schreibt die Subscription und meldet Fehler an Stripe zurück (HTTP 500).
+   * Sonst gilt das Ereignis als verarbeitet, obwohl der Zugang nicht gesetzt
+   * wurde – der Kunde zahlt dann ohne freigeschaltete Funktionen.
+   */
+  const speichereSubscription = async (zeile: Record<string, unknown>) => {
+    const { error } = await supabase
+      .from("subscriptions")
+      .upsert(zeile, { onConflict: "user_id" });
+    if (error) {
+      console.error("stripe-webhook: Subscription konnte nicht gespeichert werden", {
+        event: event.type,
+        user_id: zeile.user_id,
+        error,
+      });
+      return false;
+    }
+    return true;
+  };
+
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -78,8 +98,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const priceId = subscription.items.data[0]?.price.id ?? "";
       const plan = getPlan(priceId);
 
-      await supabase.from("subscriptions").upsert(
-        {
+      const gespeichert = await speichereSubscription({
           user_id: userId,
           stripe_customer_id: session.customer as string,
           stripe_subscription_id: session.subscription as string,
@@ -90,9 +109,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             : null,
           cancel_at_period_end: subscription.cancel_at_period_end,
           updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
+      });
+      if (!gespeichert) return res.status(500).json({ error: "Speichern fehlgeschlagen" });
       break;
     }
 
@@ -116,8 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const priceId = subscription.items.data[0]?.price.id ?? "";
       const plan = getPlan(priceId);
 
-      await supabase.from("subscriptions").upsert(
-        {
+      const gespeichert = await speichereSubscription({
           user_id: resolvedUserId,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscription.id,
@@ -128,9 +145,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             : null,
           cancel_at_period_end: subscription.cancel_at_period_end,
           updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
+      });
+      if (!gespeichert) return res.status(500).json({ error: "Speichern fehlgeschlagen" });
       break;
     }
 
@@ -146,15 +162,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (!data?.user_id) break;
 
-      await supabase.from("subscriptions").upsert(
-        {
+      const gespeichert = await speichereSubscription({
           user_id: data.user_id,
           plan: "free",
           status: "canceled",
           updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
+      });
+      if (!gespeichert) return res.status(500).json({ error: "Speichern fehlgeschlagen" });
       break;
     }
 
