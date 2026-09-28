@@ -2,6 +2,7 @@
 -- Bisher wurde nur im Browser geprüft (SubscriptionContext), das lässt sich umgehen.
 -- Im Supabase SQL-Editor ausführen (oder via supabase db push).
 --
+-- Zeitstempelspalte heißt in allen vier Tabellen created_date.
 -- Regel: Ohne aktives Abo (status active/trialing) sind pro Kalendermonat
 -- insgesamt 3 gespeicherte Berechnungen über alle vier Rechner-Tabellen erlaubt.
 
@@ -36,13 +37,13 @@ set search_path = public
 as $$
   select (
     (select count(*) from public.calculations
-      where user_id = p_user_id and created_at >= date_trunc('month', now()))
+      where user_id = p_user_id and created_date >= date_trunc('month', now()))
   + (select count(*) from public.single_payment_calculations
-      where user_id = p_user_id and created_at >= date_trunc('month', now()))
+      where user_id = p_user_id and created_date >= date_trunc('month', now()))
   + (select count(*) from public.best_advice_calculations
-      where user_id = p_user_id and created_at >= date_trunc('month', now()))
+      where user_id = p_user_id and created_date >= date_trunc('month', now()))
   + (select count(*) from public.pension_gap_calculations
-      where user_id = p_user_id and created_at >= date_trunc('month', now()))
+      where user_id = p_user_id and created_date >= date_trunc('month', now()))
   )::int;
 $$;
 

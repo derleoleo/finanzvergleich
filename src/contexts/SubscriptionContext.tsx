@@ -87,7 +87,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
               .from(t)
               .select("id", { count: "exact", head: true })
               .eq("user_id", user.id)
-              .gte("created_at", monthStart)
+              // Spalte heißt in allen vier Tabellen created_date
+              .gte("created_date", monthStart)
           )
         ),
       ]);
