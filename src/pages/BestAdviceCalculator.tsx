@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { speicherFehlerText } from "@/utils/speicherFehler";
 import EndalterHinweis from "@/components/calculator/EndalterHinweis";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl, toNum } from "@/utils";
@@ -287,7 +288,7 @@ export default function BestAdviceCalculator() {
       navigate(createPageUrl("BestAdviceDetail") + `?id=${newCalc.id}`);
     } catch (e) {
       console.error(e);
-      setError("Ein Fehler ist beim Speichern der Berechnung aufgetreten.");
+      setError(speicherFehlerText(e));
     }
     setIsCalculating(false);
   };

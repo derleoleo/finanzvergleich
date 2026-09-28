@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { speicherFehlerText } from "@/utils/speicherFehler";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl, toNum } from "@/utils";
 import { PensionGapCalculation } from "@/entities/PensionGapCalculation";
@@ -161,7 +162,7 @@ export default function PensionGapCalculator() {
       navigate(createPageUrl("PensionGapDetail") + `?id=${newCalc.id}`);
     } catch (e) {
       console.error(e);
-      setError("Ein Fehler ist beim Speichern der Berechnung aufgetreten.");
+      setError(speicherFehlerText(e));
     }
     setIsCalculating(false);
   };

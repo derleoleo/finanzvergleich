@@ -1,6 +1,7 @@
 // src/pages/Calculator.tsx
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { speicherFehlerText } from "@/utils/speicherFehler";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -280,7 +281,7 @@ export default function Calculator() {
       navigate(createPageUrl("CalculatorDetail") + `?id=${newCalc.id}`);
     } catch (e) {
       console.error(e);
-      setError("Ein Fehler ist beim Speichern der Berechnung aufgetreten.");
+      setError(speicherFehlerText(e));
     }
 
     setIsCalculating(false);

@@ -38,6 +38,14 @@ export default function Impressum() {
           </section>
 
           <section>
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Umsatzsteuer</h2>
+            <p className="text-sm">
+              Kleinunternehmerin gemäß § 19 UStG. Es wird keine Umsatzsteuer ausgewiesen,
+              daher besteht keine Umsatzsteuer-Identifikationsnummer.
+            </p>
+          </section>
+
+          <section>
             <h2 className="text-lg font-semibold text-slate-900 mb-2">Haftungsausschluss</h2>
             <p className="text-sm">
               Die Inhalte dieser Website wurden mit größtmöglicher Sorgfalt erstellt. Für die Richtigkeit,

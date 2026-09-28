@@ -200,7 +200,7 @@ export default function BestAdviceDetail() {
           {showPDFUpgrade && (
             <UpgradePrompt
               title="PDF-Export"
-              description="Der PDF-Export ist ab dem Professional-Plan verfügbar."
+              description="Der PDF-Export ist im Premium-Plan verfügbar. Testen Sie ihn 30 Tage kostenlos."
               onClose={() => setShowPDFUpgrade(false)}
             />
           )}

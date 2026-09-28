@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const STAND = 'September 2026';
-const VERSION = '2026-09';
+const VERSION = '2026-09-vw';
 const ANBIETER = 'Luisa Brandt, Ernst-Bähre-Str. 3, 30453 Hannover';
 
 const avvParagraphen = [

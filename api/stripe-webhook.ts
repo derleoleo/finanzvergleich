@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
+import { ABSENDER, liste, mailLayout } from "./_mail-layout.js";
 
 // Pflicht: Raw Body für Stripe-Signaturverifikation
 export const config = { api: { bodyParser: false } };
@@ -166,47 +167,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const resend = new Resend(process.env.RESEND_API_KEY);
       await resend.emails.send({
-        from: "Vorsorgewaage <info@contact.vorsorgewaage.de>",
+        from: ABSENDER,
         to: customer.email,
         subject: "Ihr Testzeitraum endet in 3 Tagen",
-        html: `
-          <!DOCTYPE html>
-          <html lang="de">
-          <body style="font-family: -apple-system, sans-serif; background: #f8fafc; margin: 0; padding: 40px 20px;">
-            <div style="max-width: 560px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08);">
-              <div style="background: #1e293b; padding: 32px 40px;">
-                <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 700;">Vorsorgewaage</h1>
-              </div>
-              <div style="padding: 40px;">
-                <h2 style="color: #0f172a; margin: 0 0 16px; font-size: 20px;">Ihr Testzeitraum endet bald</h2>
-                <p style="color: #475569; line-height: 1.6; margin: 0 0 24px;">
-                  Ihr 30-tägiger kostenloser Testzeitraum endet in <strong>3 Tagen</strong>.
-                  Damit Sie weiterhin uneingeschränkt alle Funktionen nutzen können, bleibt Ihr Abo
-                  automatisch aktiv – es sei denn, Sie kündigen vorher im Kundenportal.
-                </p>
-                <p style="color: #475569; line-height: 1.6; margin: 0 0 8px; font-weight: 600;">
-                  Was Sie behalten:
-                </p>
-                <ul style="color: #475569; line-height: 1.8; margin: 0 0 32px; padding-left: 20px;">
-                  <li>Unbegrenzte Berechnungen (LV/Depot, Einmalanlage, Entnahmeplan)</li>
-                  <li>BestAdvice-Analyse und Rentenlücken-Rechner</li>
-                  <li>PDF-Export für alle Berechnungen</li>
-                </ul>
-                <a href="https://www.vorsorgewaage.de/pricing" style="display: inline-block; background: #1e293b; color: white; text-decoration: none; padding: 14px 28px; border-radius: 10px; font-weight: 600; font-size: 15px;">
-                  Abo verwalten →
-                </a>
-              </div>
-              <div style="background: #f8fafc; padding: 24px 40px; border-top: 1px solid #e2e8f0;">
-                <p style="color: #94a3b8; font-size: 12px; margin: 0; line-height: 1.6;">
-                  Vorsorgewaage · Luisa Brandt · Ernst-Bähre-Str. 3, 30453 Hannover<br />
-                  <a href="https://www.vorsorgewaage.de/datenschutz" style="color: #94a3b8;">Datenschutz</a> ·
-                  <a href="https://www.vorsorgewaage.de/impressum" style="color: #94a3b8;">Impressum</a>
-                </p>
-              </div>
-            </div>
-          </body>
-          </html>
-        `,
+        html: mailLayout({
+          titel: "Testzeitraum endet bald",
+          ueberschrift: "Ihr Testzeitraum endet bald",
+          unterzeile: "Noch 3 Tage kostenlos.",
+          absaetze: [
+            "Guten Tag,",
+            "Ihr 30-tägiger kostenloser Testzeitraum endet in <strong style=\"color:#1A1A2E;\">3 Tagen</strong>. Danach läuft Ihr Premium-Abo automatisch weiter, sofern Sie nicht vorher kündigen. Die Kündigung im Kundenportal dauert einen Moment und ist bis zum letzten Testtag kostenlos.",
+            "<strong style=\"color:#1A1A2E;\">Premium enthält:</strong>",
+            liste([
+              "Unbegrenzte Berechnungen in allen sechs Rechnern",
+              "BestAdvice-Analyse, Rentenlücke, Entnahmeplan und Altersvorsorgedepot",
+              "PDF-Export mit Ihrem Logo und Berater-Profil",
+            ]),
+          ],
+          knopf: { text: "Abo verwalten", url: "https://www.vorsorgewaage.de/pricing" },
+        }),
       });
       break;
     }

@@ -35,7 +35,7 @@ export function SegmentedToggle<T extends string>({
         className="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-sm transition-transform duration-200 ease-out motion-reduce:transition-none"
         style={{ transform: `translateX(${index * 100}%)` }}
       />
-      {options.map((option) => {
+      {options.map((option, i) => {
         const aktiv = option.value === value;
         return (
           <button
@@ -43,6 +43,17 @@ export function SegmentedToggle<T extends string>({
             type="button"
             role="radio"
             aria-checked={aktiv}
+            // Bei Optionsfeldern erwarten Tastaturnutzer die Pfeiltasten;
+            // nur das aktive Feld liegt im Tab-Ablauf.
+            tabIndex={aktiv ? 0 : -1}
+            onKeyDown={(e) => {
+              if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+              e.preventDefault();
+              const andere = options[i === 0 ? 1 : 0];
+              onChange(andere.value);
+              const knoepfe = e.currentTarget.parentElement?.querySelectorAll("button");
+              knoepfe?.[i === 0 ? 1 : 0]?.focus();
+            }}
             onClick={() => onChange(option.value)}
             className={`relative z-10 whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
               aktiv ? "font-semibold text-slate-900" : "text-slate-500 hover:text-slate-700"
