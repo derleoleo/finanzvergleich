@@ -29,7 +29,10 @@ import { formatCurrency, formatChartAxis } from "@/components/shared/CurrencyDis
 import Vorsorgewaage from "@/components/results/Vorsorgewaage";
 import { usePDFExport } from "@/utils/usePDFExport";
 import { NetPolicyCalculation } from "@/entities/NetPolicyCalculation";
-import { modellStempel } from "@/lib/finance/modell";
+import { modellStempel, type ModellStempel } from "@/lib/finance/modell";
+import GespeicherteAuswertung, {
+  type GespeicherteKennzahl,
+} from "@/components/results/GespeicherteAuswertung";
 import { speicherFehlerText } from "@/utils/speicherFehler";
 import { Input } from "@/components/ui/input";
 import PDFSectionDialog from "@/components/pdf/PDFSectionDialog";
@@ -101,6 +104,10 @@ export default function NetPolicyCalculator() {
   const [gespeicherteId, setGespeicherteId] = useState<string | null>(null);
   const [speichertGerade, setSpeichertGerade] = useState(false);
   const [speicherHinweis, setSpeicherHinweis] = useState<string | null>(null);
+  // Audit N03: Beim Öffnen wurden nur die Eingaben geladen und neu gerechnet.
+  // Die damals gezeigten Zahlen blieben unsichtbar im Datensatz liegen.
+  const [gespeicherteErgebnisse, setGespeicherteErgebnisse] =
+    useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("id");
@@ -110,6 +117,7 @@ export default function NetPolicyCalculator() {
       setFormData((prev) => ({ ...prev, ...(eintrag.form as Partial<FormData>) }));
       setName(eintrag.name);
       setGespeicherteId(eintrag.id);
+      setGespeicherteErgebnisse((eintrag.results ?? null) as Record<string, unknown> | null);
     });
   }, []);
 
@@ -237,6 +245,24 @@ export default function NetPolicyCalculator() {
     };
   }, [formData]);
 
+  // Audit N03: die gespeicherten Kennzahlen neben der heutigen Rechnung
+  const gespeicherteKennzahlen = useMemo<GespeicherteKennzahl[]>(() => {
+    if (!gespeicherteErgebnisse) return [];
+    const g = gespeicherteErgebnisse;
+    const zahl = (v: unknown) => (typeof v === "number" ? v : undefined);
+    const eintraege: GespeicherteKennzahl[] = [];
+    const netto = zahl(g.netto_net);
+    if (netto !== undefined)
+      eintraege.push({ label: "Nettopolice nach Steuern", gespeichert: netto, aktuell: results.netto_net });
+    const brutto = zahl(g.brutto_net);
+    if (brutto !== undefined)
+      eintraege.push({ label: "Bruttopolice nach Steuern", gespeichert: brutto, aktuell: results.brutto_net });
+    const vorteil = zahl(g.vorteil_nettopolice);
+    if (vorteil !== undefined)
+      eintraege.push({ label: "Unterschied", gespeichert: vorteil, aktuell: results.advantage });
+    return eintraege;
+  }, [gespeicherteErgebnisse, results]);
+
   const speichern = async () => {
     setSpeichertGerade(true);
     setSpeicherHinweis(null);
@@ -261,6 +287,7 @@ export default function NetPolicyCalculator() {
         window.history.replaceState(null, "", `?id=${neu.id}`);
         setSpeicherHinweis("Gespeichert – jetzt unter „Alle Ergebnisse“ zu finden.");
       }
+      setGespeicherteErgebnisse(nutzlast.results as Record<string, unknown>);
     } catch (e) {
       console.error(e);
       setSpeicherHinweis(speicherFehlerText(e));
@@ -315,6 +342,14 @@ export default function NetPolicyCalculator() {
             <span className="text-sm text-slate-600">{speicherHinweis}</span>
           )}
         </div>
+
+        {/* Gespeicherter Stand (Audit N03) */}
+        {gespeicherteKennzahlen.length > 0 && (
+          <GespeicherteAuswertung
+            stempel={gespeicherteErgebnisse as Partial<ModellStempel>}
+            kennzahlen={gespeicherteKennzahlen}
+          />
+        )}
 
         {/* Eingaben */}
         <div data-pdf-section="eingaben">
@@ -472,6 +507,9 @@ export default function NetPolicyCalculator() {
       {dialogOpen && (
         <PDFSectionDialog
           sections={[
+            ...(gespeicherteKennzahlen.length > 0
+              ? [{ id: "gespeichert", label: "Gespeicherte Auswertung" }]
+              : []),
             { id: "eingaben", label: "Eingaben" },
             { id: "ergebnis", label: "Ergebnis (Vorsorgewaage)" },
             { id: "verlauf", label: "Verlauf" },

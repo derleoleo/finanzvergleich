@@ -15,7 +15,10 @@ import { useLocalStorage } from "@/utils/useLocalStorage";
 import { UserDefaults } from "@/entities/UserDefaults";
 import { baueEntnahmeplan } from "@/lib/finance/entnahmeplan";
 import { WithdrawalPlanEntry } from "@/entities/WithdrawalPlanEntry";
-import { modellStempel } from "@/lib/finance/modell";
+import { modellStempel, type ModellStempel } from "@/lib/finance/modell";
+import GespeicherteAuswertung, {
+  type GespeicherteKennzahl,
+} from "@/components/results/GespeicherteAuswertung";
 import { speicherFehlerText } from "@/utils/speicherFehler";
 import { Calculation, type CalculationModel } from "@/entities/Calculation";
 import { SinglePaymentCalculation, type SinglePaymentModel } from "@/entities/SinglePaymentCalculation";
@@ -41,7 +44,6 @@ const buildPlan = baueEntnahmeplan;
 
 export default function WithdrawalPlan() {
   const _wd = UserDefaults.load();
-  const endAge = _wd.withdrawal_end_age ?? 85;
   const { isPaid } = useSubscription();
   const [showPDFUpgrade, setShowPDFUpgrade] = useState(false);
   const { isExporting, dialogOpen, openDialog, closeDialog, doExport } = usePDFExport();
@@ -56,6 +58,10 @@ export default function WithdrawalPlan() {
   const [customWithdrawal, setCustomWithdrawal] = useLocalStorage<number>("wp_customWithdrawal", _wd.withdrawal_amount);
   const [customAnnualReturn, setCustomAnnualReturn] = useLocalStorage<number>("wp_customAnnualReturn", 6.0);
   const [startAge, setStartAge] = useLocalStorage<number>("wp_startAge", _wd.withdrawal_start_age);
+  // Audit N02: Das Endalter war eine reine Voreinstellung und wurde bei jedem
+  // Öffnen neu gelesen. Damit hätte eine geänderte Voreinstellung einen
+  // gespeicherten Plan rückwirkend verlängert oder verkürzt.
+  const [endAge, setEndAge] = useLocalStorage<number>("wp_endAge", _wd.withdrawal_end_age ?? 85);
   const [isDetailMode, setIsDetailMode] = useLocalStorage<boolean>("wp_isDetailMode", false);
   // Audit F15: Entnahmebeginn und Restkapital sind jetzt Entscheidungen,
   // keine stillen Annahmen der Engine.
@@ -74,6 +80,14 @@ export default function WithdrawalPlan() {
   const [gespeicherteId, setGespeicherteId] = useState<string | null>(null);
   const [speichertGerade, setSpeichertGerade] = useState(false);
   const [speicherHinweis, setSpeicherHinweis] = useState<string | null>(null);
+  // Audit N02: Das Startkapital wurde aus der verknüpften Berechnung neu
+  // abgeleitet. Wird jene Berechnung später geändert oder gelöscht, stand im
+  // Plan plötzlich eine andere Summe. Beim Speichern wird der Wert daher
+  // festgehalten und beim Öffnen wieder eingesetzt.
+  const [fixiertesKapital, setFixiertesKapital] = useState<number | null>(null);
+  // Audit N03: die beim Speichern gültigen Kennzahlen
+  const [gespeicherteErgebnisse, setGespeicherteErgebnisse] =
+    useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("id");
@@ -86,12 +100,24 @@ export default function WithdrawalPlan() {
       if (typeof f.customWithdrawal === "number") setCustomWithdrawal(f.customWithdrawal);
       if (typeof f.customAnnualReturn === "number") setCustomAnnualReturn(f.customAnnualReturn);
       if (typeof f.startAge === "number") setStartAge(f.startAge);
+      if (typeof f.endAge === "number") setEndAge(f.endAge);
       if (typeof f.aufschubJahre === "number") setAufschubJahre(f.aufschubJahre);
       if (typeof f.komplettEntnahme === "boolean") setKomplettEntnahme(f.komplettEntnahme);
       if (typeof f.isDetailMode === "boolean") setIsDetailMode(f.isDetailMode);
+      if (typeof f.compareEnabled === "boolean") setCompareEnabled(f.compareEnabled);
+      if (typeof f.compareWithdrawal === "number") setCompareWithdrawal(f.compareWithdrawal);
       if (f.specialWithdrawals && typeof f.specialWithdrawals === "object") {
         setSpecialWithdrawals(f.specialWithdrawals as Record<number, number>);
       }
+      // Ältere Pläne (vor N02) haben kein fixiertes Kapital – dort bleibt es
+      // beim abgeleiteten Wert, notfalls aus den gespeicherten Kennzahlen.
+      const gespeichert = (eintrag.results ?? null) as Record<string, unknown> | null;
+      if (typeof f.startCapital === "number") {
+        setFixiertesKapital(f.startCapital);
+      } else if (typeof gespeichert?.start_capital === "number") {
+        setFixiertesKapital(gespeichert.start_capital as number);
+      }
+      setGespeicherteErgebnisse(gespeichert);
       setPlanName(eintrag.name);
       setGespeicherteId(eintrag.id);
     });
@@ -143,7 +169,17 @@ export default function WithdrawalPlan() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const startCapital = parseFloat(manualStartCapital) || getNetResultFromCalc(selectedCalculation) || 0;
+  // Reihenfolge: manuelle Eingabe → beim Speichern fixierter Wert → verknüpfte Berechnung
+  const abgeleitetesKapital = getNetResultFromCalc(selectedCalculation);
+  const manuellesKapital = parseFloat(manualStartCapital);
+  const startCapital =
+    (Number.isFinite(manuellesKapital) ? manuellesKapital : 0) || fixiertesKapital || abgeleitetesKapital || 0;
+  // Die verknüpfte Berechnung liefert heute etwas anderes als beim Speichern
+  const kapitalAbweichung =
+    fixiertesKapital !== null &&
+    !Number.isFinite(manuellesKapital) &&
+    abgeleitetesKapital > 0 &&
+    Math.abs(abgeleitetesKapital - fixiertesKapital) > 1;
   const annualReturnFraction = customAnnualReturn / 100;
   const maxAnnualWithdrawal = startCapital > 0 && annualReturnFraction > 0 ? startCapital * annualReturnFraction : 0;
   const maxMonthlyWithdrawal = maxAnnualWithdrawal / 12;
@@ -180,6 +216,27 @@ export default function WithdrawalPlan() {
      aufschubJahre, komplettEntnahme]
   );
 
+  // Audit N03: Beim Öffnen eines gespeicherten Plans die damaligen Kennzahlen
+  // zeigen. Felder, die ältere Datensätze nicht haben, bleiben weg statt als
+  // Null zu erscheinen.
+  const gespeicherteKennzahlen = useMemo<GespeicherteKennzahl[]>(() => {
+    if (!gespeicherteErgebnisse) return [];
+    const g = gespeicherteErgebnisse;
+    const letzte = withdrawalData[withdrawalData.length - 1];
+    const zahl = (v: unknown) => (typeof v === "number" ? v : undefined);
+    const eintraege: GespeicherteKennzahl[] = [];
+    const kapital = zahl(g.start_capital);
+    if (kapital !== undefined)
+      eintraege.push({ label: "Startkapital", gespeichert: kapital, aktuell: Math.round(startCapital) });
+    const summe = zahl(g.total_withdrawn);
+    if (summe !== undefined)
+      eintraege.push({ label: "Gesamtentnahme", gespeichert: summe, aktuell: letzte?.totalWithdrawn });
+    const rest = zahl(g.end_capital);
+    if (rest !== undefined)
+      eintraege.push({ label: "Restkapital am Ende", gespeichert: rest, aktuell: letzte?.endCapital });
+    return eintraege;
+  }, [gespeicherteErgebnisse, withdrawalData, startCapital]);
+
   const handleSpecialWithdrawalChange = (year: number, amount: string) => {
     if (!isDetailMode) return;
     setSpecialWithdrawals((prev) => ({ ...prev, [year]: parseFloat(amount) || 0 }));
@@ -196,6 +253,11 @@ export default function WithdrawalPlan() {
         form: {
           manualStartCapital, selectedCalcId, customWithdrawal, customAnnualReturn,
           startAge, aufschubJahre, komplettEntnahme, isDetailMode, specialWithdrawals,
+          // Audit N02: Horizont, Szenario B und das tatsächlich gerechnete
+          // Startkapital gehören zum Fall und dürfen beim Öffnen nicht neu
+          // aus Voreinstellungen oder fremden Berechnungen entstehen.
+          endAge, compareEnabled, compareWithdrawal,
+          startCapital: Math.round(startCapital),
         } as Record<string, unknown>,
         results: {
           start_capital: Math.round(startCapital),
@@ -203,6 +265,7 @@ export default function WithdrawalPlan() {
           depleted_at_age: aufgebraucht ? letzte.age : null,
           end_capital: letzte ? letzte.endCapital : 0,
           end_age: letzte ? letzte.age : endAge,
+          total_withdrawn: letzte ? letzte.totalWithdrawn : 0,
           ...modellStempel(),
         },
       };
@@ -215,6 +278,9 @@ export default function WithdrawalPlan() {
         window.history.replaceState(null, "", `?id=${neu.id}`);
         setSpeicherHinweis("Gespeichert – jetzt unter „Alle Ergebnisse“ zu finden.");
       }
+      // Ab jetzt ist das der gespeicherte Stand: Kapital fixiert, Kennzahlen bekannt
+      setFixiertesKapital(Math.round(startCapital));
+      setGespeicherteErgebnisse(nutzlast.results as Record<string, unknown>);
     } catch (e) {
       console.error(e);
       setSpeicherHinweis(speicherFehlerText(e));
@@ -302,6 +368,7 @@ export default function WithdrawalPlan() {
                           setSelectedCalculation(calc);
                           setSelectedCalcId(id);
                           setManualStartCapital("");
+                          setFixiertesKapital(null);
                           setCustomAnnualReturn(getAssumedReturnFromCalc(calc));
                         }
                       }}
@@ -331,13 +398,27 @@ export default function WithdrawalPlan() {
                         setManualStartCapital(e.target.value);
                         setSelectedCalculation(null);
                         setSelectedCalcId("");
+                        setFixiertesKapital(null);
                       }}
                       className="bg-slate-50 border-slate-200"
                     />
+                    {kapitalAbweichung && (
+                      <p className="text-xs text-amber-700">
+                        Der Plan rechnet mit {fmt(fixiertesKapital!)} – so war es gespeichert. Die
+                        verknüpfte Berechnung ergibt heute {fmt(abgeleitetesKapital)}.{" "}
+                        <button
+                          type="button"
+                          className="underline font-medium"
+                          onClick={() => setFixiertesKapital(null)}
+                        >
+                          Aktuellen Wert übernehmen
+                        </button>
+                      </p>
+                    )}
                   </div>
 
-                  {/* Rendite & Beginn-Alter */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Rendite, Beginn- und End-Alter */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="customAnnualReturn">Rendite p.a. (%)</Label>
                       <NumericInput
@@ -356,8 +437,17 @@ export default function WithdrawalPlan() {
                         onChange={(v) => setStartAge(v)}
                         className="bg-slate-50 border-slate-200"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="endAge">End-Alter</Label>
+                      <NumericInput
+                        id="endAge"
+                        value={endAge}
+                        onChange={(v) => setEndAge(Math.max(startAge, Math.round(v)))}
+                        className="bg-slate-50 border-slate-200"
+                      />
                       <p className="text-xs text-slate-500">
-                        bis einschließlich Alter {endAge}
+                        einschließlich – Vorgabe {_wd.withdrawal_end_age ?? 85}
                       </p>
                     </div>
                   </div>
@@ -508,6 +598,14 @@ export default function WithdrawalPlan() {
               </Card>
             </div>
 
+            {/* Gespeicherter Stand (Audit N03) */}
+            {gespeicherteKennzahlen.length > 0 && (
+              <GespeicherteAuswertung
+                stempel={gespeicherteErgebnisse as Partial<ModellStempel>}
+                kennzahlen={gespeicherteKennzahlen}
+              />
+            )}
+
             {/* Results */}
             <div>
               {startCapital === 0 ? (
@@ -622,12 +720,17 @@ export default function WithdrawalPlan() {
 
       {dialogOpen && (
         <PDFSectionDialog
-          sections={compareEnabled
-            ? [{ id: "vergleich", label: "Szenario-Vergleich" }]
-            : [
-                { id: "zusammenfassung", label: "Zusammenfassung" },
-                { id: "verlauf", label: "Verlauf & Tabelle" },
-              ]}
+          sections={[
+            ...(gespeicherteKennzahlen.length > 0
+              ? [{ id: "gespeichert", label: "Gespeicherte Auswertung" }]
+              : []),
+            ...(compareEnabled
+              ? [{ id: "vergleich", label: "Szenario-Vergleich" }]
+              : [
+                  { id: "zusammenfassung", label: "Zusammenfassung" },
+                  { id: "verlauf", label: "Verlauf & Tabelle" },
+                ]),
+          ]}
           isExporting={isExporting}
           onExport={(ids) => doExport(ids, "entnahmeplan", "Entnahmeplan")}
           onClose={closeDialog}

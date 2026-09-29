@@ -26,7 +26,10 @@ import { NumericInput } from '@/components/ui/numeric-input';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { AvdCalculation } from '@/entities/AvdCalculation';
-import { modellStempel } from '@/lib/finance/modell';
+import { modellStempel, type ModellStempel } from '@/lib/finance/modell';
+import GespeicherteAuswertung, {
+  type GespeicherteKennzahl,
+} from '@/components/results/GespeicherteAuswertung';
 import { speicherFehlerText } from '@/utils/speicherFehler';
 import { Switch } from '@/components/ui/switch';
 import { formatCurrency, formatChartAxis } from '@/components/shared/CurrencyDisplay';
@@ -123,6 +126,11 @@ export default function AvdCalculator() {
   const [gespeicherteId, setGespeicherteId] = useState<string | null>(null);
   const [speichertGerade, setSpeichertGerade] = useState(false);
   const [speicherHinweis, setSpeicherHinweis] = useState<string | null>(null);
+  // Audit N03: Bisher wurden beim Öffnen nur die Eingaben geladen und alles neu
+  // gerechnet. Die damals gezeigten Zahlen lagen gespeichert vor, waren aber
+  // nicht sichtbar – ein Modellwechsel blieb damit unbemerkt.
+  const [gespeicherteErgebnisse, setGespeicherteErgebnisse] =
+    useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('id');
@@ -132,6 +140,7 @@ export default function AvdCalculator() {
       setFormData((prev) => ({ ...prev, ...(eintrag.form as Partial<FormData>) }));
       setName(eintrag.name);
       setGespeicherteId(eintrag.id);
+      setGespeicherteErgebnisse((eintrag.results ?? null) as Record<string, unknown> | null);
     });
   }, []);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -250,6 +259,38 @@ export default function AvdCalculator() {
       deflatorFuer(formData.inflationPaJahr, ergebnis.jahreBisAuszahlung)
     : endVergleichNominal;
 
+  // Audit N03: gespeicherte Kennzahlen gegen die heutige Rechnung stellen.
+  // Verglichen wird nominal, damit der Real-Schalter keinen Unterschied
+  // vortäuscht, den es nicht gibt.
+  const gespeicherteKennzahlen = useMemo<GespeicherteKennzahl[]>(() => {
+    if (!gespeicherteErgebnisse) return [];
+    const g = gespeicherteErgebnisse;
+    const zahl = (v: unknown) => (typeof v === 'number' ? v : undefined);
+    const eintraege: GespeicherteKennzahl[] = [];
+    const avd = zahl(g.endkapital_nach_steuer);
+    if (avd !== undefined)
+      eintraege.push({
+        label: 'Altersvorsorgedepot nach Steuern',
+        gespeichert: avd,
+        aktuell: Math.round(ergebnis.endkapitalNachSteuer),
+      });
+    const vergleich = zahl(g.vergleich_nach_steuer);
+    if (vergleich !== undefined)
+      eintraege.push({
+        label: `${typeof g.vergleich_name === 'string' ? g.vergleich_name : 'Vergleich'} nach Steuern`,
+        gespeichert: vergleich,
+        aktuell: Math.round(endVergleichNominal),
+      });
+    const foerderung = zahl(g.summe_foerderung);
+    if (foerderung !== undefined)
+      eintraege.push({
+        label: 'Summe Förderung',
+        gespeichert: foerderung,
+        aktuell: Math.round(ergebnis.summeFoerderung),
+      });
+    return eintraege;
+  }, [gespeicherteErgebnisse, ergebnis, endVergleichNominal]);
+
   const speichern = async () => {
     setSpeichertGerade(true);
     setSpeicherHinweis(null);
@@ -257,9 +298,12 @@ export default function AvdCalculator() {
       const nutzlast = {
         name: name.trim() || 'Altersvorsorgedepot',
         form: formData as unknown as Record<string, unknown>,
+        // Gespeichert werden immer die nominalen Werte. Vorher hing es am
+        // Real-Schalter, ob in der Übersicht kaufkraftbereinigte Zahlen unter
+        // demselben Feldnamen landeten.
         results: {
-          endkapital_nach_steuer: Math.round(endAvd),
-          vergleich_nach_steuer: Math.round(endDepot),
+          endkapital_nach_steuer: Math.round(ergebnis.endkapitalNachSteuer),
+          vergleich_nach_steuer: Math.round(endVergleichNominal),
           vergleich_name: vergleichName,
           summe_foerderung: Math.round(ergebnis.summeFoerderung),
           ...modellStempel(),
@@ -274,6 +318,7 @@ export default function AvdCalculator() {
         window.history.replaceState(null, '', `?id=${neu.id}`);
         setSpeicherHinweis('Gespeichert – jetzt unter „Alle Ergebnisse“ zu finden.');
       }
+      setGespeicherteErgebnisse(nutzlast.results as Record<string, unknown>);
     } catch (e) {
       console.error(e);
       setSpeicherHinweis(speicherFehlerText(e));
@@ -323,6 +368,14 @@ export default function AvdCalculator() {
           />
           {speicherHinweis && <span className="text-sm text-slate-600">{speicherHinweis}</span>}
         </div>
+
+        {/* Gespeicherter Stand (Audit N03) */}
+        {gespeicherteKennzahlen.length > 0 && (
+          <GespeicherteAuswertung
+            stempel={gespeicherteErgebnisse as Partial<ModellStempel>}
+            kennzahlen={gespeicherteKennzahlen}
+          />
+        )}
 
         {/* Vergleichspartner – bestimmt, wogegen das AVD gerechnet wird */}
         <div data-pdf-section="vergleichspartner">
@@ -1074,6 +1127,9 @@ export default function AvdCalculator() {
       {dialogOpen && (
         <PDFSectionDialog
           sections={[
+            ...(gespeicherteKennzahlen.length > 0
+              ? [{ id: 'gespeichert', label: 'Gespeicherte Auswertung' }]
+              : []),
             { id: 'vergleichspartner', label: 'Vergleichspartner' },
             { id: 'berechtigung', label: 'Förderberechtigung' },
             { id: 'foerderung', label: 'Beitrag und Förderung' },

@@ -35,6 +35,12 @@ export default function WithdrawalTable({ data, isDetailMode, onSpecialWithdrawa
 
   const showEllipsis = !forPrint && data.length > 15;
 
+  // Das Planende kommt aus den Daten, nicht aus einer festen Zahl in der
+  // Legende: Das Endalter ist einstellbar, und bei aufgebrauchtem Kapital
+  // bricht der Plan vorher ab.
+  const letzteZeile = data[data.length - 1];
+  const planEndAlter = letzteZeile?.isLastYear ? letzteZeile.age : undefined;
+
   return (
     <Card className="border-0 shadow-lg bg-white">
       <CardHeader className="pb-4">
@@ -120,8 +126,16 @@ export default function WithdrawalTable({ data, isDetailMode, onSpecialWithdrawa
                         rowData.withdrawal > 0 ? `−${formatCurrency(rowData.withdrawal)}` : '—'
                       )}
                     </TableCell>
-                    <TableCell className="text-right font-medium text-green-600">
-                      {rowData.growth > 0 ? `+${formatCurrency(rowData.growth)}` : '—'}
+                    <TableCell
+                      className={`text-right font-medium ${
+                        rowData.growth < 0 ? 'text-red-600' : 'text-green-600'
+                      }`}
+                    >
+                      {rowData.growth === 0
+                        ? '—'
+                        : rowData.growth > 0
+                          ? `+${formatCurrency(rowData.growth)}`
+                          : `−${formatCurrency(Math.abs(rowData.growth))}`}
                     </TableCell>
                     <TableCell className={`text-right font-bold ${
                       rowData.endCapital === 0 ? 'text-red-600' : 'text-slate-900'
@@ -139,15 +153,20 @@ export default function WithdrawalTable({ data, isDetailMode, onSpecialWithdrawa
           <div className="mt-4 text-xs text-slate-500 space-y-1">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-purple-50 border border-purple-200 rounded"></div>
-              <span>Letztes Jahr (Komplettentnahme bis Alter 85)</span>
+              <span>
+                Letztes Planjahr{planEndAlter !== undefined ? ` (Alter ${planEndAlter})` : ""}
+                {komplettEntnahmeAmEnde
+                  ? " – Restkapital wird vollständig entnommen"
+                  : " – Restkapital bleibt stehen"}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-red-50 border border-red-200 rounded"></div>
-              <span>Jahr mit Kapitalende (vor Alter 85)</span>
+              <span>Jahr, in dem das Kapital aufgebraucht ist</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-blue-50 border border-blue-200 rounded"></div>
-              <span>Startjahr (Wachstum ohne Entnahme)</span>
+              <span>Erstes Planjahr</span>
             </div>
           </div>
         )}

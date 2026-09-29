@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { ModellStempel } from '@/lib/finance/modell'
 
 /**
  * Gespeicherter Entnahmeplan. Eingaben liegen als `form`, damit die Seite sie
@@ -11,7 +12,9 @@ export type WithdrawalPlanResults = {
   depleted_at_age: number | null;
   end_capital: number;
   end_age: number;
-};
+  /** Summe aller Entnahmen über den Plan (seit Audit N02/N03 mitgespeichert). */
+  total_withdrawn?: number;
+} & Partial<ModellStempel>;
 
 export type WithdrawalPlanModel = {
   id: string;
