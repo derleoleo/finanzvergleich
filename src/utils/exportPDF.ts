@@ -1,6 +1,7 @@
 import { toJpeg } from "html-to-image";
 import { jsPDF } from "jspdf";
 import { UserProfile, type UserProfileData } from "@/entities/UserProfile";
+import { A4_BREITE_MM, A4_HOEHE_MM, berechneSeiten } from "@/utils/pdfSeiten";
 
 // Bildmarke (Waage) in Weiß für den dunklen PDF-Kopf – Geometrie wie BrandMark
 const MARKE_WEISS = `<svg viewBox="0 0 48 48" width="28" height="28" fill="white" stroke="white">
@@ -230,18 +231,49 @@ export async function exportSections(
       img.src = dataUrl;
     });
 
-    // Einzelne Seite in Inhalts-Höhe → kein Seitenumbruch
-    const pdfW      = 210; // A4 Breite in mm
-    const ratio     = pdfW / img.width;
-    const imgTotalH = img.height * ratio;
+    // Echte A4-Seiten statt einer einzigen überlangen Seite (Audit F22):
+    // gedruckt und in fremden Betrachtern war die alte Fassung unbrauchbar.
+    const seiten = berechneSeiten(img.width, img.height);
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit:        "mm",
-      format:      [pdfW, imgTotalH],
+    const schnittCanvas = document.createElement("canvas");
+    const ctx = schnittCanvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas nicht verfügbar");
+
+    const stand = new Date().toLocaleDateString("de-DE");
+    seiten.forEach((seite, index) => {
+      if (index > 0) pdf.addPage();
+
+      schnittCanvas.width = img.width;
+      schnittCanvas.height = seite.hoehePx;
+      ctx.fillStyle = "#f8fafc";
+      ctx.fillRect(0, 0, schnittCanvas.width, schnittCanvas.height);
+      ctx.drawImage(
+        img,
+        0, seite.vonPx, img.width, seite.hoehePx,
+        0, 0, img.width, seite.hoehePx
+      );
+
+      pdf.addImage(
+        schnittCanvas.toDataURL("image/jpeg", 0.93),
+        "JPEG",
+        0,
+        0,
+        A4_BREITE_MM,
+        seite.hoeheMm
+      );
+
+      // Fußzeile: Herkunft und Seitenzahl auf jeder Seite
+      pdf.setFontSize(8);
+      pdf.setTextColor(120);
+      pdf.text(`Vorsorgewaage · ${title} · Stand ${stand}`, 10, A4_HOEHE_MM - 5);
+      pdf.text(
+        `Seite ${index + 1} von ${seiten.length}`,
+        A4_BREITE_MM - 10,
+        A4_HOEHE_MM - 5,
+        { align: "right" }
+      );
     });
-
-    pdf.addImage(dataUrl, "JPEG", 0, 0, pdfW, imgTotalH);
 
     // Manche Firmenrechner blockieren den automatischen Blob-Download (DLP/Policy)
     // lautlos, ohne dass ein JS-Fehler entsteht. Stattdessen öffnen wir die PDF
