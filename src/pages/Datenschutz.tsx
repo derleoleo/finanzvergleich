@@ -153,8 +153,14 @@ export default function Datenschutz() {
             </address>
             <p>
               Bei Anwendungsfehlern werden technische Informationen übertragen (u. a. Fehlermeldung,
-              Browser- und Gerätedaten, IP-Adresse). Die Daten dienen ausschließlich der
+              Browser- und Gerätedaten, aufgerufene Seite). Die Daten dienen ausschließlich der
               Fehlerdiagnose und werden nicht zu Werbe- oder Trackingzwecken verwendet.
+              Eingaben aus den Rechnern, gespeicherte Berechnungen und Ihre Kontokennung
+              werden nicht übermittelt; Adressen werden ohne Parameter übertragen, sodass
+              keine Kennungen einzelner Berechnungen mitgehen. Ein zusätzlich erhobenes
+              Nutzungsprofil legen wir nicht an. Ihre IP-Adresse verarbeitet Sentry technisch
+              bedingt beim Empfang der Meldung; eine Speicherung zu Ihrer Person erfolgt
+              seitens unserer Konfiguration nicht.
               Mit Sentry besteht ein Auftragsverarbeitungsvertrag gemäß Art. 28 DSGVO;
               Datenübermittlungen in die USA erfolgen auf Grundlage der
               EU-Standardvertragsklauseln (Art. 46 DSGVO).
