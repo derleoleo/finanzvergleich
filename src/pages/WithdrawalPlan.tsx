@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  Wallet, AlertCircle, FileDown, Calendar, TrendingUp, Copy, Info, Pencil,
+  Wallet, AlertCircle, FileDown, Calendar, TrendingUp, Copy, Info, Pencil, Save,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,9 @@ import { Switch } from "@/components/ui/switch";
 import { useLocalStorage } from "@/utils/useLocalStorage";
 import { UserDefaults } from "@/entities/UserDefaults";
 import { baueEntnahmeplan } from "@/lib/finance/entnahmeplan";
+import { WithdrawalPlanEntry } from "@/entities/WithdrawalPlanEntry";
+import { modellStempel } from "@/lib/finance/modell";
+import { speicherFehlerText } from "@/utils/speicherFehler";
 import { Calculation, type CalculationModel } from "@/entities/Calculation";
 import { SinglePaymentCalculation, type SinglePaymentModel } from "@/entities/SinglePaymentCalculation";
 import { BestAdviceCalculation, type BestAdviceModel } from "@/entities/BestAdviceCalculation";
@@ -63,6 +66,37 @@ export default function WithdrawalPlan() {
   // Szenario-Vergleich: zweite Entnahmehöhe nebeneinander darstellen
   const [compareEnabled, setCompareEnabled] = useLocalStorage<boolean>("wp_compareEnabled", false);
   const [compareWithdrawal, setCompareWithdrawal] = useLocalStorage<number>("wp_compareWithdrawal", 0);
+
+  // Speichern (Audit F14): ohne ?id= neu anlegen, mit ?id= aktualisieren
+  const [planName, setPlanName] = useState(
+    () => `Entnahmeplan ${new Date().toLocaleDateString("de-DE")}`
+  );
+  const [gespeicherteId, setGespeicherteId] = useState<string | null>(null);
+  const [speichertGerade, setSpeichertGerade] = useState(false);
+  const [speicherHinweis, setSpeicherHinweis] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("id");
+    if (!id) return;
+    WithdrawalPlanEntry.get(id).then((eintrag) => {
+      if (!eintrag) return;
+      const f = eintrag.form as Record<string, unknown>;
+      if (typeof f.manualStartCapital === "string") setManualStartCapital(f.manualStartCapital);
+      if (typeof f.selectedCalcId === "string") setSelectedCalcId(f.selectedCalcId);
+      if (typeof f.customWithdrawal === "number") setCustomWithdrawal(f.customWithdrawal);
+      if (typeof f.customAnnualReturn === "number") setCustomAnnualReturn(f.customAnnualReturn);
+      if (typeof f.startAge === "number") setStartAge(f.startAge);
+      if (typeof f.aufschubJahre === "number") setAufschubJahre(f.aufschubJahre);
+      if (typeof f.komplettEntnahme === "boolean") setKomplettEntnahme(f.komplettEntnahme);
+      if (typeof f.isDetailMode === "boolean") setIsDetailMode(f.isDetailMode);
+      if (f.specialWithdrawals && typeof f.specialWithdrawals === "object") {
+        setSpecialWithdrawals(f.specialWithdrawals as Record<number, number>);
+      }
+      setPlanName(eintrag.name);
+      setGespeicherteId(eintrag.id);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!isDetailMode) setSpecialWithdrawals({});
@@ -151,6 +185,43 @@ export default function WithdrawalPlan() {
     setSpecialWithdrawals((prev) => ({ ...prev, [year]: parseFloat(amount) || 0 }));
   };
 
+  const planSpeichern = async () => {
+    setSpeichertGerade(true);
+    setSpeicherHinweis(null);
+    try {
+      const letzte = withdrawalData[withdrawalData.length - 1];
+      const aufgebraucht = letzte && letzte.endCapital <= 0 && !letzte.isLastYear;
+      const nutzlast = {
+        name: planName.trim() || "Entnahmeplan",
+        form: {
+          manualStartCapital, selectedCalcId, customWithdrawal, customAnnualReturn,
+          startAge, aufschubJahre, komplettEntnahme, isDetailMode, specialWithdrawals,
+        } as Record<string, unknown>,
+        results: {
+          start_capital: Math.round(startCapital),
+          annual_withdrawal: Math.round(customWithdrawal),
+          depleted_at_age: aufgebraucht ? letzte.age : null,
+          end_capital: letzte ? letzte.endCapital : 0,
+          end_age: letzte ? letzte.age : endAge,
+          ...modellStempel(),
+        },
+      };
+      if (gespeicherteId) {
+        await WithdrawalPlanEntry.update(gespeicherteId, nutzlast);
+        setSpeicherHinweis("Gespeichert.");
+      } else {
+        const neu = await WithdrawalPlanEntry.create(nutzlast);
+        setGespeicherteId(neu.id);
+        window.history.replaceState(null, "", `?id=${neu.id}`);
+        setSpeicherHinweis("Gespeichert – jetzt unter „Alle Ergebnisse“ zu finden.");
+      }
+    } catch (e) {
+      console.error(e);
+      setSpeicherHinweis(speicherFehlerText(e));
+    }
+    setSpeichertGerade(false);
+  };
+
   const handlePDFClick = () => {
     if (!isPaid) { setShowPDFUpgrade(true); return; }
     openDialog();
@@ -187,16 +258,27 @@ export default function WithdrawalPlan() {
               </div>
             </div>
             {withdrawalData.length > 0 && (
-              <Button
-                onClick={handlePDFClick}
-                className="w-full md:w-auto bg-slate-800 hover:bg-slate-700"
-                data-pdf-hide
-              >
-                <FileDown className="w-4 h-4 mr-2" />
-                Als PDF exportieren
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto" data-pdf-hide>
+                <Input
+                  value={planName}
+                  onChange={(e) => setPlanName(e.target.value)}
+                  placeholder="Name der Berechnung"
+                  className="bg-white border-slate-200 sm:w-64"
+                />
+                <Button onClick={planSpeichern} disabled={speichertGerade} variant="outline">
+                  <Save className="w-4 h-4 mr-2" />
+                  {speichertGerade ? "Speichere…" : gespeicherteId ? "Aktualisieren" : "Speichern"}
+                </Button>
+                <Button onClick={handlePDFClick} className="bg-slate-800 hover:bg-slate-700">
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Als PDF exportieren
+                </Button>
+              </div>
             )}
           </div>
+          {speicherHinweis && (
+            <div className="mb-4 text-sm text-slate-600" data-pdf-hide>{speicherHinweis}</div>
+          )}
 
           {/* Body: Einstellungen oben, Ergebnisse darunter (volle Breite) */}
           <div className="grid grid-cols-1 gap-8 items-start">

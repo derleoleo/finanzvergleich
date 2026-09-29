@@ -34,6 +34,7 @@ React 19 SPA for comparing German life insurance (LV/Lebensversicherung) vs. dir
 - `PensionGapCalculation.ts` → `pension_gap_calculations` (Rentenlücke)
 - `AvdCalculation.ts` → `avd_calculations` (Altersvorsorgedepot; Eingaben als `form`, Kennzahlen als `results`)
 - `NetPolicyCalculation.ts` → `net_policy_calculations` (Netto-/Bruttopolice, gleicher Aufbau)
+- `WithdrawalPlanEntry.ts` → `withdrawal_plans` (Entnahmeplan, gleicher Aufbau)
 - `UserProfile.ts`, `Consent.ts` → Supabase
 
 localStorage is only used for drafts (`fv_*_draft_v1`), `UserDefaults.ts` (`fv_user_defaults_v1`) and the one-time migration flag (`src/utils/migrateLocalData.ts`).

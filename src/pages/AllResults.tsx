@@ -7,10 +7,11 @@ import { BestAdviceCalculation, type BestAdviceModel } from "@/entities/BestAdvi
 import { PensionGapCalculation, type PensionGapModel } from "@/entities/PensionGapCalculation";
 import { AvdCalculation, type AvdModel } from "@/entities/AvdCalculation";
 import { NetPolicyCalculation, type NetPolicyModel } from "@/entities/NetPolicyCalculation";
+import { WithdrawalPlanEntry, type WithdrawalPlanModel } from "@/entities/WithdrawalPlanEntry";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Calculator, DollarSign, Target, TrendingDown, ArrowRight, Trash2, PiggyBank, Handshake } from "lucide-react";
+import { BarChart3, Calculator, DollarSign, Target, TrendingDown, ArrowRight, Trash2, PiggyBank, Handshake, Wallet } from "lucide-react";
 import { formatCurrency } from "@/components/shared/CurrencyDisplay";
 
 type AnyCalc =
@@ -19,7 +20,8 @@ type AnyCalc =
   | { type: "bestadvice"; data: BestAdviceModel }
   | { type: "pensiongap"; data: PensionGapModel }
   | { type: "avd"; data: AvdModel }
-  | { type: "nettopolice"; data: NetPolicyModel };
+  | { type: "nettopolice"; data: NetPolicyModel }
+  | { type: "entnahmeplan"; data: WithdrawalPlanModel };
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -38,7 +40,8 @@ export default function AllResults() {
       PensionGapCalculation.list("-created_date"),
       AvdCalculation.list("-created_date"),
       NetPolicyCalculation.list("-created_date"),
-    ]).then(([sparvertraege, einmalanlagen, bestAdvice, pensionGaps, avd, nettopolicen]) => {
+      WithdrawalPlanEntry.list("-created_date"),
+    ]).then(([sparvertraege, einmalanlagen, bestAdvice, pensionGaps, avd, nettopolicen, entnahmeplaene]) => {
       const all: AnyCalc[] = [
         ...sparvertraege.map((d): AnyCalc => ({ type: "sparvertrag", data: d })),
         ...einmalanlagen.map((d): AnyCalc => ({ type: "einmalanlage", data: d })),
@@ -46,6 +49,7 @@ export default function AllResults() {
         ...pensionGaps.map((d): AnyCalc => ({ type: "pensiongap", data: d })),
         ...avd.map((d): AnyCalc => ({ type: "avd", data: d })),
         ...nettopolicen.map((d): AnyCalc => ({ type: "nettopolice", data: d })),
+        ...entnahmeplaene.map((d): AnyCalc => ({ type: "entnahmeplan", data: d })),
       ];
 
       all.sort((a, b) => new Date(b.data.created_date).getTime() - new Date(a.data.created_date).getTime());
@@ -68,6 +72,7 @@ export default function AllResults() {
         case "pensiongap": await PensionGapCalculation.delete(item.data.id); break;
         case "avd": await AvdCalculation.delete(item.data.id); break;
         case "nettopolice": await NetPolicyCalculation.delete(item.data.id); break;
+        case "entnahmeplan": await WithdrawalPlanEntry.delete(item.data.id); break;
       }
       setItems((prev) => prev.filter((x) => !(x.type === item.type && x.data.id === item.data.id)));
     } catch (err) {
@@ -85,6 +90,7 @@ export default function AllResults() {
       // AVD und Nettopolice haben keine eigene Detailseite: der Rechner lädt die Eingaben
       case "avd": navigate(createPageUrl("AvdCalculator") + `?id=${item.data.id}`); break;
       case "nettopolice": navigate(createPageUrl("NetPolicyCalculator") + `?id=${item.data.id}`); break;
+      case "entnahmeplan": navigate(createPageUrl("WithdrawalPlan") + `?id=${item.data.id}`); break;
     }
   };
 
@@ -96,6 +102,7 @@ export default function AllResults() {
       case "pensiongap": return "Rentenlücke";
       case "avd": return "Altersvorsorgedepot";
       case "nettopolice": return "Netto- vs. Bruttopolice";
+      case "entnahmeplan": return "Entnahmeplan";
     }
   };
 
@@ -107,6 +114,7 @@ export default function AllResults() {
       case "pensiongap": return { Icon: TrendingDown, color: "bg-red-100 text-red-600" };
       case "avd": return { Icon: PiggyBank, color: "bg-teal-100 text-teal-600" };
       case "nettopolice": return { Icon: Handshake, color: "bg-amber-100 text-amber-600" };
+      case "entnahmeplan": return { Icon: Wallet, color: "bg-orange-100 text-orange-600" };
     }
   };
 
@@ -135,6 +143,13 @@ export default function AllResults() {
     if (item.type === "nettopolice" && item.data.results) {
       const r = item.data.results;
       return `Nettopolice: ${formatCurrency(r.netto_net)} · Bruttopolice: ${formatCurrency(r.brutto_net)} (netto)`;
+    }
+    if (item.type === "entnahmeplan" && item.data.results) {
+      const r = item.data.results;
+      const ende = r.depleted_at_age
+        ? `Kapital reicht bis Alter ${r.depleted_at_age}`
+        : `Restkapital mit Alter ${r.end_age}: ${formatCurrency(r.end_capital)}`;
+      return `${formatCurrency(r.annual_withdrawal)}/Jahr · ${ende}`;
     }
     return null;
   };
