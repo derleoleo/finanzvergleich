@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { beitragsbasis, breakEvenEinordnung, breakEvenRendite } from "./bestadvice";
+import {
+  beitragsbasis,
+  breakEvenDetail,
+  breakEvenEinordnung,
+  breakEvenRendite,
+} from "./bestadvice";
 import { simulateLv } from "./simulation";
 
 const basis = {
@@ -42,10 +47,21 @@ describe("Break-even-Rendite (F06)", () => {
     expect(rendite!).toBeLessThan(0);
   });
 
-  it("formuliert die Einordnung ohne Empfehlung", () => {
+  it("formuliert die Einordnung ohne Empfehlung und ohne falsches „nach Kosten“ (N04)", () => {
     const satz = breakEvenEinordnung(4.25);
     expect(satz).toContain("4,25 % p.a.");
+    expect(satz).toContain("vor Vertragskosten");
+    expect(satz).not.toMatch(/nach Kosten/);
     expect(satz).not.toMatch(/empfehl|besser|lohnt/i);
-    expect(breakEvenEinordnung(null)).toMatch(/nicht erreichbar/);
+  });
+
+  it("unterscheidet unerreichbare von bereits übertroffenen Zielen (N04)", () => {
+    const zuHoch = breakEvenDetail(basis, 50_000_000);
+    expect(zuHoch).toEqual({ art: "unmoeglich", grund: "zu_hoch" });
+    expect(breakEvenEinordnung(zuHoch)).toMatch(/nicht erreichbar/);
+
+    const schonErreicht = breakEvenDetail(basis, 1_000);
+    expect(schonErreicht).toEqual({ art: "unmoeglich", grund: "schon_erreicht" });
+    expect(breakEvenEinordnung(schonErreicht)).toMatch(/ohne Wertzuwachs/);
   });
 });

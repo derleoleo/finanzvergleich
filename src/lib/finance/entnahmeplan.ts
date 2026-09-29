@@ -7,6 +7,11 @@
 //   erscheint am Ende eine Einmalzahlung, die niemand geplant hat.
 // - Verluste werden als negatives Wachstum ausgewiesen statt auf null gekappt.
 //
+// Zeitkonvention (Audit N09): Gerechnet werden die Lebensjahre von `startAge`
+// bis einschließlich `endAge`. Bei 65 bis 70 sind das sechs Jahresperioden –
+// das Kapital trägt also bis zum Ende des 70. Lebensjahres, nicht nur bis zum
+// 70. Geburtstag. Die Oberfläche muss das so benennen.
+//
 // Vereinfachung: Entnahme zu Jahresbeginn, Rendite auf das verbleibende
 // Kapital. Steuern auf Entnahmen sind nicht enthalten.
 
@@ -31,7 +36,11 @@ export type EntnahmeEingabe = {
   specialWithdrawals?: Record<number, number>;
   /** Jahre ohne Entnahme vor der ersten Auszahlung (Vorgabe 0). */
   aufschubJahre?: number;
-  /** Restkapital im letzten Jahr komplett entnehmen (Vorgabe false). */
+  /**
+   * Restkapital im letzten Jahr komplett entnehmen (Vorgabe false).
+   * Bei gleichem Start- und Endalter gibt es nur eine Periode; dort wird
+   * unabhängig von dieser Option das gesamte Kapital ausgezahlt.
+   */
   komplettentnahmeAmEnde?: boolean;
 };
 

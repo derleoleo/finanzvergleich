@@ -202,7 +202,10 @@ export default function PensionGapDetail() {
                   <div className="text-sm text-slate-600 font-medium">Kapital bei Rente benötigt</div>
                   <div className="text-2xl font-bold text-slate-900 mt-1">{fmt(r.capital_needed_at_retirement)}</div>
                   <div className="text-xs text-slate-500 mt-1">
-                    bis Alter {r.withdrawal_end_age ?? 90} (Annuität, real verzinst)
+                    {r.retirement_reached
+                      ? `noch ${Math.round((r.entnahmemonate ?? 0) / 12)} Jahre bis Alter ${r.withdrawal_end_age ?? 90}`
+                      : `bis Alter ${r.withdrawal_end_age ?? 90}`}{" "}
+                    (Annuität, real verzinst)
                   </div>
                 </CardContent>
               </Card>

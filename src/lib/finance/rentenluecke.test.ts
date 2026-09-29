@@ -47,6 +47,23 @@ describe("Rentenlücke (F15)", () => {
     expect(r.monthly_savings_needed).toBe(0);
   });
 
+  it("rechnet nach Rentenbeginn nur noch die verbleibenden Jahre (N05)", () => {
+    // 75 Jahre alt, Rentenbeginn 67, Planende 90, 1.000 € Lücke, ohne Zins
+    const r = berechneRentenluecke(
+      basis({
+        birth_year: 1951,
+        desired_monthly_income: 1000,
+        expected_statutory_pension: 0,
+        assumed_annual_return: 0,
+        inflation_percent: 0,
+      }),
+      heute
+    );
+    expect(r.current_age).toBe(75);
+    expect(r.entnahmemonate).toBe(180); // 15 Jahre, nicht 23
+    expect(r.capital_needed_at_retirement).toBe(180_000);
+  });
+
   it("zieht vorhandenes Kapital ab", () => {
     const ohne = berechneRentenluecke(basis(), heute);
     const mit = berechneRentenluecke(basis({ existing_capital: 100_000 }), heute);

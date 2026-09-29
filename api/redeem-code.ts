@@ -37,7 +37,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Prüfen ob Code bereits eingelöst wurde
+  // Reihenfolge ist wichtig: Erst alle Vorbedingungen prüfen, dann den Code
+  // als verbraucht markieren. Sonst wäre der Code weg, obwohl die
+  // Freischaltung gar nicht stattfinden durfte.
   const { data: existing } = await supabaseAdmin
     .from("redeemed_codes")
     .select("id")
@@ -47,6 +49,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (existing) {
     return res.status(400).json({ error: "Dieser Code wurde bereits verwendet" });
+  }
+
+  // Ein laufendes bezahltes Abo darf ein Testcode nicht überschreiben
+  const { data: bestehend } = await supabaseAdmin
+    .from("subscriptions")
+    .select("status, stripe_subscription_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (bestehend?.stripe_subscription_id && bestehend.status === "active") {
+    return res.status(400).json({ error: "Sie haben bereits ein aktives Abo." });
   }
 
   // Code als eingelöst markieren
@@ -63,17 +76,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     console.error("redeem-code insert error:", insertError);
     return res.status(500).json({ error: "Interner Fehler" });
-  }
-
-  // Ein laufendes bezahltes Abo darf ein Testcode nicht überschreiben
-  const { data: bestehend } = await supabaseAdmin
-    .from("subscriptions")
-    .select("status, stripe_subscription_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (bestehend?.stripe_subscription_id && bestehend.status === "active") {
-    return res.status(400).json({ error: "Sie haben bereits ein aktives Abo." });
   }
 
   // Subscription auf Premium (30 Tage) setzen
@@ -94,8 +96,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (upsertError) {
     console.error("redeem-code: Freischaltung fehlgeschlagen", upsertError);
+    // Den verbrauchten Code wieder freigeben, sonst ist er für niemanden mehr
+    // nutzbar, obwohl nichts freigeschaltet wurde.
+    const { error: rollbackError } = await supabaseAdmin
+      .from("redeemed_codes")
+      .delete()
+      .eq("code", normalizedCode)
+      .eq("user_id", user.id);
+    if (rollbackError) {
+      console.error("redeem-code: Ruecknahme des Codes fehlgeschlagen", rollbackError);
+      return res.status(500).json({
+        error:
+          "Der Code wurde registriert, die Freischaltung schlug aber fehl. Bitte melden Sie sich bei info@vorsorgewaage.de.",
+      });
+    }
     return res.status(500).json({
-      error: "Der Code wurde registriert, die Freischaltung schlug aber fehl. Bitte melden Sie sich bei info@vorsorgewaage.de.",
+      error: "Die Freischaltung schlug fehl. Bitte versuchen Sie es erneut.",
     });
   }
 

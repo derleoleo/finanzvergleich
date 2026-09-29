@@ -9,9 +9,15 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-09-29c" as const;
+export const MODELL_VERSION = "2026-09-29d" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-09-29d",
+    aenderung:
+      "Rentenlücke nach erreichtem Rentenbeginn rechnet nur noch die verbleibenden " +
+      "Jahre; Entnahmeformel behandelt negative Zinssätze korrekt statt als Nullzins.",
+  },
   {
     version: "2026-09-29c",
     aenderung:

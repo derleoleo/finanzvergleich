@@ -653,9 +653,12 @@ export function berechneAuszahlung(
  */
 export function monatlicheEntnahme(kapital: number, rMonat: number, monate: number): number {
   if (monate <= 0) return 0;
-  return rMonat > 0
-    ? (kapital * rMonat) / (1 - Math.pow(1 + rMonat, -monate))
-    : kapital / monate;
+  // Die Annuitätenformel gilt auch für negative Zinssätze. Sie dort auf den
+  // Nullzinsfall zurückzusetzen, hätte eine zu hohe tragfähige Entnahme
+  // ausgewiesen. Nur exakt null (und der Sonderfall −100 %) braucht die
+  // einfache Teilung.
+  if (Math.abs(rMonat) < 1e-9 || rMonat <= -1) return kapital / monate;
+  return (kapital * rMonat) / (1 - Math.pow(1 + rMonat, -monate));
 }
 
 /** Freies Depot am Laufzeitende: Verkauf mit Teilfreistellung, abzüglich

@@ -43,6 +43,8 @@ export type RentenlueckeErgebnis = {
   /** Rentenbeginn liegt nicht mehr in der Zukunft – Ansparen entfällt. */
   retirement_reached: boolean;
   withdrawal_end_age: number;
+  /** Monate, für die das Kapital ab Entnahmebeginn reichen muss. */
+  entnahmemonate: number;
 };
 
 const zahl = (wert: unknown): number => {
@@ -80,6 +82,7 @@ export function berechneRentenluecke(
       gap_already_covered: true,
       retirement_reached,
       withdrawal_end_age,
+      entnahmemonate: 0,
     };
   }
 
@@ -93,7 +96,11 @@ export function berechneRentenluecke(
   // Realzins nach Fisher; damit bleibt die Kaufkraft der Entnahme erhalten
   const realzinsJahr = inflation > -1 ? (1 + rendite) / (1 + inflation) - 1 : rendite;
   const realzinsMonat = calculateMonthlyReturn(realzinsJahr * 100);
-  const monate_rente = Math.max(1, Math.round((withdrawal_end_age - retirement_age) * 12));
+  // Ist der Rentenbeginn erreicht, zählt die Zeit ab heute. Sonst würde für
+  // eine 75-jährige Person weiterhin Kapital für 23 Jahre ab 67 gerechnet,
+  // obwohl nur noch 15 Jahre bis zum Planende übrig sind.
+  const beginnAlter = retirement_reached ? Math.max(current_age, retirement_age) : retirement_age;
+  const monate_rente = Math.max(1, Math.round((withdrawal_end_age - beginnAlter) * 12));
 
   const capital_needed_at_retirement =
     Math.abs(realzinsMonat) > 1e-9
@@ -135,5 +142,6 @@ export function berechneRentenluecke(
     // fehlt. Die Oberfläche muss das benennen statt „nichts zu tun“ anzuzeigen.
     retirement_reached,
     withdrawal_end_age,
+    entnahmemonate: monate_rente,
   };
 }

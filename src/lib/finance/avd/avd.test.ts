@@ -880,7 +880,13 @@ describe('Auszahlvergleich AVD vs. Depot (F01)', () => {
 
   it('teilt ohne Rendite schlicht auf die Monate auf', () => {
     expect(monatlicheEntnahme(120_000, 0, 240)).toBeCloseTo(500);
-    expect(monatlicheEntnahme(120_000, -0.01, 240)).toBeCloseTo(500);
+  });
+
+  it('rechnet negative Zinssätze korrekt statt sie wie Nullzins zu behandeln', () => {
+    // Bei Wertverlust trägt dasselbe Kapital eine kleinere Entnahme (N06)
+    const negativ = monatlicheEntnahme(120_000, -0.001, 240);
+    expect(negativ).toBeLessThan(500);
+    expect(negativ).toBeGreaterThan(0);
   });
 
   it('rechnet die Depot-Entnahme nicht mehr ohne Verzinsung', () => {

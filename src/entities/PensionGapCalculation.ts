@@ -13,6 +13,8 @@ export type PensionGapResults = {
   monthly_gap_at_retirement?: number;
   retirement_reached?: boolean;
   withdrawal_end_age?: number;
+  /** Monate, für die das Kapital ab Entnahmebeginn reichen muss (N05). */
+  entnahmemonate?: number;
   modell_version?: string;
   bewertet_am?: string;
   rechtsstand?: string;

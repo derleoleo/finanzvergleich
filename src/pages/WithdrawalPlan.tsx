@@ -356,7 +356,9 @@ export default function WithdrawalPlan() {
                         onChange={(v) => setStartAge(v)}
                         className="bg-slate-50 border-slate-200"
                       />
-                      <p className="text-xs text-slate-500">bis Alter {endAge}</p>
+                      <p className="text-xs text-slate-500">
+                        bis einschließlich Alter {endAge}
+                      </p>
                     </div>
                   </div>
 
@@ -492,7 +494,8 @@ export default function WithdrawalPlan() {
                       </li>
                       <li>• <strong>Je Jahr:</strong> Entnahme zu Jahresbeginn, danach Rendite auf den Rest (Verluste werden negativ ausgewiesen)</li>
                       <li>
-                        • <strong>Alter {endAge}:</strong>{" "}
+                        • <strong>Ende:</strong> letzte Entnahme im Jahr, in dem Alter {endAge}{" "}
+                        erreicht wird –{" "}
                         {komplettEntnahme
                           ? "Restkapital wird vollständig entnommen"
                           : "Restkapital bleibt stehen"}
