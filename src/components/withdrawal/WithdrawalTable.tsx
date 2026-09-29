@@ -21,9 +21,11 @@ type Props = {
   isDetailMode: boolean;
   onSpecialWithdrawalChange: (year: number, amount: string) => void;
   forPrint?: boolean;
+  /** Wird im letzten Jahr das Restkapital entnommen? Nur dann passt „Komplett". */
+  komplettEntnahmeAmEnde?: boolean;
 };
 
-export default function WithdrawalTable({ data, isDetailMode, onSpecialWithdrawalChange, forPrint = false }: Props) {
+export default function WithdrawalTable({ data, isDetailMode, onSpecialWithdrawalChange, forPrint = false, komplettEntnahmeAmEnde = false }: Props) {
 
 
   // For print, show all data. For screen, show first 10 years and last few years
@@ -92,7 +94,9 @@ export default function WithdrawalTable({ data, isDetailMode, onSpecialWithdrawa
                         <Badge variant="outline" className="ml-2 text-xs">Start</Badge>
                       )}
                       {rowData.isLastYear && (
-                        <Badge className="ml-2 text-xs bg-purple-600">Komplett</Badge>
+                        <Badge className="ml-2 text-xs bg-purple-600">
+                          {komplettEntnahmeAmEnde ? "Komplett" : "Planende"}
+                        </Badge>
                       )}
                       {rowData.endCapital === 0 && rowData.year > 0 && !rowData.isLastYear && (
                         <Badge variant="destructive" className="ml-2 text-xs">Ende</Badge>

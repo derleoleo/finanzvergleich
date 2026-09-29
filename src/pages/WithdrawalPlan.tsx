@@ -13,6 +13,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useLocalStorage } from "@/utils/useLocalStorage";
 import { UserDefaults } from "@/entities/UserDefaults";
+import { baueEntnahmeplan } from "@/lib/finance/entnahmeplan";
 import { Calculation, type CalculationModel } from "@/entities/Calculation";
 import { SinglePaymentCalculation, type SinglePaymentModel } from "@/entities/SinglePaymentCalculation";
 import { BestAdviceCalculation, type BestAdviceModel } from "@/entities/BestAdviceCalculation";
@@ -32,80 +33,8 @@ type AnyCalc = (CalculationModel | SinglePaymentModel | BestAdviceModel) & {
   fund_expected_return?: number;
 };
 
-type WithdrawalRow = {
-  year: number;
-  age: number;
-  startCapital: number;
-  withdrawal: number;
-  growth: number;
-  endCapital: number;
-  totalWithdrawn: number;
-  isLastYear?: boolean;
-};
-
-type PlanParams = {
-  startCapital: number;
-  annualWithdrawal: number;
-  annualReturnPercent: number;
-  startAge: number;
-  endAge: number;
-  /** Sonderentnahmen je Jahr (nur Expertenmodus, Szenario A) */
-  specialWithdrawals?: Record<number, number>;
-};
-
-/** Simuliert den Kapitalverlauf: Jahr 0 wächst ohne Entnahme, ab Jahr 1
- *  Entnahme zu Jahresbeginn, Komplettentnahme im letzten Jahr. */
-function buildPlan({ startCapital, annualWithdrawal, annualReturnPercent, startAge, endAge, specialWithdrawals }: PlanParams): WithdrawalRow[] {
-  if (startCapital === 0) return [];
-  if (startAge >= endAge) {
-    return [{
-      year: 0, age: startAge,
-      startCapital: Math.round(startCapital), withdrawal: Math.round(startCapital),
-      growth: 0, endCapital: 0, totalWithdrawn: Math.round(startCapital), isLastYear: true,
-    }];
-  }
-
-  const ar = annualReturnPercent / 100;
-  let capital = startCapital;
-  const data: WithdrawalRow[] = [];
-  let yearIndex = 0;
-  let totalWithdrawn = 0;
-
-  const initialGrowth = capital * ar;
-  capital += initialGrowth;
-  data.push({
-    year: 0, age: startAge,
-    startCapital: Math.round(startCapital), withdrawal: 0,
-    growth: Math.round(initialGrowth), endCapital: Math.round(capital), totalWithdrawn: 0,
-  });
-
-  while (yearIndex < endAge - startAge && capital > 0) {
-    yearIndex++;
-    const currentAge = startAge + yearIndex;
-    const startYearCapital = capital;
-    const isLastYearOfPlan = currentAge === endAge;
-    const special = specialWithdrawals?.[yearIndex];
-    const withdrawalAmount = isLastYearOfPlan ? startYearCapital : (special ?? annualWithdrawal);
-    const actualWithdrawal = Math.min(withdrawalAmount, startYearCapital);
-    const capitalAfterWithdrawal = startYearCapital - actualWithdrawal;
-    const growth = capitalAfterWithdrawal * ar;
-    capital = capitalAfterWithdrawal + growth;
-    totalWithdrawn += actualWithdrawal;
-
-    data.push({
-      year: yearIndex, age: currentAge,
-      startCapital: Math.round(Math.max(0, startYearCapital)),
-      withdrawal: Math.round(actualWithdrawal),
-      growth: Math.round(Math.max(0, growth)),
-      endCapital: Math.round(Math.max(0, capital)),
-      totalWithdrawn: Math.round(totalWithdrawn),
-      isLastYear: isLastYearOfPlan,
-    });
-
-    if (capital <= 0 || isLastYearOfPlan) break;
-  }
-  return data;
-}
+/** Alias, damit der Seitencode unverändert von buildPlan sprechen kann. */
+const buildPlan = baueEntnahmeplan;
 
 export default function WithdrawalPlan() {
   const _wd = UserDefaults.load();
@@ -125,6 +54,10 @@ export default function WithdrawalPlan() {
   const [customAnnualReturn, setCustomAnnualReturn] = useLocalStorage<number>("wp_customAnnualReturn", 6.0);
   const [startAge, setStartAge] = useLocalStorage<number>("wp_startAge", _wd.withdrawal_start_age);
   const [isDetailMode, setIsDetailMode] = useLocalStorage<boolean>("wp_isDetailMode", false);
+  // Audit F15: Entnahmebeginn und Restkapital sind jetzt Entscheidungen,
+  // keine stillen Annahmen der Engine.
+  const [aufschubJahre, setAufschubJahre] = useLocalStorage<number>("wp_aufschubJahre", 0);
+  const [komplettEntnahme, setKomplettEntnahme] = useLocalStorage<boolean>("wp_komplettEntnahme", false);
   const [specialWithdrawals, setSpecialWithdrawals] = useLocalStorage<Record<number, number>>("wp_specialWithdrawals", {});
 
   // Szenario-Vergleich: zweite Entnahmehöhe nebeneinander darstellen
@@ -189,8 +122,11 @@ export default function WithdrawalPlan() {
       startAge,
       endAge,
       specialWithdrawals: isDetailMode ? specialWithdrawals : undefined,
+      aufschubJahre,
+      komplettentnahmeAmEnde: komplettEntnahme,
     }),
-    [startCapital, customWithdrawal, customAnnualReturn, startAge, endAge, isDetailMode, specialWithdrawals]
+    [startCapital, customWithdrawal, customAnnualReturn, startAge, endAge, isDetailMode,
+     specialWithdrawals, aufschubJahre, komplettEntnahme]
   );
 
   // Szenario B: gleiche Parameter, andere Entnahmehöhe (ohne Sonderentnahmen)
@@ -202,9 +138,12 @@ export default function WithdrawalPlan() {
           annualReturnPercent: customAnnualReturn,
           startAge,
           endAge,
+          aufschubJahre,
+          komplettentnahmeAmEnde: komplettEntnahme,
         })
       : [],
-    [compareEnabled, startCapital, compareWithdrawal, customAnnualReturn, startAge, endAge]
+    [compareEnabled, startCapital, compareWithdrawal, customAnnualReturn, startAge, endAge,
+     aufschubJahre, komplettEntnahme]
   );
 
   const handleSpecialWithdrawalChange = (year: number, amount: string) => {
@@ -339,6 +278,37 @@ export default function WithdrawalPlan() {
                     </div>
                   </div>
 
+                  {/* Entnahmebeginn und Restkapital */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="aufschub">Entnahme beginnt in (Jahren)</Label>
+                      <NumericInput
+                        id="aufschub"
+                        value={aufschubJahre}
+                        onChange={(v) => setAufschubJahre(Math.max(0, Math.round(v)))}
+                        className="bg-slate-50 border-slate-200"
+                      />
+                      <p className="text-xs text-slate-500">
+                        0 = sofort ab Alter {startAge}
+                      </p>
+                    </div>
+                    <div className="space-y-2 flex flex-col justify-end">
+                      <div className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2">
+                        <Label htmlFor="komplett" className="text-sm">
+                          Restkapital am Ende entnehmen
+                        </Label>
+                        <Switch
+                          id="komplett"
+                          checked={komplettEntnahme}
+                          onCheckedChange={setKomplettEntnahme}
+                        />
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        Aus = Restkapital bleibt stehen (z. B. als Erbe)
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Expertenmodus */}
                   <div className="flex items-center space-x-2">
                     <Switch id="detail-mode" checked={isDetailMode} onCheckedChange={setIsDetailMode} />
@@ -432,9 +402,20 @@ export default function WithdrawalPlan() {
                       <Info className="w-3.5 h-3.5" /> Berechnungslogik
                     </h4>
                     <ul className="text-xs text-slate-600 space-y-0.5">
-                      <li>• <strong>Jahr 0:</strong> Startkapital wächst ohne Entnahme</li>
-                      <li>• <strong>Ab Jahr 1:</strong> Entnahme zu Jahresbeginn, dann Verzinsung</li>
-                      <li>• <strong>Alter {endAge}:</strong> Komplettentnahme des Restkapitals</li>
+                      <li>
+                        • <strong>Start:</strong>{" "}
+                        {aufschubJahre > 0
+                          ? `erste Entnahme nach ${aufschubJahre} Jahr${aufschubJahre === 1 ? "" : "en"}, bis dahin wächst das Kapital`
+                          : `Entnahme ab Alter ${startAge}`}
+                      </li>
+                      <li>• <strong>Je Jahr:</strong> Entnahme zu Jahresbeginn, danach Rendite auf den Rest (Verluste werden negativ ausgewiesen)</li>
+                      <li>
+                        • <strong>Alter {endAge}:</strong>{" "}
+                        {komplettEntnahme
+                          ? "Restkapital wird vollständig entnommen"
+                          : "Restkapital bleibt stehen"}
+                      </li>
+                      <li>• Steuern auf Entnahmen sind nicht enthalten.</li>
                     </ul>
                   </div>
 
@@ -486,7 +467,7 @@ export default function WithdrawalPlan() {
                           color={s.color}
                           showHint={false}
                         />
-                        <WithdrawalTable
+                        <WithdrawalTable komplettEntnahmeAmEnde={komplettEntnahme}
                           data={s.data}
                           isDetailMode={false}
                           onSpecialWithdrawalChange={() => {}}
@@ -532,7 +513,7 @@ export default function WithdrawalPlan() {
 
                   <div data-pdf-section="verlauf" data-pdf-single-col className="grid lg:grid-cols-2 gap-8 mt-8">
                     <WithdrawalChart data={withdrawalData} />
-                    <WithdrawalTable
+                    <WithdrawalTable komplettEntnahmeAmEnde={komplettEntnahme}
                       data={withdrawalData}
                       isDetailMode={isDetailMode}
                       onSpecialWithdrawalChange={handleSpecialWithdrawalChange}
