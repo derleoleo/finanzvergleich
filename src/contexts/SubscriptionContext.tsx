@@ -73,10 +73,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
       // Monatsstand kommt aus dem eigenen Zähler (Audit F17): Zeilen zu zählen
       // hieße, dass Löschen das Kontingent wieder freigibt.
-      const monatsStart = new Date();
-      const monat = new Date(monatsStart.getFullYear(), monatsStart.getMonth(), 1)
-        .toISOString()
-        .slice(0, 10);
+      // Monatsschlüssel lokal bauen: toISOString() rechnet nach UTC um und
+      // landet in Mitteleuropa auf dem Vormonat (z. B. 2026-08-31).
+      const jetzt = new Date();
+      const monat = `${jetzt.getFullYear()}-${String(jetzt.getMonth() + 1).padStart(2, "0")}-01`;
 
       const [totalResults, zaehler] = await Promise.all([
         Promise.all(
