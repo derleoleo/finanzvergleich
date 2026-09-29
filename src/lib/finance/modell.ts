@@ -9,9 +9,16 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-09-29" as const;
+export const MODELL_VERSION = "2026-09-29b" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-09-29b",
+    aenderung:
+      "BestAdvice: steuerliche Basis aus den bisher eingezahlten Beiträgen statt " +
+      "aus dem heutigen Vertragswert, Wechselkosten mindern das übertragene Kapital, " +
+      "Break-even-Rendite gegenüber der Garantie ausgewiesen.",
+  },
   {
     version: "2026-09-29",
     aenderung:

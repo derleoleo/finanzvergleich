@@ -32,6 +32,7 @@ import {
   calculateLifeInsuranceTax,
 } from "@/components/shared/TaxCalculations";
 import { simulateLv } from "@/lib/finance/simulation";
+import { beitragsbasis, breakEvenRendite } from "@/lib/finance/bestadvice";
 
 const DRAFT_KEY = "fv_bestadvice_draft_v1";
 
@@ -43,9 +44,13 @@ type ExtraLV = {
   guaranteed_end_capital: number;
   current_product_tax_free: boolean;
   // Vertragsbeginn (Jahr) für die 12-Jahres-Prüfung des Halbeinkünfteverfahrens;
-  // ohne Angabe wird die Restlaufzeit herangezogen. Nur Formular-State,
-  // wird nicht in Supabase gespeichert.
+  // ohne Angabe wird die Restlaufzeit herangezogen. Wird im Ergebnis
+  // mitgespeichert (Audit F06), damit die Detailseite dieselbe Grundlage nutzt.
   contract_start_year?: number | null;
+  /** Bis heute eingezahlte Beiträge – steuerliche Basis (Audit F06). */
+  eingezahlt_bisher?: number | null;
+  /** Einmalige Kosten beim Wechsel, z. B. Storno oder Übertragung. */
+  wechselkosten?: number;
 };
 
 type FormData = {
@@ -57,6 +62,10 @@ type FormData = {
   current_capital: number;
   guaranteed_end_capital: number;
   current_contract_start_year: number | null;
+  /** Bis heute eingezahlte Beiträge des Bestandsvertrags (Audit F06). */
+  current_eingezahlt_bisher: number | null;
+  /** Einmalige Wechselkosten des Bestandsvertrags. */
+  current_wechselkosten: number;
   // Weitere Bestandsverträge
   extra_lvs: ExtraLV[];
   // Fonds-LV
@@ -86,6 +95,8 @@ function makeDefaults(): FormData {
     current_capital: 10000,
     guaranteed_end_capital: 80000,
     current_contract_start_year: null,
+    current_eingezahlt_bisher: null,
+    current_wechselkosten: 0,
     extra_lvs: [],
     birth_year: d.birth_year,
     assumed_annual_return: d.assumed_annual_return,
@@ -148,6 +159,8 @@ export default function BestAdviceCalculator() {
       guaranteed_end_capital: toNum(formData.guaranteed_end_capital),
       current_product_tax_free: formData.current_product_tax_free,
       contract_start_year: formData.current_contract_start_year,
+      eingezahlt_bisher: formData.current_eingezahlt_bisher,
+      wechselkosten: toNum(formData.current_wechselkosten),
     },
     ...(formData.extra_lvs ?? []),
   ];
@@ -155,7 +168,13 @@ export default function BestAdviceCalculator() {
   const totalMonthly = allLVs.reduce((s, lv) => s + lv.monthly_contribution, 0);
   const totalCapital = allLVs.reduce((s, lv) => s + lv.current_capital, 0);
   const effectiveMonthly = formData.fonds_lv_monthly_override ?? totalMonthly;
-  const effectiveCapital = formData.fonds_lv_capital_override ?? totalCapital;
+  // Beim Wechsel fallen Storno-/Übertragungskosten an; sie mindern das
+  // Kapital, das tatsächlich in der Fonds-LV ankommt (Audit F06).
+  const summeWechselkosten = allLVs.reduce((s, lv) => s + toNum(lv.wechselkosten ?? 0), 0);
+  const effectiveCapital = Math.max(
+    0,
+    (formData.fonds_lv_capital_override ?? totalCapital) - summeWechselkosten
+  );
   const isMultiLV = (formData.extra_lvs ?? []).length > 0;
 
   const calculateResults = () => {
@@ -215,7 +234,14 @@ export default function BestAdviceCalculator() {
     const currentYear = new Date().getFullYear();
     const payoutYear = currentYear + years;
     const lvs_results = allLVs.map((lv) => {
-      const lv_total_contributions = lv.current_capital + lv.monthly_contribution * months;
+      // Steuerlich zählen die eingezahlten Beiträge, nicht der heutige Wert.
+      // Ohne Angabe bleibt der Rückkaufswert die Ersatzgröße (Audit F06).
+      const lv_total_contributions = beitragsbasis({
+        eingezahltBisher: lv.eingezahlt_bisher,
+        aktuellerWert: lv.current_capital,
+        monatsbeitrag: lv.monthly_contribution,
+        monate: months,
+      });
       const gross = lv.guaranteed_end_capital;
       let tax = 0;
       if (!lv.current_product_tax_free) {
@@ -256,6 +282,41 @@ export default function BestAdviceCalculator() {
       depot_net,
       depot_tax,
       lvs_results,
+      // Garantie gegen Prognose: Welche Rendite braucht die Fonds-LV, um die
+      // garantierte Leistung des Bestands einzuholen? (Audit F06)
+      break_even_rendite: breakEvenRendite(
+        {
+          months,
+          monthly_contribution: effectiveMonthly,
+          initial_capital: effectiveCapital,
+          funds: [
+            {
+              allocation_eur: effectiveMonthly,
+              ongoing_costs_percent: toNum(formData.lv_fund_ongoing_costs_percent),
+            },
+          ],
+          cost:
+            formData.lv_cost_type === "eur"
+              ? {
+                  type: "eur",
+                  acquisition_costs_eur: toNum(formData.life_insurance_acquisition_costs_eur),
+                  admin_costs_monthly_eur: toNum(formData.lv_admin_costs_monthly_eur),
+                }
+              : {
+                  type: "percent",
+                  effective_costs_percent: toNum(formData.lv_effective_costs_percent),
+                },
+        },
+        depot_gross
+      ),
+      wechselkosten_gesamt: Math.round(summeWechselkosten),
+      eingezahlt_bisher_gesamt: allLVs.reduce(
+        (summe, lv) => summe + toNum(lv.eingezahlt_bisher ?? 0),
+        0
+      ),
+      // Vertragsbeginn mitspeichern, damit die Detailseite dieselbe
+      // Steuerqualifikation nutzt wie die Berechnung
+      contract_start_years: allLVs.map((lv) => lv.contract_start_year ?? null),
       // Annahmen zum Berechnungszeitpunkt mitspeichern → geräteunabhängige Anzeige
       tax_settings,
       ...modellStempel(age_at_payout),
@@ -275,6 +336,10 @@ export default function BestAdviceCalculator() {
         fonds_lv_monthly_override: _fm,
         fonds_lv_capital_override: _fc,
         current_contract_start_year: _cs,
+        // Beitragssumme und Wechselkosten haben keine eigene Spalte; sie
+        // stecken in den Ergebnissen (Audit F06).
+        current_eingezahlt_bisher: _eb,
+        current_wechselkosten: _wk,
         ...formBase
       } = formData;
       const totalGuaranteed = allLVs.reduce((s, lv) => s + lv.guaranteed_end_capital, 0);
@@ -436,6 +501,33 @@ export default function BestAdviceCalculator() {
                       className="bg-white border-slate-300 focus:border-blue-500" />
                     <p className="text-xs text-slate-500">
                       Für die 12-Jahres-Prüfung (Halbeinkünfteverfahren). Ohne Angabe zählt die Restlaufzeit.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      Bisher eingezahlte Beiträge (€)
+                    </Label>
+                    <NumericInput value={formData.current_eingezahlt_bisher ?? 0}
+                      onChange={(val) => update("current_eingezahlt_bisher", val > 0 ? val : null)}
+                      className="bg-white border-slate-300 focus:border-blue-500" />
+                    <p className="text-xs text-slate-500">
+                      Steuerliche Basis. Ohne Angabe wird ersatzweise der heutige Vertragswert
+                      angesetzt – das unterschätzt die Steuer meist.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">
+                      Kosten beim Wechsel (€)
+                    </Label>
+                    <NumericInput value={formData.current_wechselkosten}
+                      onChange={(val) => update("current_wechselkosten", val)}
+                      className="bg-white border-slate-300 focus:border-blue-500" />
+                    <p className="text-xs text-slate-500">
+                      Storno-, Übertragungs- oder Abschlusskosten; mindern das Kapital,
+                      das in der Fonds-LV ankommt.
                     </p>
                   </div>
                 </div>

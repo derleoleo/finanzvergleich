@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import ModellHinweis from "@/components/results/ModellHinweis";
+import { breakEvenEinordnung } from "@/lib/finance/bestadvice";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { BestAdviceCalculation, type BestAdviceModel, type LVResult } from "@/entities/BestAdviceCalculation";
@@ -98,14 +99,19 @@ function buildSeries(calc: BestAdviceModel, mode: Mode) {
         lvTaxOptions
       );
 
-      // Bestands-LV ist ebenfalls eine Versicherung → Halbeinkünfte-Regel
-      // (Vertragsbeginn ist im gespeicherten Datensatz nicht verfügbar,
-      // daher Qualifikation über das Checkpoint-Jahr wie bei der Fonds-LV).
+      // Bestands-LV ist ebenfalls eine Versicherung → Halbeinkünfte-Regel.
+      // Der Vertragsbeginn wird seit Audit F06 mitgespeichert; damit zählt die
+      // Gesamtlaufzeit statt nur der Restlaufzeit (Alt-Datensätze: Rückfall).
+      const vertragsbeginn = calc.results?.contract_start_years?.[0] ?? null;
+      const bestandsJahre =
+        vertragsbeginn && vertragsbeginn > 1900
+          ? new Date().getFullYear() + year - vertragsbeginn
+          : year;
       let bestandNet = bestandPoint.capital;
       if (!calc.current_product_tax_free) {
         const bestandTax = calculateLifeInsuranceTax(
           bestandPoint.capital - bestandPoint.contributions_cum,
-          year,
+          bestandsJahre,
           age,
           lvTaxOptions
         );
@@ -237,6 +243,27 @@ export default function BestAdviceDetail() {
               farbe: "#2563eb",
             }}
           />
+        </div>
+
+        {/* Garantie gegen Prognose einordnen (Audit F06) */}
+        <div data-pdf-section="breakeven">
+          <Card className="border-0 shadow-lg bg-white">
+            <CardContent className="p-5 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <Lock className="w-4 h-4 text-amber-500" />
+                Garantie gegen Prognose
+              </div>
+              <p className="text-slate-800">{breakEvenEinordnung(r.break_even_rendite ?? null)}</p>
+              <p className="text-xs text-slate-500">
+                Die Leistung des Bestandsvertrags ist zugesagt, die der Fonds-LV hängt von der
+                Wertentwicklung ab. Angesetzt wurden {Number(calculation.assumed_annual_return || 0)
+                  .toLocaleString("de-DE", { maximumFractionDigits: 2 })} % p.a.
+                {r.wechselkosten_gesamt
+                  ? ` Wechselkosten von ${formatCurrency(r.wechselkosten_gesamt)} sind bereits abgezogen.`
+                  : ""}
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Vergleich-Kacheln */}
@@ -381,7 +408,10 @@ export default function BestAdviceDetail() {
               </ResponsiveContainer>
             </div>
             <p className="text-xs text-slate-500 mt-2">
-              Bestandsvertrag als lineare Projektion von Kapital → Endkapital. Fonds-LV: Monatsweise Simulation.
+              Die Kurve des Bestandsvertrags ist eine gerade Verbindung vom heutigen Wert zur
+              garantierten Ablaufleistung, kein belegter Rückkaufswertverlauf – der tatsächliche
+              Verlauf liegt in den ersten Jahren meist darunter. Die Fonds-LV wird monatsweise
+              simuliert. Garantierte Leistung und Prognose sind nicht gleich sicher.
             </p>
           </CardContent>
         </Card>
@@ -421,6 +451,7 @@ export default function BestAdviceDetail() {
       <PDFSectionDialog
         sections={[
           { id: "empfehlung", label: "Vorsorgewaage (Ergebnis)" },
+          { id: "breakeven", label: "Garantie gegen Prognose" },
           { id: "vergleich", label: "Vergleich (Bestand vs. Fonds-LV)" },
           { id: "lv-aufschluesselung", label: "LV-Aufschlüsselung" },
           { id: "grafik", label: "Verlaufsgrafik" },

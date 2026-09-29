@@ -30,6 +30,11 @@ export type BestAdviceResults = {
 
   // Modellstand, Stichtag und Rechtsstand der Berechnung (Audit F13);
   // ältere Datensätze: undefined
+  // Audit F06: Einordnung von Garantie gegen Prognose
+  break_even_rendite?: number | null;
+  wechselkosten_gesamt?: number;
+  eingezahlt_bisher_gesamt?: number;
+  contract_start_years?: (number | null)[];
   modell_version?: string;
   bewertet_am?: string;
   rechtsstand?: string;
