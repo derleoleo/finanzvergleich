@@ -18,12 +18,22 @@ export default defineConfig({
   // Nutzt das installierte Chrome statt eines eigenen Browser-Downloads;
   // in der CI stellt "playwright install chrome" es bereit.
   projects: [{ name: "chrome", use: { ...devices["Desktop Chrome"], channel: "chrome" } }],
+  // Zwei Server: die gebaute App für die Seitentests und der Dev-Server für
+  // den PDF-Test, der Quellmodule einzeln lädt.
   webServer: process.env.E2E_BASE_URL
     ? undefined
-    : {
-        command: "npm run preview -- --port 4173",
-        url: "http://localhost:4173",
-        reuseExistingServer: !process.env.CI,
-        timeout: 60_000,
-      },
+    : [
+        {
+          command: "npm run preview -- --port 4173",
+          url: "http://localhost:4173",
+          reuseExistingServer: !process.env.CI,
+          timeout: 60_000,
+        },
+        {
+          command: "npm run dev -- --port 5173",
+          url: "http://localhost:5173",
+          reuseExistingServer: !process.env.CI,
+          timeout: 60_000,
+        },
+      ],
 });

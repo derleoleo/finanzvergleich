@@ -3,9 +3,14 @@ import { expect, test } from "@playwright/test";
 test.describe("Öffentliche Seiten", () => {
   test("Landingpage zeigt Marke, Preis und Rechtslinks", async ({ page }) => {
     const fehler: string[] = [];
+    // Abstürze zählen immer. Netzwerkfehler nicht: In der CI gibt es keine
+    // echten Supabase-Zugangsdaten, die Anmeldeabfrage schlägt dort fehl.
     page.on("pageerror", (e) => fehler.push(e.message));
     page.on("console", (m) => {
-      if (m.type() === "error") fehler.push(m.text());
+      const text = m.text();
+      const netzwerk =
+        /Failed to load resource|net::|supabase|nicht-konfiguriert/i.test(text);
+      if (m.type() === "error" && !netzwerk) fehler.push(text);
     });
 
     await page.goto("/");
