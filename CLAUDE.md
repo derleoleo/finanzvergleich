@@ -10,10 +10,12 @@ npm run build      # TypeScript type check + Vite production build
 npm run lint       # ESLint (flat config v9+)
 npm run test       # Vitest (unit tests for the calculation engine)
 npm run test:watch # Vitest in watch mode
+npm run typecheck:api  # TypeScript check for the Vercel functions in api/
+npm run test:e2e   # Playwright smoke tests (public pages, uses installed Chrome)
 npm run preview    # Preview production build locally
 ```
 
-CI (`.github/workflows/ci.yml`) runs lint + test + build on pushes to main and PRs.
+CI (`.github/workflows/ci.yml`) runs lint + unit tests + `npm run typecheck:api` (Vercel functions, `tsconfig.api.json`) + build + Playwright smoke tests (`npm run test:e2e`, folder `e2e/`, runs against `npm run preview`, no login required) on pushes to main and PRs.
 
 ## Architecture
 
