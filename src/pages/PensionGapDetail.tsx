@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import ModellHinweis from "@/components/results/ModellHinweis";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { PensionGapCalculation, type PensionGapModel } from "@/entities/PensionGapCalculation";
@@ -171,12 +172,28 @@ export default function PensionGapDetail() {
         ) : (
           <>
             {/* Ergebnis-Kacheln */}
+            <ModellHinweis stempel={calculation.results} />
+
+            {r.retirement_reached && r.additional_capital_needed > 0 && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                Der Rentenbeginn liegt nicht mehr in der Zukunft. Es fehlen{" "}
+                <strong>{fmt(r.additional_capital_needed)}</strong> an Kapital; eine monatliche
+                Sparrate lässt sich dafür nicht mehr ermitteln. Sinnvoll sind stattdessen
+                Einmalanlage, späterer Rentenbeginn oder eine geringere Entnahme.
+              </div>
+            )}
+
             <div data-pdf-section="ergebnis" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="border-0 shadow-lg bg-red-50">
                 <CardContent className="p-5">
                   <div className="text-sm text-red-700 font-medium">Monatliche Lücke</div>
                   <div className="text-2xl font-bold text-red-800 mt-1">{fmt(r.monthly_gap)}</div>
-                  <div className="text-xs text-red-600 mt-1">pro Monat im Ruhestand</div>
+                  <div className="text-xs text-red-600 mt-1">
+                    heutige Kaufkraft
+                    {r.monthly_gap_at_retirement != null &&
+                      r.monthly_gap_at_retirement !== r.monthly_gap &&
+                      ` · bei Rentenbeginn ${fmt(r.monthly_gap_at_retirement)}`}
+                  </div>
                 </CardContent>
               </Card>
 
@@ -184,7 +201,9 @@ export default function PensionGapDetail() {
                 <CardContent className="p-5">
                   <div className="text-sm text-slate-600 font-medium">Kapital bei Rente benötigt</div>
                   <div className="text-2xl font-bold text-slate-900 mt-1">{fmt(r.capital_needed_at_retirement)}</div>
-                  <div className="text-xs text-slate-500 mt-1">bis Alter 90 (Annuität)</div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    bis Alter {r.withdrawal_end_age ?? 90} (Annuität, real verzinst)
+                  </div>
                 </CardContent>
               </Card>
 
@@ -200,7 +219,11 @@ export default function PensionGapDetail() {
                 <CardContent className="p-5">
                   <div className="text-sm text-blue-700 font-medium">Monatliche Sparrate benötigt</div>
                   <div className="text-2xl font-bold text-blue-800 mt-1">{fmt(r.monthly_savings_needed)}</div>
-                  <div className="text-xs text-blue-600 mt-1">zusätzlich ab sofort</div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    {r.retirement_reached
+                      ? "Rentenbeginn erreicht – Ansparen entfällt"
+                      : "zusätzlich ab sofort"}
+                  </div>
                 </CardContent>
               </Card>
             </div>

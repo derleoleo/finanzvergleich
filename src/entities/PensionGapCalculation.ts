@@ -9,6 +9,13 @@ export type PensionGapResults = {
   additional_capital_needed: number;
   monthly_savings_needed: number;
   gap_already_covered: boolean;
+  // Audit F15: Planungshorizont, Inflationswirkung und erreichter Rentenbeginn
+  monthly_gap_at_retirement?: number;
+  retirement_reached?: boolean;
+  withdrawal_end_age?: number;
+  modell_version?: string;
+  bewertet_am?: string;
+  rechtsstand?: string;
 };
 
 export type PensionGapModel = {
@@ -24,6 +31,7 @@ export type PensionGapModel = {
   rental_income: number;
   existing_capital: number;
   assumed_annual_return: number;
+  withdrawal_end_age?: number;
   results?: PensionGapResults;
 };
 

@@ -9,9 +9,16 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-09-28" as const;
+export const MODELL_VERSION = "2026-09-29" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-09-29",
+    aenderung:
+      "Rentenlücke: Planungshorizont einstellbar (vorher fest Alter 90), Lücke wird " +
+      "mit der Inflation auf den Rentenbeginn hochgerechnet und in der Rentenphase " +
+      "real verzinst; erreichter Rentenbeginn wird ausgewiesen.",
+  },
   {
     version: "2026-09-28",
     aenderung:

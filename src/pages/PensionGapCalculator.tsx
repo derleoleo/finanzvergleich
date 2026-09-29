@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { looksLikeName } from "@/utils/nameDetection";
 
-import { calculateMonthlyReturn } from "@/components/shared/TaxCalculations";
+import { berechneRentenluecke } from "@/lib/finance/rentenluecke";
+import { modellStempel } from "@/lib/finance/modell";
 
 const DRAFT_KEY = "fv_pensiongap_draft_v1";
 
@@ -26,6 +27,8 @@ type FormData = {
   name: string;
   birth_year: number;
   retirement_age: number;
+  /** Bis zu welchem Alter das Kapital reichen soll (Audit F15). */
+  withdrawal_end_age: number;
   desired_monthly_income: number;
   expected_statutory_pension: number;
   occupational_pension_bav: number;
@@ -41,6 +44,7 @@ function makeDefaults(): FormData {
     name: `Rentenlücke ${new Date().toLocaleDateString("de-DE")}`,
     birth_year: d.birth_year,
     retirement_age: d.retirement_age,
+    withdrawal_end_age: 90,
     desired_monthly_income: d.desired_monthly_income,
     expected_statutory_pension: d.expected_statutory_pension,
     occupational_pension_bav: 0,
@@ -65,64 +69,12 @@ function saveDraft(data: FormData) {
 }
 
 function calculatePensionGapResults(form: FormData) {
-  const currentYear = new Date().getFullYear();
-  const current_age = currentYear - toNum(form.birth_year);
-  const years_to_retirement = Math.max(0, toNum(form.retirement_age) - current_age);
-
-  const monthly_income_needed = toNum(form.desired_monthly_income);
-  const total_monthly_income = toNum(form.expected_statutory_pension)
-    + toNum(form.occupational_pension_bav)
-    + toNum(form.basis_rente)
-    + toNum(form.rental_income);
-
-  const monthly_gap = monthly_income_needed - total_monthly_income;
-
-  if (monthly_gap <= 0) {
-    return {
-      current_age,
-      years_to_retirement,
-      monthly_gap: 0,
-      capital_needed_at_retirement: 0,
-      future_value_of_existing: 0,
-      additional_capital_needed: 0,
-      monthly_savings_needed: 0,
-      gap_already_covered: true,
-    };
-  }
-
-  const annual_return = toNum(form.assumed_annual_return) / 100;
-  const monthly_r = calculateMonthlyReturn(toNum(form.assumed_annual_return));
-
-  // Capital needed at retirement to fund monthly_gap until age 90 (withdrawal horizon)
-  const retirement_horizon_months = Math.max(1, (90 - toNum(form.retirement_age)) * 12);
-  const capital_needed_at_retirement = monthly_r > 0
-    ? monthly_gap * (1 - Math.pow(1 + monthly_r, -retirement_horizon_months)) / monthly_r
-    : monthly_gap * retirement_horizon_months;
-
-  // Future value of existing capital at retirement
-  const future_value_of_existing = toNum(form.existing_capital) * Math.pow(1 + annual_return, years_to_retirement);
-
-  const additional_capital_needed = Math.max(0, capital_needed_at_retirement - future_value_of_existing);
-
-  // Monthly savings needed (PMT formula for FV)
-  const months_to_retirement = years_to_retirement * 12;
-  let monthly_savings_needed = 0;
-  if (additional_capital_needed > 0 && months_to_retirement > 0) {
-    monthly_savings_needed = monthly_r > 0
-      ? additional_capital_needed * monthly_r / (Math.pow(1 + monthly_r, months_to_retirement) - 1)
-      : additional_capital_needed / months_to_retirement;
-  }
-
-  return {
-    current_age,
-    years_to_retirement,
-    monthly_gap: Math.round(monthly_gap),
-    capital_needed_at_retirement: Math.round(capital_needed_at_retirement),
-    future_value_of_existing: Math.round(future_value_of_existing),
-    additional_capital_needed: Math.round(additional_capital_needed),
-    monthly_savings_needed: Math.round(monthly_savings_needed),
-    gap_already_covered: false,
-  };
+  const d = UserDefaults.load();
+  return berechneRentenluecke({
+    ...form,
+    withdrawal_end_age: form.withdrawal_end_age,
+    inflation_percent: d.inflation_percent,
+  });
 }
 
 export default function PensionGapCalculator() {
@@ -156,7 +108,7 @@ export default function PensionGapCalculator() {
     setError(null);
     setIsCalculating(true);
     try {
-      const results = calculatePensionGapResults(formData);
+      const results = { ...calculatePensionGapResults(formData), ...modellStempel() };
       const newCalc = await PensionGapCalculation.create({ ...formData, results });
       incrementCalculationCount();
       navigate(createPageUrl("PensionGapDetail") + `?id=${newCalc.id}`);
@@ -233,7 +185,24 @@ export default function PensionGapCalculator() {
                   </Label>
                   <NumericInput value={formData.retirement_age}
                     onChange={(val) => update("retirement_age", val)} className={inputClass} />
-                  {yearsToRetirement > 0 && <div className="text-xs text-slate-500">Noch {yearsToRetirement} Jahre bis zur Rente</div>}
+                  {yearsToRetirement > 0 ? (
+                    <div className="text-xs text-slate-500">Noch {yearsToRetirement} Jahre bis zur Rente</div>
+                  ) : (
+                    <div className="text-xs text-amber-600">
+                      Rentenbeginn erreicht – eine Sparrate lässt sich nicht mehr berechnen,
+                      der Kapitalbedarf wird trotzdem ausgewiesen.
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    <div className="flex items-center gap-2"><Calendar className="w-4 h-4" />Kapital soll reichen bis Alter</div>
+                  </Label>
+                  <NumericInput value={formData.withdrawal_end_age}
+                    onChange={(val) => update("withdrawal_end_age", val)} className={inputClass} />
+                  <div className="text-xs text-slate-500">
+                    Planungshorizont der Entnahme; Vorgabe 90 Jahre.
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
