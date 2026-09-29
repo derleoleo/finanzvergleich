@@ -63,11 +63,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
           : "free";
       setPlan(activePlan);
 
-      // Monatsbeginn für monatliche Zählung
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-
-      // Gesamt- und Monats-Berechnungen parallel zählen (alle 4 Tabellen)
+      // Gesamtzahl gespeicherter Berechnungen (nur zur Anzeige)
       const tables = [
         "calculations",
         "single_payment_calculations",
@@ -75,26 +71,29 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         "pension_gap_calculations",
       ] as const;
 
-      const [totalResults, monthlyResults] = await Promise.all([
+      // Monatsstand kommt aus dem eigenen Zähler (Audit F17): Zeilen zu zählen
+      // hieße, dass Löschen das Kontingent wieder freigibt.
+      const monatsStart = new Date();
+      const monat = new Date(monatsStart.getFullYear(), monatsStart.getMonth(), 1)
+        .toISOString()
+        .slice(0, 10);
+
+      const [totalResults, zaehler] = await Promise.all([
         Promise.all(
           tables.map((t) =>
             supabase.from(t).select("id", { count: "exact", head: true }).eq("user_id", user.id)
           )
         ),
-        Promise.all(
-          tables.map((t) =>
-            supabase
-              .from(t)
-              .select("id", { count: "exact", head: true })
-              .eq("user_id", user.id)
-              // Spalte heißt in allen vier Tabellen created_date
-              .gte("created_date", monthStart)
-          )
-        ),
+        supabase
+          .from("berechnungs_zaehler")
+          .select("anzahl")
+          .eq("user_id", user.id)
+          .eq("monat", monat)
+          .maybeSingle(),
       ]);
 
       setTotalCalculationCount(totalResults.reduce((s, r) => s + (r.count ?? 0), 0));
-      setMonthlyCalculationCount(monthlyResults.reduce((s, r) => s + (r.count ?? 0), 0));
+      setMonthlyCalculationCount(Number(zaehler.data?.anzahl ?? 0));
     } catch (err) {
       console.error("SubscriptionContext: Ladefehler", err);
     } finally {

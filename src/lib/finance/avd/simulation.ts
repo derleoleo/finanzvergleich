@@ -364,10 +364,19 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
     }
     depotEingezahlt += depotBeitrag;
 
-    // Vorabpauschale (§ 18 InvStG): Basisertrag, gedeckelt auf die Wertsteigerung
+    // Vorabpauschale (§ 18 InvStG): Basisertrag, gedeckelt auf die Wertsteigerung.
+    // Unterjährig gekaufte Anteile zählen nur zeitanteilig: Die Pauschale
+    // vermindert sich um ein Zwölftel je vollem Monat vor dem Erwerbsmonat
+    // (§ 18 Abs. 4 InvStG). Bei monatlichen Beiträgen macht das einen
+    // spürbaren Unterschied gegenüber der reinen Jahresanfangsbetrachtung.
     const wertsteigerung = depotKapital - depotWertJahresanfang - depotBeitrag;
-    const basisertrag =
-      depotWertJahresanfang * basiszinsFuer(jahr) * DEPOT_STEUER.VORABPAUSCHALE_FAKTOR;
+    const basiszinsJahr = basiszinsFuer(jahr) * DEPOT_STEUER.VORABPAUSCHALE_FAKTOR;
+    const monatsrate = depotBeitrag / 12;
+    let basisertragUnterjaehrig = 0;
+    for (let m = 1; m <= 12; m++) {
+      basisertragUnterjaehrig += monatsrate * basiszinsJahr * ((13 - m) / 12);
+    }
+    const basisertrag = depotWertJahresanfang * basiszinsJahr + basisertragUnterjaehrig;
     const vorabpauschale = Math.max(0, Math.min(basisertrag, Math.max(0, wertsteigerung)));
     const vorabStpfl = vorabpauschale * (1 - DEPOT_STEUER.TEILFREISTELLUNG_AKTIENFONDS);
     const vorabSteuer =

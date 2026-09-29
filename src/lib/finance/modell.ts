@@ -9,9 +9,15 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-09-29b" as const;
+export const MODELL_VERSION = "2026-09-29c" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-09-29c",
+    aenderung:
+      "Altersvorsorgedepot: Vorabpauschale des Vergleichsdepots berücksichtigt " +
+      "unterjährige Käufe zeitanteilig (§ 18 Abs. 4 InvStG).",
+  },
   {
     version: "2026-09-29b",
     aenderung:

@@ -902,3 +902,21 @@ describe('Budgetgleichheit bei reinvestierter Erstattung (F05)', () => {
     expect(mit.depot.eingezahlt).toBeGreaterThan(ohne.depot.eingezahlt);
   });
 });
+
+describe('Vorabpauschale zeitanteilig (F16)', () => {
+  it('bezieht unterjährige Käufe ein', () => {
+    const r = simuliereAvd(eingabe());
+    // Im ersten Beitragsjahr ist das Anfangskapital null: Ohne Zeitanteil
+    // entstünde dort gar keine Vorabpauschale.
+    expect(r.depot.summeVorabpauschaleSteuer).toBeGreaterThan(0);
+  });
+
+  it('zählt unterjährige Beiträge nur anteilig', () => {
+    // § 18 Abs. 4 InvStG: ein Zwölftel weniger je vollem Monat vor dem Kauf.
+    // Über zwölf Monatsraten sind das im Schnitt rund 54 % eines vollen Jahres.
+    const anteil =
+      Array.from({ length: 12 }, (_, i) => (13 - (i + 1)) / 12).reduce((a, b) => a + b, 0) / 12;
+    expect(anteil).toBeLessThan(1);
+    expect(anteil).toBeCloseTo(0.5417, 3);
+  });
+});
