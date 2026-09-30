@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import { ABSENDER, liste, mailLayout } from "./_mail-layout.js";
+import { couponFuerWerber, WERBUNG_STATUS } from "./_werbung.js";
 
 // Pflicht: Raw Body für Stripe-Signaturverifikation
 export const config = { api: { bodyParser: false } };
@@ -201,6 +202,97 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           knopf: { text: "Abo verwalten", url: "https://www.vorsorgewaage.de/pricing" },
         }),
       });
+      break;
+    }
+
+    // Erste echte Zahlung des Geworbenen: Jetzt bekommt der Werber seinen
+    // Rabatt. Während des Testzeitraums sind die Rechnungen 0 EUR, deshalb
+    // ist `amount_paid > 0` der verlässliche Auslöser.
+    case "invoice.paid": {
+      const rechnung = event.data.object as Stripe.Invoice;
+      if (!rechnung.amount_paid || rechnung.amount_paid <= 0) break;
+
+      const kundenId = rechnung.customer as string;
+      const { data: geworbenerAbo } = await supabase
+        .from("subscriptions")
+        .select("user_id")
+        .eq("stripe_customer_id", kundenId)
+        .maybeSingle();
+      if (!geworbenerAbo?.user_id) break;
+
+      const { data: werbung } = await supabase
+        .from("werbungen")
+        .select("id, werber_user_id")
+        .eq("geworbener_user_id", geworbenerAbo.user_id)
+        .eq("status", WERBUNG_STATUS.registriert)
+        .maybeSingle();
+      if (!werbung) break;
+
+      const coupon = couponFuerWerber();
+      if (!coupon) {
+        console.error("[stripe-webhook] STRIPE_COUPON_WERBER fehlt – Werbung nicht belohnt", {
+          werbung: werbung.id,
+        });
+        break;
+      }
+
+      // Der Rabatt geht auf das laufende Abo des Werbers. Hat er keines,
+      // bleibt die Werbung offen und wird bei seiner nächsten Zahlung erneut
+      // geprüft – verloren geht sie nicht.
+      const { data: werberAbo } = await supabase
+        .from("subscriptions")
+        .select("stripe_subscription_id")
+        .eq("user_id", werbung.werber_user_id)
+        .maybeSingle();
+      if (!werberAbo?.stripe_subscription_id) break;
+
+      try {
+        await stripe.subscriptions.update(werberAbo.stripe_subscription_id, {
+          discounts: [{ coupon }],
+        });
+      } catch (err) {
+        console.error("[stripe-webhook] Rabatt konnte nicht gesetzt werden", err);
+        return res.status(500).json({ error: "Rabatt fehlgeschlagen" });
+      }
+
+      const { error: statusFehler } = await supabase
+        .from("werbungen")
+        .update({
+          status: WERBUNG_STATUS.belohnt,
+          stripe_coupon_id: coupon,
+          belohnt_am: new Date().toISOString(),
+        })
+        .eq("id", werbung.id)
+        .eq("status", WERBUNG_STATUS.registriert);
+      if (statusFehler) {
+        console.error("[stripe-webhook] Status der Werbung nicht gesetzt", statusFehler);
+        return res.status(500).json({ error: "Speichern fehlgeschlagen" });
+      }
+
+      // Hinweis an den Werber – ohne zu verraten, wer geworben wurde
+      const { data: werberDaten } = await supabase.auth.admin.getUserById(
+        werbung.werber_user_id
+      );
+      const werberMail = werberDaten?.user?.email;
+      if (werberMail) {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        await resend.emails.send({
+          from: ABSENDER,
+          to: werberMail,
+          subject: "Ihre Empfehlung wurde gutgeschrieben",
+          html: mailLayout({
+            titel: "Empfehlung gutgeschrieben",
+            ueberschrift: "Danke für Ihre Empfehlung",
+            unterzeile: "Der Rabatt liegt auf Ihrem Abo.",
+            absaetze: [
+              "Guten Tag,",
+              "jemand, den Sie empfohlen haben, hat ein Premium-Abo abgeschlossen. Ihr Rabatt ist bereits hinterlegt und wird mit der nächsten Rechnung automatisch verrechnet.",
+              "Sie können weiter empfehlen – jede Empfehlung, die zu einem Abo führt, wird gutgeschrieben.",
+            ],
+            knopf: { text: "Abo ansehen", url: "https://www.vorsorgewaage.de/pricing" },
+          }),
+        });
+      }
       break;
     }
 

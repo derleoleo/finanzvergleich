@@ -11,6 +11,7 @@ import Layout from "@/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import ConsentGate from "@/components/ConsentGate";
 import CookieBanner from "@/components/CookieBanner";
+import { werbecodeAusAdresseMerken } from "@/utils/werbung";
 
 // Seiten lazy laden → jede Route wird ein eigener Chunk,
 // das Initial-Bundle bleibt klein (v.a. Recharts-lastige Detail-Seiten)
@@ -101,6 +102,10 @@ function SmartRoot() {
 }
 
 export default function App() {
+  // Empfehlungslink: ?ref= einmal beim Start merken. Die Zuordnung passiert
+  // erst nach der Anmeldung (src/contexts/AuthContext.tsx).
+  werbecodeAusAdresseMerken();
+
   return (
     <BrowserRouter>
       <AuthProvider>

@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { couponFuerGeworbenen, WERBUNG_STATUS } from "./_werbung.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -60,6 +61,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     customerId = customer.id;
   }
 
+  // Weiterempfehlung: Wer über einen Empfehlungslink gekommen ist, bekommt
+  // den Rabatt auf sein erstes Abo. Der Werber wird erst belohnt, wenn hier
+  // tatsächlich gezahlt wird (siehe stripe-webhook.ts).
+  const { data: werbung } = await supabaseAdmin
+    .from("werbungen")
+    .select("status")
+    .eq("geworbener_user_id", user.id)
+    .maybeSingle();
+  const coupon =
+    werbung?.status === WERBUNG_STATUS.registriert
+      ? couponFuerGeworbenen(priceId)
+      : undefined;
+
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
@@ -75,6 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       trial_period_days: 30,
       metadata: { supabase_user_id: user.id },
     },
+    ...(coupon ? { discounts: [{ coupon }] } : {}),
     metadata: { supabase_user_id: user.id },
     success_url: `${req.headers.origin}/pricing?checkout=success`,
     cancel_url: `${req.headers.origin}/pricing`,

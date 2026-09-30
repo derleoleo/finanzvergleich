@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import BrandLogo from "@/components/BrandLogo";
+import Weiterempfehlung from "@/components/Weiterempfehlung";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/lib/supabase";
@@ -359,14 +360,17 @@ export default function Layout({ children }: Props) {
                 </Button>
               </div>
             ) : (
-              <Button
-                variant="outline"
-                className="w-full justify-start text-slate-600 hover:text-slate-900"
-                onClick={() => setShowFeedback(true)}
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Feedback & Wünsche
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-slate-600 hover:text-slate-900"
+                  onClick={() => setShowFeedback(true)}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Feedback & Wünsche
+                </Button>
+                <Weiterempfehlung />
+              </div>
             )}
 
             <div className="flex justify-center gap-3 pt-1">

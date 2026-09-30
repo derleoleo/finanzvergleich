@@ -200,7 +200,30 @@ export default function Datenschutz() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">10. Speicherdauer</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">10. Weiterempfehlung</h2>
+            <p>
+              Wenn Sie die Empfehlungsfunktion nutzen, erzeugen wir zu Ihrem Konto einen
+              Empfehlungscode. Registriert sich eine Person über Ihren Empfehlungslink,
+              speichern wir die Verknüpfung beider Nutzerkonten, den verwendeten Code sowie
+              den Stand der Gutschrift. Das ist erforderlich, um den vereinbarten Rabatt
+              zuzuordnen und eine mehrfache Gutschrift derselben Empfehlung auszuschließen.
+            </p>
+            <p className="mt-3">
+              Wir teilen Ihnen die Anzahl Ihrer Empfehlungen mit, nicht jedoch, wer sich
+              registriert hat. Umgekehrt erfährt die geworbene Person nicht, wem die
+              Gutschrift zugutekommt. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO
+              (Durchführung der vereinbarten Vergünstigung) sowie Art. 6 Abs. 1 lit. f DSGVO
+              (berechtigtes Interesse an der Verhinderung missbräuchlicher Mehrfachnutzung).
+            </p>
+            <p className="mt-3 text-sm text-slate-600">
+              Den Empfehlungslink geben Sie eigenverantwortlich weiter. Bitte versenden Sie ihn
+              nicht unaufgefordert per E-Mail an Personen, die dem nicht zugestimmt haben
+              (§ 7 UWG).
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">11. Speicherdauer</h2>
             <p>Personenbezogene Daten werden gespeichert:</p>
             <ul className="mt-2 space-y-1 list-disc list-inside">
               <li>solange der Nutzungsvertrag besteht,</li>
@@ -217,7 +240,7 @@ export default function Datenschutz() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">11. Cookies & localStorage</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">12. Cookies & localStorage</h2>
             <p>Es werden ausschließlich technisch notwendige Speichertechnologien verwendet:</p>
             <ul className="mt-2 space-y-1 list-disc list-inside">
               <li>Supabase Session-Token (Authentifizierung)</li>
@@ -231,7 +254,7 @@ export default function Datenschutz() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">12. Datensicherheit</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">13. Datensicherheit</h2>
             <p>Es werden folgende Maßnahmen eingesetzt:</p>
             <ul className="mt-2 space-y-1 list-disc list-inside">
               <li>TLS-Verschlüsselung (HTTPS)</li>
@@ -244,7 +267,7 @@ export default function Datenschutz() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">13. Betroffenenrechte</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">14. Betroffenenrechte</h2>
             <p>
               Rechte gemäß Art. 15–21 DSGVO können per E-Mail geltend gemacht werden:{" "}
               <a href="mailto:info@vorsorgewaage.de" className="text-blue-600 hover:underline">

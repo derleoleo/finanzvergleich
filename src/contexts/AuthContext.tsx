@@ -1,3 +1,4 @@
+import { werbungMelden } from '@/utils/werbung'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
@@ -36,6 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Entwürfe des vorigen Kontos in diesem Browser nicht weiterreichen
         lokaleDatenFuerNutzerPruefen(session.user.id)
         await migrateLocalDataToSupabase()
+
+        // Empfehlungscode aus dem Link zuordnen, falls einer gemerkt wurde
+        if (session.access_token) {
+          void werbungMelden(session.access_token)
+        }
 
         // Willkommens-E-Mail beim ersten Anmelden senden (fire-and-forget)
         if (_event === 'SIGNED_IN') {
