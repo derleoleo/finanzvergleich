@@ -120,9 +120,26 @@ export default function Weiterempfehlung() {
           </Button>
 
           <p className="text-[11px] text-slate-500">
-            {stand.geworben === 0
-              ? "Noch keine Empfehlung erfasst."
-              : `${stand.geworben} ${stand.geworben === 1 ? "Empfehlung" : "Empfehlungen"} erfasst, davon ${stand.belohnt} gutgeschrieben.`}
+            {stand.geworben === 0 ? (
+              "Noch keine Empfehlung erfasst."
+            ) : (
+              <>
+                {stand.geworben}{" "}
+                {stand.geworben === 1 ? "Empfehlung" : "Empfehlungen"} erfasst
+                {stand.belohnt > 0 && `, ${stand.belohnt} gutgeschrieben`}.
+                {/* Ohne diesen Satz wirkt eine offene Empfehlung wie ein Fehler */}
+                {stand.geworben > stand.belohnt && (
+                  <>
+                    {" "}
+                    {stand.geworben - stand.belohnt === 1
+                      ? "Eine Gutschrift steht noch aus"
+                      : `${stand.geworben - stand.belohnt} Gutschriften stehen noch aus`}{" "}
+                    – sie erfolgt, sobald die erste Rechnung nach dem
+                    Testzeitraum bezahlt ist.
+                  </>
+                )}
+              </>
+            )}
           </p>
         </>
       )}
