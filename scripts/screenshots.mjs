@@ -55,6 +55,22 @@ const AUFNAHMEN = [
       await seite.getByRole("button", { name: "Vergleich berechnen" }).click();
       await seite.waitForURL(/\/calculator\/detail/, { timeout: 20_000 });
       await seite.waitForTimeout(1500);
+      // Nach Steuern ist die aussagekräftigere Ansicht – und die, mit der
+      // Berater arbeiten.
+      const netto = seite.getByRole("button", { name: "Netto", exact: true });
+      if (await netto.count()) await netto.first().click().catch(() => {});
+      // Der Inhaltsbereich hat einen eigenen Bildlauf – ausdrücklich der
+      // innerhalb von <main>, sonst verschiebt sich die Seitenleiste.
+      await seite.evaluate(() => {
+        const haupt = document.querySelector("main");
+        const bereich = [...(haupt?.querySelectorAll("div") ?? [])].find(
+          (d) =>
+            d.className?.includes?.("overflow-y-auto") &&
+            d.scrollHeight > d.clientHeight
+        );
+        if (bereich) bereich.scrollTop = 0;
+      });
+      await seite.waitForTimeout(400);
     },
   },
   {
@@ -122,6 +138,30 @@ async function main() {
 
   const seite = await kontext.newPage();
 
+  /**
+   * Vor jeder Aufnahme: Die E-Mail-Adresse des angemeldeten Kontos gehört
+   * nicht auf eine öffentliche Landingpage. Sie wird durch eine erkennbare
+   * Platzhalteradresse ersetzt – alles andere im Bild bleibt echt.
+   * Ausserdem die Bildlaufleisten ausblenden, die sonst am Rand mitlaufen.
+   */
+  const aufbereiten = async () => {
+    await seite.addStyleTag({
+      content:
+        "*::-webkit-scrollbar{display:none!important}*{scrollbar-width:none!important}",
+    });
+    await seite.evaluate((platzhalter) => {
+      const muster = /[\w.+-]+@[\w-]+\.[\w.-]+/;
+      const lauf = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      const treffer = [];
+      while (lauf.nextNode()) {
+        if (muster.test(lauf.currentNode.nodeValue ?? "")) treffer.push(lauf.currentNode);
+      }
+      for (const knoten of treffer) {
+        knoten.nodeValue = knoten.nodeValue.replace(muster, platzhalter);
+      }
+    }, "berater@kanzlei-muster.de");
+  };
+
   for (const aufnahme of AUFNAHMEN) {
     process.stdout.write(`${aufnahme.datei} … `);
     await seite.goto(`${basis}${aufnahme.pfad}`, { waitUntil: "networkidle" });
@@ -131,6 +171,7 @@ async function main() {
     if (aufnahme.vorbereiten) await aufnahme.vorbereiten(seite);
     // Diagramme zeichnen sich mit Verzögerung
     await seite.waitForTimeout(1200);
+    await aufbereiten();
     await seite.screenshot({ path: join(ZIEL, aufnahme.datei) });
     console.log("fertig");
   }

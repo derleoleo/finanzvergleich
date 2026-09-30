@@ -121,14 +121,12 @@ export default function ResultsSummary({ results, mode, onModeChange }: Props) {
             imSatz: "der Lebensversicherung",
             wert: li,
             eingezahlt: results.total_contributions ?? 0,
-            farbe: "#2563eb",
           }}
           rechts={{
             name: "Depot",
             imSatz: "dem Depot",
             wert: depot,
             eingezahlt: results.total_contributions ?? 0,
-            farbe: "#16a34a",
           }}
         />
       </CardContent>

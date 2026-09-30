@@ -242,13 +242,11 @@ export default function BestAdviceDetail() {
               name: "Bestandsvertrag",
               imSatz: "dem Bestandsvertrag",
               wert: bestandEnd,
-              farbe: "#d97706",
             }}
             rechts={{
               name: "Fonds-LV",
               imSatz: "der Umschichtung in die Fonds-LV",
               wert: fondsLVEnd,
-              farbe: "#2563eb",
             }}
           />
         </div>

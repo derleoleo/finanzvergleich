@@ -735,14 +735,12 @@ export default function AvdCalculator() {
                   name: 'Altersvorsorgedepot',
                   imSatz: 'dem Altersvorsorgedepot',
                   wert: endAvd,
-                  farbe: '#2563eb',
                   detail: `brutto ${formatCurrency(showReal ? ergebnis.endkapitalReal : ergebnis.endkapitalNominal)} · Förderung gesamt ${formatCurrency(ergebnis.summeFoerderung)}`,
                 }}
                 rechts={{
                   name: vergleichName,
                   imSatz: gegenRiester ? 'dem Riester-Bestandsvertrag' : 'dem freien Depot',
                   wert: endDepot,
-                  farbe: '#16a34a',
                   detail: ergebnis.riesterAlt
                     ? `Förderung gesamt ${formatCurrency(ergebnis.riesterAlt.summeFoerderung)}`
                     : `inkl. Vorabpauschale ${formatCurrency(ergebnis.depot.summeVorabpauschaleSteuer)}`,

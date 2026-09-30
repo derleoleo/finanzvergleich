@@ -1,10 +1,10 @@
 // Ergebnis-Waage: Die Seite mit mehr erwartetem Endkapital ist „schwerer“ und
 // hängt tiefer. Ersetzt wertende Aussagen („X ist besser“) durch eine neutrale
 // Beschreibung des Rechenergebnisses. Wird im PDF-Export mit abgebildet.
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { BrandMark, MARKE } from "@/components/BrandLogo";
 import { formatCurrency } from "@/components/shared/CurrencyDisplay";
-import { waageNeigung, waagenAussage } from "@/utils/waage";
+import { istGleichauf, waageNeigung, waagenAussage } from "@/utils/waage";
 
 export type WaagenSeite = {
   /** Anzeigename unter der Schale, z. B. „Lebensversicherung“. */
@@ -13,10 +13,8 @@ export type WaagenSeite = {
   imSatz: string;
   /** Erwartetes Endkapital. */
   wert: number;
-  /** Eingezahlter Betrag – wird in der Schale grau vom Ertrag abgesetzt. */
+  /** Eingezahlter Betrag – wird in der Schale schraffiert vom Ertrag abgesetzt. */
   eingezahlt?: number;
-  /** Farbe des Ertragsanteils. */
-  farbe: string;
   /** Zusatzzeile unter dem Betrag. */
   detail?: ReactNode;
 };
@@ -40,6 +38,14 @@ const STAPEL_MAX_HOEHE = 88;
 const STAPEL_BREITE = 104;
 const GRAU = "#cbd5e1";
 
+// Die Waage selbst ist blau (Markenfarbe). Die Gewichte sagen dagegen aus,
+// welche Seite mehr Kapital trägt – vorher hatten die Schalen dieselben Farben
+// wie die Parteien, wodurch das Blau der Lebensversicherung mit dem Blau der
+// Waage verschmolz.
+const MEHR = "#16a34a";
+const WENIGER = "#dc2626";
+const GLEICH = "#64748b";
+
 function endpunkt(neigungGrad: number, seite: -1 | 1) {
   const rad = (neigungGrad * Math.PI) / 180;
   return {
@@ -56,12 +62,16 @@ function Schale({
   y,
   maxWert,
   mitEingezahlt,
+  farbe,
+  schraffurId,
 }: {
   seite: WaagenSeite;
   x: number;
   y: number;
   maxWert: number;
   mitEingezahlt: boolean;
+  farbe: string;
+  schraffurId: string;
 }) {
   const wert = Math.max(0, seite.wert);
   const gesamtHoehe = (wert / maxWert) * STAPEL_MAX_HOEHE;
@@ -80,12 +90,19 @@ function Schale({
         strokeWidth={2}
         fill="none"
       />
-      {/* Gewichte: eingezahlt (grau) unten, Ertrag (Farbe) darüber */}
+      {/* Gewichte: eingezahlt (schraffiert) unten, Ertrag (Farbe) darüber */}
       {gesamtHoehe > 0 && (
-        <rect x={-halb} y={boden - gesamtHoehe} width={STAPEL_BREITE} height={gesamtHoehe} rx={4} fill={seite.farbe} />
+        <rect x={-halb} y={boden - gesamtHoehe} width={STAPEL_BREITE} height={gesamtHoehe} rx={4} fill={farbe} />
       )}
       {grauHoehe > 0 && (
-        <rect x={-halb} y={boden - grauHoehe} width={STAPEL_BREITE} height={grauHoehe} rx={4} fill={GRAU} />
+        <rect
+          x={-halb}
+          y={boden - grauHoehe}
+          width={STAPEL_BREITE}
+          height={grauHoehe}
+          rx={4}
+          fill={`url(#${schraffurId})`}
+        />
       )}
       {/* Schale */}
       <path d={`M-88 ${boden} H88 A88 18 0 0 1 -88 ${boden} Z`} fill="#0057ff" />
@@ -101,6 +118,15 @@ export default function Vorsorgewaage({ links, rechts, basis, aktionen, alsKarte
   const maxWert = Math.max(1, links.wert, rechts.wert);
   const mitEingezahlt = links.eingezahlt !== undefined && rechts.eingezahlt !== undefined;
   const aussage = waagenAussage(links, rechts);
+  // Eigene Kennung je Waage: Auf einer Seite können mehrere stehen, und eine
+  // doppelte Id im SVG würde die Schraffur der zweiten Waage stehlen.
+  const schraffurId = `vw-eingezahlt-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+
+  // Bei Gleichstand gibt es kein Mehr und kein Weniger – dann beide neutral.
+  const gleichauf = istGleichauf(links.wert, rechts.wert);
+  const farbeLinks = gleichauf ? GLEICH : links.wert > rechts.wert ? MEHR : WENIGER;
+  const farbeRechts = gleichauf ? GLEICH : rechts.wert > links.wert ? MEHR : WENIGER;
+  const farben = [farbeLinks, farbeRechts];
 
   return (
     <div
@@ -127,6 +153,18 @@ export default function Vorsorgewaage({ links, rechts, basis, aktionen, alsKarte
         role="img"
         aria-label={aussage}
       >
+        <defs>
+          <pattern
+            id={schraffurId}
+            width={10}
+            height={10}
+            patternUnits="userSpaceOnUse"
+            patternTransform="rotate(45)"
+          >
+            <rect width={10} height={10} fill="#e2e8f0" />
+            <line x1={0} y1={0} x2={0} y2={10} stroke={GRAU} strokeWidth={5} />
+          </pattern>
+        </defs>
         {/* Ständer */}
         <rect x={312} y={DREHPUNKT.y} width={16} height={184} rx={4} fill="#0057ff" />
         <rect x={250} y={236} width={140} height={14} rx={7} fill="#0057ff" />
@@ -151,15 +189,34 @@ export default function Vorsorgewaage({ links, rechts, basis, aktionen, alsKarte
         <circle cx={DREHPUNKT.x} cy={DREHPUNKT.y} r={13} fill="#0057ff" />
         <circle cx={DREHPUNKT.x} cy={DREHPUNKT.y} r={5} fill="white" />
 
-        <Schale seite={links} x={l.x} y={l.y} maxWert={maxWert} mitEingezahlt={mitEingezahlt} />
-        <Schale seite={rechts} x={r.x} y={r.y} maxWert={maxWert} mitEingezahlt={mitEingezahlt} />
+        <Schale
+          seite={links}
+          x={l.x}
+          y={l.y}
+          maxWert={maxWert}
+          mitEingezahlt={mitEingezahlt}
+          farbe={farbeLinks}
+          schraffurId={schraffurId}
+        />
+        <Schale
+          seite={rechts}
+          x={r.x}
+          y={r.y}
+          maxWert={maxWert}
+          mitEingezahlt={mitEingezahlt}
+          farbe={farbeRechts}
+          schraffurId={schraffurId}
+        />
       </svg>
 
       <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto -mt-1">
         {[links, rechts].map((s, i) => (
           <div key={i} className="text-center">
             <div className="flex items-center justify-center gap-2 text-sm text-slate-600">
-              <span className="inline-block w-3 h-3 rounded-sm shrink-0" style={{ background: s.farbe }} />
+              <span
+                className="inline-block w-3 h-3 rounded-sm shrink-0"
+                style={{ background: farben[i] }}
+              />
               {s.name}
             </div>
             <div className="text-xl md:text-2xl font-bold text-slate-900 mt-1">{formatCurrency(s.wert)}</div>
@@ -171,10 +228,20 @@ export default function Vorsorgewaage({ links, rechts, basis, aktionen, alsKarte
       {mitEingezahlt && (
         <div className="flex justify-center gap-4 mt-3 text-xs text-slate-500">
           <span className="flex items-center gap-1.5">
-            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: GRAU }} />
+            <span
+              className="inline-block w-3 h-3 rounded-sm border border-slate-300"
+              style={{
+                background: `repeating-linear-gradient(45deg, ${GRAU} 0 2px, #e2e8f0 2px 4px)`,
+              }}
+            />
             eingezahlt
           </span>
-          <span>Farbe = Ertrag</span>
+          <span>
+            <span className="inline-block w-3 h-3 rounded-sm align-[-1px] mr-1.5" style={{ background: MEHR }} />
+            mehr Kapital
+            <span className="inline-block w-3 h-3 rounded-sm align-[-1px] ml-3 mr-1.5" style={{ background: WENIGER }} />
+            weniger
+          </span>
         </div>
       )}
 

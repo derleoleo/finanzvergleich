@@ -447,7 +447,6 @@ export default function NetPolicyCalculator() {
               imSatz: "der Bruttopolice",
               wert: results.brutto_net,
               eingezahlt: results.total_contributions,
-              farbe: "#2563eb",
               detail: `Kosten ${formatCurrency(results.brutto_costs)} · Effektivkosten ${results.brutto_riy.toLocaleString("de-DE", { minimumFractionDigits: 2 })} %-Pkt. p.a.`,
             }}
             rechts={{
@@ -455,7 +454,6 @@ export default function NetPolicyCalculator() {
               imSatz: "der Nettopolice (inkl. Honorar)",
               wert: results.netto_net,
               eingezahlt: results.total_contributions,
-              farbe: "#0d9488",
               detail: `Kosten inkl. Honorar ${formatCurrency(results.netto_costs)} · Effektivkosten ${results.netto_riy.toLocaleString("de-DE", { minimumFractionDigits: 2 })} %-Pkt. p.a. · Honorar mit entgangener Rendite ${formatCurrency(results.honorar_endwert)}`,
             }}
           />
