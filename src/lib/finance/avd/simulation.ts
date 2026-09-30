@@ -126,10 +126,25 @@ export type AuszahlErgebnis = {
 export type DepotVergleich = {
   eingezahlt: number;
   endkapitalVorSteuer: number;
+  /** Steuer bei vollständigem Verkauf zum Auszahlungsbeginn. */
   steuerBeimVerkauf: number;
   summeVorabpauschaleSteuer: number;
+  /**
+   * Kapital nach vollständigem Verkauf zum Auszahlungsbeginn. Diese Zahl ist die
+   * Vergleichsgröße zum AVD-`endkapitalNachSteuer` – beide unterstellen, dass
+   * alles auf einmal zufließt.
+   */
   endkapitalNetto: number;
-  monatsentnahmeVergleich: number;
+  /**
+   * Tragbare Bruttoentnahme pro Monat bis zum Endalter. Gerechnet auf dem
+   * Kapital vor Steuern, weil der Entnahmeplan das Depot gerade nicht auf
+   * einmal verkauft – die Steuer fällt stattdessen mit jeder Entnahme an.
+   */
+  monatsentnahmeBrutto: number;
+  /** Dieselbe Entnahme nach Abgeltungsteuer – Gegenstück zur Monatsrente netto. */
+  monatsentnahmeNetto: number;
+  /** Summe der Abgeltungsteuer über die gesamte Auszahlphase. */
+  steuerAuszahlphase: number;
 };
 
 export type AvdErgebnis = {
@@ -661,6 +676,68 @@ export function monatlicheEntnahme(kapital: number, rMonat: number, monate: numb
   return (kapital * rMonat) / (1 - Math.pow(1 + rMonat, -monate));
 }
 
+/**
+ * Auszahlphase des freien Depots (Audit N06). Vorher blieben die Erträge dieser
+ * Phase unversteuert, während die AVD-Rente Monat für Monat besteuert wurde –
+ * der Vergleich der laufenden Leistung fiel damit zugunsten des Depots aus.
+ *
+ * Modell: Das Depot wird zum Auszahlungsbeginn nicht verkauft, sondern
+ * entnommen. Jede Entnahme realisiert den Gewinn, der anteilig in den
+ * verkauften Anteilen steckt; darauf wird Abgeltungsteuer abzüglich
+ * Teilfreistellung fällig. Der Einstandswert sinkt im selben Verhältnis mit.
+ *
+ * Vereinfachungen, bewusst wie im übrigen Modul:
+ * - In der Auszahlphase keine Vorabpauschale mehr. Sie ist eine Vorauszahlung
+ *   auf genau diese Gewinne und würde die Steuer nur vorziehen, nicht erhöhen.
+ * - Keine Verlustverrechnung: Fällt das Depot unter den Einstandswert, ist der
+ *   realisierte Gewinn null, aber es entsteht keine Steuererstattung.
+ */
+function depotAuszahlphase(args: {
+  kapital: number;
+  einstand: number;
+  rMonat: number;
+  monate: number;
+  /** Steuersatz auf den realisierten Gewinn, Teilfreistellung schon enthalten. */
+  steuersatz: number;
+  sparerpauschbetrag: number;
+}): { brutto: number; nettoDurchschnitt: number; steuerGesamt: number } {
+  const { kapital: start, einstand: einstandStart, rMonat, monate, steuersatz } = args;
+  const brutto = monatlicheEntnahme(start, rMonat, monate);
+  if (!(brutto > 0) || monate <= 0) {
+    return { brutto: Math.max(0, brutto), nettoDurchschnitt: 0, steuerGesamt: 0 };
+  }
+
+  let kapital = start;
+  let einstand = Math.max(0, einstandStart);
+  let steuerGesamt = 0;
+  // Der Sparerpauschbetrag gilt je Jahr, deshalb wird die Steuer wie in der
+  // Ansparphase jahresweise abgerechnet (Vorgabe im Modul: 0 €).
+  let gewinnImJahr = 0;
+
+  const abrechnen = () => {
+    steuerGesamt += Math.max(0, gewinnImJahr - args.sparerpauschbetrag) * steuersatz;
+    gewinnImJahr = 0;
+  };
+
+  for (let m = 1; m <= monate; m++) {
+    const entnahme = Math.min(brutto, Math.max(0, kapital));
+    if (entnahme > 0 && kapital > 0) {
+      const anteil = entnahme / kapital;
+      gewinnImJahr += Math.max(0, kapital - einstand) * anteil;
+      einstand -= einstand * anteil;
+      kapital = (kapital - entnahme) * (1 + rMonat);
+    }
+    if (m % 12 === 0) abrechnen();
+  }
+  abrechnen();
+
+  return {
+    brutto,
+    nettoDurchschnitt: Math.max(0, brutto - steuerGesamt / monate),
+    steuerGesamt,
+  };
+}
+
 /** Freies Depot am Laufzeitende: Verkauf mit Teilfreistellung, abzüglich
  *  bereits über die Vorabpauschale versteuerter Beträge. */
 function berechneDepotVergleich(
@@ -686,11 +763,23 @@ function berechneDepotVergleich(
   );
 
   // Gleiche Entnahmelogik wie beim AVD-Auszahlplan: Das Restkapital bleibt
-  // während der Auszahlphase investiert. Vereinfachung: Erträge der Auszahlphase
-  // bleiben im Depot unversteuert (die AVD-Rente wird dagegen besteuert).
+  // während der Auszahlphase investiert – und wird dort ebenso besteuert.
   const rMonatDepot = calculateMonthlyReturn(
     ((e.renditeBruttoPaJahr || 0) - (e.depotKostenPaJahr || 0)) * 100
   );
+  // Bereits über die Vorabpauschale versteuerte Beträge erhöhen den
+  // Einstandswert, sie dürfen nicht zweimal belastet werden.
+  const auszahlphase = depotAuszahlphase({
+    kapital: endkapital,
+    einstand: eingezahlt + versteuerteVorabpauschalen,
+    rMonat: rMonatDepot,
+    monate,
+    steuersatz:
+      (1 - DEPOT_STEUER.TEILFREISTELLUNG_AKTIENFONDS) *
+      DEPOT_STEUER.ABGELTUNGSTEUER *
+      (1 + DEPOT_STEUER.SOLI_ZUSCHLAG + (e.kirchensteuersatz || 0)),
+    sparerpauschbetrag,
+  });
 
   return {
     eingezahlt,
@@ -698,7 +787,9 @@ function berechneDepotVergleich(
     steuerBeimVerkauf: steuer,
     summeVorabpauschaleSteuer: summeVorabSteuer,
     endkapitalNetto: netto,
-    monatsentnahmeVergleich: monatlicheEntnahme(netto, rMonatDepot, monate),
+    monatsentnahmeBrutto: auszahlphase.brutto,
+    monatsentnahmeNetto: auszahlphase.nettoDurchschnitt,
+    steuerAuszahlphase: auszahlphase.steuerGesamt,
   };
 }
 

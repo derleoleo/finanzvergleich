@@ -763,16 +763,19 @@ export default function AvdCalculator() {
                       }}
                     />
                     <Legend />
-                    <Line type="monotone" dataKey="avd" name="Altersvorsorgedepot" stroke="#2563eb" strokeWidth={3} dot={false} isAnimationActive={false} />
-                    <Line type="monotone" dataKey="depot" name={vergleichName} stroke="#16a34a" strokeWidth={3} dot={false} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="avd" name="Altersvorsorgedepot (vor Steuern)" stroke="#2563eb" strokeWidth={3} dot={false} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="depot" name={`${vergleichName} (vor Steuern)`} stroke="#16a34a" strokeWidth={3} dot={false} isAnimationActive={false} />
                     <Line type="monotone" dataKey="eingezahlt" name="Eigenbeiträge" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 4" dot={false} isAnimationActive={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
               <p className="text-xs text-slate-500">
+                <strong>Die Kurven zeigen das laufende Kapital vor der abschließenden
+                Besteuerung</strong> – Waage und Kacheln oben stehen dagegen nach Steuern. Der
+                Abstand am rechten Rand ist deshalb größer als der Unterschied nach Steuern.{' '}
                 {gegenRiester
-                  ? 'Beide Seiten nach Steuern. Steuerlich sind AVD und Riester-Altvertrag identisch: in der Ansparphase steuerfrei, in der Auszahlphase voll nachgelagert besteuert (§ 22 Nr. 5 EStG), beide ohne Teilfreistellung. Der Unterschied entsteht allein aus Förderhöhe, Kosten und Renditepotenzial – bereits gezahlte Zulagen und Steuervorteile bleiben beim Wechsel erhalten (§ 3 Nr. 55c EStG).'
-                  : 'Beide Seiten nach Steuern: Das AVD wird nachgelagert voll besteuert (§ 22 Nr. 5 EStG, keine Teilfreistellung), das freie Depot mit Abgeltungsteuer, 30 % Teilfreistellung und jährlicher Vorabpauschale. Kein Sparerpauschbetrag angesetzt (kann anderweitig verbraucht sein).'}
+                  ? 'Steuerlich sind AVD und Riester-Altvertrag identisch: in der Ansparphase steuerfrei, in der Auszahlphase voll nachgelagert besteuert (§ 22 Nr. 5 EStG), beide ohne Teilfreistellung. Der Unterschied entsteht allein aus Förderhöhe, Kosten und Renditepotenzial – bereits gezahlte Zulagen und Steuervorteile bleiben beim Wechsel erhalten (§ 3 Nr. 55c EStG).'
+                  : 'Besteuert wird danach das AVD nachgelagert voll (§ 22 Nr. 5 EStG, keine Teilfreistellung), das freie Depot mit Abgeltungsteuer, 30 % Teilfreistellung und jährlicher Vorabpauschale – in der Auszahlphase auf die realisierten Gewinne jeder Entnahme. Kein Sparerpauschbetrag angesetzt (kann anderweitig verbraucht sein).'}
               </p>
             </CardContent>
           </Card>
@@ -1061,23 +1064,36 @@ export default function AvdCalculator() {
                 </div>
                 <div className="rounded-xl border border-slate-200 p-4">
                   <div className="text-xs text-slate-500 mb-1">
-                    {formData.teilkapitalAnteil > 0 ? 'Teilkapital zu Beginn' : 'Vergleich: Depot-Entnahme'}
+                    {formData.teilkapitalAnteil > 0
+                      ? 'Teilkapital zu Beginn'
+                      : 'Freies Depot: Entnahme netto'}
                   </div>
                   <div className="text-2xl font-bold text-slate-900">
                     {formatCurrency(
                       formData.teilkapitalAnteil > 0
                         ? ergebnis.auszahlung.teilkapital
-                        : ergebnis.depot.monatsentnahmeVergleich
+                        : ergebnis.depot.monatsentnahmeNetto
                     )}
                   </div>
                   <div className="text-xs text-slate-500 mt-1">
                     {formData.teilkapitalAnteil > 0
                       ? `davon Steuer ${formatCurrency(ergebnis.auszahlung.teilkapitalSteuer)}`
-                      : 'monatlich bis zum gleichen Endalter'}
+                      : `brutto ${formatCurrency(ergebnis.depot.monatsentnahmeBrutto)} · monatlich bis zum gleichen Endalter`}
                   </div>
                 </div>
               </div>
 
+              {formData.teilkapitalAnteil === 0 && ergebnis.depot.monatsentnahmeNetto > 0 && (
+                <p className="text-xs text-slate-500 flex items-start gap-2">
+                  <Info className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
+                  Beide Entnahmen sind nach Steuern und laufen bis zum gleichen Endalter. Das
+                  Depot wird dafür nicht auf einmal verkauft, sondern entnommen: Jede Entnahme
+                  realisiert anteilig Gewinn, darauf fallen Abgeltungsteuer und 30 %
+                  Teilfreistellung an – über die gesamte Auszahlphase{' '}
+                  {formatCurrency(ergebnis.depot.steuerAuszahlphase)}. Das Endkapital nach Steuern
+                  oben unterstellt dagegen den vollständigen Verkauf zum Rentenbeginn.
+                </p>
+              )}
               {ergebnis.auszahlung.gesetzlicheMindestrate != null && (
                 <p className="text-xs text-slate-500 flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />

@@ -570,7 +570,7 @@ describe('Randfälle (über die UI erreichbar)', () => {
     for (const v of [
       r.endkapitalNominal, r.endkapitalNachSteuer, r.foerderquoteGesamt,
       r.auszahlung.monatsrenteBrutto, r.auszahlung.monatsrenteNetto,
-      r.depot.monatsentnahmeVergleich, r.vorteilGegenDepot,
+      r.depot.monatsentnahmeBrutto, r.depot.monatsentnahmeNetto, r.vorteilGegenDepot,
     ]) {
       expect(Number.isFinite(v)).toBe(true);
     }
@@ -893,7 +893,45 @@ describe('Auszahlvergleich AVD vs. Depot (F01)', () => {
     const e = eingabe({ auszahlform: 'auszahlplan', auszahlplanEndalter: 85 });
     const r = simuliereAvd(e);
     const monate = Math.round((e.auszahlplanEndalter - e.auszahlungsbeginnAlter) * 12);
-    expect(r.depot.monatsentnahmeVergleich).toBeGreaterThan(r.depot.endkapitalNetto / monate);
+    expect(r.depot.monatsentnahmeBrutto).toBeGreaterThan(r.depot.endkapitalNetto / monate);
+  });
+
+  it('besteuert die Entnahmen des Vergleichsdepots in der Auszahlphase (N06)', () => {
+    const e = eingabe({ auszahlform: 'auszahlplan', auszahlplanEndalter: 85 });
+    const r = simuliereAvd(e);
+    // Erträge der Auszahlphase bleiben nicht mehr steuerfrei
+    expect(r.depot.steuerAuszahlphase).toBeGreaterThan(0);
+    expect(r.depot.monatsentnahmeNetto).toBeLessThan(r.depot.monatsentnahmeBrutto);
+    // Die Steuer erklärt genau den Abstand zwischen brutto und netto
+    const monate = Math.round((e.auszahlplanEndalter - e.auszahlungsbeginnAlter) * 12);
+    expect(
+      r.depot.monatsentnahmeBrutto - r.depot.steuerAuszahlphase / monate
+    ).toBeCloseTo(r.depot.monatsentnahmeNetto, 6);
+  });
+
+  it('belastet nur Gewinn, nicht das eingezahlte Kapital', () => {
+    // Ohne Wertzuwachs gibt es in der Auszahlphase nichts zu versteuern
+    const r = simuliereAvd(eingabe({
+      auszahlform: 'auszahlplan',
+      auszahlplanEndalter: 85,
+      renditeBruttoPaJahr: 0,
+      depotKostenPaJahr: 0,
+      effektivkostenPaJahr: 0,
+      fixkostenProJahr: 0,
+    }));
+    expect(r.depot.steuerAuszahlphase).toBeCloseTo(0, 6);
+    expect(r.depot.monatsentnahmeNetto).toBeCloseTo(r.depot.monatsentnahmeBrutto, 6);
+  });
+
+  it('versteuert Vorabpauschalen nicht doppelt', () => {
+    // Der Einstandswert wird um die bereits versteuerten Pauschalen erhoeht,
+    // deshalb bleibt die Steuer der Auszahlphase unter dem vollen Gewinnanteil.
+    const r = simuliereAvd(eingabe({ auszahlform: 'auszahlplan', auszahlplanEndalter: 85 }));
+    expect(r.depot.summeVorabpauschaleSteuer).toBeGreaterThan(0);
+    const monate = 240;
+    const gewinnGesamt = Math.max(0, r.depot.monatsentnahmeBrutto * monate - r.depot.eingezahlt);
+    const obergrenze = gewinnGesamt * 0.7 * 0.25 * 1.055;
+    expect(r.depot.steuerAuszahlphase).toBeLessThan(obergrenze);
   });
 });
 

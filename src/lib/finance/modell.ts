@@ -9,9 +9,17 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-09-29d" as const;
+export const MODELL_VERSION = "2026-09-30" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-09-30",
+    aenderung:
+      "Altersvorsorgedepot: Die Entnahmen des Vergleichsdepots werden in der " +
+      "Auszahlphase besteuert (Abgeltungsteuer auf den realisierten Gewinn je " +
+      "Entnahme). Vorher blieben diese Erträge steuerfrei, während die AVD-Rente " +
+      "besteuert wurde.",
+  },
   {
     version: "2026-09-29d",
     aenderung:
