@@ -14,8 +14,13 @@ const BASIS_URL = "https://www.vorsorgewaage.de";
  * Nur frische Konten dürfen als geworben gelten. Sonst könnte ein
  * Bestandskunde nachträglich einen Code eintragen und einem Bekannten den
  * Rabatt verschaffen, ohne dass eine Empfehlung stattgefunden hat.
+ *
+ * Sieben Tage statt zwei: Das Konto entsteht schon beim Registrieren, die
+ * Zuordnung passiert aber erst bei der ersten Anmeldung. Wer die
+ * Bestätigungsmail ein paar Tage liegen lässt, hätte seine Empfehlung sonst
+ * verloren, ohne etwas falsch gemacht zu haben.
  */
-const MAX_KONTOALTER_STUNDEN = 48;
+const MAX_KONTOALTER_STUNDEN = 7 * 24;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const supabaseAnon = createClient(

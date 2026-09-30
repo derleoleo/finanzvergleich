@@ -19,7 +19,8 @@ export default function CookieBanner() {
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-slate-900 text-white px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-3 shadow-lg print:hidden">
       <p className="text-sm text-slate-300 flex-1">
         Diese App verwendet ausschließlich technisch notwendige Browser-Speicher
-        (localStorage) für Ihre Sitzung und Eingaben – kein Tracking, keine
+        (localStorage) für Ihre Sitzung, Ihre Eingaben und – wenn Sie über einen
+        Empfehlungslink kommen – den Empfehlungscode. Kein Tracking, keine
         Werbe-Cookies.{" "}
         <Link
           to="/datenschutz"

@@ -246,6 +246,10 @@ export default function Datenschutz() {
               <li>Supabase Session-Token (Authentifizierung)</li>
               <li>UI-Zwischenspeicher (Entwürfe, Einstellungen)</li>
               <li>Consent-Status</li>
+              <li>
+                Empfehlungscode, falls Sie über einen Empfehlungslink kommen – nur bis zur
+                Registrierung, danach wird er gelöscht
+              </li>
             </ul>
             <p className="mt-2">Es erfolgt kein Tracking oder Analyse des Nutzerverhaltens.</p>
             <p className="mt-2 text-slate-500">
