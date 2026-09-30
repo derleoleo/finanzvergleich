@@ -19,6 +19,7 @@ import {
   formatCurrency,
   formatChartAxis,
 } from "@/components/shared/CurrencyDisplay";
+import { vertragskosten } from "@/lib/finance/kostenanzeige";
 
 import { ArrowLeft, PieChart as PieIcon } from "lucide-react";
 import {
@@ -55,6 +56,7 @@ type Calc = {
   id: string;
   name?: string;
   created_date?: string;
+  lv_cost_type?: "eur" | "percent";
   results?: CostResults;
 };
 
@@ -90,9 +92,16 @@ export default function CalculatorCostsDetail() {
   const liTotal = Number(r.li_total_costs ?? 0);
   const depotTotal = Number(r.depot_total_costs ?? 0);
 
-  const liAcq = Number(r.li_acquisition_costs ?? 0);
   const liFund = Number(r.li_fund_costs ?? 0);
-  const liAdmin = Number(r.li_effective_costs ?? 0);
+  // Audit N08: Bei Eingabe als Effektivkosten gibt es keine Aufteilung in
+  // Abschluss und Verwaltung – dann steht dort eine Zahl statt zwei.
+  const kosten = vertragskosten({
+    kostenart: calc?.lv_cost_type,
+    abschluss: r.li_acquisition_costs,
+    verwaltung: r.li_effective_costs,
+  });
+  const liAcq = kosten.abschluss;
+  const liAdmin = kosten.splitBekannt ? kosten.verwaltung : kosten.gesamt;
 
   const depotInit = Number(r.depot_initial_charges ?? 0);
   const depotFund = Number(r.depot_fund_costs ?? 0);
@@ -103,6 +112,7 @@ export default function CalculatorCostsDetail() {
     () => [
       {
         name: "Lebensversicherung",
+        // liAcq ist ohne bekannten Split bereits 0
         "LV Abschluss": liAcq,
         "LV Verwaltung": liAdmin,
         "LV Fondskosten": liFund,
@@ -183,8 +193,9 @@ export default function CalculatorCostsDetail() {
                 {formatCurrency(liTotal)}
               </div>
               <div className="text-sm text-slate-600 mt-1">
-                Abschluss {formatCurrency(liAcq)} · Verwaltung{" "}
-                {formatCurrency(liAdmin)} · Fonds {formatCurrency(liFund)}
+                {kosten.splitBekannt
+                  ? `Abschluss ${formatCurrency(liAcq)} · Verwaltung ${formatCurrency(liAdmin)} · Fonds ${formatCurrency(liFund)}`
+                  : `Vertragskosten ${formatCurrency(liAdmin)} · Fonds ${formatCurrency(liFund)}`}
               </div>
               {calc.results?.li_riy_percent != null && (
                 <div className="text-sm text-slate-600 mt-1">
@@ -260,8 +271,15 @@ export default function CalculatorCostsDetail() {
                   <Legend />
 
                   {/* LV (blau) */}
-                  <Bar dataKey="LV Abschluss" stackId="lv" fill="#2563eb" />
-                  <Bar dataKey="LV Verwaltung" stackId="lv" fill="#60a5fa" />
+                  {kosten.splitBekannt && (
+                    <Bar dataKey="LV Abschluss" stackId="lv" fill="#2563eb" />
+                  )}
+                  <Bar
+                    dataKey="LV Verwaltung"
+                    name={kosten.splitBekannt ? "LV Verwaltung" : "LV Vertragskosten"}
+                    stackId="lv"
+                    fill="#60a5fa"
+                  />
                   <Bar dataKey="LV Fondskosten" stackId="lv" fill="#93c5fd" />
 
                   {/* Depot (grün) */}
@@ -318,7 +336,7 @@ export default function CalculatorCostsDetail() {
                     Abschluss / Ausgabeaufschlag
                   </TableCell>
                   <TableCell className="text-right">
-                    {formatCurrency(liAcq)}
+                    {kosten.splitBekannt ? formatCurrency(liAcq) : "in Vertragskosten enthalten"}
                   </TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(depotInit)}
@@ -327,7 +345,9 @@ export default function CalculatorCostsDetail() {
 
                 <TableRow className="border-slate-100">
                   <TableCell className="text-slate-900 font-medium">
-                    Verwaltung / Depotkosten
+                    {kosten.splitBekannt
+                      ? "Verwaltung / Depotkosten"
+                      : "Vertragskosten / Depotkosten"}
                   </TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(liAdmin)}

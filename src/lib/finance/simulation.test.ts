@@ -4,10 +4,10 @@
 // Branch-Basis) als Golden-Referenz ein. Die Engine muss bitgleich rechnen.
 
 import { describe, expect, it } from "vitest";
+import { vertragskosten } from "./kostenanzeige";
 import {
   simulateLv,
   simulateDepot,
-  splitLvEffectiveCosts,
   weightedFundCosts,
 } from "./simulation";
 import { reductionInYield } from "./riy";
@@ -169,12 +169,11 @@ describe("simulateLv – Parität zur Legacy-Referenz", () => {
     });
     expect(result.gross_capital).toBeCloseTo(legacy.capital, 6);
     expect(result.costs.fund).toBeCloseTo(legacy.fundCosts, 6);
-    // Split: years=25 → adminShare = 0.3*20/25 = 0.24
-    expect(result.costs.admin).toBeCloseTo(legacy.totalContractCosts * 0.24, 6);
-    expect(result.costs.acquisition).toBeCloseTo(
-      legacy.totalContractCosts * 0.76,
-      6
-    );
+    // Audit N08: Die Vertragskosten bleiben ungeteilt – die Gesamthöhe muss
+    // aber weiterhin bitgleich zur Referenz sein.
+    expect(result.costs.contract).toBeCloseTo(legacy.totalContractCosts, 6);
+    expect(result.costs.acquisition).toBe(0);
+    expect(result.costs.splitBekannt).toBe(false);
   });
 
   it("Einmalanlage EUR-Modus: Abschluss upfront statt Zillmer", () => {
@@ -415,18 +414,65 @@ describe("Beitragsdynamik", () => {
   });
 });
 
-describe("splitLvEffectiveCosts", () => {
-  it.each([
-    [4, 0.6, 0.4],
-    [5, 0.6, 0.4],
-    [6, 1 - 0.05, 0.05],
-    [25, 0.76, 0.24],
-    [100, 1 - 0.285, 0.285],
-  ])("years=%s → acqShare=%s, adminShare=%s", (years, acq, admin) => {
-    const split = splitLvEffectiveCosts(1000, years as number);
-    expect(split.acqShare).toBeCloseTo(acq as number, 10);
-    expect(split.adminShare).toBeCloseTo(admin as number, 10);
-    expect(split.acquisition + split.admin).toBeCloseTo(1000, 10);
+describe("Kostenaufteilung (Audit N08)", () => {
+  const eingabe = (jahre: number) => ({
+    months: jahre * 12,
+    monthly_contribution: 100,
+    annual_return_percent: 6,
+    cost: { type: "percent" as const, effective_costs_percent: 1 },
+    funds: [],
+  });
+
+  it.each([4, 5, 6, 25])(
+    "schaetzt bei Effektivkosten keinen Abschlusskostenanteil (%s Jahre)",
+    (jahre) => {
+      const lv = simulateLv(eingabe(jahre));
+      expect(lv.costs.splitBekannt).toBe(false);
+      expect(lv.costs.acquisition).toBe(0);
+      // Der Betrag geht nicht verloren, er bleibt nur ungeteilt
+      expect(lv.costs.contract).toBeGreaterThan(0);
+      expect(lv.costs.admin).toBeCloseTo(lv.costs.contract, 10);
+    }
+  );
+
+  it("die Stufe zwischen 5 und 6 Jahren verschwindet", () => {
+    // Frueher: 1.000 EUR Kosten ergaben bei 5 Jahren 600/400,
+    // bei 6 Jahren 950/50 - ein Sprung ohne Tarifgrundlage.
+    const fuenf = simulateLv(eingabe(5));
+    const sechs = simulateLv(eingabe(6));
+    expect(fuenf.costs.acquisition).toBe(sechs.costs.acquisition);
+  });
+
+  it("bei Eingabe in Euro bleibt die Aufteilung erhalten", () => {
+    const lv = simulateLv({
+      months: 120,
+      monthly_contribution: 100,
+      annual_return_percent: 6,
+      cost: { type: "eur", acquisition_costs_eur: 2000, admin_costs_monthly_eur: 5 },
+      funds: [],
+    });
+    expect(lv.costs.splitBekannt).toBe(true);
+    expect(lv.costs.acquisition).toBe(2000);
+    expect(lv.costs.admin).toBeCloseTo(120 * 5, 10);
+    expect(lv.costs.contract).toBeCloseTo(2000 + 600, 10);
+  });
+});
+
+describe("vertragskosten (Anzeige)", () => {
+  it("fasst im Prozentmodus zusammen, auch bei altem gespeichertem Split", () => {
+    const k = vertragskosten({ kostenart: "percent", abschluss: 600, verwaltung: 400 });
+    expect(k.splitBekannt).toBe(false);
+    expect(k.gesamt).toBe(1000);
+    expect(k.abschluss).toBe(0);
+    expect(k.hinweis).not.toBeNull();
+  });
+
+  it("laesst den Euro-Modus unveraendert", () => {
+    const k = vertragskosten({ kostenart: "eur", abschluss: 2000, verwaltung: 600 });
+    expect(k.splitBekannt).toBe(true);
+    expect(k.abschluss).toBe(2000);
+    expect(k.verwaltung).toBe(600);
+    expect(k.hinweis).toBeNull();
   });
 });
 

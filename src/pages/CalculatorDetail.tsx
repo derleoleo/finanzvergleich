@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { modellStempel } from "@/lib/finance/modell";
+import { vertragskosten } from "@/lib/finance/kostenanzeige";
 import ModellHinweis from "@/components/results/ModellHinweis";
 import { calculateAgeAtPayout } from "@/components/shared/TaxCalculations";
 import { useNavigate } from "react-router-dom";
@@ -182,6 +183,14 @@ export default function CalculatorDetail() {
     );
   }
 
+  // Audit N08: Bei Eingabe als Effektivkosten gibt es keine belastbare
+  // Aufteilung in Abschluss- und Verwaltungskosten.
+  const lvKosten = vertragskosten({
+    kostenart: calculation.lv_cost_type,
+    abschluss: calculation.results?.li_acquisition_costs,
+    verwaltung: calculation.results?.li_effective_costs,
+  });
+
   return (
     <>
     <div id="pdf-content" className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
@@ -262,8 +271,9 @@ export default function CalculatorDetail() {
                         {formatCurrency(Number(calculation.results?.li_total_costs ?? 0))}
                       </div>
                       <div className="text-sm text-slate-600 mt-1">
-                        Abschluss {formatCurrency(Number(calculation.results?.li_acquisition_costs ?? 0))} ·{" "}
-                        Verwaltung {formatCurrency(Number(calculation.results?.li_effective_costs ?? 0))} ·{" "}
+                        {lvKosten.splitBekannt
+                          ? `Abschluss ${formatCurrency(lvKosten.abschluss)} · Verwaltung ${formatCurrency(lvKosten.verwaltung)} · `
+                          : `Vertragskosten ${formatCurrency(lvKosten.gesamt)} · `}
                         Fonds {formatCurrency(Number(calculation.results?.li_fund_costs ?? 0))}
                       </div>
                       {calculation.results?.li_riy_percent != null && (
@@ -318,12 +328,20 @@ export default function CalculatorDetail() {
                       <TableBody>
                         <TableRow className="border-slate-100">
                           <TableCell className="text-slate-900 font-medium">Abschluss / Ausgabeaufschlag</TableCell>
-                          <TableCell className="text-right">{formatCurrency(Number(calculation.results?.li_acquisition_costs ?? 0))}</TableCell>
+                          <TableCell className="text-right">
+                            {lvKosten.splitBekannt
+                              ? formatCurrency(lvKosten.abschluss)
+                              : <span className="text-slate-400">in Vertragskosten enthalten</span>}
+                          </TableCell>
                           <TableCell className="text-right">{formatCurrency(Number(calculation.results?.depot_initial_charges ?? 0))}</TableCell>
                         </TableRow>
                         <TableRow className="border-slate-100">
-                          <TableCell className="text-slate-900 font-medium">Verwaltung / Depotkosten</TableCell>
-                          <TableCell className="text-right">{formatCurrency(Number(calculation.results?.li_effective_costs ?? 0))}</TableCell>
+                          <TableCell className="text-slate-900 font-medium">
+                            {lvKosten.splitBekannt ? "Verwaltung / Depotkosten" : "Vertragskosten / Depotkosten"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(lvKosten.splitBekannt ? lvKosten.verwaltung : lvKosten.gesamt)}
+                          </TableCell>
                           <TableCell className="text-right">{formatCurrency(Number(calculation.results?.depot_depot_costs ?? 0))}</TableCell>
                         </TableRow>
                         <TableRow className="border-slate-100">

@@ -1,3 +1,4 @@
+import { vertragskosten } from "@/lib/finance/kostenanzeige";
 import { useEffect, useMemo, useState } from "react";
 import ModellHinweis from "@/components/results/ModellHinweis";
 import { breakEvenEinordnung } from "@/lib/finance/bestadvice";
@@ -175,6 +176,13 @@ export default function BestAdviceDetail() {
   }
 
   const r = calculation.results;
+  // Audit N08: Aus einer Effektivkostenquote laesst sich die Aufteilung in
+  // Abschluss- und Verwaltungskosten nicht ableiten.
+  const lvKosten = vertragskosten({
+    kostenart: calculation.lv_cost_type,
+    abschluss: r?.li_acquisition_costs,
+    verwaltung: r?.li_admin_costs,
+  });
   if (!r) return null;
 
   const fondsLVEnd = mode === "gross" ? r.life_insurance_gross : r.life_insurance_net;
@@ -425,13 +433,19 @@ export default function BestAdviceDetail() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {lvKosten.splitBekannt && (
+                <div className="p-4 bg-blue-50 rounded-xl">
+                  <div className="text-sm text-blue-700 font-medium">Abschlusskosten</div>
+                  <div className="text-lg font-bold text-slate-900 mt-1">{formatCurrency(lvKosten.abschluss)}</div>
+                </div>
+              )}
               <div className="p-4 bg-blue-50 rounded-xl">
-                <div className="text-sm text-blue-700 font-medium">Abschlusskosten</div>
-                <div className="text-lg font-bold text-slate-900 mt-1">{formatCurrency(r.li_acquisition_costs)}</div>
-              </div>
-              <div className="p-4 bg-blue-50 rounded-xl">
-                <div className="text-sm text-blue-700 font-medium">Verwaltung</div>
-                <div className="text-lg font-bold text-slate-900 mt-1">{formatCurrency(r.li_admin_costs)}</div>
+                <div className="text-sm text-blue-700 font-medium">
+                  {lvKosten.splitBekannt ? "Verwaltung" : "Vertragskosten"}
+                </div>
+                <div className="text-lg font-bold text-slate-900 mt-1">
+                  {formatCurrency(lvKosten.splitBekannt ? lvKosten.verwaltung : lvKosten.gesamt)}
+                </div>
               </div>
               <div className="p-4 bg-blue-50 rounded-xl">
                 <div className="text-sm text-blue-700 font-medium">Fondskosten (TER)</div>

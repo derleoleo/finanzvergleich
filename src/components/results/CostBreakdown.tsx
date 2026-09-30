@@ -21,6 +21,7 @@ import {
   buildLvCostBreakdownActual,
   buildDepotCostBreakdownActual,
 } from "@/components/shared/CostBreakdown";
+import { vertragskosten } from "@/lib/finance/kostenanzeige";
 
 type Calc = {
   // Eingaben (für Fallback / Rekonstruktion)
@@ -65,8 +66,8 @@ export default function CostBreakdown({ calculation }: { calculation: Calc }) {
   // -----------------------------
   // LV: zentrale Rekonstruktion (für EUR-Modus)
   // -----------------------------
-  const lvThirdLabel =
-    calculation.lv_cost_type === "eur" ? "Verwaltung" : "Effektivkosten";
+  // Audit N08: Im Prozentmodus gibt es keine belastbare Aufteilung in
+  // Abschluss- und Verwaltungskosten – dann steht dort eine Zahl statt zwei.
 
   // Werte bevorzugt aus results (weil dort die echte Simulation steckt),
   // aber EUR-Modus: Abschluss/Verwaltung kann rekonstruiert werden, falls leer.
@@ -79,17 +80,26 @@ export default function CostBreakdown({ calculation }: { calculation: Calc }) {
         })
       : null;
 
-  const liAcq =
+  const rohAcq =
     n(r.li_acquisition_costs) ||
     n(calculation.life_insurance_acquisition_costs_eur) ||
     n(fallbackLv?.upfront.total) ||
     0;
 
-  const liEff = n(r.li_effective_costs) || n(fallbackLv?.ongoing.total) || 0;
+  const rohEff = n(r.li_effective_costs) || n(fallbackLv?.ongoing.total) || 0;
+
+  const kosten = vertragskosten({
+    kostenart: calculation.lv_cost_type,
+    abschluss: rohAcq,
+    verwaltung: rohEff,
+  });
+  const lvThirdLabel = kosten.label;
+  const liAcq = kosten.abschluss;
+  const liEff = kosten.splitBekannt ? kosten.verwaltung : kosten.gesamt;
 
   const liFund = n(r.li_fund_costs) || 0;
 
-  const liTotal = n(r.li_total_costs) || liAcq + liFund + liEff;
+  const liTotal = n(r.li_total_costs) || kosten.gesamt + liFund;
 
   // -----------------------------
   // Depot: bevorzugt results, fallback aus shared-Logik
@@ -181,11 +191,13 @@ export default function CostBreakdown({ calculation }: { calculation: Calc }) {
               <Legend />
 
               {/* LV */}
-              <Bar
-                className="fv-bar-lv-acq"
-                dataKey="LV_Abschluss"
-                name="LV Abschluss"
-              />
+              {kosten.splitBekannt && (
+                <Bar
+                  className="fv-bar-lv-acq"
+                  dataKey="LV_Abschluss"
+                  name="LV Abschluss"
+                />
+              )}
               <Bar
                 className="fv-bar-lv-fund"
                 dataKey="LV_Fondskosten"
@@ -223,10 +235,12 @@ export default function CostBreakdown({ calculation }: { calculation: Calc }) {
               Lebensversicherung
             </h4>
             <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-blue-700">Abschluss:</span>
-                <span className="font-medium">{formatCurrency(liAcq)}</span>
-              </div>
+              {kosten.splitBekannt && (
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Abschluss:</span>
+                  <span className="font-medium">{formatCurrency(liAcq)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-blue-700">Fondskosten:</span>
                 <span className="font-medium">{formatCurrency(liFund)}</span>
@@ -240,6 +254,9 @@ export default function CostBreakdown({ calculation }: { calculation: Calc }) {
                 <span className="font-bold">{formatCurrency(liTotal)}</span>
               </div>
             </div>
+            {kosten.hinweis && (
+              <p className="text-xs text-blue-700/80 mt-2">{kosten.hinweis}</p>
+            )}
           </div>
 
           <div className="p-4 bg-green-50 rounded-xl border border-green-200">

@@ -62,7 +62,22 @@ export type MonthlyPoint = {
 export type LvSimulationResult = {
   gross_capital: number;
   total_contributions: number;
-  costs: { acquisition: number; admin: number; fund: number; total: number };
+  costs: {
+    /** Abschlusskosten – nur im EUR-Modus belegt, sonst 0 (Audit N08). */
+    acquisition: number;
+    /**
+     * Verwaltungskosten im EUR-Modus. Im Prozentmodus trägt dieses Feld die
+     * gesamten Vertragskosten, weil die Oberfläche es dort als
+     * "Effektivkosten" ausweist – eine Aufteilung gibt die Eingabe nicht her.
+     */
+    admin: number;
+    /** Vertragskosten insgesamt, ohne Fondskosten. */
+    contract: number;
+    fund: number;
+    total: number;
+    /** false, wenn nur eine Effektivkostenquote vorliegt (Aufteilung unbekannt). */
+    splitBekannt: boolean;
+  };
   series: MonthlyPoint[];
 };
 
@@ -106,34 +121,15 @@ export function weightedFundCosts(funds: FundAllocation[]): {
   };
 }
 
-/**
- * Einheitlicher Split der LV-Effektivkosten in Abschluss- und Verwaltungsanteil:
- * - Laufzeit <= 5 Jahre: 60% Abschluss / 40% Verwaltung
- * - Laufzeit > 5 Jahre: 30% der Kosten entfallen anteilig auf die
- *   "Verwaltungsphase" (Jahre 6+): adminShare = 0.3 * (years - 5) / years,
- *   der Rest auf die Abschlussphase. adminShare → 0.3 für years → ∞.
- */
-export function splitLvEffectiveCosts(
-  totalContractCosts: number,
-  years: number
-): { acquisition: number; admin: number; acqShare: number; adminShare: number } {
-  let acqShare = 0.6;
-  let adminShare = 0.4;
-  if (years > 5) {
-    adminShare = (0.3 * (years - 5)) / years;
-    acqShare = 1 - adminShare;
-  }
-  return {
-    acquisition: totalContractCosts * acqShare,
-    admin: totalContractCosts * adminShare,
-    acqShare,
-    adminShare,
-  };
-}
+// Audit N08: Hier stand ein fester Split der Effektivkosten in Abschluss- und
+// Verwaltungsanteil (bis 5 Jahre 60/40, darüber adminShare = 0,3·(Jahre−5)/Jahre).
+// Bei 1.000 € Kosten ergab das für fünf Jahre 600/400 € und für sechs Jahre
+// 950/50 € – eine Stufe, die keiner eingegebenen Tarifstruktur folgt. Aus einer
+// Effektivkostenquote lässt sich die Aufteilung nicht ableiten; sie wird
+// deshalb nicht mehr geschätzt, sondern als unbekannt ausgewiesen.
 
 export function simulateLv(input: LvSimulationInput): LvSimulationResult {
   const months = Math.max(1, Math.floor(input.months));
-  const years = months / 12;
   const monthlyContribution = Number(input.monthly_contribution) || 0;
   const monthlyReturn = calculateMonthlyReturn(input.annual_return_percent);
   const dynamikFactor = 1 + (Number(input.dynamik_percent) || 0) / 100;
@@ -144,6 +140,9 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
   let acquisitionCosts = 0;
   let adminCosts = 0;
   let fundCosts = 0;
+  // Im EUR-Modus stammen Abschluss und Verwaltung aus der Eingabe, im
+  // Prozentmodus liegt nur die Gesamtbelastung vor (Audit N08).
+  let splitBekannt = true;
 
   const series: MonthlyPoint[] = [];
   const initialContribution = Number(input.initial_capital) || 0;
@@ -219,9 +218,11 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
       });
     }
 
-    const split = splitLvEffectiveCosts(totalContractCosts, years);
-    acquisitionCosts = split.acquisition;
-    adminCosts = split.admin;
+    // Audit N08: nicht mehr in Abschluss/Verwaltung aufteilen. Der Betrag
+    // bleibt ungeteilt und wird als Effektivkosten ausgewiesen.
+    acquisitionCosts = 0;
+    adminCosts = totalContractCosts;
+    splitBekannt = false;
   }
 
   return {
@@ -230,8 +231,10 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
     costs: {
       acquisition: acquisitionCosts,
       admin: adminCosts,
+      contract: acquisitionCosts + adminCosts,
       fund: fundCosts,
       total: acquisitionCosts + adminCosts + fundCosts,
+      splitBekannt,
     },
     series,
   };

@@ -9,9 +9,17 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-09-30" as const;
+export const MODELL_VERSION = "2026-09-30b" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-09-30b",
+    aenderung:
+      "Effektivkosten werden nicht mehr in einen geschätzten Abschluss- und " +
+      "Verwaltungsanteil aufgeteilt. Die Gesamthöhe der Kosten und alle " +
+      "Kapitalwerte bleiben unverändert; ausgewiesen wird nur noch, was die " +
+      "Eingabe hergibt.",
+  },
   {
     version: "2026-09-30",
     aenderung:
