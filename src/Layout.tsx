@@ -4,9 +4,8 @@ import { createPageUrl } from "@/utils";
 import BrandLogo from "@/components/BrandLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { supabase } from "@/lib/supabase";
 
-// Formspree: Konto anlegen auf formspree.io → Form-ID hier eintragen
-const FORMSPREE_ID = "mgolzyve";
 import {
   Calculator,
   TrendingUp,
@@ -125,9 +124,17 @@ export default function Layout({ children }: Props) {
     setFeedbackError(false);
 
     try {
-      const res = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
+      // Eigene Funktion statt Formspree: kein weiterer Auftragsverarbeiter,
+      // keine Übermittlung in die USA.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Keine Sitzung");
+
+      const res = await fetch("/api/send-feedback", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           typ: feedbackType,
           nachricht: feedbackMessage,
@@ -135,7 +142,7 @@ export default function Layout({ children }: Props) {
         }),
       });
 
-      if (!res.ok) throw new Error("Formspree error");
+      if (!res.ok) throw new Error("Feedback fehlgeschlagen");
 
       setFeedbackMessage("");
       setFeedbackEmail("");

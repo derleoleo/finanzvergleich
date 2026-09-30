@@ -176,21 +176,17 @@ export default function Datenschutz() {
             <p>
               Über das Feedback-Formular übermittelte Angaben (Feedback-Art, Nachrichtentext und
               optional eine E-Mail-Adresse für Rückfragen) werden ausschließlich per E-Mail an uns
-              weitergeleitet. Eine Speicherung in unserer Datenbank oder eine Zuordnung zu Ihrem
-              Nutzerkonto findet nicht statt.
+              weitergeleitet. Mitgesendet wird die E-Mail-Adresse Ihres Kontos, damit wir antworten
+              können und das Formular nicht missbräuchlich genutzt werden kann. Eine Speicherung
+              der Nachricht in unserer Datenbank findet nicht statt.
             </p>
             <p className="mt-3">
-              Für die Zustellung nutzen wir den Formular-Dienst:
-            </p>
-            <p className="mt-2">
-              <strong>Formspree, Inc.</strong>
-              <br />
-              2810 N Church St, Wilmington, DE 19802, USA
+              Die Zustellung erfolgt über unsere eigene Anwendung und den bereits unter Ziffer 4
+              genannten E-Mail-Dienst Resend Inc. Ein gesonderter Formular-Dienst wird nicht mehr
+              eingesetzt; die Daten verlassen den in dieser Erklärung beschriebenen Kreis der
+              Auftragsverarbeiter nicht.
             </p>
             <p className="mt-3">
-              Dabei werden die von Ihnen eingegebenen Inhalte sowie technische Verbindungsdaten
-              (u. a. IP-Adresse) verarbeitet. Datenübermittlungen in die USA erfolgen auf Grundlage
-              der EU-Standardvertragsklauseln (Art. 46 DSGVO).
               Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der
               Entgegennahme und Bearbeitung von Rückmeldungen zur Anwendung); bei Angabe einer
               E-Mail-Adresse zusätzlich Art. 6 Abs. 1 lit. a DSGVO (Einwilligung durch freiwillige

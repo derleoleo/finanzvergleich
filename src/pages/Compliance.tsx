@@ -118,15 +118,6 @@ export default function Compliance() {
                     <td className="p-3 border border-slate-200">EU (Frankfurt)</td>
                     <td className="p-3 border border-slate-200">SCC + DPA</td>
                   </tr>
-                  <tr className="bg-slate-50">
-                    <td className="p-3 border border-slate-200 font-medium">Formspree, Inc.</td>
-                    <td className="p-3 border border-slate-200">
-                      Zustellung des Feedback-Formulars per E-Mail (kein Zugriff auf Mandantendaten,
-                      daher kein Subprozessor im Sinne des AVV)
-                    </td>
-                    <td className="p-3 border border-slate-200">USA</td>
-                    <td className="p-3 border border-slate-200">SCC</td>
-                  </tr>
                 </tbody>
               </table>
             </div>

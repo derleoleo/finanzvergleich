@@ -89,7 +89,7 @@ const avvParagraphen = [
       ],
     },
     nachsatz:
-      'Nicht als Subprozessor eingesetzt wird Formspree, Inc. (USA). Der Dienst stellt ausschließlich Rückmeldungen des Auftraggebers über das Feedback-Formular per E-Mail zu und erhält dabei keinen Zugriff auf Daten, die der Auftraggeber im Rahmen dieses AVV verarbeiten lässt.',
+      'Rückmeldungen über das Feedback-Formular werden von der Anwendung selbst entgegengenommen und über Resend Inc. per E-Mail zugestellt. Ein gesonderter Formular-Dienst wird nicht eingesetzt.',
   },
 ];
 
