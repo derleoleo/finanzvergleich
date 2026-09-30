@@ -1,3 +1,4 @@
+import { FREI_BERECHNUNGEN_PRO_MONAT } from "@/utils/preise";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Lock, X } from "lucide-react";
@@ -25,7 +26,7 @@ export default function UpgradePrompt({ title, description, onClose }: Props) {
           <p className="text-sm text-slate-600">{description}</p>
         </div>
         <p className="text-xs text-slate-500">
-          {monthlyCalculationCount} von 3 Berechnungen diesen Monat verwendet
+          {monthlyCalculationCount} von {FREI_BERECHNUNGEN_PRO_MONAT} Berechnungen diesen Monat verwendet
         </p>
         <Link to={createPageUrl("Pricing")} className="w-full">
           <Button className="w-full bg-slate-800 hover:bg-slate-700 text-white">

@@ -8,6 +8,7 @@ import { Consent } from "@/entities/Consent";
 import { LEGAL_DOC_VERSION, REQUIRED_CONSENT_TYPES } from "@/utils/legalVersion";
 import {
   ERSPARNIS_JAHR,
+  FREI_BERECHNUNGEN_PRO_MONAT,
   KLEINUNTERNEHMER_HINWEIS,
   MONATSAEQUIVALENT_JAHR,
   PREIS_JAHR,
@@ -323,6 +324,25 @@ export default function Pricing() {
             </div>
           </div>
         </div>
+
+        {/* Was der kostenlose Plan umfasst – gehoert vor die Kaufentscheidung,
+            nicht erst in die Meldung beim Erreichen des Kontingents. */}
+        {!isPaid && (
+          <div className="mt-8 bg-white rounded-2xl border border-slate-200 p-6">
+            <h3 className="text-sm font-semibold text-slate-700 mb-2">
+              Ohne Abo (Free-Plan)
+            </h3>
+            <ul className="text-xs text-slate-500 space-y-1 list-disc list-inside">
+              <li>
+                {FREI_BERECHNUNGEN_PRO_MONAT} Berechnungen pro Monat, danach ist bis zum
+                Monatswechsel Schluss
+              </li>
+              <li>Fonds-Sparvertrag und Einmalanlage; die übrigen Rechner sind Premium</li>
+              <li>Kein PDF-Export</li>
+              <li>Dauerhaft kostenlos, keine Zahlungsdaten nötig</li>
+            </ul>
+          </div>
+        )}
 
         {/* Code einlösen */}
         {!isPaid && (

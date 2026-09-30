@@ -46,3 +46,6 @@ dist-ssr
 /test-results/
 /playwright-report/
 /blob-report/
+
+# Angemeldete Sitzung fuer scripts/screenshots.mjs (enthaelt ein Zugangstoken)
+/.playwright-auth.json

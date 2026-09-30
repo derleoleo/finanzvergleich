@@ -4,6 +4,8 @@ import { createPageUrl } from "@/utils";
 import BrandLogo, { MARKE } from "@/components/BrandLogo";
 import {
   KLEINUNTERNEHMER_HINWEIS,
+  FREI_BERECHNUNGEN_PRO_MONAT,
+  MONATSAEQUIVALENT_JAHR,
   PREIS_JAHR,
   PREIS_MONAT,
   ersparnisEtikett,
@@ -29,7 +31,7 @@ const faq = [
   },
   {
     q: "Gibt es eine kostenlose Testversion?",
-    a: "Ja. Der Free-Plan ist dauerhaft kostenlos, ohne Zahlungsdaten, und beinhaltet die grundlegenden Rechner (Fonds-Sparvertrag, Einmalanlage). Der Premium-Plan startet mit einem 30-tägigen kostenlosen Testzeitraum. Dafür hinterlegen Sie eine Zahlungsmethode – belastet wird erst nach Ablauf der 30 Tage, eine Kündigung vorher ist kostenlos.",
+    a: `Ja. Der Free-Plan ist dauerhaft kostenlos und ohne Zahlungsdaten nutzbar. Er umfasst die grundlegenden Rechner (Fonds-Sparvertrag, Einmalanlage) mit ${FREI_BERECHNUNGEN_PRO_MONAT} Berechnungen pro Monat; PDF-Export ist nicht enthalten. Der Premium-Plan startet mit einem 30-tägigen kostenlosen Testzeitraum. Dafür hinterlegen Sie eine Zahlungsmethode – belastet wird erst nach Ablauf der 30 Tage, eine Kündigung vorher ist kostenlos.`,
   },
   {
     q: "Was passiert nach der Probezeit?",
@@ -258,6 +260,11 @@ export default function Landing() {
             <p className="text-xs font-bold text-brand-cyan uppercase tracking-widest mb-3">Module</p>
             <h2 className="text-3xl font-bold text-slate-900 mb-3">6 Simulationsrechner</h2>
             <p className="text-sm text-slate-500">Von der Erstberatung bis zur Bestandsanalyse — alle Szenarien abgedeckt.</p>
+            <p className="text-xs text-slate-400 mt-3">
+              <span className="font-semibold text-green-600">Free</span> heißt: dauerhaft
+              kostenlos, begrenzt auf {FREI_BERECHNUNGEN_PRO_MONAT} Berechnungen pro Monat und
+              ohne PDF-Export. Alle übrigen Rechner sind Premium.
+            </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
@@ -372,42 +379,106 @@ export default function Landing() {
             <h2 className="text-3xl font-bold text-slate-900 mb-3">Transparente Preise</h2>
             <p className="text-sm text-slate-500">Keine versteckten Kosten. Jederzeit kündbar.</p>
           </div>
-          <div className="max-w-sm mx-auto">
-            {/* Premium */}
-            <div className="rounded-2xl bg-brand-blue p-7 flex flex-col relative overflow-hidden shadow-xl">
-              <div className="absolute top-0 right-0 bg-brand-cyan text-white text-[10px] font-bold px-3 py-1.5 rounded-bl-xl tracking-wider">
-                ALLES INKLUSIVE
-              </div>
-              <p className="text-xs font-bold text-blue-200 uppercase tracking-widest mb-4">Premium</p>
-              <div className="text-3xl font-black text-white mb-1">{eur(PREIS_MONAT)}</div>
-              <p className="text-sm text-blue-300 mb-1">pro Monat · Endpreis, keine USt.</p>
-              <p className="text-xs text-blue-400 mb-6">
-                oder {eur(PREIS_JAHR)}/Jahr ({ersparnisEtikett()})
-              </p>
-              <ul className="space-y-2.5 text-sm text-blue-100 flex-1 mb-8">
-                {[
-                  "Alle 6 Simulationsrechner",
-                  "Unbegrenzte Berechnungen",
-                  "PDF-Export mit Branding",
-                  "BestAdvice & Rentenlücke",
-                  "Eigenes Logo auf PDFs",
-                  "30 Tage kostenlos testen",
-                ].map((f) => (
-                  <li key={f} className="flex items-center gap-2.5">
-                    <Check className="w-4 h-4 text-white shrink-0" /> {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to={createPageUrl("Pricing")}
-                className="block text-center bg-white text-brand-blue rounded-xl py-2.5 text-sm font-bold hover:bg-blue-50 transition-colors"
+          {/* Zwei gleichwertige Kacheln: Das Jahresabo stand vorher nur als
+              Kleingedrucktes unter dem Monatspreis und war so kaum zu sehen. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto items-start">
+            {[
+              {
+                name: "Monatlich",
+                betrag: eur(PREIS_MONAT),
+                takt: "pro Monat",
+                zusatz: "Monatlich kündbar",
+                etikett: null as string | null,
+                hervorgehoben: false,
+              },
+              {
+                name: "Jährlich",
+                betrag: eur(PREIS_JAHR),
+                takt: "pro Jahr",
+                zusatz: `entspricht ${eur(MONATSAEQUIVALENT_JAHR)} pro Monat`,
+                etikett: ersparnisEtikett().toUpperCase(),
+                hervorgehoben: true,
+              },
+            ].map((tarif) => (
+              <div
+                key={tarif.name}
+                className={`rounded-2xl p-7 flex flex-col relative overflow-hidden ${
+                  tarif.hervorgehoben
+                    ? "bg-brand-blue shadow-xl"
+                    : "bg-slate-50 border border-slate-200"
+                }`}
               >
-                30 Tage kostenlos testen
-              </Link>
-            </div>
+                {tarif.etikett && (
+                  <div className="absolute top-0 right-0 bg-brand-cyan text-white text-[10px] font-bold px-3 py-1.5 rounded-bl-xl tracking-wider">
+                    {tarif.etikett}
+                  </div>
+                )}
+                <p
+                  className={`text-xs font-bold uppercase tracking-widest mb-4 ${
+                    tarif.hervorgehoben ? "text-blue-200" : "text-slate-400"
+                  }`}
+                >
+                  Premium · {tarif.name}
+                </p>
+                <div
+                  className={`text-3xl font-black mb-1 ${
+                    tarif.hervorgehoben ? "text-white" : "text-slate-900"
+                  }`}
+                >
+                  {tarif.betrag}
+                </div>
+                <p
+                  className={`text-sm mb-1 ${
+                    tarif.hervorgehoben ? "text-blue-300" : "text-slate-500"
+                  }`}
+                >
+                  {tarif.takt} · Endpreis, keine USt.
+                </p>
+                <p
+                  className={`text-xs mb-6 ${
+                    tarif.hervorgehoben ? "text-blue-400" : "text-slate-400"
+                  }`}
+                >
+                  {tarif.zusatz}
+                </p>
+                <ul
+                  className={`space-y-2.5 text-sm flex-1 mb-8 ${
+                    tarif.hervorgehoben ? "text-blue-100" : "text-slate-600"
+                  }`}
+                >
+                  {[
+                    "Alle 6 Simulationsrechner",
+                    "Unbegrenzte Berechnungen",
+                    "PDF-Export mit Branding",
+                    "BestAdvice & Rentenlücke",
+                    "Eigenes Logo auf PDFs",
+                    "30 Tage kostenlos testen",
+                  ].map((f) => (
+                    <li key={f} className="flex items-center gap-2.5">
+                      <Check
+                        className={`w-4 h-4 shrink-0 ${
+                          tarif.hervorgehoben ? "text-white" : "text-brand-cyan"
+                        }`}
+                      />{" "}
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  to={createPageUrl("Pricing")}
+                  className={`block text-center rounded-xl py-2.5 text-sm font-bold transition-colors ${
+                    tarif.hervorgehoben
+                      ? "bg-white text-brand-blue hover:bg-blue-50"
+                      : "bg-brand-blue text-white hover:bg-brand-blue/90"
+                  }`}
+                >
+                  30 Tage kostenlos testen
+                </Link>
+              </div>
+            ))}
           </div>
           <p className="text-center mt-6 text-sm text-slate-500">
-            Kündigung jederzeit möglich. Nach dem Testzeitraum {eur(PREIS_MONAT)}/Monat.{" "}
+            Beide Tarife mit 30 Tagen kostenlosem Test, Kündigung jederzeit möglich.{" "}
             {KLEINUNTERNEHMER_HINWEIS}.
           </p>
         </div>
@@ -447,7 +518,10 @@ export default function Landing() {
       <section className="py-20 px-6 bg-brand-blue">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Jetzt kostenlos starten</h2>
-          <p className="text-blue-200 mb-8 text-sm">Keine Kreditkarte erforderlich. Free-Plan dauerhaft kostenlos.</p>
+          <p className="text-blue-200 mb-8 text-sm">
+            Keine Kreditkarte erforderlich. Free-Plan dauerhaft kostenlos mit{" "}
+            {FREI_BERECHNUNGEN_PRO_MONAT} Berechnungen pro Monat.
+          </p>
           <Link
             to="/login"
             className="inline-flex items-center gap-2 bg-white text-brand-blue hover:bg-blue-50 font-bold px-8 py-3.5 rounded-xl transition-colors"

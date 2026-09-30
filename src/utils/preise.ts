@@ -8,6 +8,13 @@
 export const PREIS_MONAT = 59;
 export const PREIS_JAHR = 590;
 
+/**
+ * Berechnungen pro Monat im kostenlosen Plan. Muss mit der Prüfung in
+ * supabase/migrations/20260929150000_kontingent_zaehler.sql übereinstimmen –
+ * die Datenbank setzt die Grenze durch, hier steht nur die Anzeige.
+ */
+export const FREI_BERECHNUNGEN_PRO_MONAT = 3;
+
 /** Ersparnis des Jahresabos gegenüber zwölf Monatsraten. */
 export const ERSPARNIS_JAHR = PREIS_MONAT * 12 - PREIS_JAHR;
 
