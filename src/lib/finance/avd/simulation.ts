@@ -35,7 +35,18 @@ import {
   type BestandsvertragEingabe,
   type OptionsErgebnis,
 } from './optionen';
+import { simuliereFondsLv, type FondsLvErgebnis } from './fondslv';
 import type { SteuerZuschlaege } from './tarif';
+
+/** Parameter der Fondspolice im AVD-Vergleich. Raten als Dezimal. */
+export type FondsLvVergleich = {
+  renditeBruttoPaJahr: number;
+  terPaJahr: number;
+  kostenart: 'eur' | 'prozent';
+  abschlusskostenGesamt: number;
+  verwaltungProMonat: number;
+  effektivkostenPaJahr: number;
+};
 
 export type AvdEingabe = {
   // Person
@@ -74,12 +85,19 @@ export type AvdEingabe = {
 
   // Vergleich
   /** Womit wird das AVD verglichen? Default: freies Depot. */
-  vergleichspartner?: 'depot' | 'riester_alt';
+  vergleichspartner?: 'depot' | 'riester_alt' | 'fonds_lv';
   depotKostenPaJahr: number;
   vergleichsmodus: 'gleicher_nettoaufwand' | 'gleicher_bruttobeitrag';
   sparerpauschbetrag?: number;
   /** Nur bei vergleichspartner === 'riester_alt'. */
   riester?: RiesterAltEingabeVergleich;
+  /**
+   * Fondsgebundene Lebensversicherung – Vergleichspartner und zugleich
+   * möglicher Zweitvertrag der Kombinationsstrategie. Immer vollständig
+   * belegt, auch wenn gerade nicht gewählt: Der Entwurf im localStorage wird
+   * flach über die Vorgaben gelegt, eine Teilbelegung ginge dabei verloren.
+   */
+  fondsLv?: FondsLvVergleich;
   /**
    * Bestandsvertragsdaten fuer die Vier-Optionen-Matrix (A-D).
    * Gesetzt nur, wenn die Wechselanalyse in den Voreinstellungen aktiv ist.
@@ -171,6 +189,8 @@ export type AvdErgebnis = {
   depot: DepotVergleich;
   /** Nur gesetzt, wenn gegen einen Riester-Bestandsvertrag verglichen wird. */
   riesterAlt?: RiesterAltErgebnis;
+  /** Nur gesetzt, wenn gegen eine Fondspolice verglichen wird. */
+  fondsLv?: FondsLvErgebnis;
   /** Vier Handlungsoptionen A-D; nur bei aktiver Wechselanalyse. */
   handlungsoptionen?: OptionsErgebnis[];
   /** Netto-Kapitalvorteil des AVD gegenüber dem freien Depot (beide nach Steuern). */
@@ -532,6 +552,41 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
     });
   }
 
+  // Fondspolice als Vergleichspartner: derselbe Beitragsstrom, aber ein
+  // Versicherungsmantel mit Halbeinkuenfteverfahren statt nachgelagerter
+  // Besteuerung.
+  const fondsLv =
+    e.vergleichspartner === 'fonds_lv' && e.fondsLv
+      ? simuliereFondsLv({
+          jahre: jahreBisAuszahlung,
+          beitragMonatlich: e.eigenbeitragMonatlich,
+          renditeBruttoPaJahr: e.fondsLv.renditeBruttoPaJahr,
+          terPaJahr: e.fondsLv.terPaJahr,
+          kosten:
+            e.fondsLv.kostenart === 'eur'
+              ? {
+                  art: 'eur',
+                  abschlusskostenGesamt: e.fondsLv.abschlusskostenGesamt,
+                  verwaltungProMonat: e.fondsLv.verwaltungProMonat,
+                }
+              : { art: 'prozent', effektivkostenPaJahr: e.fondsLv.effektivkostenPaJahr },
+          alterBeiAuszahlung: e.auszahlungsbeginnAlter,
+          steuersatzImAlter: e.steuersatzImAlter,
+          soliBeruecksichtigen: e.soliBeruecksichtigen,
+          kirchensteuersatz: e.kirchensteuersatz,
+          auszahlplanEndalter: e.auszahlplanEndalter,
+        })
+      : undefined;
+  if (fondsLv) hinweise.push(...fondsLv.hinweise);
+
+  // Der aktive Vergleichspartner – die Kennzahl darf nicht still aufs Depot
+  // zeigen, wenn etwas anderes gewaehlt ist.
+  const vergleichNachSteuer = riesterAlt
+    ? riesterAlt.endkapitalNachSteuer
+    : fondsLv
+      ? fondsLv.endkapitalNachSteuer
+      : depot.endkapitalNetto;
+
   return {
     jahre,
     jahreBisAuszahlung,
@@ -549,11 +604,10 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
     auszahlung,
     depot,
     riesterAlt,
+    fondsLv,
     handlungsoptionen,
     vorteilGegenDepot: endkapitalNachSteuer - depot.endkapitalNetto,
-    vorteilGegenVergleich:
-      endkapitalNachSteuer -
-      (riesterAlt ? riesterAlt.endkapitalNachSteuer : depot.endkapitalNetto),
+    vorteilGegenVergleich: endkapitalNachSteuer - vergleichNachSteuer,
     hinweise,
   };
 }

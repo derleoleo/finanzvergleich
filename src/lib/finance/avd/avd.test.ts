@@ -23,6 +23,7 @@ import {
 } from './config';
 import { sockelbetragsSchwelle } from './riester';
 import { simuliereFondsLv } from './fondslv';
+import { berechneStrategien } from './strategien';
 import { simulateLv } from '../simulation';
 import { besteOption, zillmerungsverlust } from './optionen';
 import {
@@ -1111,5 +1112,110 @@ describe('Fondsgebundene Lebensversicherung im AVD-Modul', () => {
       kosten: { art: 'eur', abschlusskostenGesamt: 0, verwaltungProMonat: 0 },
     });
     expect(euro.endkapitalVorSteuer).toBeCloseTo(prozent.endkapitalVorSteuer, 6);
+  });
+});
+
+describe('Drei Strategien (30 + 1)', () => {
+  const basis = () =>
+    eingabe({
+      eigenbeitragMonatlich: 80,
+      beitragsdynamikPaJahr: 0,
+      vergleichspartner: 'depot' as const,
+      fondsLv: {
+        renditeBruttoPaJahr: 0.07,
+        terPaJahr: 0.003,
+        kostenart: 'prozent' as const,
+        abschlusskostenGesamt: 0,
+        verwaltungProMonat: 0,
+        effektivkostenPaJahr: 0.012,
+      },
+    });
+
+  it('liefert genau drei Varianten mit endlichen Werten', () => {
+    const r = berechneStrategien({ basis: basis(), zweitvertrag: 'depot' });
+    expect(r.strategien.map((s) => s.id)).toEqual([
+      'avd_voll',
+      'vergleich_voll',
+      'kombination',
+    ]);
+    for (const s of r.strategien) {
+      expect(Number.isFinite(s.endkapitalNachSteuer)).toBe(true);
+      expect(s.endkapitalNachSteuer).toBeGreaterThan(0);
+    }
+  });
+
+  it('teilt den Beitrag vollständig auf und folgt dem Vorschlag', () => {
+    const r = berechneStrategien({ basis: basis(), zweitvertrag: 'depot' });
+    expect(r.aufteilungMonatlich).toBe(30);
+    const z = r.strategien[2];
+    expect(z.beitragAvdMonatlich + z.beitragZweitMonatlich).toBe(80);
+  });
+
+  it('vergleicht gleichen Eigenaufwand – sonst wäre der Vergleich wertlos', () => {
+    const r = berechneStrategien({ basis: basis(), zweitvertrag: 'depot' });
+    const [x, y, z] = r.strategien;
+    expect(y.summeEigenbeitraege).toBeCloseTo(x.summeEigenbeitraege, 6);
+    expect(z.summeEigenbeitraege).toBeCloseTo(x.summeEigenbeitraege, 6);
+  });
+
+  it('rechnet die Förderung des AVD-Teils über denselben Weg wie die Hauptsimulation', () => {
+    // Der wichtigste Test: Es darf kein zweiter Förderrechenweg entstehen.
+    const r = berechneStrategien({ basis: basis(), zweitvertrag: 'depot' });
+    const direkt = simuliereAvd({ ...basis(), eigenbeitragMonatlich: 30 });
+    expect(r.strategien[2].summeFoerderung).toBeCloseTo(direkt.summeFoerderung, 6);
+  });
+
+  it('bei Beitrag unterhalb des Aufteilungspunkts entfällt die Kombination', () => {
+    const r = berechneStrategien({
+      basis: eingabe({ eigenbeitragMonatlich: 20, beitragsdynamikPaJahr: 0 }),
+      zweitvertrag: 'depot',
+    });
+    expect(r.kombinationEntfaellt).toBe(true);
+    expect(r.strategien[2].endkapitalNachSteuer).toBe(r.strategien[0].endkapitalNachSteuer);
+  });
+
+  it('Aufteilung 0 ergibt den Vergleichspartner, voller Betrag ergibt den AVD', () => {
+    const b = basis();
+    const alles = berechneStrategien({ basis: b, aufteilungMonatlich: 80, zweitvertrag: 'depot' });
+    expect(alles.strategien[2].endkapitalNachSteuer).toBeCloseTo(
+      alles.strategien[0].endkapitalNachSteuer,
+      6
+    );
+    const nichts = berechneStrategien({ basis: b, aufteilungMonatlich: 0, zweitvertrag: 'depot' });
+    expect(nichts.strategien[2].endkapitalNachSteuer).toBeCloseTo(
+      nichts.strategien[1].endkapitalNachSteuer,
+      6
+    );
+  });
+
+  it('hält den AVD-Teil bei hohen Beiträgen im geförderten Bereich', () => {
+    // 300 €/Monat = 3.600 €/Jahr liegen weit über dem 1.800-€-Deckel
+    const b = eingabe({ eigenbeitragMonatlich: 300, beitragsdynamikPaJahr: 0 });
+    const r = berechneStrategien({ basis: b, zweitvertrag: 'depot' });
+    expect(simuliereAvd({ ...b, eigenbeitragMonatlich: 30 }).ungefoerderterKapitalanteil).toBe(0);
+    expect(simuliereAvd(b).ungefoerderterKapitalanteil).toBeGreaterThan(0);
+    expect(r.strategien[2].beitragAvdMonatlich).toBe(30);
+  });
+
+  it('weist auf die ignorierte Beitragsdynamik hin', () => {
+    const r = berechneStrategien({
+      basis: eingabe({ eigenbeitragMonatlich: 80, beitragsdynamikPaJahr: 0.02 }),
+      zweitvertrag: 'depot',
+    });
+    expect(r.hinweise.some((h) => h.text.includes('Beitragsdynamik'))).toBe(true);
+  });
+
+  it('rechnet die Fondspolice als Zweitvertrag', () => {
+    const r = berechneStrategien({ basis: basis(), zweitvertrag: 'fonds_lv' });
+    const z = r.strategien[2];
+    expect(z.endkapitalNachSteuer).toBeGreaterThan(0);
+    expect(z.aufteilungText).toContain('Fondspolice');
+    expect(z.kapitalProJahr.length).toBeGreaterThan(0);
+  });
+
+  it('kürt die stärkste Variante', () => {
+    const r = berechneStrategien({ basis: basis(), zweitvertrag: 'depot' });
+    const hoechstes = Math.max(...r.strategien.map((s) => s.endkapitalNachSteuer));
+    expect(r.strategien.find((s) => s.id === r.beste)!.endkapitalNachSteuer).toBe(hoechstes);
   });
 });
