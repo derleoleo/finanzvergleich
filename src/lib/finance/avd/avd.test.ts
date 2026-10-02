@@ -12,9 +12,15 @@ import {
 import {
   berechneZulagen,
   berechneZulagenRiesterAlt,
+  foerderoptimalerAvdBeitrag,
   guenstigerpruefung,
 } from './zulagen';
-import { GESETZ, ertragsanteilFuer, basiszinsFuer } from './config';
+import {
+  GESETZ,
+  RECHTS_FLAGS_DEFAULT,
+  ertragsanteilFuer,
+  basiszinsFuer,
+} from './config';
 import { sockelbetragsSchwelle } from './riester';
 import { besteOption, zillmerungsverlust } from './optionen';
 import {
@@ -962,5 +968,68 @@ describe('Vorabpauschale zeitanteilig (F16)', () => {
       Array.from({ length: 12 }, (_, i) => (13 - (i + 1)) / 12).reduce((a, b) => a + b, 0) / 12;
     expect(anteil).toBeLessThan(1);
     expect(anteil).toBeCloseTo(0.5417, 3);
+  });
+});
+
+describe('Aufteilungspunkt für die Kombinationsstrategie', () => {
+  it('ohne Kinder: 360 € im Jahr = 30 € im Monat, unabhängig vom Einkommen', () => {
+    // Der Punkt folgt der Zulagenstaffel, nicht der Günstigerprüfung – sonst
+    // würde ihn der Sonderausgabenabzug bei mittlerem zvE nach oben schieben.
+    const p = foerderoptimalerAvdBeitrag({ kinder: 0 });
+    expect(p.jahresbeitrag).toBe(360);
+    expect(p.monatsbeitrag).toBe(30);
+    expect(p.grund).toBe('grundzulage_stufe2');
+    expect(p.zulageAmPunkt).toBeCloseTo(180, 10);
+    expect(p.grenzquoteDavor).toBeCloseTo(0.5, 10);
+    expect(p.grenzquoteDanach).toBeCloseTo(0.25, 10);
+    expect(p.foerdergrenzeJahresbeitrag).toBe(1800);
+  });
+
+  it('mit Kindern bleibt es bei 360 €, obwohl die Kinderzulage früher endet', () => {
+    // Zwischen 300 € und 360 € bringt der Euro weiterhin 50 % Grundzulage –
+    // mehr als jede Anlage daneben. Erst ab 360 € halbiert sich die Förderung.
+    const p = foerderoptimalerAvdBeitrag({ kinder: 2 });
+    expect(p.jahresbeitrag).toBe(360);
+    expect(p.monatsbeitrag).toBe(30);
+    expect(p.grenzquoteDavor).toBeCloseTo(0.5, 10);
+    expect(p.grenzquoteDanach).toBeCloseTo(0.25, 10);
+    // 180 € Grundzulage + 2 × 300 € Kinderzulage
+    expect(p.zulageAmPunkt).toBeCloseTo(780, 10);
+    expect(p.begruendung).toContain('Kinderzulage');
+  });
+
+  it('folgt dem Flag zur Kinderzulagen-Auslegung', () => {
+    const geteilt = foerderoptimalerAvdBeitrag({
+      kinder: 2,
+      flags: { ...RECHTS_FLAGS_DEFAULT, kinderzulageProKindUnabhaengig: false },
+    });
+    const unabhaengig = foerderoptimalerAvdBeitrag({ kinder: 2 });
+    expect(geteilt.jahresbeitrag).toBe(360);
+    // Die Zulage darf nicht hartkodiert sein, sonst ignoriert sie das Flag
+    expect(geteilt.zulageAmPunkt).toBeLessThan(unabhaengig.zulageAmPunkt);
+  });
+
+  it('mittelbar berechtigt: nur der Mindestbeitrag, danach bringt nichts mehr Zulage', () => {
+    const p = foerderoptimalerAvdBeitrag({
+      berechtigung: 'mittelbar',
+      eigenbeitragEhegatteUnmittelbar: 1800,
+    });
+    expect(p.jahresbeitrag).toBe(120);
+    expect(p.monatsbeitrag).toBe(10);
+    expect(p.grund).toBe('mindestbeitrag');
+    expect(p.grenzquoteDanach).toBeCloseTo(0, 10);
+  });
+
+  it('ohne Berechtigung gibt es keinen Aufteilungspunkt', () => {
+    const p = foerderoptimalerAvdBeitrag({ berechtigung: 'keine' });
+    expect(p.jahresbeitrag).toBe(0);
+    expect(p.grund).toBe('keine_foerderung');
+    expect(p.zulageAmPunkt).toBe(0);
+  });
+
+  it('liegt nie unter der harten 120-€-Schwelle', () => {
+    for (const kinder of [0, 1, 3]) {
+      expect(foerderoptimalerAvdBeitrag({ kinder }).jahresbeitrag).toBeGreaterThanOrEqual(120);
+    }
   });
 });

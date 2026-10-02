@@ -196,21 +196,142 @@ export function guenstigerpruefung(p: GuenstigerEingabe): GuenstigerErgebnis {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Aufteilungspunkt für die Kombinationsstrategie („30 + 1")
+// ---------------------------------------------------------------------------
+
+export type AufteilungsGrund =
+  /** Keine Zulageberechtigung – es gibt nichts aufzuteilen. */
+  | 'keine_foerderung'
+  /** Mittelbar: Die Zulage bemisst sich am Beitrag des Ehegatten. */
+  | 'mindestbeitrag'
+  /** Ab 360 € fällt die Grundzulage von 50 % auf 25 %. */
+  | 'grundzulage_stufe2';
+
+export type Aufteilungspunkt = {
+  jahresbeitrag: number;
+  /** Auf volle Euro gerundet – das steht so im Eingabefeld. */
+  monatsbeitrag: number;
+  grund: AufteilungsGrund;
+  begruendung: string;
+  /** Zulage, die dieser Beitrag im Jahr auslöst. */
+  zulageAmPunkt: number;
+  /** Zulagen-Grenzquote kurz unterhalb des Punktes (0,5 = 50 Cent je Euro). */
+  grenzquoteDavor: number;
+  /** Zulagen-Grenzquote kurz oberhalb des Punktes. */
+  grenzquoteDanach: number;
+  /** Zweite, weiche Grenze: darüber wächst weder Zulage noch SA-Volumen. */
+  foerdergrenzeJahresbeitrag: number;
+};
+
+/** Breite des Fensters, über das die Grenzquote gemessen wird. */
+const QUOTEN_FENSTER = 60;
+
+type ZulagenKontext = Omit<ZulagenEingabe, 'eigenbeitrag'>;
+
+/** Zulagen-Grenzquote zwischen zwei Beiträgen: Wie viel Zulage bringt ein Euro mehr? */
+function grenzquote(von: number, bis: number, p: ZulagenKontext): number {
+  if (bis <= von) return 0;
+  const unten = berechneZulagen({ ...p, eigenbeitrag: von }).zulageGesamt;
+  const oben = berechneZulagen({ ...p, eigenbeitrag: bis }).zulageGesamt;
+  return (oben - unten) / (bis - von);
+}
+
 /**
- * Förderoptimaler Eigenbeitrag: Ab hier bringt jeder weitere Euro keine
- * Grenzförderung mehr (§ 10a Abs. 1 – über 1.800 € gibt es keine Förderung).
- * Mit Kindern reichen bereits 300 € für die volle Kinderzulage.
+ * Der Beitrag, bis zu dem sich die Förderung je Euro am meisten lohnt – die
+ * Grundlage der Kombinationsstrategie „so viel in den geförderten Vertrag,
+ * den Rest woanders hin".
+ *
+ * Maßgeblich ist die **Zulagen**-Grenzquote, nicht die Gesamtförderung aus der
+ * Günstigerprüfung. Grund: Die Zulage fließt in den Vertrag und existiert nur
+ * dort. Die Erstattung aus dem Sonderausgabenabzug fließt dagegen dem Sparer
+ * zu und ist frei verwendbar – sie senkt den Nettoaufwand, sagt aber nichts
+ * darüber, wohin der nächste Euro gehört. Auf der Gesamtförderungskurve würde
+ * der Sonderausgabenabzug den 360-€-Knick schon bei mittlerem Einkommen
+ * glattbügeln und der Vorschlag läge bei 1.800 €/Jahr.
+ *
+ * Mit Kindern liegt der Punkt ebenfalls bei 360 € und nicht bei 300 €: Die
+ * Kinderzulage ist dort zwar ausgeschöpft, die nächsten 60 € bringen aber
+ * weiterhin 50 % Grundzulage – mehr als jede Anlage daneben.
+ *
+ * Die Quoten werden aus `berechneZulagen` abgeleitet statt hartkodiert, damit
+ * sie dem Flag `kinderzulageProKindUnabhaengig` folgen.
  */
-export function foerderoptimalerBeitrag(kinder: number): {
-  vollGefoerdert: number;
-  kinderzulageVoll: number;
-  grenzeGrundzulageStufe1: number;
-} {
-  return {
-    vollGefoerdert: GESETZ.GZ_STUFE2_GRENZE,
-    kinderzulageVoll: kinder > 0 ? GESETZ.KZ_MAX_PRO_KIND : 0,
-    grenzeGrundzulageStufe1: GESETZ.GZ_STUFE1_GRENZE,
+export function foerderoptimalerAvdBeitrag(p: {
+  kinder?: number;
+  berechtigung?: Berechtigung;
+  alterZuBeitragsjahresbeginn?: number;
+  bebBereitsGenutzt?: boolean;
+  eigenbeitragEhegatteUnmittelbar?: number;
+  flags?: RechtsFlags;
+}): Aufteilungspunkt {
+  const kontext: ZulagenKontext = {
+    kinder: p.kinder,
+    berechtigung: p.berechtigung,
+    alterZuBeitragsjahresbeginn: p.alterZuBeitragsjahresbeginn,
+    bebBereitsGenutzt: p.bebBereitsGenutzt,
+    eigenbeitragEhegatteUnmittelbar: p.eigenbeitragEhegatteUnmittelbar,
+    flags: p.flags,
   };
+  const berechtigung = p.berechtigung ?? 'unmittelbar';
+  const kinder = Math.max(0, Math.floor(Number(p.kinder) || 0));
+  const foerdergrenzeJahresbeitrag = GESETZ.GEFOERDERTER_EIGENBEITRAG_MAX;
+
+  const fertig = (
+    jahresbeitrag: number,
+    grund: AufteilungsGrund,
+    begruendung: string
+  ): Aufteilungspunkt => ({
+    jahresbeitrag,
+    monatsbeitrag: Math.round(jahresbeitrag / 12),
+    grund,
+    begruendung,
+    zulageAmPunkt: berechneZulagen({ ...kontext, eigenbeitrag: jahresbeitrag }).zulageGesamt,
+    grenzquoteDavor: grenzquote(
+      Math.max(0, jahresbeitrag - QUOTEN_FENSTER),
+      jahresbeitrag,
+      kontext
+    ),
+    grenzquoteDanach: grenzquote(jahresbeitrag, jahresbeitrag + QUOTEN_FENSTER, kontext),
+    foerdergrenzeJahresbeitrag,
+  });
+
+  if (berechtigung === 'keine') {
+    return {
+      jahresbeitrag: 0,
+      monatsbeitrag: 0,
+      grund: 'keine_foerderung',
+      begruendung:
+        'Ohne Zulageberechtigung gibt es keine Förderung – eine Aufteilung bringt nichts.',
+      zulageAmPunkt: 0,
+      grenzquoteDavor: 0,
+      grenzquoteDanach: 0,
+      foerdergrenzeJahresbeitrag,
+    };
+  }
+
+  if (berechtigung === 'mittelbar') {
+    return fertig(
+      GESETZ.MITTELBAR_MINDESTBEITRAG,
+      'mindestbeitrag',
+      `Als mittelbar Berechtigter zählt für die Zulage der Beitrag des Ehegatten. ` +
+        `Nötig ist nur der eigene Mindestbeitrag von ${GESETZ.MITTELBAR_MINDESTBEITRAG} € im Jahr; ` +
+        `jeder weitere eigene Euro bringt keine zusätzliche Zulage.`
+    );
+  }
+
+  const kinderZusatz =
+    kinder > 0
+      ? ` Die Kinderzulage ist bereits ab ${GESETZ.KZ_MAX_PRO_KIND} € im Jahr voll ausgeschöpft.`
+      : '';
+
+  return fertig(
+    GESETZ.GZ_STUFE1_GRENZE,
+    'grundzulage_stufe2',
+    `Die ersten ${GESETZ.GZ_STUFE1_GRENZE} € im Jahr bringen ` +
+      `${Math.round(GESETZ.GZ_STUFE1_SATZ * 100)} % Grundzulage, danach nur noch ` +
+      `${Math.round(GESETZ.GZ_STUFE2_SATZ * 100)} %.${kinderZusatz}`
+  );
 }
 
 // ---------------------------------------------------------------------------
