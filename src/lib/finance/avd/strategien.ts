@@ -21,6 +21,7 @@
 // Varianten rechnen deshalb mit konstantem Beitrag, damit sie vergleichbar
 // bleiben. Die Oberfläche muss das sagen, wenn eine Dynamik eingetragen ist.
 
+import { GESETZ } from './config';
 import { deflatorFuer, simuliereAvd, type AvdEingabe, type Hinweis } from './simulation';
 import { simuliereFondsLv } from './fondslv';
 import { foerderoptimalerAvdBeitrag, type Aufteilungspunkt } from './zulagen';
@@ -39,6 +40,12 @@ export type Strategie = {
   summeFoerderung: number;
   endkapitalNachSteuer: number;
   endkapitalNachSteuerReal: number;
+  /**
+   * Gesetzlich nicht möglich – z. B. weil der Beitrag den Einzahlungsdeckel
+   * des geförderten Vertrags übersteigt. Die Zahl bleibt stehen, damit der
+   * Abstand sichtbar ist, zählt aber nicht als Sieger.
+   */
+  unzulaessig?: string;
   /** Kapital am Ende jedes Laufzeitjahres, vor der abschließenden Besteuerung. */
   kapitalProJahr: number[];
 };
@@ -131,6 +138,21 @@ export function berechneStrategien(args: {
   const deflator = deflatorFuer(ohneDynamik.inflationPaJahr, jahre);
   const real = (wert: number) => wert / deflator;
 
+  // Der geförderte Vertrag nimmt nur begrenzt Geld auf (§ 1 Abs. 1 Nr. 5
+  // AltZertG). Darüber ist „alles ins AVD" keine Option mehr, sondern die
+  // Aufteilung die einzige Möglichkeit, den vollen Betrag anzulegen.
+  const ueberEinzahlungsdeckel = voll * 12 > GESETZ.EINZAHLUNG_MAX;
+  if (ueberEinzahlungsdeckel) {
+    hinweise.push({
+      art: 'warnung',
+      text:
+        `Mehr als ${Math.round(GESETZ.EINZAHLUNG_MAX / 12)} € im Monat nimmt der geförderte ` +
+        `Vertrag nicht an (Höchstbetrag ${GESETZ.EINZAHLUNG_MAX} € pro Jahr, ` +
+        `§ 1 Abs. 1 Nr. 5 AltZertG). Der Betrag darüber muss ohnehin woanders hin – ` +
+        `eine Aufteilung ist hier keine Wahl, sondern notwendig.`,
+    });
+  }
+
   const strategieX: Strategie = {
     id: 'avd_voll',
     bezeichnung: 'Alles ins Altersvorsorgedepot',
@@ -142,6 +164,9 @@ export function berechneStrategien(args: {
     endkapitalNachSteuer: avdVoll.endkapitalNachSteuer,
     endkapitalNachSteuerReal: avdVoll.endkapitalNachSteuerReal,
     kapitalProJahr: avdVoll.jahre.map((j) => j.kapitalGesamt),
+    unzulaessig: ueberEinzahlungsdeckel
+      ? `Nicht möglich: über dem Höchstbetrag von ${GESETZ.EINZAHLUNG_MAX} € pro Jahr`
+      : undefined,
   };
 
   // --- Y: alles in den Vergleichspartner -----------------------------------
@@ -197,7 +222,9 @@ export function berechneStrategien(args: {
   hinweise.push(...zweit.hinweise);
 
   const strategien = [strategieX, strategieY, strategieZ];
-  const beste = strategien.reduce((a, b) =>
+  // Eine gesetzlich unmögliche Variante darf nicht als Sieger erscheinen
+  const waehlbar = strategien.filter((s) => !s.unzulaessig);
+  const beste = (waehlbar.length > 0 ? waehlbar : strategien).reduce((a, b) =>
     b.endkapitalNachSteuer > a.endkapitalNachSteuer ? b : a
   ).id;
 

@@ -1028,13 +1028,18 @@ export default function AvdCalculator() {
                       className={`rounded-xl border p-4 ${
                         beste && !entfaellt
                           ? 'border-green-200 bg-green-50'
-                          : 'border-slate-200 bg-white'
+                          : st.unzulaessig
+                            ? 'border-amber-200 bg-amber-50/40'
+                            : 'border-slate-200 bg-white'
                       }`}
                     >
                       <div className="text-xs font-semibold text-slate-500">
                         {st.bezeichnung}
                         {beste && !entfaellt && <span className="text-green-700 ml-1">★</span>}
                       </div>
+                      {st.unzulaessig && (
+                        <p className="text-xs text-amber-700 mt-1">{st.unzulaessig}</p>
+                      )}
                       {entfaellt ? (
                         <p className="text-sm text-slate-500 mt-2">
                           Entfällt – der gesamte Beitrag liegt bereits im förderoptimalen

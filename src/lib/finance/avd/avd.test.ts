@@ -1219,3 +1219,25 @@ describe('Drei Strategien (30 + 1)', () => {
     expect(r.strategien.find((s) => s.id === r.beste)!.endkapitalNachSteuer).toBe(hoechstes);
   });
 });
+
+describe('Einzahlungsdeckel in der Strategiewahl', () => {
+  it('markiert "alles ins AVD" oberhalb des Hoechstbetrags als nicht moeglich', () => {
+    // 600 €/Monat = 7.200 €/Jahr liegen über dem Deckel von 6.840 €
+    const r = berechneStrategien({
+      basis: eingabe({ eigenbeitragMonatlich: 600, beitragsdynamikPaJahr: 0 }),
+      zweitvertrag: 'depot',
+    });
+    expect(r.strategien[0].unzulaessig).toBeTruthy();
+    // Eine gesetzlich unmögliche Variante darf nicht Sieger sein
+    expect(r.beste).not.toBe('avd_voll');
+    expect(r.hinweise.some((h) => h.text.includes('Höchstbetrag'))).toBe(true);
+  });
+
+  it('laesst zulaessige Beitraege unberuehrt', () => {
+    const r = berechneStrategien({
+      basis: eingabe({ eigenbeitragMonatlich: 500, beitragsdynamikPaJahr: 0 }),
+      zweitvertrag: 'depot',
+    });
+    expect(r.strategien[0].unzulaessig).toBeUndefined();
+  });
+});
