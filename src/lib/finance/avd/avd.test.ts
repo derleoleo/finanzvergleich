@@ -22,6 +22,8 @@ import {
   basiszinsFuer,
 } from './config';
 import { sockelbetragsSchwelle } from './riester';
+import { simuliereFondsLv } from './fondslv';
+import { simulateLv } from '../simulation';
 import { besteOption, zillmerungsverlust } from './optionen';
 import {
   monatlicheEntnahme,
@@ -1031,5 +1033,83 @@ describe('Aufteilungspunkt für die Kombinationsstrategie', () => {
     for (const kinder of [0, 1, 3]) {
       expect(foerderoptimalerAvdBeitrag({ kinder }).jahresbeitrag).toBeGreaterThanOrEqual(120);
     }
+  });
+});
+
+describe('Fondsgebundene Lebensversicherung im AVD-Modul', () => {
+  const lvBasis = {
+    jahre: 25,
+    beitragMonatlich: 50,
+    renditeBruttoPaJahr: 0.07,
+    terPaJahr: 0.003,
+    kosten: { art: 'prozent' as const, effektivkostenPaJahr: 0.01 },
+    alterBeiAuszahlung: 67,
+    steuersatzImAlter: 0.22,
+    soliBeruecksichtigen: false,
+    kirchensteuersatz: 0,
+    auszahlplanEndalter: 85,
+  };
+
+  it('rechnet dasselbe wie die allgemeine Engine – nur in Dezimalen', () => {
+    // Der Test gegen den Faktor-100-Fehler an der Modulgrenze
+    const ueberAdapter = simuliereFondsLv(lvBasis);
+    const direkt = simulateLv({
+      months: 25 * 12,
+      annual_return_percent: 7,
+      monthly_contribution: 50,
+      funds: [{ allocation_eur: 1, ongoing_costs_percent: 0.3 }],
+      cost: { type: 'percent', effective_costs_percent: 1 },
+    });
+    expect(ueberAdapter.endkapitalVorSteuer).toBeCloseTo(direkt.gross_capital, 6);
+    expect(ueberAdapter.eingezahlt).toBeCloseTo(direkt.total_contributions, 6);
+  });
+
+  it('rechnet die Kirchensteuer als Dezimalbruch, nicht als ganze Prozent', () => {
+    const ohne = simuliereFondsLv(lvBasis);
+    const mit = simuliereFondsLv({
+      ...lvBasis,
+      soliBeruecksichtigen: true,
+      kirchensteuersatz: 0.09,
+    });
+    // 9 % Kirchensteuer und 5,5 % Soli auf die Steuer – nicht 900 %
+    expect(mit.steuer).toBeCloseTo(ohne.steuer * (1 + 0.055 + 0.09), 6);
+  });
+
+  it('wendet bei langer Laufzeit das Halbeinkünfteverfahren an', () => {
+    const lang = simuliereFondsLv(lvBasis);
+    expect(lang.halbeinkuenfte).toBe(true);
+    const gewinn = lang.endkapitalVorSteuer - lang.eingezahlt;
+    expect(lang.steuer).toBeCloseTo(gewinn * 0.425 * 0.22, 6);
+    expect(lang.hinweise).toHaveLength(0);
+  });
+
+  it('fällt bei kurzer Laufzeit auf Abgeltungsteuer zurück und sagt es', () => {
+    const kurz = simuliereFondsLv({ ...lvBasis, jahre: 8, alterBeiAuszahlung: 50 });
+    expect(kurz.halbeinkuenfte).toBe(false);
+    const gewinn = kurz.endkapitalVorSteuer - kurz.eingezahlt;
+    expect(kurz.steuer).toBeCloseTo(gewinn * 0.85 * 0.25, 6);
+    expect(kurz.hinweise.length).toBeGreaterThan(0);
+  });
+
+  it('liefert für jedes Laufzeitjahr einen Kapitalwert', () => {
+    const r = simuliereFondsLv(lvBasis);
+    expect(r.kapitalProJahr).toHaveLength(25);
+    expect(r.kapitalProJahr[24]).toBeCloseTo(r.endkapitalVorSteuer, 6);
+    // monoton steigend bei positiver Rendite
+    for (let i = 1; i < r.kapitalProJahr.length; i++) {
+      expect(r.kapitalProJahr[i]).toBeGreaterThan(r.kapitalProJahr[i - 1]);
+    }
+  });
+
+  it('Euro- und Prozentkosten treffen sich bei null Kosten', () => {
+    const prozent = simuliereFondsLv({
+      ...lvBasis,
+      kosten: { art: 'prozent', effektivkostenPaJahr: 0 },
+    });
+    const euro = simuliereFondsLv({
+      ...lvBasis,
+      kosten: { art: 'eur', abschlusskostenGesamt: 0, verwaltungProMonat: 0 },
+    });
+    expect(euro.endkapitalVorSteuer).toBeCloseTo(prozent.endkapitalVorSteuer, 6);
   });
 });
