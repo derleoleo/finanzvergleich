@@ -18,6 +18,10 @@ import {
   type AvdEingabe,
 } from '@/lib/finance/avd/simulation';
 import { GESETZ, RECHTS_FLAGS_DEFAULT, ANNAHMEN } from '@/lib/finance/avd/config';
+import {
+  berechneStrategien,
+  type ZweitvertragArt,
+} from '@/lib/finance/avd/strategien';
 import { besteOption, zillmerungsverlust } from '@/lib/finance/avd/optionen';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,7 +53,16 @@ const DRAFT_KEY = 'fv_avd_draft_v1';
 const inputClass = 'bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white';
 const selectClass = `${inputClass} w-full rounded-md border px-3 py-2 text-sm`;
 
-type FormData = Omit<AvdEingabe, 'flags'>;
+type FormData = Omit<AvdEingabe, 'flags'> & {
+  /**
+   * Kombinationsstrategie: monatlicher Betrag in den AVD.
+   * undefined heißt „dem berechneten Vorschlag folgen" – ein gespiegelter
+   * Wert würde beim nächsten Kinder- oder Einkommenswechsel still veralten.
+   */
+  aufteilungMonatlich?: number;
+  /** Wohin der Betrag oberhalb des Aufteilungspunkts fließt. */
+  zweitvertrag: ZweitvertragArt;
+};
 
 function makeDefaults(): FormData {
   const d = UserDefaults.load();
@@ -105,6 +118,7 @@ function makeDefaults(): FormData {
     },
     vergleichsmodus: 'gleicher_nettoaufwand',
     sparerpauschbetrag: ANNAHMEN.SPARERPAUSCHBETRAG,
+    zweitvertrag: 'depot',
     inflationPaJahr: d.inflation_percent / 100,
     zulagenZuflussVerzoegerungJahre: 1,
     erstattungReinvestieren: false,
@@ -188,6 +202,16 @@ export default function AvdCalculator() {
         flags: RECHTS_FLAGS_DEFAULT,
       }),
     [formData, optionenAktiv]
+  );
+
+  const strategien = useMemo(
+    () =>
+      berechneStrategien({
+        basis: { ...formData, bestandsvertrag: undefined, flags: RECHTS_FLAGS_DEFAULT },
+        aufteilungMonatlich: formData.aufteilungMonatlich,
+        zweitvertrag: formData.zweitvertrag,
+      }),
+    [formData]
   );
 
   const kurve = useMemo(
@@ -360,6 +384,11 @@ export default function AvdCalculator() {
           vergleich_nach_steuer: Math.round(endVergleichNominal),
           vergleich_name: vergleichName,
           summe_foerderung: Math.round(ergebnis.summeFoerderung),
+          kombination_nach_steuer: strategien.kombinationEntfaellt
+            ? null
+            : Math.round(strategien.strategien[2].endkapitalNachSteuer),
+          aufteilung_monatlich: strategien.aufteilungMonatlich,
+          zweitvertrag: formData.zweitvertrag,
           ...modellStempel(),
         },
       };
@@ -931,6 +960,146 @@ export default function AvdCalculator() {
           </Card>
         </div>
 
+        {/* Kombinationsstrategie: geförderter Teil ins AVD, Rest daneben */}
+        <div data-pdf-section="strategien">
+          <Card className="border-0 shadow-lg bg-white">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-bold text-slate-900">
+                Aufteilen statt alles auf eine Karte
+              </CardTitle>
+              <p className="text-xs text-slate-500 mt-1">
+                Die Förderung ist gestaffelt. Wer nur den hoch geförderten Teil in den
+                Altersvorsorgedepot-Vertrag legt, bleibt mit dem Rest frei verfügbar.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-pdf-hide>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Monatlich ins Altersvorsorgedepot (€)
+                  </Label>
+                  <div className="flex gap-2">
+                    <NumericInput
+                      step={5}
+                      value={strategien.aufteilungMonatlich}
+                      onChange={(v) => update('aufteilungMonatlich', Math.max(0, v))}
+                      className={inputClass}
+                    />
+                    {formData.aufteilungMonatlich !== undefined && (
+                      <Button
+                        variant="outline"
+                        onClick={() => update('aufteilungMonatlich', undefined)}
+                      >
+                        Vorschlag
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Förderoptimal: {formatCurrency(strategien.aufteilungspunkt.monatsbeitrag)} im
+                    Monat. {strategien.aufteilungspunkt.begruendung}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">Rest anlegen in</Label>
+                  <select
+                    value={formData.zweitvertrag}
+                    onChange={(e) => update('zweitvertrag', e.target.value as ZweitvertragArt)}
+                    className={selectClass}
+                  >
+                    <option value="depot">Freies Depot</option>
+                    <option value="fonds_lv">Fondspolice</option>
+                  </select>
+                  <p className="text-xs text-slate-400">
+                    Kosten und Rendite stellen Sie in Abschnitt 3 ein.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+                data-pdf-single-col
+              >
+                {strategien.strategien.map((st) => {
+                  const beste = st.id === strategien.beste;
+                  const entfaellt = st.id === 'kombination' && strategien.kombinationEntfaellt;
+                  return (
+                    <div
+                      key={st.id}
+                      className={`rounded-xl border p-4 ${
+                        beste && !entfaellt
+                          ? 'border-green-200 bg-green-50'
+                          : 'border-slate-200 bg-white'
+                      }`}
+                    >
+                      <div className="text-xs font-semibold text-slate-500">
+                        {st.bezeichnung}
+                        {beste && !entfaellt && <span className="text-green-700 ml-1">★</span>}
+                      </div>
+                      {entfaellt ? (
+                        <p className="text-sm text-slate-500 mt-2">
+                          Entfällt – der gesamte Beitrag liegt bereits im förderoptimalen
+                          Bereich.
+                        </p>
+                      ) : (
+                        <>
+                          <div className="text-2xl font-bold text-slate-900 mt-1">
+                            {formatCurrency(
+                              showReal ? st.endkapitalNachSteuerReal : st.endkapitalNachSteuer
+                            )}
+                          </div>
+                          <div className="text-xs text-slate-500 mt-1">
+                            nach Steuern{showReal ? ' · real' : ''}
+                          </div>
+                          <div className="text-xs text-slate-600 mt-3">{st.aufteilungText}</div>
+                          <div className="text-xs text-slate-500 mt-1">
+                            Förderung gesamt {formatCurrency(st.summeFoerderung)}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {!strategien.kombinationEntfaellt && (
+                <Vorsorgewaage
+                  basis={`Alles ins Altersvorsorgedepot vs. Aufteilung · nach Steuern${
+                    showReal ? ' · real (inflationsbereinigt)' : ''
+                  }`}
+                  links={{
+                    name: 'Alles ins AVD',
+                    imSatz: 'dem reinen Altersvorsorgedepot',
+                    wert: showReal
+                      ? strategien.strategien[0].endkapitalNachSteuerReal
+                      : strategien.strategien[0].endkapitalNachSteuer,
+                    detail: strategien.strategien[0].aufteilungText,
+                  }}
+                  rechts={{
+                    name: 'Aufteilung',
+                    imSatz: 'der Aufteilung',
+                    wert: showReal
+                      ? strategien.strategien[2].endkapitalNachSteuerReal
+                      : strategien.strategien[2].endkapitalNachSteuer,
+                    detail: strategien.strategien[2].aufteilungText,
+                  }}
+                />
+              )}
+
+              {strategien.hinweise.map((h, i) => (
+                <p
+                  key={i}
+                  className={`text-xs flex items-start gap-2 ${
+                    h.art === 'warnung' ? 'text-amber-700' : 'text-slate-500'
+                  }`}
+                >
+                  <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                  {h.text}
+                </p>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Wechselanalyse: vier Handlungsoptionen (per Voreinstellung freigeschaltet) */}
         {optionenAktiv && gegenRiester && (
           <div data-pdf-section="optionen">
@@ -1300,6 +1469,7 @@ export default function AvdCalculator() {
             { id: 'berechtigung', label: 'Förderberechtigung' },
             { id: 'foerderung', label: 'Beitrag und Förderung' },
             { id: 'vergleich', label: 'Vergleich & Vorsorgewaage' },
+            { id: 'strategien', label: 'Aufteilung (30 + 1)' },
             ...(optionenAktiv && gegenRiester
               ? [{ id: 'optionen', label: 'Wechselanalyse (4 Optionen)' }]
               : []),

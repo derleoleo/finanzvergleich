@@ -9,9 +9,17 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-09-30b" as const;
+export const MODELL_VERSION = "2026-10-02" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-02",
+    aenderung:
+      "Altersvorsorgedepot: Fondsgebundene Lebensversicherung als dritter " +
+      "Vergleichspartner und Kombinationsstrategie (geförderter Teil ins AVD, " +
+      "Rest in Depot oder Police). Gespeicherte Auswertungen tragen zusätzlich " +
+      "das Ergebnis der Aufteilung.",
+  },
   {
     version: "2026-09-30b",
     aenderung:

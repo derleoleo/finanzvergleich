@@ -10,6 +10,10 @@ export type AvdResults = {
   vergleich_nach_steuer: number;
   vergleich_name: string;
   summe_foerderung: number;
+  /** Kombinationsstrategie – null, wenn der Beitrag den Aufteilungspunkt nicht übersteigt. */
+  kombination_nach_steuer?: number | null;
+  aufteilung_monatlich?: number;
+  zweitvertrag?: 'depot' | 'fonds_lv';
   modell_version?: string;
   bewertet_am?: string;
   rechtsstand?: string;
