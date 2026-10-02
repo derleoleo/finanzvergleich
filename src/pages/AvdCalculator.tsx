@@ -32,6 +32,7 @@ import GespeicherteAuswertung, {
 } from '@/components/results/GespeicherteAuswertung';
 import { speicherFehlerText } from '@/utils/speicherFehler';
 import { Switch } from '@/components/ui/switch';
+import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 import { formatCurrency, formatChartAxis } from '@/components/shared/CurrencyDisplay';
 import Vorsorgewaage from '@/components/results/Vorsorgewaage';
 import { usePDFExport } from '@/utils/usePDFExport';
@@ -91,6 +92,16 @@ function makeDefaults(): FormData {
       wechselgebuehr: 150,
       ruhendStellenKostenProJahr: 0,
       fruehesterZugriffAlter: 62,
+    },
+    fondsLv: {
+      // Startet mit derselben Rendite wie das AVD – so ist der Unterschied
+      // zunächst rein kosten- und steuergetrieben.
+      renditeBruttoPaJahr: d.assumed_annual_return / 100,
+      terPaJahr: d.lv_fund_ongoing_costs_percent / 100,
+      kostenart: d.lv_cost_type === 'percent' ? 'prozent' : 'eur',
+      abschlusskostenGesamt: d.life_insurance_acquisition_costs_eur,
+      verwaltungProMonat: d.lv_admin_costs_monthly_eur,
+      effektivkostenPaJahr: d.lv_effective_costs_percent / 100,
     },
     vergleichsmodus: 'gleicher_nettoaufwand',
     sparerpauschbetrag: ANNAHMEN.SPARERPAUSCHBETRAG,
@@ -229,7 +240,46 @@ export default function AvdCalculator() {
     update('bestandsvertrag', { ...aktuell, [field]: value });
   };
   const riester = formData.riester;
-  const vergleichName = gegenRiester ? 'Riester-Bestandsvertrag' : 'Freies Depot';
+  const fondsLv = formData.fondsLv;
+  const gegenFondsLv = formData.vergleichspartner === 'fonds_lv';
+
+  const updateLv = <K extends keyof NonNullable<FormData['fondsLv']>>(
+    field: K,
+    value: NonNullable<FormData['fondsLv']>[K]
+  ) => {
+    const aktuell = formData.fondsLv ?? {
+      renditeBruttoPaJahr: 0.07,
+      terPaJahr: 0.003,
+      kostenart: 'eur' as const,
+      abschlusskostenGesamt: 2000,
+      verwaltungProMonat: 6,
+      effektivkostenPaJahr: 0.007,
+    };
+    update('fondsLv', { ...aktuell, [field]: value });
+  };
+
+  // Ein Ort für die Bezeichnungen des Vergleichspartners – vorher standen sie
+  // als Ja/Nein-Abfragen an sechs Stellen und wären beim dritten Partner
+  // einzeln auseinandergelaufen.
+  const VERGLEICH_META = {
+    depot: {
+      name: 'Freies Depot',
+      imSatz: 'dem freien Depot',
+      titel: 'dem freien Depot',
+    },
+    riester_alt: {
+      name: 'Riester-Bestandsvertrag',
+      imSatz: 'dem Riester-Bestandsvertrag',
+      titel: 'dem Riester-Bestandsvertrag',
+    },
+    fonds_lv: {
+      name: 'Fondspolice',
+      imSatz: 'der Fondspolice',
+      titel: 'der fondsgebundenen Lebensversicherung',
+    },
+  } as const;
+  const meta = VERGLEICH_META[formData.vergleichspartner ?? 'depot'];
+  const vergleichName = meta.name;
 
   const verlaufsdaten = ergebnis.jahre.map((j, i) => ({
     jahr: j.jahr,
@@ -238,7 +288,9 @@ export default function AvdCalculator() {
     depot: Math.round(
       (() => {
         const nominal =
-          ergebnis.riesterAlt?.kapitalProJahr[i] ?? j.depotKapital;
+          ergebnis.riesterAlt?.kapitalProJahr[i] ??
+          ergebnis.fondsLv?.kapitalProJahr[i] ??
+          j.depotKapital;
         return showReal
           ? nominal /
               deflatorFuer(formData.inflationPaJahr, j.alter - (ergebnis.jahre[0].alter - 1))
@@ -253,7 +305,9 @@ export default function AvdCalculator() {
   const endAvd = showReal ? ergebnis.endkapitalNachSteuerReal : ergebnis.endkapitalNachSteuer;
   const endVergleichNominal = ergebnis.riesterAlt
     ? ergebnis.riesterAlt.endkapitalNachSteuer
-    : ergebnis.depot.endkapitalNetto;
+    : ergebnis.fondsLv
+      ? ergebnis.fondsLv.endkapitalNachSteuer
+      : ergebnis.depot.endkapitalNetto;
   const endDepot = showReal
     ? endVergleichNominal /
       deflatorFuer(formData.inflationPaJahr, ergebnis.jahreBisAuszahlung)
@@ -389,24 +443,31 @@ export default function AvdCalculator() {
                   <p className="text-xs text-slate-500 mt-0.5">
                     {gegenRiester
                       ? 'Beide Seiten sind gefördert und werden in der Auszahlphase identisch besteuert – es entscheiden Förderhöhe, Kosten und Rendite.'
-                      : 'Ungefördertes Depot mit Abgeltungsteuer, Teilfreistellung und Vorabpauschale.'}
+                      : gegenFondsLv
+                        ? 'Ungeförderter Versicherungsmantel: Ab zwölf Jahren Laufzeit und Auszahlung ab Alter 62 werden nur 42,5 % der Erträge zum persönlichen Satz besteuert.'
+                        : 'Ungefördertes Depot mit Abgeltungsteuer, Teilfreistellung und Vorabpauschale.'}
                   </p>
                 </div>
-                <div className="flex gap-2 shrink-0" data-pdf-hide>
-                  <Button
-                    variant={!gegenRiester ? 'default' : 'outline'}
-                    className={!gegenRiester ? 'bg-slate-800 hover:bg-slate-700' : ''}
-                    onClick={() => update('vergleichspartner', 'depot')}
-                  >
-                    Freies Depot
-                  </Button>
-                  <Button
-                    variant={gegenRiester ? 'default' : 'outline'}
-                    className={gegenRiester ? 'bg-slate-800 hover:bg-slate-700' : ''}
-                    onClick={() => update('vergleichspartner', 'riester_alt')}
-                  >
-                    Alte Riester-Förderung
-                  </Button>
+                <div className="flex flex-wrap gap-2 shrink-0" data-pdf-hide>
+                  {(
+                    [
+                      ['depot', 'Freies Depot'],
+                      ['fonds_lv', 'Fondspolice'],
+                      ['riester_alt', 'Alte Riester-Förderung'],
+                    ] as const
+                  ).map(([wert, beschriftung]) => {
+                    const aktiv = (formData.vergleichspartner ?? 'depot') === wert;
+                    return (
+                      <Button
+                        key={wert}
+                        variant={aktiv ? 'default' : 'outline'}
+                        className={aktiv ? 'bg-slate-800 hover:bg-slate-700' : ''}
+                        onClick={() => update('vergleichspartner', wert)}
+                      >
+                        {beschriftung}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
             </CardContent>
@@ -608,8 +669,7 @@ export default function AvdCalculator() {
             <CardHeader className="pb-4">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <CardTitle className="text-lg font-bold text-slate-900">
-                  3. Vergleich mit{' '}
-                  {gegenRiester ? 'dem Riester-Bestandsvertrag' : 'dem freien Depot'}
+                  3. Vergleich mit {meta.titel}
                 </CardTitle>
                 <div className="flex flex-wrap gap-2" data-pdf-hide>
                   <Button
@@ -632,7 +692,18 @@ export default function AvdCalculator() {
                   <Label className="text-sm font-medium text-slate-700">Effektivkosten AVD p.a. (%)</Label>
                   <NumericInput step={0.05} value={formData.effektivkostenPaJahr * 100} onChange={(v) => update('effektivkostenPaJahr', v / 100)} className={inputClass} />
                 </div>
-                {gegenRiester ? (
+                {gegenFondsLv ? (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Rendite Police p.a. (%)</Label>
+                    <NumericInput
+                      step={0.1}
+                      value={(fondsLv?.renditeBruttoPaJahr ?? 0.07) * 100}
+                      onChange={(v) => updateLv('renditeBruttoPaJahr', v / 100)}
+                      className={inputClass}
+                    />
+                    <p className="text-xs text-slate-400">Fondsauswahl im Versicherungsmantel</p>
+                  </div>
+                ) : gegenRiester ? (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">Kosten Altvertrag p.a. (%)</Label>
                     <NumericInput
@@ -649,7 +720,18 @@ export default function AvdCalculator() {
                     <NumericInput step={0.05} value={formData.depotKostenPaJahr * 100} onChange={(v) => update('depotKostenPaJahr', v / 100)} className={inputClass} />
                   </div>
                 )}
-                {gegenRiester ? (
+                {gegenFondsLv ? (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-700">Fondskosten TER p.a. (%)</Label>
+                    <NumericInput
+                      step={0.05}
+                      value={(fondsLv?.terPaJahr ?? 0.003) * 100}
+                      onChange={(v) => updateLv('terPaJahr', v / 100)}
+                      className={inputClass}
+                    />
+                    <p className="text-xs text-slate-400">läuft zusätzlich zu den Vertragskosten</p>
+                  </div>
+                ) : gegenRiester ? (
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">Rendite Altvertrag p.a. (%)</Label>
                     <NumericInput
@@ -674,6 +756,74 @@ export default function AvdCalculator() {
                   </div>
                 )}
               </div>
+
+              {gegenFondsLv && (
+                <div className="rounded-xl border border-slate-200 p-4 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">Kosten der Police</p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Aus einem Angebot übernehmen oder als Effektivkosten angeben
+                      </p>
+                    </div>
+                    <SegmentedToggle
+                      value={fondsLv?.kostenart ?? 'eur'}
+                      onChange={(v) => updateLv('kostenart', v)}
+                      ariaLabel="Kostenart der Police"
+                      options={[
+                        { value: 'eur', label: 'Tatsächliche Kosten (€)' },
+                        { value: 'prozent', label: 'Effektivkosten (%)' },
+                      ]}
+                    />
+                  </div>
+                  {(fondsLv?.kostenart ?? 'eur') === 'eur' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">
+                          Abschluss- und Vertriebskosten gesamt (€)
+                        </Label>
+                        <NumericInput
+                          step={100}
+                          value={fondsLv?.abschlusskostenGesamt ?? 0}
+                          onChange={(v) => updateLv('abschlusskostenGesamt', v)}
+                          className={inputClass}
+                        />
+                        <p className="text-xs text-slate-400">
+                          über die ersten 60 Monate gezillmert
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">
+                          Verwaltungskosten (€ pro Monat)
+                        </Label>
+                        <NumericInput
+                          step={1}
+                          value={fondsLv?.verwaltungProMonat ?? 0}
+                          onChange={(v) => updateLv('verwaltungProMonat', v)}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">
+                          Effektivkosten p.a. (%)
+                        </Label>
+                        <NumericInput
+                          step={0.05}
+                          value={(fondsLv?.effektivkostenPaJahr ?? 0.007) * 100}
+                          onChange={(v) => updateLv('effektivkostenPaJahr', v / 100)}
+                          className={inputClass}
+                        />
+                        <p className="text-xs text-slate-400">
+                          wirkt als Renditeminderung, ohne Fondskosten
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {gegenRiester && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -773,7 +923,9 @@ export default function AvdCalculator() {
                 Abstand am rechten Rand ist deshalb größer als der Unterschied nach Steuern.{' '}
                 {gegenRiester
                   ? 'Steuerlich sind AVD und Riester-Altvertrag identisch: in der Ansparphase steuerfrei, in der Auszahlphase voll nachgelagert besteuert (§ 22 Nr. 5 EStG), beide ohne Teilfreistellung. Der Unterschied entsteht allein aus Förderhöhe, Kosten und Renditepotenzial – bereits gezahlte Zulagen und Steuervorteile bleiben beim Wechsel erhalten (§ 3 Nr. 55c EStG).'
-                  : 'Besteuert wird danach das AVD nachgelagert voll (§ 22 Nr. 5 EStG, keine Teilfreistellung), das freie Depot mit Abgeltungsteuer, 30 % Teilfreistellung und jährlicher Vorabpauschale – in der Auszahlphase auf die realisierten Gewinne jeder Entnahme. Kein Sparerpauschbetrag angesetzt (kann anderweitig verbraucht sein).'}
+                  : gegenFondsLv
+                    ? 'Besteuert wird danach das AVD nachgelagert voll (§ 22 Nr. 5 EStG, keine Teilfreistellung), die Fondspolice bei mindestens zwölf Jahren Laufzeit und Auszahlung ab Alter 62 mit 42,5 % der Erträge zum persönlichen Satz (§ 20 Abs. 1 Nr. 6 S. 2 EStG). Die Police wird hier zu Rentenbeginn vollständig besteuert; eine Verrentung über den Ertragsanteil wäre milder.'
+                    : 'Besteuert wird danach das AVD nachgelagert voll (§ 22 Nr. 5 EStG, keine Teilfreistellung), das freie Depot mit Abgeltungsteuer, 30 % Teilfreistellung und jährlicher Vorabpauschale – in der Auszahlphase auf die realisierten Gewinne jeder Entnahme. Kein Sparerpauschbetrag angesetzt (kann anderweitig verbraucht sein).'}
               </p>
             </CardContent>
           </Card>
