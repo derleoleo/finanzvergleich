@@ -94,7 +94,12 @@ export async function exportSections(
   filename: string,
   title: string
 ): Promise<void> {
-  const source = document.getElementById(contentId);
+  // Die meisten Seiten markieren die Wurzel mit id="pdf-content", zwei mit
+  // data-pdf-root. Beides akzeptieren – sonst bricht der Export auf genau
+  // diesen beiden Seiten mit einer Fehlermeldung ab.
+  const source =
+    document.getElementById(contentId) ??
+    document.querySelector<HTMLElement>("[data-pdf-root]");
   if (!source) {
     alert(`Element #${contentId} nicht gefunden`);
     return;

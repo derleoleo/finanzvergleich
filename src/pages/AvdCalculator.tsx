@@ -328,7 +328,7 @@ export default function AvdCalculator() {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
-      <div className="max-w-5xl mx-auto space-y-6" data-pdf-root>
+      <div id="pdf-content" className="max-w-5xl mx-auto space-y-6" data-pdf-root>
         {/* Kopf */}
         <div className="flex items-center justify-between" data-pdf-hide>
           <div className="flex items-center gap-4">
