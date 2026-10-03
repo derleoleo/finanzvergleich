@@ -62,8 +62,48 @@ function reihenZeichnen(reihen: unknown): {
   return { daten: reihen as Record<string, number>[], achse, linien };
 }
 
+/**
+ * Die gespeicherten Schlüssel sind Datenbanknamen ohne Umlaute. Generisch
+ * umgeformt ergäbe `summe_foerderung` „Summe foerderung" – auf einer Unterlage,
+ * die beim Kunden landet, liest sich das schlampig. Deshalb die gängigen
+ * Schlüssel ausgeschrieben, alles Übrige über die allgemeine Umformung.
+ */
+const BESCHRIFTUNGEN: Record<string, string> = {
+  endkapital_nach_steuer: 'Endkapital nach Steuern',
+  vergleich_nach_steuer: 'Vergleich nach Steuern',
+  kombination_nach_steuer: 'Kombination nach Steuern',
+  summe_foerderung: 'Förderung gesamt',
+  aufteilung_monatlich: 'Aufteilung monatlich',
+  life_insurance_net: 'Lebensversicherung netto',
+  life_insurance_gross: 'Lebensversicherung brutto',
+  depot_net: 'Depot netto',
+  depot_gross: 'Depot brutto',
+  lv_net: 'Lebensversicherung netto',
+  fund_net: 'Fondsdepot netto',
+  total_contributions: 'Eingezahlt gesamt',
+  li_total_costs: 'Kosten Lebensversicherung',
+  depot_total_costs: 'Kosten Depot',
+  li_tax: 'Steuer Lebensversicherung',
+  depot_tax: 'Steuer Depot',
+  start_capital: 'Startkapital',
+  annual_withdrawal: 'Entnahme pro Jahr',
+  end_capital: 'Restkapital am Ende',
+  total_withdrawn: 'Gesamtentnahme',
+  brutto_net: 'Bruttopolice nach Steuern',
+  netto_net: 'Nettopolice nach Steuern',
+  vorteil_nettopolice: 'Unterschied',
+  // Reihen
+  avd: 'Altersvorsorgedepot',
+  depot: 'Depot',
+  lv: 'Lebensversicherung',
+  eingezahlt: 'Eingezahlt',
+  kombination: 'Kombination',
+};
+
 /** `kapitalGesamt` → `Kapital gesamt`, damit die Legende lesbar bleibt. */
 function beschriftung(schluessel: string): string {
+  const bekannt = BESCHRIFTUNGEN[schluessel];
+  if (bekannt) return bekannt;
   const mitLuecken = schluessel
     .replace(/_/g, ' ')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
