@@ -33,3 +33,37 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  # Der vollstaendige Beratungsablauf mit Anmeldung. Alle Fehler der Audits
+  # lagen hinter der Anmeldung - genau dort, wo die oeffentlichen Tests nicht
+  # hinkommen. Der Test schreibt in die echte Datenbank und raeumt hinter sich
+  # auf; er braucht deshalb ein eigenes Testkonto.
+  #
+  # Fehlen die Secrets, ueberspringt sich der Test selbst. So wird die CI in
+  # Forks und fremden Pull Requests nicht rot, nur weil dort keine
+  # Zugangsdaten liegen.
+  e2e-angemeldet:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+      E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chrome
+      - run: npm run test:e2e:angemeldet
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-angemeldet
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

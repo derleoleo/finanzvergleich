@@ -1,10 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Durchlauftests gegen die laufende App (Audit F21). Bewusst ohne Anmeldung:
- * echte Zugangsdaten gehören nicht ins Repo. Geprüft wird, dass die
- * öffentlichen Seiten laden, die Rechtstexte erreichbar sind und die
- * Anwendung ohne Konsolenfehler startet.
+ * Durchlauftests gegen die laufende App (Audit F21).
+ *
+ * Projekt `chrome`: öffentliche Seiten, ohne Anmeldung – läuft immer.
+ * Projekt `chrome-angemeldet`: der vollständige Beratungsablauf. Er schreibt
+ * in die echte Datenbank und läuft deshalb nur auf Abruf
+ * (`npm run test:e2e:angemeldet`) bzw. in der CI, wenn Zugangsdaten als
+ * Secrets hinterlegt sind. Echte Zugangsdaten gehören nicht ins Repo.
  */
 export default defineConfig({
   testDir: "./e2e",
@@ -17,7 +20,28 @@ export default defineConfig({
   },
   // Nutzt das installierte Chrome statt eines eigenen Browser-Downloads;
   // in der CI stellt "playwright install chrome" es bereit.
-  projects: [{ name: "chrome", use: { ...devices["Desktop Chrome"], channel: "chrome" } }],
+  projects: [
+    {
+      name: "chrome",
+      // Der angemeldete Durchlauf schreibt in die echte Datenbank und laeuft
+      // deshalb nicht bei jedem `npm run test:e2e` mit, sondern nur im
+      // eigenen Projekt.
+      testIgnore: /beratungsablauf\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], channel: "chrome" },
+    },
+    {
+      name: "chrome-angemeldet",
+      testMatch: /beratungsablauf\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        channel: "chrome",
+        // Gegen den Dev-Server: Die gespeicherte Sitzung aus
+        // scripts/screenshots.mjs gehoert zu diesem Ursprung. Sitzungen sind
+        // an Schema, Host UND Port gebunden – auf 4173 waere man abgemeldet.
+        baseURL: process.env.E2E_BASE_URL ?? "http://localhost:5173",
+      },
+    },
+  ],
   // Zwei Server: die gebaute App für die Seitentests und der Dev-Server für
   // den PDF-Test, der Quellmodule einzeln lädt.
   webServer: process.env.E2E_BASE_URL
