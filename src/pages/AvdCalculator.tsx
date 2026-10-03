@@ -1074,7 +1074,12 @@ export default function AvdCalculator() {
                 })}
               </div>
 
-              {!strategien.kombinationEntfaellt && (
+              {/* Die Waage vergleicht nur, was auch geht. Sind eine oder beide
+                  Seiten gesetzlich ausgeschlossen, waere der Ausschlag eine
+                  Aussage ueber eine Variante, die es nicht geben darf. */}
+              {!strategien.kombinationEntfaellt &&
+                !strategien.strategien[0].unzulaessig &&
+                !strategien.strategien[2].unzulaessig && (
                 <Vorsorgewaage
                   basis={`Alles ins Altersvorsorgedepot vs. Aufteilung · nach Steuern${
                     showReal ? ' · real (inflationsbereinigt)' : ''

@@ -159,7 +159,7 @@ export function berechneStrategien(args: {
       art: 'warnung',
       text:
         `Der eingetragene Aufteilungsbetrag übersteigt den Höchstbetrag von ` +
-        `${Math.round(deckelMonatlich)} € im Monat (${GESETZ.EINZAHLUNG_MAX} € pro Jahr, ` +
+        `${eur(deckelMonatlich)} im Monat (${eur(GESETZ.EINZAHLUNG_MAX)} pro Jahr, ` +
         `§ 1 Abs. 1 Nr. 5 AltZertG).`,
     });
   }
@@ -167,8 +167,8 @@ export function berechneStrategien(args: {
     hinweise.push({
       art: 'warnung',
       text:
-        `Mehr als ${Math.round(GESETZ.EINZAHLUNG_MAX / 12)} € im Monat nimmt der geförderte ` +
-        `Vertrag nicht an (Höchstbetrag ${GESETZ.EINZAHLUNG_MAX} € pro Jahr, ` +
+        `Mehr als ${eur(GESETZ.EINZAHLUNG_MAX / 12)} im Monat nimmt der geförderte ` +
+        `Vertrag nicht an (Höchstbetrag ${eur(GESETZ.EINZAHLUNG_MAX)} pro Jahr, ` +
         `§ 1 Abs. 1 Nr. 5 AltZertG). Der Betrag darüber muss ohnehin woanders hin – ` +
         `eine Aufteilung ist hier keine Wahl, sondern notwendig.`,
     });
@@ -187,7 +187,7 @@ export function berechneStrategien(args: {
     endkapitalNachSteuerReal: avdVoll.endkapitalNachSteuerReal,
     kapitalProJahr: avdVoll.jahre.map((j) => j.kapitalGesamt),
     unzulaessig: ueberEinzahlungsdeckel
-      ? `Nicht möglich: über dem Höchstbetrag von ${GESETZ.EINZAHLUNG_MAX} € pro Jahr`
+      ? `Nicht möglich: über dem Höchstbetrag von ${eur(GESETZ.EINZAHLUNG_MAX)} pro Jahr`
       : undefined,
   };
 
@@ -227,7 +227,7 @@ export function berechneStrategien(args: {
     id: 'kombination',
     bezeichnung: 'Aufteilung',
     unzulaessig: aufteilungUeberDeckel
-      ? `Nicht möglich: ${Math.round(aufteilung)} € im Monat übersteigen den Höchstbetrag von ${GESETZ.EINZAHLUNG_MAX} € pro Jahr`
+      ? `Nicht möglich: ${eur(aufteilung)} im Monat übersteigen den Höchstbetrag von ${eur(GESETZ.EINZAHLUNG_MAX)} pro Jahr`
       : undefined,
     aufteilungText: kombinationEntfaellt
       ? `${eur(voll)}/Monat Altersvorsorgedepot`
