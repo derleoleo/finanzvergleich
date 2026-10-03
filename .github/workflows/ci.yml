@@ -60,7 +60,15 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: npx playwright install --with-deps chrome
+      - name: Chrome bereitstellen
+        # Die Installation holt Google Chrome ueber apt. Das schlaegt
+        # gelegentlich an den Paketservern fehl, ohne dass am Projekt etwas
+        # kaputt waere - deshalb ein zweiter Versuch, bevor der Lauf rot wird.
+        run: |
+          npx playwright install --with-deps chrome && exit 0
+          echo "Erster Versuch fehlgeschlagen, neuer Versuch in 20 s"
+          sleep 20
+          npx playwright install --with-deps chrome
       - run: npm run test:e2e:angemeldet
       - uses: actions/upload-artifact@v4
         if: failure()
