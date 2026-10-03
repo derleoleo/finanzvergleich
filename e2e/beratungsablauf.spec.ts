@@ -67,8 +67,24 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     }
     await page.getByPlaceholder("ihre@email.de").fill(EMAIL);
     await page.getByPlaceholder("Passwort").fill(PASSWORT);
-    await page.getByRole("button", { name: /Anmelden|Einloggen/i }).first().click();
-    await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 30_000 });
+    // Ausdrücklich der Absendeknopf: Der Reiter darüber heißt genauso, und
+    // ein Klick darauf tut nichts – der Test liefe in die Zeitüberschreitung.
+    await page.locator('button[type="submit"]').click();
+    try {
+      await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 30_000 });
+    } catch {
+      // Die Meldung der Seite ist im Protokoll mehr wert als eine
+      // Zeitüberschreitung ohne Begründung.
+      // Die Seite zeigt Anmeldefehler in einem roten Absatz (Login.tsx)
+      const meldung = await page
+        .locator("p.text-red-600")
+        .first()
+        .textContent({ timeout: 5_000 })
+        .catch(() => null);
+      throw new Error(
+        `Anmeldung fehlgeschlagen${meldung ? `: ${meldung.trim()}` : " (keine Meldung auf der Seite)"}`
+      );
+    }
   }
 
   /** Aufräumen: Der Testfall darf nicht im Konto liegen bleiben. */
