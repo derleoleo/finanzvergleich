@@ -4,8 +4,12 @@ import { createClient } from '@supabase/supabase-js'
 // Damit war die komplette Seite weiß – auch Impressum und Datenschutz, die
 // erreichbar sein müssen. Jetzt startet die App mit einem Platzhalter; Anmeldung
 // und Speichern scheitern dann sichtbar, die öffentlichen Seiten bleiben stehen.
-const url = import.meta.env.VITE_SUPABASE_URL
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+// Getrimmt: Beim Hinterlegen als Secret oder beim Kopieren aus .env.local
+// rutscht leicht ein Zeilenumbruch oder Leerzeichen mit. Eine Adresse mit
+// angehaengtem Umbruch laesst createClient werfen – und dann ist die ganze
+// Seite weiss, ohne erkennbaren Grund.
+const url = import.meta.env.VITE_SUPABASE_URL?.trim()
+const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
 
 /** False, wenn die Umgebung unvollständig ist (z. B. Build ohne Secrets). */
 export const supabaseKonfiguriert = Boolean(url && anonKey)

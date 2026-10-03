@@ -61,11 +61,28 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     const rechner = page.getByLabel("Name der Berechnung");
     const einwilligung = page.getByText("Zustimmung erforderlich");
 
+    // Stürzt die App beim Start ab, bleibt die Seite leer und keine der drei
+    // Marken erscheint. Ohne diese Meldungen sieht man nur "nichts gefunden"
+    // und sucht an der falschen Stelle.
+    const probleme: string[] = [];
+    page.on("pageerror", (e) => probleme.push(`Absturz: ${e.message}`));
+    page.on("console", (m) => {
+      if (m.type() === "error") probleme.push(`Konsole: ${m.text()}`);
+    });
+
     await page.goto("/calculator");
-    await expect(
-      formular.or(rechner).or(einwilligung),
-      "Die App hat weder Anmeldung, Rechner noch Einwilligung angezeigt"
-    ).toBeVisible({ timeout: 90_000 });
+    try {
+      await expect(formular.or(rechner).or(einwilligung)).toBeVisible({
+        timeout: 90_000,
+      });
+    } catch {
+      throw new Error(
+        "Die App hat weder Anmeldung, Rechner noch Einwilligung angezeigt. " +
+          (probleme.length
+            ? `Meldungen der Seite: ${probleme.slice(0, 5).join(" | ")}`
+            : "Die Seite meldete dabei nichts.")
+      );
+    }
 
     if (await rechner.isVisible()) return;
 
