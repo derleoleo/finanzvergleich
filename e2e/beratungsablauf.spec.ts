@@ -25,9 +25,18 @@ const HAT_SITZUNG = existsSync(SITZUNG);
 /** Eindeutig je Lauf, damit parallele Durchläufe sich nicht ins Gehege kommen. */
 const LAUF = `E2E-${Date.now().toString(36)}`;
 
+/**
+ * Auf dem Hauptzweig sind die Zugangsdaten hinterlegt – fehlen sie dort, ist
+ * das ein Fehler und kein Grund zum Überspringen. Ein stillschweigend
+ * übersprungener Test gibt einen grünen Haken für eine Prüfung, die nie
+ * stattgefunden hat. In Forks und fremden Pull Requests bleibt es beim
+ * Überspringen, dort gibt es die Secrets zu Recht nicht.
+ */
+const PFLICHT = process.env.E2E_PFLICHT === "true";
+
 test.describe("Beratungsablauf mit Anmeldung", () => {
   test.skip(
-    !HAT_SITZUNG && !(EMAIL && PASSWORT),
+    !PFLICHT && !HAT_SITZUNG && !(EMAIL && PASSWORT),
     "Weder gespeicherte Sitzung noch E2E_EMAIL/E2E_PASSWORD vorhanden"
   );
   // Der Ablauf umfasst Rechnen, Speichern und PDF-Erzeugung
@@ -47,6 +56,12 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     if (!page.url().includes("/login")) return;
 
     if (!EMAIL || !PASSWORT) {
+      if (PFLICHT) {
+        throw new Error(
+          "Anmeldung nötig, aber E2E_EMAIL/E2E_PASSWORD fehlen. " +
+            "Auf dem Hauptzweig müssen die Secrets gesetzt sein."
+        );
+      }
       test.skip(true, "Sitzung abgelaufen und keine Zugangsdaten hinterlegt");
       return;
     }
