@@ -32,7 +32,7 @@ import {
   calculateLifeInsuranceTax,
 } from "@/components/shared/TaxCalculations";
 import { simulateLv } from "@/lib/finance/simulation";
-import { beitragsbasis, breakEvenRendite } from "@/lib/finance/bestadvice";
+import { beitragsbasis, breakEvenDetail } from "@/lib/finance/bestadvice";
 
 const DRAFT_KEY = "fv_bestadvice_draft_v1";
 
@@ -284,7 +284,11 @@ export default function BestAdviceCalculator() {
       lvs_results,
       // Garantie gegen Prognose: Welche Rendite braucht die Fonds-LV, um die
       // garantierte Leistung des Bestands einzuholen? (Audit F06)
-      break_even_rendite: breakEvenRendite(
+      // Das vollstaendige Ergebnis speichern: `breakEvenRendite` fasst „Ziel zu
+      // hoch" und „Ziel auch ohne Wertzuwachs erreicht" beide zu null zusammen,
+      // und die Detailansicht las null als „nicht erreichbar" – der guenstige
+      // Fall wurde damit als unerreichbar dargestellt (Audit O07).
+      break_even: breakEvenDetail(
         {
           months,
           monthly_contribution: effectiveMonthly,

@@ -65,3 +65,23 @@ describe("Break-even-Rendite (F06)", () => {
     expect(breakEvenEinordnung(schonErreicht)).toMatch(/ohne Wertzuwachs/);
   });
 });
+
+describe('Randfaelle erreichen die Anzeige (Audit O07)', () => {
+  const basis = {
+    months: 240,
+    monthly_contribution: 200,
+    funds: [{ allocation_eur: 200, ongoing_costs_percent: 0.3 }],
+    cost: { type: 'percent' as const, effective_costs_percent: 1 },
+  };
+
+  it('unterscheidet "zu hoch" von "schon erreicht"', () => {
+    const zuHoch = breakEvenDetail(basis, 10_000_000);
+    const schonErreicht = breakEvenDetail(basis, 1);
+    expect(zuHoch).toEqual({ art: 'unmoeglich', grund: 'zu_hoch' });
+    expect(schonErreicht).toEqual({ art: 'unmoeglich', grund: 'schon_erreicht' });
+    // Beide Faelle muessen unterschiedliche Saetze ergeben – vorher wurden sie
+    // zu null zusammengefasst und beide als "nicht erreichbar" angezeigt.
+    expect(breakEvenEinordnung(zuHoch)).not.toBe(breakEvenEinordnung(schonErreicht));
+    expect(breakEvenEinordnung(schonErreicht)).toContain('ohne Wertzuwachs');
+  });
+});

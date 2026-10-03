@@ -1,3 +1,4 @@
+import type { BreakEvenErgebnis } from '@/lib/finance/bestadvice'
 import { supabase } from '@/lib/supabase'
 import type { StoredTaxSettings } from '@/entities/UserDefaults'
 
@@ -31,7 +32,10 @@ export type BestAdviceResults = {
   // Modellstand, Stichtag und Rechtsstand der Berechnung (Audit F13);
   // ältere Datensätze: undefined
   // Audit F06: Einordnung von Garantie gegen Prognose
+  /** @deprecated Altbestand – fasst beide Randfaelle zu null zusammen (Audit O07). */
   break_even_rendite?: number | null;
+  /** Vollstaendiges Ergebnis inkl. Unterscheidung der Randfaelle. */
+  break_even?: BreakEvenErgebnis;
   wechselkosten_gesamt?: number;
   eingezahlt_bisher_gesamt?: number;
   contract_start_years?: (number | null)[];

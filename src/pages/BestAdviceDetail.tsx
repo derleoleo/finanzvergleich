@@ -259,7 +259,17 @@ export default function BestAdviceDetail() {
                 <Lock className="w-4 h-4 text-amber-500" />
                 Garantie gegen Prognose
               </div>
-              <p className="text-slate-800">{breakEvenEinordnung(r.break_even_rendite ?? null)}</p>
+              <p className="text-slate-800">
+                {/* Neue Datensaetze tragen das vollstaendige Ergebnis. Bei
+                    Altbestaenden steht nur die Zahl zur Verfuegung; ist sie
+                    null, laesst sich nicht mehr unterscheiden, ob das Ziel zu
+                    hoch oder bereits erreicht war. */}
+                {r.break_even
+                  ? breakEvenEinordnung(r.break_even)
+                  : r.break_even_rendite != null
+                    ? breakEvenEinordnung(r.break_even_rendite)
+                    : 'Für diese ältere Berechnung liegt die Einordnung nicht mehr vor. Neu berechnen, um sie zu erhalten.'}
+              </p>
               <p className="text-xs text-slate-500">
                 Die Leistung des Bestandsvertrags ist zugesagt, die der Fonds-LV hängt von der
                 Wertentwicklung ab. Angesetzt wurden {Number(calculation.assumed_annual_return || 0)
