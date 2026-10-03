@@ -47,6 +47,8 @@ jobs:
               "net_policy_calculations",
               "withdrawal_plans",
               "berechnungs_zaehler",
+              "werbe_codes",
+              "werbungen",
           ]
 
           # Supabase liefert pro Anfrage hoechstens 1000 Zeilen. Ohne Blaettern
@@ -60,6 +62,9 @@ jobs:
               "finanzvergleich_consents": "id",
               "redeemed_codes": "id",
               "berechnungs_zaehler": "user_id,monat",
+              # Die Empfehlungstabellen haben kein created_date
+              "werbe_codes": "user_id",
+              "werbungen": "id",
           }
 
           for table in tables:
@@ -68,7 +73,7 @@ jobs:
               start = 0
               while True:
                   r = requests.get(
-                      f"{url}/rest/v1/{table}?select=*&order={SORTIERUNG.get(table, 'created_date')}",
+                      f"{url}/rest/v1/{table}?select=*&order={SORTIERUNG.get(table, 'created_date,id')}",
                       headers={**headers, "Range": f"{start}-{start + SEITE - 1}",
                                "Prefer": "count=exact"},
                       timeout=60,

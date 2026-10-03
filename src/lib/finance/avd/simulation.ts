@@ -560,6 +560,7 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
       ? simuliereFondsLv({
           jahre: jahreBisAuszahlung,
           beitragMonatlich: e.eigenbeitragMonatlich,
+          beitragsdynamikPaJahr: e.beitragsdynamikPaJahr,
           renditeBruttoPaJahr: e.fondsLv.renditeBruttoPaJahr,
           terPaJahr: e.fondsLv.terPaJahr,
           kosten:
@@ -577,7 +578,22 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
           auszahlplanEndalter: e.auszahlplanEndalter,
         })
       : undefined;
-  if (fondsLv) hinweise.push(...fondsLv.hinweise);
+  if (fondsLv) {
+    hinweise.push(...fondsLv.hinweise);
+    // Der Depotzweig kann den Beitrag um die Steuererstattung mindern, die
+    // Police nicht: `simulateLv` nimmt einen gleichmäßigen Beitragsstrom und
+    // keine jahresweise schwankende Reihe. Das muss dastehen, sonst vergleicht
+    // die Seite unbemerkt unterschiedlich große Einzahlungen.
+    if (e.vergleichsmodus === 'gleicher_nettoaufwand') {
+      hinweise.push({
+        art: 'warnung',
+        text:
+          'Die Fondspolice wird mit dem vollen Bruttobeitrag gerechnet, nicht mit dem ' +
+          'um die Steuererstattung verminderten Nettoaufwand. Für einen Vergleich bei ' +
+          'gleichem Eigenaufwand die Vergleichsbasis auf „gleicher Bruttobeitrag" stellen.',
+      });
+    }
+  }
 
   // Der aktive Vergleichspartner – die Kennzahl darf nicht still aufs Depot
   // zeigen, wenn etwas anderes gewaehlt ist.
@@ -773,21 +789,33 @@ function depotAuszahlphase(args: {
     gewinnImJahr = 0;
   };
 
+  // Reihenfolge: erst Rendite, dann Entnahme. Die Annuitätenformel in
+  // `monatlicheEntnahme` ist nachschüssig; eine vorschüssige Schleife
+  // (erst entnehmen, dann verzinsen) trägt dieselbe Rate nicht durch und das
+  // Kapital wäre vor der letzten Rate aufgebraucht.
+  let ausgezahlt = 0;
   for (let m = 1; m <= monate; m++) {
+    kapital *= 1 + rMonat;
     const entnahme = Math.min(brutto, Math.max(0, kapital));
     if (entnahme > 0 && kapital > 0) {
       const anteil = entnahme / kapital;
       gewinnImJahr += Math.max(0, kapital - einstand) * anteil;
       einstand -= einstand * anteil;
-      kapital = (kapital - entnahme) * (1 + rMonat);
+      kapital -= entnahme;
+      ausgezahlt += entnahme;
     }
     if (m % 12 === 0) abrechnen();
   }
   abrechnen();
 
+  // Ausgewiesen wird, was tatsächlich fließt – nicht die rechnerische Rate.
+  // Beides fällt auseinander, sobald das Kapital die letzte Rate nicht mehr
+  // trägt.
+  const bruttoDurchschnitt = ausgezahlt / monate;
+
   return {
-    brutto,
-    nettoDurchschnitt: Math.max(0, brutto - steuerGesamt / monate),
+    brutto: bruttoDurchschnitt,
+    nettoDurchschnitt: Math.max(0, bruttoDurchschnitt - steuerGesamt / monate),
     steuerGesamt,
   };
 }

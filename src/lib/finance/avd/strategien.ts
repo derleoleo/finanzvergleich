@@ -141,7 +141,21 @@ export function berechneStrategien(args: {
   // Der geförderte Vertrag nimmt nur begrenzt Geld auf (§ 1 Abs. 1 Nr. 5
   // AltZertG). Darüber ist „alles ins AVD" keine Option mehr, sondern die
   // Aufteilung die einzige Möglichkeit, den vollen Betrag anzulegen.
+  const deckelMonatlich = GESETZ.EINZAHLUNG_MAX / 12;
   const ueberEinzahlungsdeckel = voll * 12 > GESETZ.EINZAHLUNG_MAX;
+  // Derselbe Deckel gilt für den AVD-Teil der Aufteilung. Ein überschriebener
+  // Aufteilungsbetrag darf ihn nicht umgehen – sonst wäre die Kombination
+  // wählbar, obwohl der Vertrag das Geld gar nicht annimmt.
+  const aufteilungUeberDeckel = aufteilung * 12 > GESETZ.EINZAHLUNG_MAX;
+  if (aufteilungUeberDeckel && !ueberEinzahlungsdeckel) {
+    hinweise.push({
+      art: 'warnung',
+      text:
+        `Der eingetragene Aufteilungsbetrag übersteigt den Höchstbetrag von ` +
+        `${Math.round(deckelMonatlich)} € im Monat (${GESETZ.EINZAHLUNG_MAX} € pro Jahr, ` +
+        `§ 1 Abs. 1 Nr. 5 AltZertG).`,
+    });
+  }
   if (ueberEinzahlungsdeckel) {
     hinweise.push({
       art: 'warnung',
@@ -203,6 +217,9 @@ export function berechneStrategien(args: {
   const strategieZ: Strategie = {
     id: 'kombination',
     bezeichnung: 'Aufteilung',
+    unzulaessig: aufteilungUeberDeckel
+      ? `Nicht möglich: ${Math.round(aufteilung)} € im Monat übersteigen den Höchstbetrag von ${GESETZ.EINZAHLUNG_MAX} € pro Jahr`
+      : undefined,
     aufteilungText: kombinationEntfaellt
       ? `${eur(voll)}/Monat Altersvorsorgedepot`
       : `${eur(aufteilung)}/Monat Altersvorsorgedepot + ${eur(rest)}/Monat ${nameZweitvertrag(args.zweitvertrag)}`,

@@ -24,6 +24,16 @@ import {
 import { sockelbetragsSchwelle } from './riester';
 import { simuliereFondsLv } from './fondslv';
 import { berechneStrategien } from './strategien';
+
+/** Vorgabewerte der Fondspolice für die Tests. */
+const lvVorgabe = {
+  renditeBruttoPaJahr: 0.07,
+  terPaJahr: 0.003,
+  kostenart: 'prozent' as const,
+  abschlusskostenGesamt: 0,
+  verwaltungProMonat: 0,
+  effektivkostenPaJahr: 0.012,
+};
 import { simulateLv } from '../simulation';
 import { besteOption, zillmerungsverlust } from './optionen';
 import {
@@ -1239,5 +1249,88 @@ describe('Einzahlungsdeckel in der Strategiewahl', () => {
       zweitvertrag: 'depot',
     });
     expect(r.strategien[0].unzulaessig).toBeUndefined();
+  });
+});
+
+describe('Depot-Auszahlplan: Rate und Kapital passen zusammen', () => {
+  it('zahlt die ausgewiesene Rate ueber die volle Laufzeit durch', () => {
+    // Gegenprobe zum Audit-Befund O04: Die Annuitaetsformel ist nachschuessig.
+    // Entnimmt die Schleife vorschuessig, traegt das Kapital die letzte Rate
+    // nicht mehr und der ausgewiesene Betrag ist zu hoch.
+    const e = eingabe({
+      eigenbeitragMonatlich: 200,
+      beitragsdynamikPaJahr: 0,
+      auszahlungsbeginnAlter: 67,
+      auszahlplanEndalter: 85,
+      kirchensteuersatz: 0,
+      sparerpauschbetrag: 0,
+    });
+    const r = simuliereAvd(e);
+    const monate = (85 - 67) * 12;
+
+    // Die Schleife nachvollziehen: Rendite, dann Entnahme
+    const rMonat = Math.pow(1 + (e.renditeBruttoPaJahr - e.depotKostenPaJahr), 1 / 12) - 1;
+    let kapital = r.depot.endkapitalVorSteuer;
+    let gezahlt = 0;
+    for (let m = 0; m < monate; m++) {
+      kapital *= 1 + rMonat;
+      const entnahme = Math.min(r.depot.monatsentnahmeBrutto, Math.max(0, kapital));
+      kapital -= entnahme;
+      gezahlt += entnahme;
+    }
+    // Die ausgewiesene Rate muss der tatsaechlich gezahlten entsprechen
+    expect(gezahlt / monate).toBeCloseTo(r.depot.monatsentnahmeBrutto, 2);
+    // und das Kapital am Ende aufgebraucht sein
+    expect(kapital).toBeLessThan(1);
+  });
+});
+
+describe('Einzahlungsdeckel gilt fuer jeden AVD-Baustein', () => {
+  it('schliesst auch eine ueberhoehte Aufteilung aus (Audit O02)', () => {
+    // 800 €/Monat in den AVD sind 9.600 €/Jahr – über dem Deckel von 6.840 €
+    const r = berechneStrategien({
+      basis: eingabe({ eigenbeitragMonatlich: 1000, beitragsdynamikPaJahr: 0 }),
+      aufteilungMonatlich: 800,
+      zweitvertrag: 'depot',
+    });
+    expect(r.strategien[2].unzulaessig).toBeTruthy();
+    expect(r.beste).toBe('vergleich_voll');
+  });
+
+  it('laesst den Vorschlag unberuehrt – 30 EUR liegen weit unter dem Deckel', () => {
+    const r = berechneStrategien({
+      basis: eingabe({ eigenbeitragMonatlich: 1000, beitragsdynamikPaJahr: 0 }),
+      zweitvertrag: 'depot',
+    });
+    expect(r.strategien[2].unzulaessig).toBeUndefined();
+    expect(r.beste).toBe('kombination');
+  });
+});
+
+describe('Fondspolice folgt dem Beitragsstrom (Audit O01)', () => {
+  it('beruecksichtigt die Beitragsdynamik', () => {
+    const ohne = simuliereAvd(
+      eingabe({ vergleichspartner: 'fonds_lv', beitragsdynamikPaJahr: 0, fondsLv: lvVorgabe })
+    );
+    const mit = simuliereAvd(
+      eingabe({ vergleichspartner: 'fonds_lv', beitragsdynamikPaJahr: 0.03, fondsLv: lvVorgabe })
+    );
+    // Vorher blieb die Police bei konstanten Beitraegen stehen, waehrend der
+    // AVD dynamisch einzahlte - der Vergleich kippte allein dadurch.
+    expect(mit.fondsLv!.eingezahlt).toBeGreaterThan(ohne.fondsLv!.eingezahlt * 1.2);
+    expect(mit.fondsLv!.endkapitalNachSteuer).toBeGreaterThan(
+      ohne.fondsLv!.endkapitalNachSteuer
+    );
+  });
+
+  it('sagt es, wenn der Budgetmodus fuer die Police nicht gilt', () => {
+    const r = simuliereAvd(
+      eingabe({
+        vergleichspartner: 'fonds_lv',
+        vergleichsmodus: 'gleicher_nettoaufwand',
+        fondsLv: lvVorgabe,
+      })
+    );
+    expect(r.hinweise.some((h) => h.text.includes('Bruttobeitrag'))).toBe(true);
   });
 });

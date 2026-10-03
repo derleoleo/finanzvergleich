@@ -9,9 +9,17 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-02" as const;
+export const MODELL_VERSION = "2026-10-03" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-03",
+    aenderung:
+      "Depot-Auszahlplan: Entnahme nachschüssig wie die zugrunde liegende " +
+      "Annuitätenformel (vorher vorschüssig, dadurch trug das Kapital die " +
+      "letzte Rate nicht). Ausgewiesen wird die tatsächlich gezahlte Rate. " +
+      "Fondspolice folgt der Beitragsdynamik.",
+  },
   {
     version: "2026-10-02",
     aenderung:
