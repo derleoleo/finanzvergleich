@@ -34,6 +34,8 @@ import GespeicherteAuswertung, {
   type GespeicherteKennzahl,
 } from "@/components/results/GespeicherteAuswertung";
 import { speicherFehlerText } from "@/utils/speicherFehler";
+import { FallVersion } from "@/entities/FallVersion";
+import Versionsverlauf from "@/components/results/Versionsverlauf";
 import { Input } from "@/components/ui/input";
 import PDFSectionDialog from "@/components/pdf/PDFSectionDialog";
 import { Handshake, FileDown, ArrowLeft, Save } from "lucide-react";
@@ -104,6 +106,8 @@ export default function NetPolicyCalculator() {
   const [gespeicherteId, setGespeicherteId] = useState<string | null>(null);
   const [speichertGerade, setSpeichertGerade] = useState(false);
   const [speicherHinweis, setSpeicherHinweis] = useState<string | null>(null);
+  // Hochzählen nach dem Speichern, damit der Verlauf die neue Fassung lädt
+  const [versionenStand, setVersionenStand] = useState(0);
   // Audit N03: Beim Öffnen wurden nur die Eingaben geladen und neu gerechnet.
   // Die damals gezeigten Zahlen blieben unsichtbar im Datensatz liegen.
   const [gespeicherteErgebnisse, setGespeicherteErgebnisse] =
@@ -278,14 +282,28 @@ export default function NetPolicyCalculator() {
           ...modellStempel(),
         },
       };
+      let fallId = gespeicherteId;
       if (gespeicherteId) {
         await NetPolicyCalculation.update(gespeicherteId, nutzlast);
         setSpeicherHinweis("Gespeichert.");
       } else {
         const neu = await NetPolicyCalculation.create(nutzlast);
+        fallId = neu.id;
         setGespeicherteId(neu.id);
         window.history.replaceState(null, "", `?id=${neu.id}`);
         setSpeicherHinweis("Gespeichert – jetzt unter „Alle Ergebnisse“ zu finden.");
+      }
+      // Fassung festschreiben (Audit O08)
+      if (fallId) {
+        await FallVersion.anlegen({
+          fallTabelle: "net_policy_calculations",
+          fallId,
+          name: nutzlast.name,
+          form: nutzlast.form,
+          results: nutzlast.results as unknown as Record<string, unknown>,
+          reihen: results.series,
+        });
+        setVersionenStand((n) => n + 1);
       }
       setGespeicherteErgebnisse(nutzlast.results as Record<string, unknown>);
     } catch (e) {
@@ -342,6 +360,12 @@ export default function NetPolicyCalculator() {
             <span className="text-sm text-slate-600">{speicherHinweis}</span>
           )}
         </div>
+
+<Versionsverlauf
+          fallTabelle="net_policy_calculations"
+          fallId={gespeicherteId}
+          neuLadenAb={versionenStand}
+        />
 
         {/* Gespeicherter Stand (Audit N03) */}
         {gespeicherteKennzahlen.length > 0 && (

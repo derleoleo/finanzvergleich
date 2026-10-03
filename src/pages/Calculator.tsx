@@ -25,7 +25,9 @@ import FundInputs from "@/components/calculator/FundInputs";
 import type { FundEntry } from "@/components/calculator/MultiFundEditor";
 
 import { simulateDepot, simulateLv } from "@/lib/finance/simulation";
-import { buildComparisonResults } from "@/lib/finance/series";
+import { buildComparisonResults, buildYearlySeries } from "@/lib/finance/series";
+import { FallVersion } from "@/entities/FallVersion";
+import { aktuellesAlter } from "@/components/calculator/EndalterHinweis";
 import {
   depotTaxOptionsFromDefaults,
   lvTaxOptionsFromDefaults,
@@ -269,6 +271,49 @@ export default function Calculator() {
     };
   };
 
+  /**
+   * Die Jahresreihe zur Fassung (Audit O08). Sie wird mitgespeichert, weil die
+   * Kurven sonst beim Wiederöffnen aus dem heutigen Modell entstehen – und
+   * damit andere sein können als die, die der Kunde gesehen hat.
+   */
+  const berechneReihen = () => {
+    const years = Math.max(1, Number(formData.contract_duration_years || 1));
+    const months = years * 12;
+    const d = UserDefaults.load();
+    const lv = simulateLv({
+      months,
+      annual_return_percent: formData.assumed_annual_return,
+      monthly_contribution: formData.monthly_contribution,
+      dynamik_percent: formData.dynamik_percent,
+      funds: formData.lv_funds,
+      cost:
+        formData.lv_cost_type === "eur"
+          ? {
+              type: "eur",
+              acquisition_costs_eur: formData.life_insurance_acquisition_costs_eur,
+              admin_costs_monthly_eur: Number(formData.lv_admin_costs_monthly_eur || 0) || 0,
+            }
+          : { type: "percent", effective_costs_percent: formData.lv_effective_costs_percent },
+    });
+    const depot = simulateDepot({
+      months,
+      annual_return_percent: formData.assumed_annual_return,
+      monthly_contribution: formData.monthly_contribution,
+      dynamik_percent: formData.dynamik_percent,
+      funds: formData.depot_funds,
+      depot_costs_annual_percent: formData.depot_costs_annual,
+    });
+    return buildYearlySeries({
+      lv: lv.series,
+      depot: depot.series,
+      mode: "net",
+      birth_year: formData.birth_year,
+      lvTaxOptions: lvTaxOptionsFromDefaults(d),
+      depotTaxOptions: depotTaxOptionsFromDefaults(d),
+      alter_heute: aktuellesAlter(formData.birth_year),
+    });
+  };
+
   const handleCalculate = async () => {
     if (!canCreateCalculation) {
       setShowUpgradePrompt(true);
@@ -282,6 +327,16 @@ export default function Calculator() {
       const payload = { ...formData, results };
 
       const newCalc = await Calculation.create(payload);
+      // Fassung festschreiben – misslingt das, ist die Berechnung trotzdem
+      // gespeichert. Die Version ist ein Nachweis, kein Ersatz.
+      await FallVersion.anlegen({
+        fallTabelle: "calculations",
+        fallId: newCalc.id,
+        name: formData.name || "Berechnung",
+        form: formData as unknown as Record<string, unknown>,
+        results: results as unknown as Record<string, unknown>,
+        reihen: berechneReihen(),
+      });
       incrementCalculationCount();
       navigate(createPageUrl("CalculatorDetail") + `?id=${newCalc.id}`);
     } catch (e) {

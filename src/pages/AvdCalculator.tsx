@@ -31,6 +31,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { AvdCalculation } from '@/entities/AvdCalculation';
 import { modellStempel, type ModellStempel } from '@/lib/finance/modell';
+import { FallVersion } from '@/entities/FallVersion';
+import Versionsverlauf from '@/components/results/Versionsverlauf';
 import GespeicherteAuswertung, {
   type GespeicherteKennzahl,
 } from '@/components/results/GespeicherteAuswertung';
@@ -156,6 +158,8 @@ export default function AvdCalculator() {
   // nicht sichtbar – ein Modellwechsel blieb damit unbemerkt.
   const [gespeicherteErgebnisse, setGespeicherteErgebnisse] =
     useState<Record<string, unknown> | null>(null);
+  // Hochzählen nach dem Speichern, damit der Verlauf die neue Fassung lädt
+  const [versionenStand, setVersionenStand] = useState(0);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('id');
@@ -392,14 +396,30 @@ export default function AvdCalculator() {
           ...modellStempel(),
         },
       };
+      let fallId = gespeicherteId;
       if (gespeicherteId) {
         await AvdCalculation.update(gespeicherteId, nutzlast);
         setSpeicherHinweis('Gespeichert.');
       } else {
         const neu = await AvdCalculation.create(nutzlast);
+        fallId = neu.id;
         setGespeicherteId(neu.id);
         window.history.replaceState(null, '', `?id=${neu.id}`);
         setSpeicherHinweis('Gespeichert – jetzt unter „Alle Ergebnisse“ zu finden.');
+      }
+      // Fassung festschreiben (Audit O08): Die Kurven entstehen beim Öffnen
+      // sonst aus dem heutigen Modell und können von denen abweichen, die
+      // der Kunde gesehen hat.
+      if (fallId) {
+        await FallVersion.anlegen({
+          fallTabelle: 'avd_calculations',
+          fallId,
+          name: nutzlast.name,
+          form: nutzlast.form,
+          results: nutzlast.results as unknown as Record<string, unknown>,
+          reihen: verlaufsdaten,
+        });
+        setVersionenStand((n) => n + 1);
       }
       setGespeicherteErgebnisse(nutzlast.results as Record<string, unknown>);
     } catch (e) {
@@ -459,6 +479,12 @@ export default function AvdCalculator() {
             kennzahlen={gespeicherteKennzahlen}
           />
         )}
+
+        <Versionsverlauf
+          fallTabelle="avd_calculations"
+          fallId={gespeicherteId}
+          neuLadenAb={versionenStand}
+        />
 
         {/* Vergleichspartner – bestimmt, wogegen das AVD gerechnet wird */}
         <div data-pdf-section="vergleichspartner">

@@ -1,6 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { FallVersion, type FallTabelle } from "@/entities/FallVersion";
+
+/** Welcher Eintragstyp in der Übersicht gehört zu welcher Tabelle. */
+const FALL_TABELLE_JE_TYP: Record<string, FallTabelle> = {
+  sparvertrag: "calculations",
+  einmalanlage: "single_payment_calculations",
+  bestadvice: "best_advice_calculations",
+  pensiongap: "pension_gap_calculations",
+  avd: "avd_calculations",
+  nettopolice: "net_policy_calculations",
+  entnahmeplan: "withdrawal_plans",
+};
 import { Calculation, type CalculationModel } from "@/entities/Calculation";
 import { SinglePaymentCalculation, type SinglePaymentModel } from "@/entities/SinglePaymentCalculation";
 import { BestAdviceCalculation, type BestAdviceModel } from "@/entities/BestAdviceCalculation";
@@ -74,6 +86,10 @@ export default function AllResults() {
         case "nettopolice": await NetPolicyCalculation.delete(item.data.id); break;
         case "entnahmeplan": await WithdrawalPlanEntry.delete(item.data.id); break;
       }
+      // Die Fassungen gehören zum Fall und verschwinden mit ihm. Ohne das
+      // blieben sie als unsichtbare Reste in der Datenbank liegen.
+      const tabelle = FALL_TABELLE_JE_TYP[item.type];
+      if (tabelle) await FallVersion.loescheFall(tabelle, item.data.id);
       setItems((prev) => prev.filter((x) => !(x.type === item.type && x.data.id === item.data.id)));
     } catch (err) {
       console.error(err);

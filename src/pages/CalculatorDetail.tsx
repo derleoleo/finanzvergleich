@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { modellStempel } from "@/lib/finance/modell";
+import { FallVersion } from "@/entities/FallVersion";
+import Versionsverlauf from "@/components/results/Versionsverlauf";
 import { vertragskosten } from "@/lib/finance/kostenanzeige";
 import ModellHinweis from "@/components/results/ModellHinweis";
 import { calculateAgeAtPayout } from "@/components/shared/TaxCalculations";
@@ -43,6 +45,8 @@ import { buildComparisonResults } from "@/lib/finance/series";
 export default function CalculatorDetail() {
   const navigate = useNavigate();
   const [calculation, setCalculation] = useState<CalculationModel | null>(null);
+  // Hochzählen nach dem Speichern, damit der Verlauf die neue Fassung lädt
+  const [versionenStand, setVersionenStand] = useState(0);
   const [formData, setFormData] = useState<CalculationModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRecalculating, setIsRecalculating] = useState(false);
@@ -153,6 +157,16 @@ export default function CalculatorDetail() {
     if (!results) { setIsRecalculating(false); return; }
     const updatedData = { ...formData, results };
     await Calculation.update(calculation.id, updatedData);
+    // Jede Neuberechnung ist eine eigene Fassung – die vorherige bleibt
+    // unverändert erhalten (Audit O08).
+    await FallVersion.anlegen({
+      fallTabelle: "calculations",
+      fallId: calculation.id,
+      name: formData.name || "Berechnung",
+      form: formData as unknown as Record<string, unknown>,
+      results: results as unknown as Record<string, unknown>,
+    });
+    setVersionenStand((n) => n + 1);
     setCalculation(updatedData);
     setFormData(updatedData);
     setIsRecalculating(false);
@@ -238,6 +252,12 @@ export default function CalculatorDetail() {
           stempel={calculation.results}
           onNeuBerechnen={handleRecalculate}
           neuBerechnenLaeuft={isRecalculating}
+        />
+
+        <Versionsverlauf
+          fallTabelle="calculations"
+          fallId={calculation.id}
+          neuLadenAb={versionenStand}
         />
 
         {/* ✅ Ergebnisse: Kacheln + Graph synchron (Brutto/Netto) */}

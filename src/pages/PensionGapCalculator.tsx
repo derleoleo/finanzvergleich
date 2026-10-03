@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { speicherFehlerText } from "@/utils/speicherFehler";
+import { FallVersion } from "@/entities/FallVersion";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl, toNum } from "@/utils";
 import { PensionGapCalculation } from "@/entities/PensionGapCalculation";
@@ -110,6 +111,14 @@ export default function PensionGapCalculator() {
     try {
       const results = { ...calculatePensionGapResults(formData), ...modellStempel() };
       const newCalc = await PensionGapCalculation.create({ ...formData, results });
+      // Fassung festschreiben (Audit O08)
+      await FallVersion.anlegen({
+        fallTabelle: "pension_gap_calculations",
+        fallId: newCalc.id,
+        name: formData.name || "Rentenlücke",
+        form: formData as unknown as Record<string, unknown>,
+        results: results as unknown as Record<string, unknown>,
+      });
       incrementCalculationCount();
       navigate(createPageUrl("PensionGapDetail") + `?id=${newCalc.id}`);
     } catch (e) {

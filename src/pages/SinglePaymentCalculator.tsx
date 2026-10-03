@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { modellStempel } from "@/lib/finance/modell";
 import { calculateAgeAtPayout } from "@/components/shared/TaxCalculations";
 import { speicherFehlerText } from "@/utils/speicherFehler";
+import { FallVersion } from "@/entities/FallVersion";
 import EndalterHinweis from "@/components/calculator/EndalterHinweis";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl, toNum } from "@/utils";
@@ -233,6 +234,14 @@ export default function SinglePaymentCalculator() {
     try {
       const results = calculateResults();
       const newCalc = await SinglePaymentCalculation.create({ ...formData, results });
+      // Fassung festschreiben (Audit O08)
+      await FallVersion.anlegen({
+        fallTabelle: "single_payment_calculations",
+        fallId: newCalc.id,
+        name: formData.name || "Einmalanlage",
+        form: formData as unknown as Record<string, unknown>,
+        results: results as unknown as Record<string, unknown>,
+      });
       incrementCalculationCount();
       navigate(createPageUrl("SinglePaymentDetail") + `?id=${newCalc.id}`);
     } catch (e) {

@@ -20,6 +20,8 @@ import GespeicherteAuswertung, {
   type GespeicherteKennzahl,
 } from "@/components/results/GespeicherteAuswertung";
 import { speicherFehlerText } from "@/utils/speicherFehler";
+import { FallVersion } from "@/entities/FallVersion";
+import Versionsverlauf from "@/components/results/Versionsverlauf";
 import { Calculation, type CalculationModel } from "@/entities/Calculation";
 import { SinglePaymentCalculation, type SinglePaymentModel } from "@/entities/SinglePaymentCalculation";
 import { BestAdviceCalculation, type BestAdviceModel } from "@/entities/BestAdviceCalculation";
@@ -80,6 +82,8 @@ export default function WithdrawalPlan() {
   const [gespeicherteId, setGespeicherteId] = useState<string | null>(null);
   const [speichertGerade, setSpeichertGerade] = useState(false);
   const [speicherHinweis, setSpeicherHinweis] = useState<string | null>(null);
+  // Hochzählen nach dem Speichern, damit der Verlauf die neue Fassung lädt
+  const [versionenStand, setVersionenStand] = useState(0);
   // Audit N02: Das Startkapital wurde aus der verknüpften Berechnung neu
   // abgeleitet. Wird jene Berechnung später geändert oder gelöscht, stand im
   // Plan plötzlich eine andere Summe. Beim Speichern wird der Wert daher
@@ -269,14 +273,28 @@ export default function WithdrawalPlan() {
           ...modellStempel(),
         },
       };
+      let fallId = gespeicherteId;
       if (gespeicherteId) {
         await WithdrawalPlanEntry.update(gespeicherteId, nutzlast);
         setSpeicherHinweis("Gespeichert.");
       } else {
         const neu = await WithdrawalPlanEntry.create(nutzlast);
+        fallId = neu.id;
         setGespeicherteId(neu.id);
         window.history.replaceState(null, "", `?id=${neu.id}`);
         setSpeicherHinweis("Gespeichert – jetzt unter „Alle Ergebnisse“ zu finden.");
+      }
+      // Fassung festschreiben (Audit O08)
+      if (fallId) {
+        await FallVersion.anlegen({
+          fallTabelle: "withdrawal_plans",
+          fallId,
+          name: nutzlast.name,
+          form: nutzlast.form,
+          results: nutzlast.results as unknown as Record<string, unknown>,
+          reihen: withdrawalData,
+        });
+        setVersionenStand((n) => n + 1);
       }
       // Ab jetzt ist das der gespeicherte Stand: Kapital fixiert, Kennzahlen bekannt
       setFixiertesKapital(Math.round(startCapital));
@@ -598,7 +616,13 @@ export default function WithdrawalPlan() {
               </Card>
             </div>
 
-            {/* Gespeicherter Stand (Audit N03) */}
+    <Versionsverlauf
+          fallTabelle="withdrawal_plans"
+          fallId={gespeicherteId}
+          neuLadenAb={versionenStand}
+        />
+
+        {/* Gespeicherter Stand (Audit N03) */}
             {gespeicherteKennzahlen.length > 0 && (
               <GespeicherteAuswertung
                 stempel={gespeicherteErgebnisse as Partial<ModellStempel>}

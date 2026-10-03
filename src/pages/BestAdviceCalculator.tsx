@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { modellStempel } from "@/lib/finance/modell";
 import { speicherFehlerText } from "@/utils/speicherFehler";
+import { FallVersion } from "@/entities/FallVersion";
 import EndalterHinweis from "@/components/calculator/EndalterHinweis";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl, toNum } from "@/utils";
@@ -354,6 +355,14 @@ export default function BestAdviceCalculator() {
         guaranteed_end_capital: totalGuaranteed,
         current_product_tax_free: false,
         results,
+      });
+      // Fassung festschreiben (Audit O08)
+      await FallVersion.anlegen({
+        fallTabelle: "best_advice_calculations",
+        fallId: newCalc.id,
+        name: formData.name || "BestAdvice",
+        form: formBase as unknown as Record<string, unknown>,
+        results: results as unknown as Record<string, unknown>,
       });
       incrementCalculationCount();
       navigate(createPageUrl("BestAdviceDetail") + `?id=${newCalc.id}`);
