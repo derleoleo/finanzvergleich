@@ -1334,3 +1334,20 @@ describe('Fondspolice folgt dem Beitragsstrom (Audit O01)', () => {
     expect(r.hinweise.some((h) => h.text.includes('Bruttobeitrag'))).toBe(true);
   });
 });
+
+describe('Eigenaufwand je Strategie (Audit O03)', () => {
+  it('weist aus, dass die Bruttobeitraege gleich sind, der Nettoaufwand aber nicht', () => {
+    const r = berechneStrategien({
+      basis: eingabe({ eigenbeitragMonatlich: 150, beitragsdynamikPaJahr: 0 }),
+      zweitvertrag: 'depot',
+    });
+    const [x, y, z] = r.strategien;
+    // gleiche Bruttobeitraege
+    expect(y.summeEigenbeitraege).toBeCloseTo(x.summeEigenbeitraege, 6);
+    expect(z.summeEigenbeitraege).toBeCloseTo(x.summeEigenbeitraege, 6);
+    // aber unterschiedlicher Eigenaufwand, weil nur der AVD-Teil erstattet
+    expect(x.summeNettoaufwand).toBeLessThan(y.summeNettoaufwand);
+    expect(x.summeNettoaufwand).toBeLessThan(z.summeNettoaufwand);
+    expect(z.summeNettoaufwand).toBeLessThan(y.summeNettoaufwand);
+  });
+});

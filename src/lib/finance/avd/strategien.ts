@@ -37,6 +37,13 @@ export type Strategie = {
   beitragAvdMonatlich: number;
   beitragZweitMonatlich: number;
   summeEigenbeitraege: number;
+  /**
+   * Was die Strategie tatsächlich aus eigener Tasche kostet: Beiträge abzüglich
+   * der Steuererstattung, die nicht reinvestiert wird. Ohne diese Zahl wäre
+   * „gleicher Eigenaufwand" eine Behauptung – die Bruttobeiträge sind zwar
+   * gleich, der Nettoaufwand ist es nicht.
+   */
+  summeNettoaufwand: number;
   summeFoerderung: number;
   endkapitalNachSteuer: number;
   endkapitalNachSteuerReal: number;
@@ -174,6 +181,7 @@ export function berechneStrategien(args: {
     beitragAvdMonatlich: voll,
     beitragZweitMonatlich: 0,
     summeEigenbeitraege: avdVoll.summeEigenbeitraege,
+    summeNettoaufwand: avdVoll.summeEigenbeitraege - avdVoll.summeSteuererstattung,
     summeFoerderung: avdVoll.summeFoerderung,
     endkapitalNachSteuer: avdVoll.endkapitalNachSteuer,
     endkapitalNachSteuerReal: avdVoll.endkapitalNachSteuerReal,
@@ -204,6 +212,7 @@ export function berechneStrategien(args: {
     beitragAvdMonatlich: 0,
     beitragZweitMonatlich: voll,
     summeEigenbeitraege: avdVoll.summeEigenbeitraege,
+    summeNettoaufwand: avdVoll.summeEigenbeitraege,
     summeFoerderung: 0,
     endkapitalNachSteuer: endkapitalY,
     endkapitalNachSteuerReal: real(endkapitalY),
@@ -228,6 +237,7 @@ export function berechneStrategien(args: {
     // Der Zweitvertrag ist ungefördert: Die Fördersumme stammt allein aus dem
     // AVD-Teil, und der Eigenaufwand ist derselbe wie in X und Y.
     summeEigenbeitraege: avdVoll.summeEigenbeitraege,
+    summeNettoaufwand: avdVoll.summeEigenbeitraege - avdTeil.summeSteuererstattung,
     summeFoerderung: avdTeil.summeFoerderung,
     endkapitalNachSteuer: avdTeil.endkapitalNachSteuer + zweit.endkapitalNachSteuer,
     endkapitalNachSteuerReal: real(avdTeil.endkapitalNachSteuer + zweit.endkapitalNachSteuer),

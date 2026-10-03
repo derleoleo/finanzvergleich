@@ -995,8 +995,10 @@ export default function AvdCalculator() {
                     )}
                   </div>
                   <p className="text-xs text-slate-400">
-                    Förderoptimal: {formatCurrency(strategien.aufteilungspunkt.monatsbeitrag)} im
-                    Monat. {strategien.aufteilungspunkt.begruendung}
+                    Zulagenknick bei{' '}
+                    {formatCurrency(strategien.aufteilungspunkt.monatsbeitrag)} im Monat.{' '}
+                    {strategien.aufteilungspunkt.begruendung} Der Punkt folgt allein der
+                    Zulagenstaffel – Kosten, Laufzeit und spätere Besteuerung gehen nicht ein.
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -1058,6 +1060,12 @@ export default function AvdCalculator() {
                           <div className="text-xs text-slate-600 mt-3">{st.aufteilungText}</div>
                           <div className="text-xs text-slate-500 mt-1">
                             Förderung gesamt {formatCurrency(st.summeFoerderung)}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            Eigenaufwand {formatCurrency(st.summeNettoaufwand)}
+                            {st.summeNettoaufwand < st.summeEigenbeitraege && (
+                              <> (Beiträge {formatCurrency(st.summeEigenbeitraege)})</>
+                            )}
                           </div>
                         </>
                       )}
