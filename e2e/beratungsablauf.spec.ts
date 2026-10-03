@@ -39,21 +39,42 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     !PFLICHT && !HAT_SITZUNG && !(EMAIL && PASSWORT),
     "Weder gespeicherte Sitzung noch E2E_EMAIL/E2E_PASSWORD vorhanden"
   );
-  // Der Ablauf umfasst Rechnen, Speichern und PDF-Erzeugung
-  test.setTimeout(120_000);
+  // Der Ablauf umfasst Anmeldung, Rechnen, Speichern und PDF-Erzeugung. Auf
+  // einem kalten CI-Rechner baut der Dev-Server die Module erst beim ersten
+  // Aufruf, das dauert deutlich länger als lokal.
+  test.setTimeout(240_000);
 
   // Mit gespeicherter Sitzung starten, wenn es sie gibt
   test.use(HAT_SITZUNG ? { storageState: SITZUNG } : {});
 
+  /**
+   * Stellt sicher, dass der Rechner bedienbar ist.
+   *
+   * Nicht über die Adresse raten, ob eine Anmeldung nötig ist: Die Umleitung
+   * passiert clientseitig, und auf einem kalten Rechner baut die Seite
+   * langsamer auf als jede Wartezeit, die man dafür ansetzen würde. Stattdessen
+   * wird abgewartet, was tatsächlich erscheint – Anmeldeformular, Rechner oder
+   * Einwilligungsabfrage – und danach gehandelt.
+   */
   async function anmelden(page: Page) {
+    const formular = page.locator('input[type="email"]');
+    const rechner = page.getByLabel("Name der Berechnung");
+    const einwilligung = page.getByText("Zustimmung erforderlich");
+
     await page.goto("/calculator");
-    // Die Umleitung passiert clientseitig, erst nachdem die Sitzung geprüft
-    // wurde – sofort nach `goto` steht noch die alte Adresse da.
-    await page
-      .waitForURL(/\/login/, { timeout: 8_000 })
-      .catch(() => undefined);
-    // Mit gültiger Sitzung sind wir schon drin
-    if (!page.url().includes("/login")) return;
+    await expect(
+      formular.or(rechner).or(einwilligung),
+      "Die App hat weder Anmeldung, Rechner noch Einwilligung angezeigt"
+    ).toBeVisible({ timeout: 90_000 });
+
+    if (await rechner.isVisible()) return;
+
+    if (await einwilligung.isVisible()) {
+      throw new Error(
+        "Für das Testkonto fehlen die Einwilligungen. Einmal von Hand anmelden " +
+          "und bestätigen – ein Test darf das nicht stellvertretend zusagen."
+      );
+    }
 
     if (!EMAIL || !PASSWORT) {
       if (PFLICHT) {
@@ -65,26 +86,36 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
       test.skip(true, "Sitzung abgelaufen und keine Zugangsdaten hinterlegt");
       return;
     }
+
     await page.getByPlaceholder("ihre@email.de").fill(EMAIL);
     await page.getByPlaceholder("Passwort").fill(PASSWORT);
     // Ausdrücklich der Absendeknopf: Der Reiter darüber heißt genauso, und
     // ein Klick darauf tut nichts – der Test liefe in die Zeitüberschreitung.
     await page.locator('button[type="submit"]').click();
-    try {
-      await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 30_000 });
-    } catch {
-      // Die Meldung der Seite ist im Protokoll mehr wert als eine
-      // Zeitüberschreitung ohne Begründung.
-      // Die Seite zeigt Anmeldefehler in einem roten Absatz (Login.tsx)
-      const meldung = await page
-        .locator("p.text-red-600")
-        .first()
-        .textContent({ timeout: 5_000 })
-        .catch(() => null);
+
+    await expect(
+      rechner.or(einwilligung),
+      await anmeldefehler(page)
+    ).toBeVisible({ timeout: 60_000 });
+
+    if (await einwilligung.isVisible()) {
       throw new Error(
-        `Anmeldung fehlgeschlagen${meldung ? `: ${meldung.trim()}` : " (keine Meldung auf der Seite)"}`
+        "Für das Testkonto fehlen die Einwilligungen. Einmal von Hand anmelden " +
+          "und bestätigen – ein Test darf das nicht stellvertretend zusagen."
       );
     }
+  }
+
+  /** Die Meldung der Seite ist im Protokoll mehr wert als eine Zeitüberschreitung. */
+  async function anmeldefehler(page: Page): Promise<string> {
+    const meldung = await page
+      .locator("p.text-red-600")
+      .first()
+      .textContent({ timeout: 2_000 })
+      .catch(() => null);
+    return meldung
+      ? `Anmeldung fehlgeschlagen: ${meldung.trim()}`
+      : "Nach der Anmeldung erschien weder der Rechner noch die Einwilligungsabfrage";
   }
 
   /** Aufräumen: Der Testfall darf nicht im Konto liegen bleiben. */
@@ -115,7 +146,7 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     await anmelden(page);
 
     // --- Eingabe und Berechnung ---------------------------------------
-    await page.goto("/calculator");
+    // `anmelden` hat den Rechner bereits geöffnet
     await page.getByLabel("Name der Berechnung").fill(name);
     await page.getByRole("button", { name: "Vergleich berechnen" }).click();
     await page.waitForURL(/\/calculator\/detail/, { timeout: 30_000 });
