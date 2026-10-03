@@ -1,4 +1,19 @@
+import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+
+/**
+ * Wogegen der angemeldete Durchlauf läuft.
+ *
+ * Lokal gibt es eine gespeicherte Sitzung – die gehört zum Ursprung
+ * localhost:5173, also muss der Dev-Server her. In der CI gibt es keine
+ * Sitzung; dort wird über das Formular angemeldet, und die gebaute App auf
+ * 4173 ist die bessere Wahl: Der Dev-Server übersetzt jedes Modul erst beim
+ * ersten Aufruf und braucht auf einem kalten Rechner länger, als jede
+ * vernünftige Wartezeit zulässt.
+ */
+const ANGEMELDET_BASIS =
+  process.env.E2E_BASE_URL ??
+  (existsSync(".playwright-auth.json") ? "http://localhost:5173" : "http://localhost:4173");
 
 /**
  * Durchlauftests gegen die laufende App (Audit F21).
@@ -35,10 +50,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         channel: "chrome",
-        // Gegen den Dev-Server: Die gespeicherte Sitzung aus
-        // scripts/screenshots.mjs gehoert zu diesem Ursprung. Sitzungen sind
-        // an Schema, Host UND Port gebunden – auf 4173 waere man abgemeldet.
-        baseURL: process.env.E2E_BASE_URL ?? "http://localhost:5173",
+        baseURL: ANGEMELDET_BASIS,
       },
     },
   ],
