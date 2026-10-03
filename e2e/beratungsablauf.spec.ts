@@ -110,10 +110,30 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     // ein Klick darauf tut nichts – der Test liefe in die Zeitüberschreitung.
     await page.locator('button[type="submit"]').click();
 
-    await expect(
-      rechner.or(einwilligung),
-      await anmeldefehler(page)
-    ).toBeVisible({ timeout: 60_000 });
+    // Nach der Anmeldung geht es auf die Übersicht, nicht zurück zum Rechner
+    // (Login.tsx navigiert auf "/"). Erst abwarten, dass die Anmeldeseite
+    // verlassen wurde, dann den Rechner selbst aufrufen.
+    try {
+      await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 60_000 });
+    } catch {
+      throw new Error(await anmeldefehler(page));
+    }
+
+    await page.goto("/calculator");
+    try {
+      await expect(rechner.or(einwilligung)).toBeVisible({ timeout: 60_000 });
+    } catch {
+      const ueberschrift = await page
+        .locator("h1, h2")
+        .first()
+        .textContent()
+        .catch(() => null);
+      throw new Error(
+        `Nach der Anmeldung öffnet der Rechner nicht. Adresse: ${page.url()}` +
+          (ueberschrift ? `, Überschrift: „${ueberschrift.trim()}"` : "") +
+          (probleme.length ? `, Meldungen: ${probleme.slice(0, 3).join(" | ")}` : "")
+      );
+    }
 
     if (await einwilligung.isVisible()) {
       throw new Error(
@@ -132,7 +152,7 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
       .catch(() => null);
     return meldung
       ? `Anmeldung fehlgeschlagen: ${meldung.trim()}`
-      : "Nach der Anmeldung erschien weder der Rechner noch die Einwilligungsabfrage";
+      : "Die Anmeldeseite wurde nicht verlassen, meldete aber keinen Fehler";
   }
 
   /** Aufräumen: Der Testfall darf nicht im Konto liegen bleiben. */
