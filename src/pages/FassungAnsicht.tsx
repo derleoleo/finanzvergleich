@@ -260,6 +260,11 @@ export default function FassungAnsicht() {
                         <TableHead className="font-semibold text-slate-700">
                           {beschriftung(reihen.achse)}
                         </TableHead>
+                        {reihen.zeitspalten.map((schluessel) => (
+                          <TableHead key={schluessel} className="font-semibold text-slate-700">
+                            {beschriftung(schluessel)}
+                          </TableHead>
+                        ))}
                         {reihen.linien.map((schluessel) => (
                           <TableHead
                             key={schluessel}
@@ -276,6 +281,11 @@ export default function FassungAnsicht() {
                           <TableCell className="font-medium text-slate-900">
                             {zeile[reihen.achse]}
                           </TableCell>
+                          {reihen.zeitspalten.map((schluessel) => (
+                            <TableCell key={schluessel} className="text-slate-700">
+                              {zeile[schluessel]}
+                            </TableCell>
+                          ))}
                           {reihen.linien.map((schluessel) => (
                             <TableCell key={schluessel} className="text-right">
                               {formatCurrency(zeile[schluessel] ?? 0)}

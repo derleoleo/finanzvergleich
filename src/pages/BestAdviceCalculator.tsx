@@ -33,6 +33,7 @@ import {
   calculateLifeInsuranceTax,
 } from "@/components/shared/TaxCalculations";
 import { simulateLv } from "@/lib/finance/simulation";
+import { baueBestAdviceReihen } from "@/lib/finance/bestadviceReihen";
 import { beitragsbasis, breakEvenDetail } from "@/lib/finance/bestadvice";
 
 const DRAFT_KEY = "fv_bestadvice_draft_v1";
@@ -363,6 +364,10 @@ export default function BestAdviceCalculator() {
         name: formData.name || "BestAdvice",
         form: formBase as unknown as Record<string, unknown>,
         results: results as unknown as Record<string, unknown>,
+        // Audit O08: Ohne Reihen haelt die Fassung nur Kennzahlen fest. Die
+        // Reihe wird aus dem gespeicherten Datensatz gebaut - genau so, wie
+        // die Detailseite sie spaeter zeichnet.
+        reihen: baueBestAdviceReihen(newCalc, "net"),
       });
       incrementCalculationCount();
       navigate(createPageUrl("BestAdviceDetail") + `?id=${newCalc.id}`);

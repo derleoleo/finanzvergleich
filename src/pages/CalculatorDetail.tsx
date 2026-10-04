@@ -40,7 +40,7 @@ import ResultsChart, {
 import ComparisonTable from "@/components/results/ComparisonTable";
 
 import { simulateDepot, simulateLv } from "@/lib/finance/simulation";
-import { buildComparisonResults } from "@/lib/finance/series";
+import { buildComparisonResults, buildYearlySeries } from "@/lib/finance/series";
 
 export default function CalculatorDetail() {
   const navigate = useNavigate();
@@ -92,7 +92,12 @@ export default function CalculatorDetail() {
   // Identische Berechnung wie im Calculator (gemeinsame Engine):
   // berücksichtigt Verwaltungskosten im EUR-Modus, den einheitlichen
   // Kostensplit und Multi-Fonds-Arrays (mit Fallback auf Legacy-Felder).
-  const calculateResults = () => {
+  /**
+   * Ein Lauf beider Simulationen. Kennzahlen und Zeitreihen der Fassung
+   * stammen daraus gemeinsam - sonst koennte eine Fassung eine Kurve tragen,
+   * die nicht zu ihren Zahlen gehoert.
+   */
+  const simuliere = () => {
     if (!formData) return null;
     const years = Math.max(1, Number(formData.contract_duration_years || 1));
     const months = years * 12;
@@ -129,6 +134,14 @@ export default function CalculatorDetail() {
       depot_costs_annual_percent: Number(formData.depot_costs_annual) || 0,
     });
 
+    return { lv, depot, years, months, d };
+  };
+
+  const calculateResults = () => {
+    const lauf = simuliere();
+    if (!formData || !lauf) return null;
+    const { lv, depot, years, months, d } = lauf;
+
     return {
       ...buildComparisonResults({
         lv,
@@ -150,6 +163,23 @@ export default function CalculatorDetail() {
     };
   };
 
+  /**
+   * Jahresreihen der Fassung (Audit O08). Die Neuberechnung hielt bisher nur
+   * Kennzahlen fest; die Fassungsansicht hatte dann nichts zu zeichnen.
+   */
+  const berechneReihen = () => {
+    const lauf = simuliere();
+    if (!formData || !lauf) return undefined;
+    return buildYearlySeries({
+      lv: lauf.lv.series,
+      depot: lauf.depot.series,
+      mode: "net",
+      birth_year: Number(formData.birth_year) || 0,
+      lvTaxOptions: lvTaxOptionsFromDefaults(lauf.d),
+      depotTaxOptions: depotTaxOptionsFromDefaults(lauf.d),
+    });
+  };
+
   const handleRecalculate = async () => {
     if (!formData || !calculation) return;
     setIsRecalculating(true);
@@ -165,6 +195,7 @@ export default function CalculatorDetail() {
       name: formData.name || "Berechnung",
       form: formData as unknown as Record<string, unknown>,
       results: results as unknown as Record<string, unknown>,
+      reihen: berechneReihen(),
     });
     setVersionenStand((n) => n + 1);
     setCalculation(updatedData);

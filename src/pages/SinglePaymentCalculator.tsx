@@ -28,7 +28,7 @@ import AnlageModeToggle from "@/components/calculator/AnlageModeToggle";
 import MultiFundEditor, { type FundEntry } from "@/components/calculator/MultiFundEditor";
 
 import { simulateDepot, simulateLv } from "@/lib/finance/simulation";
-import { buildComparisonResults } from "@/lib/finance/series";
+import { buildComparisonResults, buildYearlySeries } from "@/lib/finance/series";
 import {
   depotTaxOptionsFromDefaults,
   lvTaxOptionsFromDefaults,
@@ -167,7 +167,12 @@ export default function SinglePaymentCalculator() {
 
   // Berechnung über die gemeinsame Engine. Der Kostensplit im Prozent-Modus
   // folgt jetzt der einheitlichen gleitenden Regel (statt fix 70/30).
-  const calculateResults = () => {
+  /**
+   * Ein Lauf der beiden Simulationen. Kennzahlen und Zeitreihen der Fassung
+   * muessen aus demselben Lauf stammen - sonst koennte die Kurve einer Fassung
+   * zu Zahlen gehoeren, die daneben stehen.
+   */
+  const simuliere = () => {
     const years = Math.max(1, toNum(formData.contract_duration_years));
     const months = years * 12;
     const ls = toNum(formData.lump_sum);
@@ -201,6 +206,11 @@ export default function SinglePaymentCalculator() {
       depot_costs_annual_percent: toNum(formData.depot_costs_annual),
     });
 
+    return { lv, depot, years, months, ls, d };
+  };
+
+  const calculateResults = () => {
+    const { lv, depot, years, months, ls, d } = simuliere();
     const results = buildComparisonResults({
       lv,
       depot,
@@ -224,6 +234,23 @@ export default function SinglePaymentCalculator() {
     };
   };
 
+  /**
+   * Die Jahresreihen der Fassung (Audit O08). Ohne sie zeigt die
+   * Fassungsansicht nur Kennzahlen, und das Diagramm der Beratung ist
+   * nicht rekonstruierbar.
+   */
+  const berechneReihen = () => {
+    const { lv, depot, d } = simuliere();
+    return buildYearlySeries({
+      lv: lv.series,
+      depot: depot.series,
+      mode: "net",
+      birth_year: toNum(formData.birth_year),
+      lvTaxOptions: lvTaxOptionsFromDefaults(d),
+      depotTaxOptions: depotTaxOptionsFromDefaults(d),
+    });
+  };
+
   const handleCalculate = async () => {
     if (!canCreateCalculation) {
       setShowUpgradePrompt(true);
@@ -241,6 +268,7 @@ export default function SinglePaymentCalculator() {
         name: formData.name || "Einmalanlage",
         form: formData as unknown as Record<string, unknown>,
         results: results as unknown as Record<string, unknown>,
+        reihen: berechneReihen(),
       });
       incrementCalculationCount();
       navigate(createPageUrl("SinglePaymentDetail") + `?id=${newCalc.id}`);

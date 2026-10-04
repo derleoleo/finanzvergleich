@@ -49,6 +49,7 @@ jobs:
               "berechnungs_zaehler",
               "werbe_codes",
               "werbungen",
+              "fall_versionen",
           ]
 
           # Supabase liefert pro Anfrage hoechstens 1000 Zeilen. Ohne Blaettern
@@ -65,6 +66,9 @@ jobs:
               # Die Empfehlungstabellen haben kein created_date
               "werbe_codes": "user_id",
               "werbungen": "id",
+              # Fassungen heissen die Zeitspalte created_at; ohne Eintrag hier
+              # wuerde nach created_date sortiert und die Anfrage scheitern.
+              "fall_versionen": "created_at,id",
           }
 
           for table in tables:

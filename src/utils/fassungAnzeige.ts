@@ -93,6 +93,12 @@ export type GezeichneteReihen = {
   daten: Record<string, number>[];
   achse: string;
   linien: string[];
+  /**
+   * Weitere Zeitangaben derselben Reihe, etwa das Alter neben dem Jahr. Sie
+   * gehoeren in die Tabelle, aber nicht ins Diagramm und schon gar nicht in
+   * eine Euro-Formatierung.
+   */
+  zeitspalten: string[];
 };
 
 /**
@@ -109,12 +115,18 @@ export function reihenLesen(reihen: unknown): GezeichneteReihen | null {
   const achse = schluessel.find((k) => ACHSEN_SCHLUESSEL.includes(k.toLowerCase()));
   if (!achse) return null;
 
-  const linien = schluessel.filter(
-    (k) => k !== achse && typeof (erste as Record<string, unknown>)[k] === 'number'
-  );
+  const istZahl = (k: string) => typeof (erste as Record<string, unknown>)[k] === 'number';
+  const istZeit = (k: string) => ACHSEN_SCHLUESSEL.includes(k.toLowerCase());
+
+  // Die Reihen fuehren haeufig Jahr UND Alter. Frueher wurde der zweite
+  // Zeitschluessel wie jeder andere Zahlenwert behandelt - also als Kurve
+  // gezeichnet und als Euro-Betrag gesetzt ("Alter: 68 EUR"). Zeitangaben
+  // sind deshalb von den Linien ausgenommen und stehen nur in der Tabelle.
+  const linien = schluessel.filter((k) => k !== achse && !istZeit(k) && istZahl(k));
+  const zeitspalten = schluessel.filter((k) => k !== achse && istZeit(k) && istZahl(k));
   if (linien.length === 0) return null;
 
-  return { daten: reihen as Record<string, number>[], achse, linien };
+  return { daten: reihen as Record<string, number>[], achse, linien, zeitspalten };
 }
 
 /** Zahlenwerte aus `results`, ohne die Felder des Modellstempels. */

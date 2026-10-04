@@ -20,6 +20,7 @@ import {
 import { looksLikeName } from "@/utils/nameDetection";
 
 import { berechneRentenluecke } from "@/lib/finance/rentenluecke";
+import { baueRentenlueckeReihen } from "@/lib/finance/rentenlueckeReihen";
 import { modellStempel } from "@/lib/finance/modell";
 
 const DRAFT_KEY = "fv_pensiongap_draft_v1";
@@ -118,6 +119,10 @@ export default function PensionGapCalculator() {
         name: formData.name || "Rentenlücke",
         form: formData as unknown as Record<string, unknown>,
         results: results as unknown as Record<string, unknown>,
+        // Audit O08: dieselbe Reihe, die die Detailseite zeichnet. Ist die
+        // Lücke bereits gedeckt, gibt es keinen Sparplan und damit auch
+        // keine Reihe - dann bleibt das Feld leer.
+        reihen: baueRentenlueckeReihen(newCalc),
       });
       incrementCalculationCount();
       navigate(createPageUrl("PensionGapDetail") + `?id=${newCalc.id}`);
