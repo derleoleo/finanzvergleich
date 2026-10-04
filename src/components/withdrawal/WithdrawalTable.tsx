@@ -115,7 +115,9 @@ export default function WithdrawalTable({ data, isDetailMode, onSpecialWithdrawa
                       {formatCurrency(rowData.startCapital)}
                     </TableCell>
                     <TableCell className="text-right font-medium text-red-600">
-                      {isDetailMode && rowData.year > 0 && !rowData.isLastYear && !forPrint ? (
+                      {isDetailMode &&
+                      !forPrint &&
+                      !(rowData.isLastYear && komplettEntnahmeAmEnde) ? (
                         <Input
                           type="number"
                           defaultValue={rowData.withdrawal}
@@ -168,6 +170,12 @@ export default function WithdrawalTable({ data, isDetailMode, onSpecialWithdrawa
               <div className="w-3 h-3 bg-blue-50 border border-blue-200 rounded"></div>
               <span>Erstes Planjahr</span>
             </div>
+            {isDetailMode && komplettEntnahmeAmEnde && (
+              <div className="pl-5">
+                Im letzten Planjahr ist die Entnahme nicht einstellbar – dort wird das
+                gesamte Restkapital ausgezahlt.
+              </div>
+            )}
           </div>
         )}
       </CardContent>

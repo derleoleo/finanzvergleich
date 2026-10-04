@@ -6,6 +6,9 @@
 // - Die Komplettentnahme im letzten Jahr ist eine Option, kein Zwang. Sonst
 //   erscheint am Ende eine Einmalzahlung, die niemand geplant hat.
 // - Verluste werden als negatives Wachstum ausgewiesen statt auf null gekappt.
+// - Startalter gleich Endalter ergibt eine Periode wie jede andere. Vorher
+//   wurde dort zwangsweise das gesamte Kapital ausgezahlt und damit die
+//   gewählte Entnahmeoption übergangen (Audit O-Nachlauf).
 //
 // Zeitkonvention (Audit N09): Gerechnet werden die Lebensjahre von `startAge`
 // bis einschließlich `endAge`. Bei 65 bis 70 sind das sechs Jahresperioden –
@@ -38,8 +41,8 @@ export type EntnahmeEingabe = {
   aufschubJahre?: number;
   /**
    * Restkapital im letzten Jahr komplett entnehmen (Vorgabe false).
-   * Bei gleichem Start- und Endalter gibt es nur eine Periode; dort wird
-   * unabhängig von dieser Option das gesamte Kapital ausgezahlt.
+   * Gilt auch dann, wenn der Plan nur eine Periode hat (Startalter gleich
+   * Endalter) – auch die kürzeste Laufzeit folgt der gewählten Option.
    */
   komplettentnahmeAmEnde?: boolean;
 };
@@ -59,21 +62,6 @@ export function baueEntnahmeplan({
   const rendite = (Number(annualReturnPercent) || 0) / 100;
   const aufschub = Math.max(0, Math.floor(aufschubJahre));
   const planJahre = Math.max(0, Math.round(endAge - startAge));
-
-  if (planJahre === 0) {
-    return [
-      {
-        year: 0,
-        age: startAge,
-        startCapital: Math.round(startCapital),
-        withdrawal: Math.round(startCapital),
-        growth: 0,
-        endCapital: 0,
-        totalWithdrawn: Math.round(startCapital),
-        isLastYear: true,
-      },
-    ];
-  }
 
   const zeilen: EntnahmeZeile[] = [];
   let kapital = startCapital;

@@ -59,6 +59,31 @@ describe("Entnahmeplan (F15)", () => {
   it("verkraftet Startalter gleich Endalter", () => {
     const plan = baueEntnahmeplan({ ...basis, endAge: 65 });
     expect(plan).toHaveLength(1);
+  });
+
+  it("erzwingt auch bei einer einzigen Periode keine Komplettentnahme", () => {
+    const plan = baueEntnahmeplan({ ...basis, endAge: 65 });
+    expect(plan[0].withdrawal).toBe(10_000);
+    expect(plan[0].endCapital).toBe(90_000); // Restkapital bleibt stehen
+  });
+
+  it("entnimmt bei einer einzigen Periode alles, wenn es gewünscht ist", () => {
+    const plan = baueEntnahmeplan({ ...basis, endAge: 65, komplettentnahmeAmEnde: true });
+    expect(plan[0].withdrawal).toBe(100_000);
     expect(plan[0].endCapital).toBe(0);
+  });
+
+  it("beachtet eine Sonderentnahme in der einzigen Periode", () => {
+    const plan = baueEntnahmeplan({
+      ...basis,
+      endAge: 65,
+      specialWithdrawals: { 0: 4_000 },
+    });
+    expect(plan[0].withdrawal).toBe(4_000);
+  });
+
+  it("beachtet einen Aufschub in der einzigen Periode", () => {
+    const plan = baueEntnahmeplan({ ...basis, endAge: 65, aufschubJahre: 1 });
+    expect(plan[0].withdrawal).toBe(0);
   });
 });

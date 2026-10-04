@@ -9,9 +9,16 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-03" as const;
+export const MODELL_VERSION = "2026-10-04" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-04",
+    aenderung:
+      "Entnahmeplan: Liegen Beginn und Ende auf demselben Alter, folgt die " +
+      "einzige Planperiode der gewählten Entnahme. Vorher wurde dort " +
+      "unabhängig von der Einstellung das gesamte Kapital ausgezahlt.",
+  },
   {
     version: "2026-10-03",
     aenderung:

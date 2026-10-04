@@ -203,6 +203,13 @@ export default function WithdrawalPlan() {
      specialWithdrawals, aufschubJahre, komplettEntnahme]
   );
 
+  const planJahre = Math.max(0, Math.round(endAge - startAge));
+  // Ein Aufschub über die gesamte Planlänge hinaus bedeutet: in diesem Plan
+  // wird nie etwas entnommen. Das muss dastehen, sonst sucht der Berater den
+  // Fehler in der Rendite.
+  const ohneEntnahme =
+    withdrawalData.length > 0 && withdrawalData.every((z) => z.withdrawal === 0);
+
   // Szenario B: gleiche Parameter, andere Entnahmehöhe (ohne Sonderentnahmen)
   const compareData = useMemo(
     () => compareEnabled
@@ -452,7 +459,14 @@ export default function WithdrawalPlan() {
                       <NumericInput
                         id="startAge"
                         value={startAge}
-                        onChange={(v) => setStartAge(v)}
+                        onChange={(v) => {
+                          // Ein Beginn hinter dem Ende hat den Plan auf eine
+                          // einzige Periode zusammenfallen lassen, ohne das zu
+                          // sagen. Das Ende zieht deshalb mit.
+                          const neuerBeginn = Math.round(v);
+                          setStartAge(neuerBeginn);
+                          if (neuerBeginn > endAge) setEndAge(neuerBeginn);
+                        }}
                         className="bg-slate-50 border-slate-200"
                       />
                     </div>
@@ -596,9 +610,11 @@ export default function WithdrawalPlan() {
                     <ul className="text-xs text-slate-600 space-y-0.5">
                       <li>
                         • <strong>Start:</strong>{" "}
-                        {aufschubJahre > 0
-                          ? `erste Entnahme nach ${aufschubJahre} Jahr${aufschubJahre === 1 ? "" : "en"}, bis dahin wächst das Kapital`
-                          : `Entnahme ab Alter ${startAge}`}
+                        {aufschubJahre > planJahre
+                          ? `der Aufschub von ${aufschubJahre} Jahren reicht über das Planende hinaus – in diesem Plan wird nichts entnommen`
+                          : aufschubJahre > 0
+                            ? `erste Entnahme nach ${aufschubJahre} Jahr${aufschubJahre === 1 ? "" : "en"}, bis dahin wächst das Kapital`
+                            : `Entnahme ab Alter ${startAge}`}
                       </li>
                       <li>• <strong>Je Jahr:</strong> Entnahme zu Jahresbeginn, danach Rendite auf den Rest (Verluste werden negativ ausgewiesen)</li>
                       <li>
@@ -607,6 +623,9 @@ export default function WithdrawalPlan() {
                         {komplettEntnahme
                           ? "Restkapital wird vollständig entnommen"
                           : "Restkapital bleibt stehen"}
+                        {planJahre === 0 && (
+                          <> (Beginn und Ende liegen gleich – der Plan hat eine Periode)</>
+                        )}
                       </li>
                       <li>• Steuern auf Entnahmen sind nicht enthalten.</li>
                     </ul>
@@ -632,6 +651,18 @@ export default function WithdrawalPlan() {
 
             {/* Results */}
             <div>
+              {ohneEntnahme && startCapital !== 0 && (
+                <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-sm text-amber-900">
+                    <strong>In diesem Plan wird nichts entnommen.</strong>{" "}
+                    {aufschubJahre > planJahre
+                      ? `Der Aufschub von ${aufschubJahre} Jahren reicht über das Planende hinaus.`
+                      : "Die eingestellte Entnahme beträgt null."}{" "}
+                    Das Kapital wächst nur weiter.
+                  </div>
+                </div>
+              )}
               {startCapital === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 text-center">
                   <AlertCircle className="w-12 h-12 text-slate-300 mb-4" />
