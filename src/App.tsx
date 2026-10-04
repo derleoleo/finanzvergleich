@@ -29,6 +29,7 @@ const CalculatorDetail        = lazy(() => import("@/pages/CalculatorDetail"));
 const CalculatorCostsDetail   = lazy(() => import("@/pages/CalculatorCostsDetail"));
 const WithdrawalPlan          = lazy(() => import("@/pages/WithdrawalPlan"));
 const WithdrawalPlanDetail    = lazy(() => import("@/pages/WithdrawalPlanDetail"));
+const FassungAnsicht          = lazy(() => import("@/pages/FassungAnsicht"));
 const AllResults              = lazy(() => import("@/pages/AllResults"));
 const SinglePaymentCalculator = lazy(() => import("@/pages/SinglePaymentCalculator"));
 const SinglePaymentDetail     = lazy(() => import("@/pages/SinglePaymentDetail"));
@@ -250,6 +251,16 @@ export default function App() {
               </PageShell>
             }
           />
+          {/* Gespeicherte Fassung – zeigt nur Festgehaltenes, rechnet nichts */}
+          <Route
+            path="/fassung"
+            element={
+              <PageShell>
+                <FassungAnsicht />
+              </PageShell>
+            }
+          />
+
           <Route
             path="/withdrawal-plan/detail"
             element={

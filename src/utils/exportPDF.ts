@@ -14,7 +14,11 @@ const MARKE_WEISS = `<svg viewBox="0 0 48 48" width="28" height="28" fill="white
   <path d="M33.1 30 H46.5 A6.7 5 0 0 1 33.1 30 Z" stroke="none"/>
 </svg>`;
 
-function buildProfileHeader(profile: UserProfileData, title: string): HTMLElement {
+function buildProfileHeader(
+  profile: UserProfileData,
+  title: string,
+  untertitel?: string
+): HTMLElement {
   const el = document.createElement("div");
   el.style.cssText = [
     "background:#1e293b",
@@ -40,6 +44,11 @@ function buildProfileHeader(profile: UserProfileData, title: string): HTMLElemen
     <div>
       <div style="display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;margin-bottom:4px;">${MARKE_WEISS}Vorsorgewaage</div>
       <div style="font-size:13px;color:#94a3b8;">${title}</div>
+      ${
+        untertitel
+          ? `<div style="font-size:11px;color:#64748b;margin-top:2px;">${untertitel}</div>`
+          : ""
+      }
     </div>
     <div style="text-align:right;font-size:12px;color:#cbd5e1;line-height:1.8;">
       ${lines.join("<br>")}
@@ -92,7 +101,9 @@ export async function exportSections(
   contentId: string,
   selectedSectionIds: string[],
   filename: string,
-  title: string
+  title: string,
+  /** Zweite Kopfzeile, z. B. Fassung, Bewertungsdatum und Modellstand. */
+  untertitel?: string
 ): Promise<void> {
   // Die meisten Seiten markieren die Wurzel mit id="pdf-content", zwei mit
   // data-pdf-root. Beides akzeptieren – sonst bricht der Export auf genau
@@ -106,7 +117,7 @@ export async function exportSections(
   }
 
   const profile    = await UserProfile.load();
-  const header     = buildProfileHeader(profile, title);
+  const header     = buildProfileHeader(profile, title, untertitel);
   const disclaimer = buildDisclaimer();
 
   // Alle Sektionen: ausgewählte zeigen, nicht-ausgewählte verstecken

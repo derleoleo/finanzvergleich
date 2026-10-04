@@ -214,8 +214,27 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
       timeout: 20_000,
     });
 
+    // --- Die Fassung vollständig öffnen (Audit O08) ----------------------
+    // Das PDF muss die gespeicherte Fassung zeigen, nicht eine Neuberechnung.
+    // Die Fassungsansicht rechnet nichts; nur deshalb kann der Export, der das
+    // Fenster rastert, überhaupt eine Fassung wiedergeben.
+    // Nach dem Wiederöffnen der Seite ist der Verlauf zugeklappt
+    const verlaufNeu = page.locator('[data-pdf-section="versionen"]');
+    await verlaufNeu.getByRole("button", { name: /Fassung 1/ }).click();
+    await verlaufNeu.getByRole("link", { name: /Vollständig öffnen/ }).click();
+    await page.waitForURL(/\/fassung/, { timeout: 30_000 });
+    await expect(page.getByText(`Fassung 1 · gespeichert am`)).toBeVisible({
+      timeout: 20_000,
+    });
+    await expect(
+      page.getByText("Diese Seite zeigt ausschließlich die Werte")
+    ).toBeVisible();
+    // Der Modellstand gehört sichtbar dazu – sonst ist die Fassung nicht
+    // einzuordnen.
+    await expect(page.getByText(/Modell \d{4}-\d{2}-\d{2}/)).toBeVisible();
+
     // --- PDF-Export ----------------------------------------------------
-    await page.getByRole("button", { name: /PDF/i }).first().click();
+    await page.getByRole("button", { name: /^PDF$/ }).first().click();
     const erstellen = page.getByRole("button", { name: "PDF erstellen" });
     await expect(erstellen).toBeVisible({ timeout: 10_000 });
     // Der Export öffnet das fertige PDF in einem neuen Tab und lädt es nur

@@ -22,6 +22,16 @@ import {
   type FallTabelle,
   type FallVersionModel,
 } from '@/entities/FallVersion';
+import {
+  beschriftung,
+  istProzent,
+  kennzahlenLesen,
+  reihenLesen,
+  sortiereKennzahlen,
+  zeitpunkt,
+} from '@/utils/fassungAnzeige';
+import { createPageUrl } from '@/utils';
+import { Link } from 'react-router-dom';
 import { stammtAusAelteremModell, type ModellStempel } from '@/lib/finance/modell';
 
 type Props = {
@@ -32,84 +42,6 @@ type Props = {
 };
 
 const LINIEN_FARBEN = ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#94a3b8'];
-
-/** Schlüssel, die als Achse taugen – sie beschreiben den Zeitpunkt, nicht den Wert. */
-const ACHSEN_SCHLUESSEL = ['jahr', 'year', 'alter', 'age', 'monat', 'month'];
-
-/**
- * Die Reihen sehen je Rechner anders aus. Statt sieben Spezialfälle zu pflegen
- * wird die Form gelesen: der erste Zeitschlüssel ist die Achse, jeder weitere
- * Zahlenwert eine Linie.
- */
-function reihenZeichnen(reihen: unknown): {
-  daten: Record<string, number>[];
-  achse: string;
-  linien: string[];
-} | null {
-  if (!Array.isArray(reihen) || reihen.length === 0) return null;
-  const erste = reihen[0];
-  if (typeof erste !== 'object' || erste === null) return null;
-
-  const schluessel = Object.keys(erste as Record<string, unknown>);
-  const achse = schluessel.find((k) => ACHSEN_SCHLUESSEL.includes(k.toLowerCase()));
-  if (!achse) return null;
-
-  const linien = schluessel.filter(
-    (k) => k !== achse && typeof (erste as Record<string, unknown>)[k] === 'number'
-  );
-  if (linien.length === 0) return null;
-
-  return { daten: reihen as Record<string, number>[], achse, linien };
-}
-
-/**
- * Die gespeicherten Schlüssel sind Datenbanknamen ohne Umlaute. Generisch
- * umgeformt ergäbe `summe_foerderung` „Summe foerderung" – auf einer Unterlage,
- * die beim Kunden landet, liest sich das schlampig. Deshalb die gängigen
- * Schlüssel ausgeschrieben, alles Übrige über die allgemeine Umformung.
- */
-const BESCHRIFTUNGEN: Record<string, string> = {
-  endkapital_nach_steuer: 'Endkapital nach Steuern',
-  vergleich_nach_steuer: 'Vergleich nach Steuern',
-  kombination_nach_steuer: 'Kombination nach Steuern',
-  summe_foerderung: 'Förderung gesamt',
-  aufteilung_monatlich: 'Aufteilung monatlich',
-  life_insurance_net: 'Lebensversicherung netto',
-  life_insurance_gross: 'Lebensversicherung brutto',
-  depot_net: 'Depot netto',
-  depot_gross: 'Depot brutto',
-  lv_net: 'Lebensversicherung netto',
-  fund_net: 'Fondsdepot netto',
-  total_contributions: 'Eingezahlt gesamt',
-  li_total_costs: 'Kosten Lebensversicherung',
-  depot_total_costs: 'Kosten Depot',
-  li_tax: 'Steuer Lebensversicherung',
-  depot_tax: 'Steuer Depot',
-  start_capital: 'Startkapital',
-  annual_withdrawal: 'Entnahme pro Jahr',
-  end_capital: 'Restkapital am Ende',
-  total_withdrawn: 'Gesamtentnahme',
-  brutto_net: 'Bruttopolice nach Steuern',
-  netto_net: 'Nettopolice nach Steuern',
-  vorteil_nettopolice: 'Unterschied',
-  // Reihen
-  avd: 'Altersvorsorgedepot',
-  depot: 'Depot',
-  lv: 'Lebensversicherung',
-  eingezahlt: 'Eingezahlt',
-  kombination: 'Kombination',
-};
-
-/** `kapitalGesamt` → `Kapital gesamt`, damit die Legende lesbar bleibt. */
-function beschriftung(schluessel: string): string {
-  const bekannt = BESCHRIFTUNGEN[schluessel];
-  if (bekannt) return bekannt;
-  const mitLuecken = schluessel
-    .replace(/_/g, ' ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .toLowerCase();
-  return mitLuecken.charAt(0).toUpperCase() + mitLuecken.slice(1);
-}
 
 export default function Versionsverlauf({ fallTabelle, fallId, neuLadenAb = 0 }: Props) {
   const [versionen, setVersionen] = useState<FallVersionModel[]>([]);
@@ -132,23 +64,9 @@ export default function Versionsverlauf({ fallTabelle, fallId, neuLadenAb = 0 }:
 
   if (!fallId || versionen.length === 0) return null;
 
-  const datum = (iso: string) =>
-    new Date(iso).toLocaleString('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
-  const kennzahlen = (v: FallVersionModel) =>
-    Object.entries(v.results).filter(
-      ([schluessel, wert]) =>
-        typeof wert === 'number' &&
-        !['modell_version', 'bewertet_am', 'rechtsstand'].includes(schluessel)
-    ) as [string, number][];
-
-  const gezeichnet = offen ? reihenZeichnen(offen.reihen) : null;
+  const datum = zeitpunkt;
+  const kennzahlen = (v: FallVersionModel) => sortiereKennzahlen(kennzahlenLesen(v.results));
+  const gezeichnet = offen ? reihenLesen(offen.reihen) : null;
 
   return (
     <div
@@ -201,9 +119,18 @@ export default function Versionsverlauf({ fallTabelle, fallId, neuLadenAb = 0 }:
                 )}
               </div>
             </div>
-            <Button size="sm" variant="ghost" onClick={() => setOffen(null)} data-pdf-hide>
-              <X className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-2 shrink-0" data-pdf-hide>
+              {/* Die vollständige Ansicht rechnet nichts und ist deshalb die
+                  Grundlage für ein PDF, das genau diese Fassung zeigt. */}
+              <Link to={`${createPageUrl('FassungAnsicht')}?id=${offen.id}`}>
+                <Button size="sm" variant="outline">
+                  Vollständig öffnen
+                </Button>
+              </Link>
+              <Button size="sm" variant="ghost" onClick={() => setOffen(null)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
 
           {stammtAusAelteremModell(offen.results as Partial<ModellStempel>) && (
@@ -218,7 +145,12 @@ export default function Versionsverlauf({ fallTabelle, fallId, neuLadenAb = 0 }:
               <div key={schluessel} className="rounded-lg border border-slate-200 p-3">
                 <div className="text-xs text-slate-500">{beschriftung(schluessel)}</div>
                 <div className="text-base font-bold text-slate-900">
-                  {formatCurrency(wert)}
+                  {istProzent(schluessel)
+                    ? `${wert.toLocaleString('de-DE', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })} %`
+                    : formatCurrency(wert)}
                 </div>
               </div>
             ))}
