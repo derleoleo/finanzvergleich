@@ -161,9 +161,11 @@ export default function Datenschutz() {
               Nutzungsprofil legen wir nicht an. Ihre IP-Adresse verarbeitet Sentry technisch
               bedingt beim Empfang der Meldung; eine Speicherung zu Ihrer Person erfolgt
               seitens unserer Konfiguration nicht.
-              Mit Sentry besteht ein Auftragsverarbeitungsvertrag gemäß Art. 28 DSGVO;
-              Datenübermittlungen in die USA erfolgen auf Grundlage der
-              EU-Standardvertragsklauseln (Art. 46 DSGVO).
+              Unsere Sentry-Organisation ist auf die Datenregion Europäische Union
+              eingestellt; die Fehlermeldungen werden in Frankfurt am Main gespeichert.
+              Mit Sentry besteht ein Auftragsverarbeitungsvertrag gemäß Art. 28 DSGVO.
+              Soweit im Rahmen von Support oder Wartung ein Zugriff aus den USA erfolgt,
+              stützt sich dieser auf die EU-Standardvertragsklauseln (Art. 46 DSGVO).
             </p>
             <p className="mt-2 text-slate-500">
               Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem

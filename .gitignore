@@ -33,6 +33,9 @@ dist-ssr
 
 # Repo-Fremdkörper (lokale Arbeitsdaten, nicht Teil der App)
 /finanzvergleich-local/
+
+# Produktspezifikationen (unversioniert, liegen nur lokal)
+/files/
 /my-video/
 /myvideo/
 /entnahmeplan-3.pdf
