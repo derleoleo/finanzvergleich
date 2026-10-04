@@ -1,6 +1,16 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 
+/**
+ * Meldungen für den Nutzer. Die Datenbank gibt nur ein Kürzel zurück; der
+ * Wortlaut gehört in die Anwendung.
+ */
+const MELDUNGEN: Record<string, string> = {
+  bereits_verwendet: "Dieser Code wurde bereits verwendet",
+  abo_aktiv: "Sie haben bereits ein aktives Abo.",
+  ungueltig: "Ungültiger Code",
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
@@ -22,7 +32,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const normalizedCode = code.trim().toUpperCase();
 
-  // Gültige Codes aus Env laden
+  // Welche Codes gelten, weiß nur die Anwendung – die Datenbank prüft das
+  // nicht. Deshalb steht diese Prüfung vor dem Aufruf und die Funktion ist
+  // für angemeldete Nutzer gesperrt (siehe Migration).
   const validCodes = (process.env.TEST_CODES ?? "")
     .split(",")
     .map((c) => c.trim().toUpperCase())
@@ -37,83 +49,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Reihenfolge ist wichtig: Erst alle Vorbedingungen prüfen, dann den Code
-  // als verbraucht markieren. Sonst wäre der Code weg, obwohl die
-  // Freischaltung gar nicht stattfinden durfte.
-  const { data: existing } = await supabaseAdmin
-    .from("redeemed_codes")
-    .select("id")
-    .eq("code", normalizedCode)
-    .not("user_id", "is", null)
-    .maybeSingle();
-
-  if (existing) {
-    return res.status(400).json({ error: "Dieser Code wurde bereits verwendet" });
-  }
-
-  // Ein laufendes bezahltes Abo darf ein Testcode nicht überschreiben
-  const { data: bestehend } = await supabaseAdmin
-    .from("subscriptions")
-    .select("status, stripe_subscription_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (bestehend?.stripe_subscription_id && bestehend.status === "active") {
-    return res.status(400).json({ error: "Sie haben bereits ein aktives Abo." });
-  }
-
-  // Code als eingelöst markieren
-  const { error: insertError } = await supabaseAdmin.from("redeemed_codes").insert({
-    code: normalizedCode,
-    user_id: user.id,
-    redeemed_at: new Date().toISOString(),
+  // Prüfen, beanspruchen und freischalten in einer Transaktion. Vorher waren
+  // das vier Anfragen: Dazwischen konnte ein zweiter Aufruf denselben Code
+  // einlösen, und schlug die Freischaltung fehl, musste der Code von Hand
+  // zurückgenommen werden – ein Weg, der selbst fehlschlagen konnte.
+  const { data, error } = await supabaseAdmin.rpc("code_einloesen", {
+    p_code: normalizedCode,
+    p_user: user.id,
   });
 
-  if (insertError) {
-    // Race-condition: anderer Request hat den Code gerade eingelöst
-    if (insertError.code === "23505") {
-      return res.status(400).json({ error: "Dieser Code wurde bereits verwendet" });
-    }
-    console.error("redeem-code insert error:", insertError);
-    return res.status(500).json({ error: "Interner Fehler" });
-  }
-
-  // Subscription auf Premium (30 Tage) setzen
-  const trialEnd = new Date();
-  trialEnd.setDate(trialEnd.getDate() + 30);
-
-  const { error: upsertError } = await supabaseAdmin.from("subscriptions").upsert(
-    {
-      user_id: user.id,
-      plan: "business",
-      status: "trialing",
-      current_period_end: trialEnd.toISOString(),
-      cancel_at_period_end: false,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" }
-  );
-
-  if (upsertError) {
-    console.error("redeem-code: Freischaltung fehlgeschlagen", upsertError);
-    // Den verbrauchten Code wieder freigeben, sonst ist er für niemanden mehr
-    // nutzbar, obwohl nichts freigeschaltet wurde.
-    const { error: rollbackError } = await supabaseAdmin
-      .from("redeemed_codes")
-      .delete()
-      .eq("code", normalizedCode)
-      .eq("user_id", user.id);
-    if (rollbackError) {
-      console.error("redeem-code: Ruecknahme des Codes fehlgeschlagen", rollbackError);
-      return res.status(500).json({
-        error:
-          "Der Code wurde registriert, die Freischaltung schlug aber fehl. Bitte melden Sie sich bei info@vorsorgewaage.de.",
-      });
-    }
+  if (error) {
+    console.error("redeem-code: Einloesung fehlgeschlagen", error);
     return res.status(500).json({
       error: "Die Freischaltung schlug fehl. Bitte versuchen Sie es erneut.",
     });
   }
 
-  return res.status(200).json({ success: true });
+  const ergebnis = typeof data === "string" ? data : "";
+  if (ergebnis === "ok") return res.status(200).json({ success: true });
+
+  if (MELDUNGEN[ergebnis]) {
+    return res.status(400).json({ error: MELDUNGEN[ergebnis] });
+  }
+
+  // Unbekannte Antwort: nichts beschönigen, sondern melden – sonst sieht der
+  // Nutzer einen Erfolg, den es nicht gab.
+  console.error("redeem-code: unerwartete Antwort der Datenbank", { ergebnis });
+  return res.status(500).json({
+    error: "Die Freischaltung schlug fehl. Bitte versuchen Sie es erneut.",
+  });
 }

@@ -43,6 +43,11 @@ Alle acht Tabellen haben RLS aktiv. Nutzer sehen und schreiben nur Zeilen mit
 den Plan setzt nur der Stripe-Webhook über den Service-Role-Schlüssel.
 `redeemed_codes` hat RLS ohne Regeln, ist für Nutzer also komplett gesperrt.
 
+`redeemed_codes` ist seit `20261004120000_code_einloesung_atomar.sql` versioniert.
+Geschrieben wird dort nur über `code_einloesen()`; die Funktion ist ausdrücklich
+nur für `service_role` ausführbar, weil sie Premium freischaltet, ohne die
+Codeliste zu kennen – die steht in `TEST_CODES` und wird in der Anwendung geprüft.
+
 Offen war nur Kosmetik und der Nachweisschutz für Einwilligungen; beides
 behebt `migrations/20260928120000_rls_haerten.sql`.
 
