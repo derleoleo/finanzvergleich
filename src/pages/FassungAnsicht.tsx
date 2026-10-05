@@ -39,6 +39,7 @@ import { usePDFExport } from '@/utils/usePDFExport';
 import PDFSectionDialog from '@/components/pdf/PDFSectionDialog';
 import {
   beschriftung,
+  beschriftungZusammengesetzt,
   eingabenLesen,
   formatiereKennzahl,
   kennzahlenLesen,
@@ -220,7 +221,9 @@ export default function FassungAnsicht() {
                       key={schluessel}
                       className="flex items-baseline justify-between gap-4 border-b border-slate-100 py-1"
                     >
-                      <span className="text-sm text-slate-600">{beschriftung(schluessel)}</span>
+                      <span className="text-sm text-slate-600">
+                        {beschriftungZusammengesetzt(schluessel)}
+                      </span>
                       <span className="text-sm font-medium text-slate-900 text-right">{wert}</span>
                     </div>
                   ))}

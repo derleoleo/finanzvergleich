@@ -14,6 +14,15 @@ export type AvdResults = {
   kombination_nach_steuer?: number | null;
   aufteilung_monatlich?: number;
   zweitvertrag?: 'depot' | 'fonds_lv';
+  /** Aufteilungsvorschlaege zum Zeitpunkt der Berechnung (Audit B06). */
+  zulagenknick_monatlich?: number;
+  optimum_monatlich?: number;
+  optimum_vorteil?: number;
+  optimum_spanne_von?: number;
+  optimum_spanne_bis?: number;
+  optimum_toleranz?: number;
+  /** Wonach gesucht wurde - sonst ist der Vorschlag nicht einzuordnen. */
+  optimum_zielgroesse?: string;
   /** Auszahlphase – was am Ende monatlich fliesst (Audit A05). */
   auszahlform?: 'leibrente' | 'auszahlplan';
   monatsrente_brutto?: number;
@@ -24,6 +33,9 @@ export type AvdResults = {
   teilkapital_steuer?: number;
   /** Nur beim Auszahlplan (§ 1 Abs. 1 Nr. 4b AltZertG). */
   gesetzliche_mindestrate?: number;
+  /** Entnahme des freien Depots - unabhaengig vom gewaehlten Vergleichspartner. */
+  freies_depot_entnahme_netto?: number;
+  /** @deprecated Altbestand bis 2026-10-05; bedeutete dasselbe (Audit B05). */
   vergleich_monatsentnahme_netto?: number;
   modell_version?: string;
   bewertet_am?: string;

@@ -9,9 +9,17 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-05" as const;
+export const MODELL_VERSION = "2026-10-05b" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-05b",
+    aenderung:
+      "Altersvorsorgedepot: Die Entnahme des Vergleichs heißt jetzt nach ihrem " +
+      "Produkt (freies Depot) statt allgemein „Vergleich“. Gespeicherte " +
+      "Auswertungen tragen zusätzlich den Aufteilungsvorschlag samt Spanne, " +
+      "Toleranz und Zielgröße. Die Rechenwege bleiben unverändert.",
+  },
   {
     version: "2026-10-05",
     aenderung:

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  beschriftungZusammengesetzt,
   eingabenLesen,
   reihenGruppenLesen,
   einheitFuer,
@@ -137,7 +138,9 @@ describe('Eingaben einer gespeicherten Fassung', () => {
     expect(e.splitting).toBe('nein');
   });
 
-  it('laesst Leeres und Verschachteltes weg', () => {
+  it('laesst Leeres weg, schluesselt Verschachteltes aber auf', () => {
+    // Frueher fiel beides heraus. Damit fehlten gerade die Angaben, die das
+    // Ergebnis bestimmen (Audit B04); leere Felder bleiben weiterhin draußen.
     const k = eingabenLesen({
       leer: '',
       nichts: null,
@@ -146,7 +149,12 @@ describe('Eingaben einer gespeicherten Fassung', () => {
       bestandsvertrag: { kosten: 1 },
       beitrag: 80,
     }).map(([s]) => s);
-    expect(k).toEqual(['beitrag']);
+    expect(k).toContain('beitrag');
+    expect(k).toContain('fonds#1');
+    expect(k).toContain('bestandsvertrag.kosten');
+    expect(k).not.toContain('leer');
+    expect(k).not.toContain('nichts');
+    expect(k).not.toContain('fehlt');
   });
 
   it('setzt Jahreszahlen, Alter und Dezimalquoten richtig', () => {
@@ -182,6 +190,34 @@ describe('Eingaben einer gespeicherten Fassung', () => {
     expect(e.vergleichspartner).toBe('Fondspolice');
   });
 
+  it('schluesselt Fondslisten auf, statt sie wegzulassen (B04)', () => {
+    const e = eingabenLesen({
+      lv_funds: [
+        { allocation_eur: 100, ongoing_costs_percent: 0.2 },
+        { allocation_eur: 50, ongoing_costs_percent: 0.6 },
+      ],
+    });
+    expect(e).toHaveLength(2);
+    expect(beschriftungZusammengesetzt(e[0][0])).toBe('Fonds der Police 1');
+    expect(e[0][1]).toContain('Anteil 100 €');
+    expect(e[1][1]).toContain('laufende Kosten');
+  });
+
+  it('zeigt verschachtelte Bloecke mit ihrer Herkunft (B04)', () => {
+    const e = Object.fromEntries(
+      eingabenLesen({ fondsLv: { terPaJahr: 0.003, kostenart: 'prozent' } })
+    );
+    expect(e['fondsLv.terPaJahr']).toBe('0,30 %');
+    expect(e['fondsLv.kostenart']).toBe('Effektivkosten (%)');
+    expect(beschriftungZusammengesetzt('fondsLv.terPaJahr')).toContain('Fondspolice');
+  });
+
+  it('benennt Sonderentnahmen nach ihrem Planjahr (B04)', () => {
+    const e = eingabenLesen({ specialWithdrawals: { 3: 25000 } });
+    expect(e[0][1]).toBe('25.000 €');
+    expect(beschriftungZusammengesetzt(e[0][0])).toBe('Sonderentnahme, Jahr 3');
+  });
+
   it('verkraftet fehlende Eingaben', () => {
     expect(eingabenLesen(null)).toEqual([]);
     expect(eingabenLesen('kaputt')).toEqual([]);
@@ -198,6 +234,25 @@ describe('Kennzahlen einer gespeicherten Fassung', () => {
       alter_bei_auszahlung: 67,
     });
     expect(k.map(([s]) => s)).toEqual(['endkapital_nach_steuer']);
+  });
+
+  it('zeigt den Break-even-Status, nicht nur eine Zahl (B04)', () => {
+    // "nicht erreichbar" und "schon erreicht" bedeuten Gegenteiliges - als
+    // Objekt fiel beides durch den Filter und fehlte in der Fassung ganz.
+    const erreicht = Object.fromEntries(
+      kennzahlenLesen({ break_even: { art: 'unmoeglich', grund: 'schon_erreicht' } })
+    );
+    expect(erreicht.break_even_status).toBe('ohne Wertzuwachs erreicht');
+
+    const unmoeglich = Object.fromEntries(
+      kennzahlenLesen({ break_even: { art: 'unmoeglich', grund: 'zu_hoch' } })
+    );
+    expect(unmoeglich.break_even_status).toBe('rechnerisch nicht erreichbar');
+
+    const rendite = Object.fromEntries(
+      kennzahlenLesen({ break_even: { art: 'rendite', wertProzent: 4.2 } })
+    );
+    expect(rendite.break_even_rendite).toBe(4.2);
   });
 
   it('zeigt auch Textwerte, statt sie zu verschlucken', () => {

@@ -466,6 +466,24 @@ export default function AvdCalculator() {
             : Math.round(strategien.strategien[2].endkapitalNachSteuer),
           aufteilung_monatlich: strategien.aufteilungMonatlich,
           zweitvertrag: formData.zweitvertrag,
+          // Audit B06: Der Vorschlag gehoert in die Fassung, samt dem, worauf
+          // er beruht. Ohne Uebernahme liesse sich sonst spaeter nicht mehr
+          // ablesen, was dem Berater angezeigt wurde; nach Uebernahme fehlte
+          // die Begruendung. Gesucht wird das hoechste Endkapital nach Steuern
+          // bei gleichem Bruttobeitrag - nicht die beste Strategie bei
+          // gleichem Netto-Aufwand.
+          zulagenknick_monatlich: strategien.aufteilungspunkt.monatsbeitrag,
+          ...(strategien.optimum
+            ? {
+                optimum_monatlich: strategien.optimum.monatsbeitrag,
+                optimum_vorteil: Math.round(strategien.optimum.vorteilGegenVorschlag),
+                optimum_spanne_von: strategien.optimum.plateauVon,
+                optimum_spanne_bis: strategien.optimum.plateauBis,
+                optimum_toleranz: Math.round(strategien.optimum.plateauToleranz),
+                optimum_zielgroesse:
+                  'hoechstes Endkapital nach Steuern bei gleichem Bruttobeitrag',
+              }
+            : {}),
           // Was am Ende tatsaechlich ausgezahlt wird. Ohne diese Zahlen zeigte
           // die Fassung nur das Endkapital - die Rente, von der die Beratung
           // handelt, fehlte.
@@ -484,7 +502,12 @@ export default function AvdCalculator() {
               }
             : {}),
           // Die Gegenseite - sonst steht die Rente ohne Vergleich da.
-          vergleich_monatsentnahme_netto: Math.round(ergebnis.depot.monatsentnahmeNetto),
+          //
+          // Audit B05: Der Name muss das Produkt nennen. Diese Entnahme stammt
+          // immer aus der Depot-Auswertung, auch wenn als Vergleichspartner
+          // Fondspolice oder Riester gewaehlt ist. "vergleich_..." liess sich
+          // als Auszahlung des gewaehlten Partners lesen.
+          freies_depot_entnahme_netto: Math.round(ergebnis.depot.monatsentnahmeNetto),
           ...modellStempel(),
         },
       };

@@ -47,6 +47,7 @@ const BESCHRIFTUNGEN: Record<string, string> = {
   wechselkosten_gesamt: 'Wechselkosten gesamt',
   eingezahlt_bisher_gesamt: 'Bisher eingezahlt',
   break_even_rendite: 'Break-even-Rendite',
+  break_even_status: 'Break-even',
   // Auszahlphase des Altersvorsorgedepots
   auszahlform: 'Auszahlform',
   monatsrente_brutto: 'Monatsrente brutto',
@@ -56,7 +57,38 @@ const BESCHRIFTUNGEN: Record<string, string> = {
   teilkapital: 'Teilkapital',
   teilkapital_steuer: 'Steuer auf das Teilkapital',
   gesetzliche_mindestrate: 'Gesetzliche Mindestrate',
-  vergleich_monatsentnahme_netto: 'Vergleich: Entnahme netto',
+  freies_depot_entnahme_netto: 'Freies Depot: Entnahme netto',
+  lv_funds: 'Fonds der Police',
+  depot_funds: 'Fonds im Depot',
+  allocation_eur: 'Anteil',
+  ongoing_costs_percent: 'laufende Kosten',
+  initial_charge_percent: 'Ausgabeaufschlag',
+  fondsLv: 'Fondspolice',
+  riester: 'Riester-Bestandsvertrag',
+  bestandsvertrag: 'Bestandsvertrag',
+  specialWithdrawals: 'Sonderentnahme',
+  kostenart: 'Kostenangabe',
+  abschlusskostenGesamt: 'Abschlusskosten',
+  verwaltungProMonat: 'Verwaltung je Monat',
+  beitragspflEinnahmenVorjahr: 'Beitragspflichtige Einnahmen im Vorjahr',
+  kinderGeborenVor2008: 'Kinder vor 2008 geboren',
+  terPaJahr: 'Fondskosten (TER) p. a.',
+  effektivkostenPaJahr: 'Effektivkosten p. a.',
+  aktuellerVertragswert: 'Aktueller Vertragswert',
+  summeBeitraegeUndZulagenBisher: 'Bisher eingezahlt samt Zulagen',
+  garantiertesKapitalZuRentenbeginn: 'Garantiertes Kapital bei Rentenbeginn',
+  wechselgebuehr: 'Wechselgebühr',
+  ruhendStellenKostenProJahr: 'Kosten beim Ruhendstellen pro Jahr',
+  fruehesterZugriffAlter: 'Frühester Zugriff ab Alter',
+  zulagenknick_monatlich: 'Zulagenknick',
+  optimum_monatlich: 'Rechnerisch bester Aufteilungsbetrag',
+  optimum_vorteil: 'Vorteil gegenüber dem Zulagenknick',
+  optimum_spanne_von: 'Gleichwertig ab',
+  optimum_spanne_bis: 'Gleichwertig bis',
+  optimum_toleranz: 'Toleranz der Gleichwertigkeit',
+  optimum_zielgroesse: 'Gesucht wurde',
+  // Alter Feldname derselben Groesse - alte Fassungen bleiben lesbar
+  vergleich_monatsentnahme_netto: 'Freies Depot: Entnahme netto',
   vergleich_name: 'Vergleich mit',
   // Eingabefelder des Altersvorsorgedepots
   geburtsjahr: 'Geburtsjahr',
@@ -74,7 +106,6 @@ const BESCHRIFTUNGEN: Record<string, string> = {
   kirchensteuersatz: 'Kirchensteuersatz',
   soliBeruecksichtigen: 'Solidaritätszuschlag',
   steuersatzImAlter: 'Steuersatz im Alter',
-  effektivkostenPaJahr: 'Effektivkosten p. a.',
   fixkostenProJahr: 'Fixkosten pro Jahr',
   renditeBruttoPaJahr: 'Rendite brutto p. a.',
   teilkapitalAnteil: 'Teilkapitalanteil',
@@ -276,12 +307,34 @@ export function reihenLesen(eingabe: unknown): GezeichneteReihen | null {
 export function kennzahlenLesen(
   results: Record<string, unknown>
 ): [string, number | string][] {
-  return Object.entries(results).filter(
+  const eintraege = Object.entries(results).filter(
     ([schluessel, wert]) =>
       (typeof wert === 'number' || (typeof wert === 'string' && wert !== '')) &&
       !STEMPEL_FELDER.includes(schluessel) &&
       !DOPPELT.includes(schluessel)
   ) as [string, number | string][];
+
+  // Audit B04: Der Break-even ist kein blosser Zahlenwert, sondern
+  // unterscheidet zwei Randfaelle - "nicht erreichbar" und "schon erreicht"
+  // bedeuten Gegenteiliges. Als Objekt fiel er durch den Filter und fehlte
+  // in der Fassung ganz.
+  const be = results.break_even as
+    | { art: 'rendite'; wertProzent: number }
+    | { art: 'unmoeglich'; grund: string }
+    | undefined;
+  if (be && typeof be === 'object') {
+    if (be.art === 'rendite' && typeof be.wertProzent === 'number') {
+      eintraege.push(['break_even_rendite', be.wertProzent]);
+    } else if (be.art === 'unmoeglich') {
+      eintraege.push([
+        'break_even_status',
+        be.grund === 'schon_erreicht'
+          ? 'ohne Wertzuwachs erreicht'
+          : 'rechnerisch nicht erreichbar',
+      ]);
+    }
+  }
+  return eintraege;
 }
 
 /**
@@ -337,6 +390,7 @@ const EINHEITEN: Record<string, Einheit> = {
   beitragsjahrStart: 'jahreszahl',
   // Altersangaben des AVD-Moduls
   auszahlungsbeginnAlter: 'alter',
+  fruehesterZugriffAlter: 'alter',
   auszahlplanEndalter: 'alter',
   alterBeiAuszahlung: 'alter',
   alter_heute: 'alter',
@@ -430,6 +484,7 @@ const VORNE = [
   'total_contributions',
   'monatsrente_netto',
   'monatsrente_brutto',
+  'freies_depot_entnahme_netto',
   'vergleich_monatsentnahme_netto',
   'teilkapital',
 ];
@@ -483,24 +538,84 @@ export function wertText(wert: string): string {
  * Ohne sie zeigt die Fassung ein Ergebnis, aber nicht, womit gerechnet
  * wurde - und genau das macht einen Beratungsstand nachvollziehbar.
  *
- * Verschachteltes (Fondslisten, Bestandsvertraege) bleibt aussen vor: Es
- * sinnvoll darzustellen setzt Kenntnis des jeweiligen Rechners voraus, und
- * eine rohe JSON-Zeile vor einem Kunden waere schlimmer als nichts.
+ * Verschachteltes wurde zunaechst ausgelassen. Damit fehlten aber gerade die
+ * Angaben, die das Ergebnis bestimmen: Fondslisten mit ihren Kosten, die
+ * Parameter der Fondspolice und des Riester-Bestandsvertrags, Sonderentnahmen
+ * (Audit B04). Sie werden jetzt eine Ebene tief aufgeschluesselt - nicht als
+ * rohes JSON, sondern mit den Beschriftungen und Einheiten der einzelnen
+ * Felder.
  */
 export function eingabenLesen(form: unknown): [string, string][] {
   if (!form || typeof form !== 'object') return [];
   const eintraege: [string, string][] = [];
+
+  const einfach = (schluessel: string, wert: unknown): string | null => {
+    if (wert === null || wert === undefined || wert === '') return null;
+    if (typeof wert === 'boolean') return wert ? 'ja' : 'nein';
+    if (typeof wert === 'number') return formatiereKennzahl(schluessel, wert);
+    if (typeof wert === 'string') return wertText(wert);
+    return null;
+  };
+
+  /** Ein verschachteltes Objekt in einer Zeile: "Beitrag 100 €, TER 0,20 %". */
+  const zusammenfassen = (objekt: Record<string, unknown>): string =>
+    Object.entries(objekt)
+      .map(([k, v]) => {
+        const text = einfach(k, v);
+        return text === null ? null : `${beschriftung(k)} ${text}`;
+      })
+      .filter((x): x is string => x !== null)
+      .join(', ');
+
   for (const [schluessel, wert] of Object.entries(form as Record<string, unknown>)) {
-    if (wert === null || wert === undefined || wert === '') continue;
-    if (typeof wert === 'boolean') {
-      eintraege.push([schluessel, wert ? 'ja' : 'nein']);
-    } else if (typeof wert === 'number') {
-      eintraege.push([schluessel, formatiereKennzahl(schluessel, wert)]);
-    } else if (typeof wert === 'string') {
-      eintraege.push([schluessel, wertText(wert)]);
+    const direkt = einfach(schluessel, wert);
+    if (direkt !== null) {
+      eintraege.push([schluessel, direkt]);
+      continue;
+    }
+    if (Array.isArray(wert)) {
+      // Fondslisten: je Fonds eine Zeile, durchnummeriert
+      wert.forEach((eintrag, i) => {
+        if (eintrag && typeof eintrag === 'object') {
+          const text = zusammenfassen(eintrag as Record<string, unknown>);
+          if (text) eintraege.push([`${schluessel}#${i + 1}`, text]);
+        } else {
+          const text = einfach(schluessel, eintrag);
+          if (text !== null) eintraege.push([`${schluessel}#${i + 1}`, text]);
+        }
+      });
+      continue;
+    }
+    if (wert && typeof wert === 'object') {
+      // Verschachtelte Blöcke (Fondspolice, Riester, Sonderentnahmen): eine
+      // Ebene tief, jedes Feld mit eigener Beschriftung und Einheit.
+      for (const [unter, uwert] of Object.entries(wert as Record<string, unknown>)) {
+        const text = einfach(unter, uwert);
+        if (text !== null) eintraege.push([`${schluessel}.${unter}`, text]);
+      }
     }
   }
-  return eintraege.sort((a, b) => beschriftung(a[0]).localeCompare(beschriftung(b[0]), 'de'));
+  return eintraege.sort((a, b) =>
+    beschriftungZusammengesetzt(a[0]).localeCompare(beschriftungZusammengesetzt(b[0]), 'de')
+  );
+}
+
+/**
+ * Beschriftung eines zusammengesetzten Schluessels: `lv_funds#2` wird zu
+ * "Fonds der Police 2", `fondsLv.terPaJahr` zu "Fondspolice · TER p. a.".
+ */
+export function beschriftungZusammengesetzt(schluessel: string): string {
+  const nummer = schluessel.match(/^(.*)#(\d+)$/);
+  if (nummer) return `${beschriftung(nummer[1])} ${nummer[2]}`;
+  const punkt = schluessel.indexOf('.');
+  if (punkt > 0) {
+    const links = schluessel.slice(0, punkt);
+    const rechts = schluessel.slice(punkt + 1);
+    // Sonderentnahmen sind nach Planjahr abgelegt
+    if (/^\d+$/.test(rechts)) return `${beschriftung(links)}, Jahr ${rechts}`;
+    return `${beschriftung(links)} · ${beschriftung(rechts)}`;
+  }
+  return beschriftung(schluessel);
 }
 
 /** Datum und Uhrzeit, wie sie in der Oberfläche erscheinen sollen. */
