@@ -9,9 +9,17 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-04" as const;
+export const MODELL_VERSION = "2026-10-05" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-05",
+    aenderung:
+      "Altersvorsorgedepot: Gespeicherte Auswertungen tragen zusätzlich die " +
+      "Ergebnisse der Auszahlphase (Monatsrente brutto und netto, Steuer und " +
+      "KV/PV je Monat, Teilkapital samt Steuer, gesetzliche Mindestrate) sowie " +
+      "die Verläufe der drei Strategien. Die Rechenwege bleiben unverändert.",
+  },
   {
     version: "2026-10-04",
     aenderung:

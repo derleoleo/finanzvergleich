@@ -466,6 +466,25 @@ export default function AvdCalculator() {
             : Math.round(strategien.strategien[2].endkapitalNachSteuer),
           aufteilung_monatlich: strategien.aufteilungMonatlich,
           zweitvertrag: formData.zweitvertrag,
+          // Was am Ende tatsaechlich ausgezahlt wird. Ohne diese Zahlen zeigte
+          // die Fassung nur das Endkapital - die Rente, von der die Beratung
+          // handelt, fehlte.
+          auszahlform: ergebnis.auszahlung.form,
+          monatsrente_brutto: Math.round(ergebnis.auszahlung.monatsrenteBrutto),
+          monatsrente_netto: Math.round(ergebnis.auszahlung.monatsrenteNetto),
+          auszahlung_steuer_monat: Math.round(ergebnis.auszahlung.steuerProMonat),
+          auszahlung_kv_monat: Math.round(ergebnis.auszahlung.kvBeitrag),
+          teilkapital: Math.round(ergebnis.auszahlung.teilkapital),
+          teilkapital_steuer: Math.round(ergebnis.auszahlung.teilkapitalSteuer),
+          ...(ergebnis.auszahlung.gesetzlicheMindestrate !== undefined
+            ? {
+                gesetzliche_mindestrate: Math.round(
+                  ergebnis.auszahlung.gesetzlicheMindestrate
+                ),
+              }
+            : {}),
+          // Die Gegenseite - sonst steht die Rente ohne Vergleich da.
+          vergleich_monatsentnahme_netto: Math.round(ergebnis.depot.monatsentnahmeNetto),
           ...modellStempel(),
         },
       };

@@ -47,6 +47,17 @@ const BESCHRIFTUNGEN: Record<string, string> = {
   wechselkosten_gesamt: 'Wechselkosten gesamt',
   eingezahlt_bisher_gesamt: 'Bisher eingezahlt',
   break_even_rendite: 'Break-even-Rendite',
+  // Auszahlphase des Altersvorsorgedepots
+  auszahlform: 'Auszahlform',
+  monatsrente_brutto: 'Monatsrente brutto',
+  monatsrente_netto: 'Monatsrente netto',
+  auszahlung_steuer_monat: 'Steuer je Monat',
+  auszahlung_kv_monat: 'KV/PV je Monat',
+  teilkapital: 'Teilkapital',
+  teilkapital_steuer: 'Steuer auf das Teilkapital',
+  gesetzliche_mindestrate: 'Gesetzliche Mindestrate',
+  vergleich_monatsentnahme_netto: 'Vergleich: Entnahme netto',
+  vergleich_name: 'Vergleich mit',
   // Eingabefelder des Altersvorsorgedepots
   geburtsjahr: 'Geburtsjahr',
   beitragsjahrStart: 'Erstes Beitragsjahr',
@@ -66,7 +77,6 @@ const BESCHRIFTUNGEN: Record<string, string> = {
   effektivkostenPaJahr: 'Effektivkosten p. a.',
   fixkostenProJahr: 'Fixkosten pro Jahr',
   renditeBruttoPaJahr: 'Rendite brutto p. a.',
-  auszahlform: 'Auszahlform',
   teilkapitalAnteil: 'Teilkapitalanteil',
   rentenfaktorProZehntausend: 'Rentenfaktor je 10.000 €',
   kvStatusImAlter: 'Krankenversicherung im Alter',
@@ -263,13 +273,15 @@ export function reihenLesen(eingabe: unknown): GezeichneteReihen | null {
 }
 
 /** Zahlenwerte aus `results`, ohne die Felder des Modellstempels. */
-export function kennzahlenLesen(results: Record<string, unknown>): [string, number][] {
+export function kennzahlenLesen(
+  results: Record<string, unknown>
+): [string, number | string][] {
   return Object.entries(results).filter(
     ([schluessel, wert]) =>
-      typeof wert === 'number' &&
+      (typeof wert === 'number' || (typeof wert === 'string' && wert !== '')) &&
       !STEMPEL_FELDER.includes(schluessel) &&
       !DOPPELT.includes(schluessel)
-  ) as [string, number][];
+  ) as [string, number | string][];
 }
 
 /**
@@ -371,7 +383,10 @@ const zahl = (wert: number, nachkomma = 0) =>
  * Fassungsansicht und Verlaufsfeld, sonst steht dieselbe Zahl an zwei Orten
  * verschieden da.
  */
-export function formatiereKennzahl(schluessel: string, wert: number): string {
+export function formatiereKennzahl(schluessel: string, wert: number | string): string {
+  // Textwerte sind Auswahlen, keine Betraege - etwa der Name des
+  // Vergleichspartners. Der lag bisher im Datensatz und wurde nie gezeigt.
+  if (typeof wert === 'string') return wertText(wert);
   switch (einheitFuer(schluessel)) {
     case 'prozent':
       return `${zahl(wert, 2)} %`;
@@ -413,9 +428,15 @@ const VORNE = [
   'annual_withdrawal',
   'summe_foerderung',
   'total_contributions',
+  'monatsrente_netto',
+  'monatsrente_brutto',
+  'vergleich_monatsentnahme_netto',
+  'teilkapital',
 ];
 
-export function sortiereKennzahlen(eintraege: [string, number][]): [string, number][] {
+export function sortiereKennzahlen(
+  eintraege: [string, number | string][]
+): [string, number | string][] {
   const rang = (k: string) => {
     const i = VORNE.indexOf(k);
     return i === -1 ? VORNE.length : i;

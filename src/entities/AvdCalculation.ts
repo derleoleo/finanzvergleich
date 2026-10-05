@@ -14,6 +14,17 @@ export type AvdResults = {
   kombination_nach_steuer?: number | null;
   aufteilung_monatlich?: number;
   zweitvertrag?: 'depot' | 'fonds_lv';
+  /** Auszahlphase – was am Ende monatlich fliesst (Audit A05). */
+  auszahlform?: 'leibrente' | 'auszahlplan';
+  monatsrente_brutto?: number;
+  monatsrente_netto?: number;
+  auszahlung_steuer_monat?: number;
+  auszahlung_kv_monat?: number;
+  teilkapital?: number;
+  teilkapital_steuer?: number;
+  /** Nur beim Auszahlplan (§ 1 Abs. 1 Nr. 4b AltZertG). */
+  gesetzliche_mindestrate?: number;
+  vergleich_monatsentnahme_netto?: number;
   modell_version?: string;
   bewertet_am?: string;
   rechtsstand?: string;

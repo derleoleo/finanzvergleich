@@ -200,6 +200,33 @@ describe('Kennzahlen einer gespeicherten Fassung', () => {
     expect(k.map(([s]) => s)).toEqual(['endkapital_nach_steuer']);
   });
 
+  it('zeigt auch Textwerte, statt sie zu verschlucken', () => {
+    // `vergleich_name` lag im Datensatz und wurde nie angezeigt (Audit A05).
+    const k = Object.fromEntries(
+      kennzahlenLesen({
+        endkapital_nach_steuer: 1000,
+        vergleich_name: 'Fondspolice',
+        auszahlform: 'leibrente',
+      })
+    );
+    expect(k.vergleich_name).toBe('Fondspolice');
+    expect(formatiereKennzahl('auszahlform', 'leibrente')).toBe('Leibrente');
+  });
+
+  it('setzt die Auszahlungsergebnisse als Betraege', () => {
+    expect(formatiereKennzahl('monatsrente_netto', 412)).toBe('412 €');
+    expect(formatiereKennzahl('teilkapital_steuer', 1250)).toBe('1.250 €');
+  });
+
+  it('stellt die Monatsrente vor ihre Bestandteile', () => {
+    const sortiert = sortiereKennzahlen([
+      ['auszahlung_steuer_monat', 40],
+      ['monatsrente_netto', 412],
+      ['teilkapital', 5000],
+    ]).map(([s]) => s);
+    expect(sortiert[0]).toBe('monatsrente_netto');
+  });
+
   it('erkennt Prozentwerte, damit sie nicht als Euro erscheinen', () => {
     expect(istProzent('li_riy_percent')).toBe(true);
     expect(istProzent('break_even_rendite')).toBe(true);
