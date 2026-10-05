@@ -35,6 +35,12 @@ const LAUF = `E2E-${Date.now().toString(36)}`;
 const PFLICHT = process.env.E2E_PFLICHT === "true";
 
 test.describe("Beratungsablauf mit Anmeldung", () => {
+  // Nacheinander, nicht parallel: Alle Tests teilen sich ein Konto und
+  // raeumen ihre Faelle ueber die Ergebnisliste wieder weg. Loeschen vier
+  // Arbeiter gleichzeitig darin herum, verschiebt sich die Liste zwischen
+  // Suchen und Klicken - dann bleiben Faelle liegen. `default` heisst
+  // ausserdem: Ein Fehlschlag ueberspringt die uebrigen Tests nicht.
+  test.describe.configure({ mode: 'default' });
   test.skip(
     !PFLICHT && !HAT_SITZUNG && !(EMAIL && PASSWORT),
     "Weder gespeicherte Sitzung noch E2E_EMAIL/E2E_PASSWORD vorhanden"
@@ -155,28 +161,109 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
       : "Die Anmeldeseite wurde nicht verlassen, meldete aber keinen Fehler";
   }
 
-  /** Aufräumen: Der Testfall darf nicht im Konto liegen bleiben. */
+  /**
+   * Namen, die dieser Lauf angelegt hat. Bricht ein Test ab, raeumte er
+   * frueher nicht auf - nach ein paar roten Laeufen lagen Dutzende Testfaelle
+   * im Konto. Deshalb passiert das Aufraeumen jetzt unabhaengig vom Ausgang.
+   */
+  const angelegt: string[] = [];
+
+  test.afterEach(async ({ page }) => {
+    while (angelegt.length > 0) {
+      const name = angelegt.pop()!;
+      await loeschen(page, name).catch(() => undefined);
+    }
+  });
+
+  /**
+   * Aufräumen: Der Testfall darf nicht im Konto liegen bleiben.
+   *
+   * Die Überschrift „Alle Ergebnisse“ steht schon da, bevor die Liste
+   * geladen ist. Wer danach sofort sucht, findet nichts und hört auf -
+   * genau daran scheiterte das Aufräumen bisher stillschweigend, und nach
+   * einigen Läufen lagen Dutzende Testfälle im Konto. Deshalb wird auf den
+   * Eintrag selbst gewartet.
+   */
   async function loeschen(page: Page, name: string) {
     await page.goto("/results");
     await page.waitForSelector("text=Alle Ergebnisse", { timeout: 30_000 });
     await page.evaluate(() => {
       window.confirm = () => true;
     });
-    for (let i = 0; i < 5; i++) {
-      const vorhanden = await page.getByText(name, { exact: false }).count();
-      if (vorhanden === 0) break;
+
+    const eintrag = page.getByText(name, { exact: false }).first();
+    try {
+      await eintrag.waitFor({ state: "visible", timeout: 20_000 });
+    } catch {
+      // Nichts zu löschen - der Test ist vor dem Speichern gescheitert.
+      return;
+    }
+
+    for (let i = 0; i < 6; i++) {
       const index = await page.evaluate((suche) => {
         const knoepfe = [...document.querySelectorAll('[title="Berechnung löschen"]')];
         return knoepfe.findIndex((k) => k.closest("div")?.innerText?.includes(suche));
       }, name);
       if (index < 0) break;
       await page.locator('[title="Berechnung löschen"]').nth(index).click();
-      await page.waitForTimeout(1200);
+      // Auf das Verschwinden warten, nicht auf die Uhr
+      await page
+        .getByText(name, { exact: false })
+        .nth(0)
+        .waitFor({ state: "detached", timeout: 15_000 })
+        .catch(() => undefined);
     }
+
+    await expect(page.getByText(name, { exact: false })).toHaveCount(0, { timeout: 15_000 });
+  }
+
+  /**
+   * Liest eine geöffnete Fassungsansicht vollständig aus.
+   *
+   * Bewusst Inhalte und nicht nur Vorhandensein: Der bisherige Durchlauf
+   * prüfte, *dass* eine Fassung erscheint. Dass die Neuberechnung keine
+   * Zeitreihen mitschrieb und das Alter als Euro-Betrag erschien, blieb
+   * dabei unsichtbar.
+   */
+  async function fassungLesen(page: Page) {
+    await page.waitForURL(/\/fassung/, { timeout: 30_000 });
+    await expect(page.getByText(/Fassung \d+ · gespeichert am/)).toBeVisible({
+      timeout: 20_000,
+    });
+    return page.evaluate(() => {
+      const abschnitt = (id: string) =>
+        document.querySelector(`[data-pdf-section="${id}"]`) as HTMLElement | null;
+      const tabelle = abschnitt('tabelle')?.querySelector('table');
+      return {
+        kennzahlen: [...(abschnitt('kennzahlen')?.querySelectorAll('.rounded-xl') ?? [])].map(
+          (k) => (k as HTMLElement).innerText.split(String.fromCharCode(10)).join(': ')
+        ),
+        hatVerlauf: !!abschnitt('verlauf'),
+        hatEingaben: !!abschnitt('eingaben'),
+        spalten: [...(tabelle?.querySelectorAll('th') ?? [])].map((x) =>
+          (x as HTMLElement).innerText.trim()
+        ),
+        ersteZeile: [...(tabelle?.querySelector('tbody tr')?.querySelectorAll('td') ?? [])].map(
+          (x) => (x as HTMLElement).innerText.trim()
+        ),
+        zeilen: tabelle?.querySelectorAll('tbody tr').length ?? 0,
+        text: document.body.innerText,
+      };
+    });
+  }
+
+  /** Von der Detailseite aus die gewählte Fassung vollständig öffnen. */
+  async function fassungOeffnen(page: Page, nummer: number) {
+    const verlauf = page.locator('[data-pdf-section="versionen"]');
+    await expect(verlauf).toBeVisible({ timeout: 30_000 });
+    await verlauf.getByRole("button", { name: new RegExp("Fassung " + nummer + "\\b") }).first().click();
+    await verlauf.getByRole("link", { name: /Vollständig öffnen/ }).click();
+    return fassungLesen(page);
   }
 
   test("Berechnen, Fassung festhalten, wiederöffnen, als PDF ausgeben", async ({ page }) => {
     const name = `${LAUF}-Sparvertrag`;
+    angelegt.push(name);
     const absturz: string[] = [];
     page.on("pageerror", (e) => absturz.push(e.message));
 
@@ -261,8 +348,167 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
 
     expect(absturz, `Abstürze: ${absturz.join(" | ")}`).toHaveLength(0);
 
-    // --- Aufräumen -----------------------------------------------------
-    await loeschen(page, name);
-    await expect(page.getByText(name, { exact: false })).toHaveCount(0);
+  });
+
+  /**
+   * Prüfung 1 der Analyse vom 04.10.: Zwei Fassungen desselben Falls.
+   *
+   * Der bisherige Durchlauf sah nur Fassung 1 und prüfte, dass sie da ist.
+   * Dass die Neuberechnung keine Zeitreihen mitschrieb — Fassung 1 also eine
+   * Kurve hatte und Fassung 2 desselben Falls nicht —, konnte er nicht
+   * sehen. Deshalb hier: beide Fassungen einzeln öffnen und ihre Inhalte
+   * vergleichen.
+   */
+  test("Zwei Fassungen desselben Falls bleiben getrennt und vollständig", async ({
+    page,
+  }) => {
+    const name = `${LAUF}-Zweifassungen`;
+    angelegt.push(name);
+    const absturz: string[] = [];
+    page.on("pageerror", (e) => absturz.push(e.message));
+
+    await anmelden(page);
+    await page.getByLabel("Name der Berechnung").fill(name);
+    await page.getByRole("button", { name: "Vergleich berechnen" }).click();
+    await page.waitForURL(/\/calculator\/detail/, { timeout: 30_000 });
+
+    const fallUrl = page.url();
+    const erste = await fassungOeffnen(page, 1);
+
+    // --- Eingabe ändern und erneut speichern --------------------------
+    await page.goto(fallUrl);
+    const beitrag = page.getByLabel(/Monatlicher Beitrag/);
+    await expect(beitrag).toBeVisible({ timeout: 30_000 });
+    await beitrag.fill("250");
+    await page.getByRole("button", { name: /Neu berechnen & speichern/ }).click();
+    await expect(
+      page.locator('[data-pdf-section="versionen"]').getByRole("button", { name: /Fassung 2/ })
+    ).toBeVisible({ timeout: 40_000 });
+
+    const zweite = await fassungOeffnen(page, 2);
+
+    // --- Beide Fassungen sind vollständig ------------------------------
+    for (const [bezeichnung, f] of [
+      ["Fassung 1", erste],
+      ["Fassung 2", zweite],
+    ] as const) {
+      expect(f.kennzahlen.length, `${bezeichnung} ohne Kennzahlen`).toBeGreaterThan(0);
+      // Genau hier lag der Fehler: Die Neuberechnung hielt keine Reihen fest.
+      expect(f.hatVerlauf, `${bezeichnung} ohne Verlauf`).toBe(true);
+      expect(f.zeilen, `${bezeichnung} ohne Jahreszeilen`).toBeGreaterThan(1);
+      expect(f.hatEingaben, `${bezeichnung} ohne Eingaben`).toBe(true);
+    }
+
+    // --- Und sie zeigen verschiedene Stände ----------------------------
+    // Gleiche Zahlen hiessen: Die Fassung wird neu gerechnet statt gelesen.
+    expect(
+      zweite.kennzahlen.join("|"),
+      "Beide Fassungen zeigen dieselben Kennzahlen"
+    ).not.toBe(erste.kennzahlen.join("|"));
+
+    // --- Einheiten stimmen (Audit A04) ---------------------------------
+    // "Alter" muss als Spalte erscheinen und darf dort kein Betrag sein.
+    expect(zweite.spalten).toContain("Alter");
+    const alterIndex = zweite.spalten.indexOf("Alter");
+    expect(zweite.ersteZeile[alterIndex], "Alter als Euro-Betrag").not.toMatch(/€/);
+
+    expect(absturz, `Abstürze: ${absturz.join(" | ")}`).toHaveLength(0);
+
+  });
+
+  /**
+   * Prüfung 2 der Analyse: Das Altersvorsorgedepot mit Fondspolice.
+   *
+   * Dort hing die archivierte Kurve am Anzeigeschalter „Real", und die
+   * zweite Linie hiess immer „depot" — auch wenn sie eine Fondspolice
+   * abbildete. Beides ist dem Dokument nicht anzusehen, wenn man nur prüft,
+   * dass eine Kurve da ist.
+   */
+  test("AVD-Fassung benennt ihren Vergleichspartner und rechnet nominal", async ({
+    page,
+  }) => {
+    const name = `${LAUF}-AVD`;
+    angelegt.push(name);
+    const absturz: string[] = [];
+    page.on("pageerror", (e) => absturz.push(e.message));
+
+    await anmelden(page);
+    await page.goto("/altersvorsorgedepot");
+    const nameFeld = page.locator("#avd-name");
+    if (!(await nameFeld.isVisible().catch(() => false))) {
+      await expect(nameFeld).toBeVisible({ timeout: 40_000 });
+    }
+    // Die Hinweisleiste fängt sonst Klicks ab
+    await page.getByRole("button", { name: "OK, verstanden" }).click().catch(() => undefined);
+    await nameFeld.fill(name);
+
+    await page.getByRole("button", { name: "Fondspolice", exact: true }).click();
+    // Genau der Fall aus A05: gespeichert wird im Real-Modus
+    await page.getByRole("button", { name: "Real", exact: true }).click();
+    await page.getByRole("button", { name: /^Speichern/ }).click();
+
+    const fassung = await fassungOeffnen(page, 1);
+
+    // Der Partner muss beim Namen genannt sein, nicht als "Depot"
+    expect(fassung.spalten.join(" | ")).toContain("Fondspolice");
+    expect(fassung.spalten.join(" | ")).toContain("vor Steuern");
+    // Und es muss dastehen, worauf sich die Kurven beziehen
+    expect(fassung.text).toContain("Nominale Werte");
+    // Alter bleibt eine Zahl
+    const alterIndex = fassung.spalten.indexOf("Alter");
+    expect(alterIndex).toBeGreaterThanOrEqual(0);
+    expect(fassung.ersteZeile[alterIndex]).not.toMatch(/€/);
+
+    expect(absturz, `Abstürze: ${absturz.join(" | ")}`).toHaveLength(0);
+
+  });
+
+  /**
+   * Prüfung 3 der Analyse: Ein Archiv-Schreibfehler darf nicht als Erfolg
+   * erscheinen.
+   *
+   * Der Fehler wird erzwungen, indem die Anfrage an `fall_versionen`
+   * abgewiesen wird. Danach muss die Oberfläche das sagen — und der
+   * Nachtrag muss die Fassung tatsächlich erzeugen.
+   */
+  test("Ein misslungenes Festhalten wird gemeldet und lässt sich nachtragen", async ({
+    page,
+  }) => {
+    const name = `${LAUF}-Schreibfehler`;
+    angelegt.push(name);
+    const absturz: string[] = [];
+    page.on("pageerror", (e) => absturz.push(e.message));
+
+    await anmelden(page);
+
+    // Nur das Anlegen einer Fassung scheitern lassen, nicht das Speichern
+    // des Falls selbst.
+    await page.route("**/rest/v1/fall_versionen**", (route) =>
+      route.request().method() === "POST" ? route.abort() : route.continue()
+    );
+
+    await page.getByLabel("Name der Berechnung").fill(name);
+    await page.getByRole("button", { name: "Vergleich berechnen" }).click();
+    await page.waitForURL(/\/calculator\/detail/, { timeout: 30_000 });
+
+    // Der Hauptdatensatz ist da – die Fassung nicht, und das muss dastehen.
+    const hinweis = page.getByText(/keine Fassung davon festgehalten/);
+    await expect(hinweis).toBeVisible({ timeout: 30_000 });
+
+    // Jetzt darf es wieder klappen: Der Nachtrag muss die Fassung erzeugen.
+    await page.unroute("**/rest/v1/fall_versionen**");
+    await page.getByRole("button", { name: /Fassung nachtragen/ }).click();
+    await expect(page.getByText(/nachträglich festgehalten/)).toBeVisible({
+      timeout: 30_000,
+    });
+
+    // Gegenprobe: Die Fassung ist wirklich da und vollständig.
+    await page.reload();
+    const fassung = await fassungOeffnen(page, 1);
+    expect(fassung.kennzahlen.length).toBeGreaterThan(0);
+    expect(fassung.hatVerlauf).toBe(true);
+
+    expect(absturz, `Abstürze: ${absturz.join(" | ")}`).toHaveLength(0);
+
   });
 });

@@ -35,7 +35,7 @@ export default function BestAdviceDetail() {
   const ort = useLocation();
   const uebergeben = (ort.state as { fassungFehlt?: Extract<FassungStand, { stand: 'fehlt' }> } | null)
     ?.fassungFehlt;
-  const [fassungFehlt, setFassungFehlt] = useState(uebergeben ?? null);
+  const fassungFehlt = uebergeben ?? null;
   const [versionenStand, setVersionenStand] = useState(0);
   const navigate = useNavigate();
   const [calculation, setCalculation] = useState<BestAdviceModel | null>(null);
@@ -101,10 +101,7 @@ export default function BestAdviceDetail() {
           <FassungFehltHinweis
             nachtrag={fassungFehlt.nachtrag}
             grund={fassungFehlt.grund}
-            onNachgetragen={() => {
-              setFassungFehlt(null);
-              setVersionenStand((n) => n + 1);
-            }}
+            onNachgetragen={() => setVersionenStand((n) => n + 1)}
           />
         )}
         {/* Audit O08: Fassungen dieses Falls waren hier bisher nicht

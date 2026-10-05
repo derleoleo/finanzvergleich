@@ -372,10 +372,7 @@ export default function NetPolicyCalculator() {
   <FassungFehltHinweis
     nachtrag={fassungFehlt.nachtrag}
     grund={fassungFehlt.grund}
-    onNachgetragen={() => {
-      setFassungFehlt(null);
-      setVersionenStand((n) => n + 1);
-    }}
+    onNachgetragen={() => setVersionenStand((n) => n + 1)}
   />
 )}
 <Versionsverlauf
