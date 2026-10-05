@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   eingabenLesen,
+  reihenGruppenLesen,
   einheitFuer,
   formatiereKennzahl,
   istProzent,
@@ -71,6 +72,42 @@ describe('Reihen einer gespeicherten Fassung', () => {
     const r = reihenLesen(mitAlter)!;
     expect(r.beschriften('depot')).toBe('Depot');
     expect(r.hinweis).toBeUndefined();
+  });
+
+  it('liest mehrere Reihenblöcke einer Fassung', () => {
+    // Das AVD speichert Hauptverlauf und Strategien getrennt: Sie rechnen
+    // auf verschiedenen Annahmen und gehören nicht in ein Diagramm.
+    const gruppen = reihenGruppenLesen([
+      { titel: 'Verlauf', punkte: mitAlter },
+      {
+        titel: 'Strategien im Vergleich',
+        punkte: [
+          { jahr: 1, alter: 38, nur_avd: 1200, kombination: 1180 },
+          { jahr: 2, alter: 39, nur_avd: 2500, kombination: 2460 },
+        ],
+        beschriftungen: { nur_avd: 'Alles ins Altersvorsorgedepot' },
+        hinweis: 'ohne Beitragsdynamik',
+      },
+    ]);
+    expect(gruppen).toHaveLength(2);
+    expect(gruppen[0].titel).toBe('Verlauf');
+    expect(gruppen[1].beschriften('nur_avd')).toBe('Alles ins Altersvorsorgedepot');
+    expect(gruppen[1].hinweis).toBe('ohne Beitragsdynamik');
+  });
+
+  it('liest alte Fassungen als einzelnen Block', () => {
+    expect(reihenGruppenLesen(mitAlter)).toHaveLength(1);
+    expect(reihenGruppenLesen({ punkte: mitAlter })).toHaveLength(1);
+    expect(reihenGruppenLesen(null)).toHaveLength(0);
+  });
+
+  it('lässt unbrauchbare Blöcke weg, statt alles zu verwerfen', () => {
+    const gruppen = reihenGruppenLesen([
+      { titel: 'Gut', punkte: mitAlter },
+      { titel: 'Kaputt', punkte: [{ nur_zahlen: 1 }] },
+    ]);
+    expect(gruppen).toHaveLength(1);
+    expect(gruppen[0].titel).toBe('Gut');
   });
 
   it('verkraftet leere und fehlerhafte Eingaben', () => {

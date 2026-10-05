@@ -26,7 +26,7 @@ import {
   beschriftung,
   formatiereKennzahl,
   kennzahlenLesen,
-  reihenLesen,
+  reihenGruppenLesen,
   sortiereKennzahlen,
   zeitpunkt,
 } from '@/utils/fassungAnzeige';
@@ -66,7 +66,11 @@ export default function Versionsverlauf({ fallTabelle, fallId, neuLadenAb = 0 }:
 
   const datum = zeitpunkt;
   const kennzahlen = (v: FallVersionModel) => sortiereKennzahlen(kennzahlenLesen(v.results));
-  const gezeichnet = offen ? reihenLesen(offen.reihen) : null;
+  // Eine Fassung kann mehrere Reihenbloecke tragen (AVD: Hauptverlauf und
+  // Strategien). Das Panel zeigt den ersten; alles Weitere steht in der
+  // vollstaendigen Ansicht.
+  const bloecke = offen ? reihenGruppenLesen(offen.reihen) : [];
+  const gezeichnet = bloecke[0] ?? null;
 
   return (
     <div
@@ -150,6 +154,13 @@ export default function Versionsverlauf({ fallTabelle, fallId, neuLadenAb = 0 }:
               </div>
             ))}
           </div>
+
+          {bloecke.length > 1 && (
+            <p className="text-xs text-slate-500 mt-3">
+              Diese Fassung enthält {bloecke.length} Verläufe – hier steht der erste.
+              Die vollständige Ansicht zeigt alle.
+            </p>
+          )}
 
           {gezeichnet ? (
             <div className="h-72 w-full mt-4">

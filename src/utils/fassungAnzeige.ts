@@ -161,6 +161,8 @@ export type GezeichneteReihen = {
   beschriften: (schluessel: string) => string;
   /** Was die Reihe darstellt, z. B. "nominal, vor Steuern". */
   hinweis?: string;
+  /** Ueberschrift, wenn eine Fassung mehrere Reihenbloecke traegt. */
+  titel?: string;
 };
 
 /**
@@ -176,19 +178,51 @@ type ReihenUmschlag = {
   punkte: unknown;
   beschriftungen?: Record<string, string>;
   hinweis?: string;
+  titel?: string;
 };
 
+/** Ein Umschlag erkennt sich am Feld `punkte`. */
+function istUmschlag(wert: unknown): wert is ReihenUmschlag {
+  return (
+    !!wert &&
+    typeof wert === 'object' &&
+    !Array.isArray(wert) &&
+    'punkte' in (wert as Record<string, unknown>)
+  );
+}
+
 function auspacken(reihen: unknown): ReihenUmschlag {
-  if (
-    reihen &&
-    typeof reihen === 'object' &&
-    !Array.isArray(reihen) &&
-    'punkte' in (reihen as Record<string, unknown>)
-  ) {
-    const u = reihen as ReihenUmschlag;
-    return { punkte: u.punkte, beschriftungen: u.beschriftungen, hinweis: u.hinweis };
+  if (istUmschlag(reihen)) {
+    return {
+      punkte: reihen.punkte,
+      beschriftungen: reihen.beschriftungen,
+      hinweis: reihen.hinweis,
+      titel: reihen.titel,
+    };
   }
   return { punkte: reihen };
+}
+
+/**
+ * Alle Reihenbloecke einer Fassung.
+ *
+ * Eine Fassung kann mehrere tragen - im Altersvorsorgedepot etwa den
+ * Hauptverlauf und daneben die drei Strategien. Sie in ein Diagramm zu
+ * legen waere falsch: Die Strategien rechnen ohne Beitragsdynamik und auf
+ * gleichem Bruttobeitrag, der Hauptverlauf folgt den Eingaben. Gemeinsam
+ * gezeichnet lassen sie sich nicht auseinanderhalten.
+ *
+ * Alte Fassungen mit nur einem Array oder einem einzelnen Umschlag bleiben
+ * unveraendert lesbar.
+ */
+export function reihenGruppenLesen(eingabe: unknown): GezeichneteReihen[] {
+  if (Array.isArray(eingabe) && eingabe.length > 0 && istUmschlag(eingabe[0])) {
+    return eingabe
+      .map((u) => reihenLesen(u))
+      .filter((r): r is GezeichneteReihen => r !== null);
+  }
+  const einzeln = reihenLesen(eingabe);
+  return einzeln ? [einzeln] : [];
 }
 
 /**
@@ -197,7 +231,7 @@ function auspacken(reihen: unknown): ReihenUmschlag {
  * Zahlenwert eine Linie.
  */
 export function reihenLesen(eingabe: unknown): GezeichneteReihen | null {
-  const { punkte: reihen, beschriftungen, hinweis } = auspacken(eingabe);
+  const { punkte: reihen, beschriftungen, hinweis, titel } = auspacken(eingabe);
   if (!Array.isArray(reihen) || reihen.length === 0) return null;
   const erste = reihen[0];
   if (typeof erste !== 'object' || erste === null) return null;
@@ -224,6 +258,7 @@ export function reihenLesen(eingabe: unknown): GezeichneteReihen | null {
     zeitspalten,
     beschriften: (k) => beschriftungen?.[k] ?? beschriftung(k),
     hinweis,
+    titel,
   };
 }
 

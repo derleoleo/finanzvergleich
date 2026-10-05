@@ -369,7 +369,38 @@ export default function AvdCalculator() {
       depot: `${vergleichName} (vor Steuern)`,
       eingezahlt: 'Eigenbeiträge',
     },
+    titel: 'Verlauf',
     hinweis: 'Nominale Werte vor der abschließenden Besteuerung.',
+  };
+
+  /**
+   * Die drei Strategien als eigener Reihenblock.
+   *
+   * Bewusst getrennt vom Hauptverlauf: Der Strategievergleich rechnet ohne
+   * Beitragsdynamik und auf gleichem Bruttobeitrag, der Hauptverlauf folgt
+   * den Eingaben. In einem Diagramm ließen sich die Kurven nicht
+   * auseinanderhalten, und wer sie vergleicht, verglich Ungleiches.
+   */
+  const strategieReihen = {
+    titel: 'Strategien im Vergleich',
+    punkte: ergebnis.jahre.map((j, i) => ({
+      jahr: j.jahr,
+      alter: j.alter,
+      nur_avd: Math.round(strategien.strategien[0].kapitalProJahr[i] ?? 0),
+      nur_vergleich: Math.round(strategien.strategien[1].kapitalProJahr[i] ?? 0),
+      kombination: Math.round(strategien.strategien[2].kapitalProJahr[i] ?? 0),
+    })),
+    beschriftungen: {
+      nur_avd: strategien.strategien[0].bezeichnung,
+      nur_vergleich: strategien.strategien[1].bezeichnung,
+      kombination: strategien.kombinationEntfaellt
+        ? 'Aufteilung (entfällt – Beitrag unter dem Aufteilungspunkt)'
+        : `Aufteilung: ${strategien.strategien[2].aufteilungText}`,
+    },
+    hinweis:
+      'Nominale Werte vor der abschließenden Besteuerung, ohne Beitragsdynamik ' +
+      'und auf gleichem Bruttobeitrag – deshalb nicht mit dem Verlauf oben ' +
+      'vergleichbar.',
   };
 
   const endAvd = showReal ? ergebnis.endkapitalNachSteuerReal : ergebnis.endkapitalNachSteuer;
@@ -462,7 +493,7 @@ export default function AvdCalculator() {
           name: nutzlast.name,
           form: nutzlast.form,
           results: nutzlast.results as unknown as Record<string, unknown>,
-          reihen: fassungsReihen,
+          reihen: [fassungsReihen, strategieReihen],
         });
         setFassungFehlt(stand.stand === 'fehlt' ? stand : null);
         setVersionenStand((n) => n + 1);

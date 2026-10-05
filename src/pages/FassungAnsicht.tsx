@@ -42,11 +42,20 @@ import {
   eingabenLesen,
   formatiereKennzahl,
   kennzahlenLesen,
-  reihenLesen,
+  reihenGruppenLesen,
   sortiereKennzahlen,
   zeitpunkt,
 } from '@/utils/fassungAnzeige';
 import { stammtAusAelteremModell, type ModellStempel } from '@/lib/finance/modell';
+
+/**
+ * Kennung eines PDF-Abschnitts. Der erste Reihenblock behaelt die alten
+ * Namen `verlauf` und `tabelle` - so bleiben zuvor getroffene Auswahlen
+ * gueltig.
+ */
+function abschnittsId(art: 'verlauf' | 'tabelle', index: number): string {
+  return index === 0 ? art : `${art}-${index + 1}`;
+}
 
 const LINIEN_FARBEN = ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#94a3b8'];
 
@@ -106,25 +115,22 @@ export default function FassungAnsicht() {
 
   const stempel = fassung.results as Partial<ModellStempel>;
   const kennzahlen = sortiereKennzahlen(kennzahlenLesen(fassung.results));
-  const reihen = reihenLesen(fassung.reihen);
+  const gruppen = reihenGruppenLesen(fassung.reihen);
   const eingaben = eingabenLesen(fassung.form);
   const bewertetAm = stempel.bewertet_am
     ? new Date(stempel.bewertet_am).toLocaleDateString('de-DE')
     : null;
 
-  // Bei langen Reihen Anfang und Ende zeigen; die Mitte interessiert selten
-  const tabelle = reihen
-    ? reihen.daten.length > MAX_ZEILEN
-      ? [...reihen.daten.slice(0, MAX_ZEILEN - 5), ...reihen.daten.slice(-5)]
-      : reihen.daten
-    : [];
-  const gekuerzt = reihen ? reihen.daten.length > MAX_ZEILEN : false;
-
   const abschnitte = [
     { id: 'kennzahlen', label: 'Kennzahlen' },
     ...(eingaben.length > 0 ? [{ id: 'eingaben', label: 'Eingaben' }] : []),
-    ...(reihen ? [{ id: 'verlauf', label: 'Verlauf' }] : []),
-    ...(reihen ? [{ id: 'tabelle', label: 'Tabelle' }] : []),
+    ...gruppen.flatMap((g, i) => {
+      const titel = g.titel ?? 'Verlauf';
+      return [
+        { id: abschnittsId('verlauf', i), label: titel },
+        { id: abschnittsId('tabelle', i), label: `${titel} (Tabelle)` },
+      ];
+    }),
   ];
 
   const untertitel =
@@ -224,113 +230,125 @@ export default function FassungAnsicht() {
           </div>
         )}
 
-        {reihen && (
-          <div data-pdf-section="verlauf">
-            <Card className="border-0 shadow-lg bg-white">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-bold text-slate-900">Verlauf</CardTitle>
-                {/* Ohne diese Angabe bleibt offen, ob die Kurven nominal oder
-                    real und vor oder nach Steuern gemeint sind. */}
-                {reihen.hinweis && (
-                  <p className="text-xs text-slate-500 mt-1">{reihen.hinweis}</p>
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="h-80 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={reihen.daten}
-                      margin={{ top: 10, right: 20, left: 10, bottom: 8 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey={reihen.achse} tick={{ fontSize: 12 }} />
-                      <YAxis tickFormatter={formatChartAxis} tick={{ fontSize: 12 }} />
-                      <Tooltip
-                        formatter={(wert: unknown, name: unknown) => [
-                          formatCurrency(Number(wert || 0)),
-                          reihen.beschriften(String(name)),
-                        ]}
-                        labelFormatter={(w) => `${reihen.beschriften(reihen.achse)} ${w}`}
-                      />
-                      <Legend formatter={(name) => reihen.beschriften(String(name))} />
-                      {reihen.linien.map((schluessel, i) => (
-                        <Line
-                          key={schluessel}
-                          type="monotone"
-                          dataKey={schluessel}
-                          stroke={LINIEN_FARBEN[i % LINIEN_FARBEN.length]}
-                          strokeWidth={2}
-                          dot={false}
-                          isAnimationActive={false}
-                        />
-                      ))}
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {gruppen.map((gruppe, i) => {
+          // Bei langen Reihen Anfang und Ende zeigen; die Mitte interessiert selten
+          const tabelle =
+            gruppe.daten.length > MAX_ZEILEN
+              ? [...gruppe.daten.slice(0, MAX_ZEILEN - 5), ...gruppe.daten.slice(-5)]
+              : gruppe.daten;
+          const gekuerzt = gruppe.daten.length > MAX_ZEILEN;
+          const titel = gruppe.titel ?? 'Verlauf';
 
-        {reihen && (
-          <div data-pdf-section="tabelle">
-            <Card className="border-0 shadow-lg bg-white">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-bold text-slate-900">Jahresübersicht</CardTitle>
-                {gekuerzt && (
-                  <p className="text-xs text-slate-500 mt-1">
-                    Anfang und Ende der Reihe; die mittleren Jahre sind ausgelassen.
-                  </p>
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-slate-200">
-                        <TableHead className="font-semibold text-slate-700">
-                          {reihen.beschriften(reihen.achse)}
-                        </TableHead>
-                        {reihen.zeitspalten.map((schluessel) => (
-                          <TableHead key={schluessel} className="font-semibold text-slate-700">
-                            {reihen.beschriften(schluessel)}
-                          </TableHead>
-                        ))}
-                        {reihen.linien.map((schluessel) => (
-                          <TableHead
-                            key={schluessel}
-                            className="font-semibold text-slate-700 text-right"
-                          >
-                            {reihen.beschriften(schluessel)}
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {tabelle.map((zeile, i) => (
-                        <TableRow key={i} className="border-slate-100">
-                          <TableCell className="font-medium text-slate-900">
-                            {zeile[reihen.achse]}
-                          </TableCell>
-                          {reihen.zeitspalten.map((schluessel) => (
-                            <TableCell key={schluessel} className="text-slate-700">
-                              {zeile[schluessel]}
-                            </TableCell>
+          return (
+            <div key={i} className="space-y-6">
+              <div data-pdf-section={abschnittsId('verlauf', i)}>
+                <Card className="border-0 shadow-lg bg-white">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-bold text-slate-900">{titel}</CardTitle>
+                    {/* Ohne diese Angabe bleibt offen, ob die Kurven nominal oder
+                        real und vor oder nach Steuern gemeint sind. */}
+                    {gruppe.hinweis && (
+                      <p className="text-xs text-slate-500 mt-1">{gruppe.hinweis}</p>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-80 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={gruppe.daten}
+                          margin={{ top: 10, right: 20, left: 10, bottom: 8 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey={gruppe.achse} tick={{ fontSize: 12 }} />
+                          <YAxis tickFormatter={formatChartAxis} tick={{ fontSize: 12 }} />
+                          <Tooltip
+                            formatter={(wert: unknown, name: unknown) => [
+                              formatCurrency(Number(wert || 0)),
+                              gruppe.beschriften(String(name)),
+                            ]}
+                            labelFormatter={(w) => `${gruppe.beschriften(gruppe.achse)} ${w}`}
+                          />
+                          <Legend formatter={(name) => gruppe.beschriften(String(name))} />
+                          {gruppe.linien.map((schluessel, j) => (
+                            <Line
+                              key={schluessel}
+                              type="monotone"
+                              dataKey={schluessel}
+                              stroke={LINIEN_FARBEN[j % LINIEN_FARBEN.length]}
+                              strokeWidth={2}
+                              dot={false}
+                              isAnimationActive={false}
+                            />
                           ))}
-                          {reihen.linien.map((schluessel) => (
-                            <TableCell key={schluessel} className="text-right">
-                              {formatCurrency(zeile[schluessel] ?? 0)}
-                            </TableCell>
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div data-pdf-section={abschnittsId('tabelle', i)}>
+                <Card className="border-0 shadow-lg bg-white">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-bold text-slate-900">
+                      {gruppe.titel ? `${gruppe.titel} – Jahresübersicht` : 'Jahresübersicht'}
+                    </CardTitle>
+                    {gekuerzt && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        Anfang und Ende der Reihe; die mittleren Jahre sind ausgelassen.
+                      </p>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-slate-200">
+                            <TableHead className="font-semibold text-slate-700">
+                              {gruppe.beschriften(gruppe.achse)}
+                            </TableHead>
+                            {gruppe.zeitspalten.map((schluessel) => (
+                              <TableHead key={schluessel} className="font-semibold text-slate-700">
+                                {gruppe.beschriften(schluessel)}
+                              </TableHead>
+                            ))}
+                            {gruppe.linien.map((schluessel) => (
+                              <TableHead
+                                key={schluessel}
+                                className="font-semibold text-slate-700 text-right"
+                              >
+                                {gruppe.beschriften(schluessel)}
+                              </TableHead>
+                            ))}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {tabelle.map((zeile, k) => (
+                            <TableRow key={k} className="border-slate-100">
+                              <TableCell className="font-medium text-slate-900">
+                                {zeile[gruppe.achse]}
+                              </TableCell>
+                              {gruppe.zeitspalten.map((schluessel) => (
+                                <TableCell key={schluessel} className="text-slate-700">
+                                  {zeile[schluessel]}
+                                </TableCell>
+                              ))}
+                              {gruppe.linien.map((schluessel) => (
+                                <TableCell key={schluessel} className="text-right">
+                                  {formatCurrency(zeile[schluessel] ?? 0)}
+                                </TableCell>
+                              ))}
+                            </TableRow>
                           ))}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {dialogOpen && (
