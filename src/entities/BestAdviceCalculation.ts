@@ -10,6 +10,24 @@ export type LVResult = {
   depot_tax: number;
 };
 
+/**
+ * Die Eingaben eines einzelnen Bestandsvertrags (Audit B03).
+ *
+ * Werden mitgespeichert, weil die Kurve sonst nicht je Vertrag gerechnet
+ * werden kann: Die Spalten der Tabelle tragen nur Summen, und mehrere
+ * Vertraege koennen verschiedene Vertragsbeginne und Steuermerkmale haben.
+ * Aggregiert gerechnet widerspricht die Kurve dann ihrem eigenen Endwert.
+ */
+export type LVEingabe = {
+  label: string;
+  monthly_contribution: number;
+  current_capital: number;
+  guaranteed_end_capital: number;
+  current_product_tax_free: boolean;
+  contract_start_year?: number | null;
+  eingezahlt_bisher?: number | null;
+};
+
 export type BestAdviceResults = {
   total_contributions: number;
   // Fonds-LV (the alternative)
@@ -26,6 +44,8 @@ export type BestAdviceResults = {
   depot_tax: number;
   // Multi-LV: per-policy breakdown (optional, only for new calculations)
   lvs_results?: LVResult[];
+  /** Eingaben je Bestandsvertrag; aeltere Datensaetze: undefined (Audit B03). */
+  lvs_inputs?: LVEingabe[];
   // Steuer-Annahmen zum Berechnungszeitpunkt; ältere Datensätze: undefined
   tax_settings?: StoredTaxSettings;
 

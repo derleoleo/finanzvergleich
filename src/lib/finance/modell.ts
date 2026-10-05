@@ -9,9 +9,18 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-05b" as const;
+export const MODELL_VERSION = "2026-10-05c" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-05c",
+    aenderung:
+      "BestAdvice: Die Verlaufskurve der Bestandsverträge rechnet jeden Vertrag " +
+      "einzeln mit seinem eigenen Vertragsbeginn und seiner eigenen " +
+      "Steuerfreiheit, statt alle zusammenzufassen. Die Kennzahlen taten das " +
+      "schon; bei unterschiedlichen Verträgen wich die Kurve davon ab. " +
+      "Gespeicherte Auswertungen tragen dafür die Eingaben je Vertrag.",
+  },
   {
     version: "2026-10-05b",
     aenderung:

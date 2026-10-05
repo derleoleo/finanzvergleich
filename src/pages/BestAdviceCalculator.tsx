@@ -323,6 +323,18 @@ export default function BestAdviceCalculator() {
       // Vertragsbeginn mitspeichern, damit die Detailseite dieselbe
       // Steuerqualifikation nutzt wie die Berechnung
       contract_start_years: allLVs.map((lv) => lv.contract_start_year ?? null),
+      // Audit B03: Ohne die Einzelvertraege laesst sich die Kurve nur
+      // aggregiert rechnen - und widerspricht dann ihrem eigenen Endwert,
+      // sobald die Vertraege verschiedene Steuermerkmale haben.
+      lvs_inputs: allLVs.map((lv) => ({
+        label: lv.label,
+        monthly_contribution: toNum(lv.monthly_contribution),
+        current_capital: toNum(lv.current_capital),
+        guaranteed_end_capital: toNum(lv.guaranteed_end_capital),
+        current_product_tax_free: !!lv.current_product_tax_free,
+        contract_start_year: lv.contract_start_year ?? null,
+        eingezahlt_bisher: lv.eingezahlt_bisher ?? null,
+      })),
       // Annahmen zum Berechnungszeitpunkt mitspeichern → geräteunabhängige Anzeige
       tax_settings,
       ...modellStempel(age_at_payout),

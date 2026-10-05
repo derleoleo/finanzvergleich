@@ -5,7 +5,7 @@
 // die Reihen nur in der Seite, hielt eine Fassung lediglich Kennzahlen fest
 // und die Fassungsansicht hatte nichts zu zeichnen.
 
-import { BestAdviceModel } from "@/entities/BestAdviceCalculation";
+import type { BestAdviceModel, LVEingabe } from "@/entities/BestAdviceCalculation";
 import {
   lvTaxOptionsFromSettings,
   taxSettingsSnapshot,
@@ -55,13 +55,41 @@ export function baueBestAdviceReihen(calc: BestAdviceModel, mode: BestAdviceModu
           },
   });
 
-  // Bestand: lineare Interpolation Kapital → garantiertes Endkapital
-  const bestand = buildGuaranteedSeries({
-    initial_capital: startCapital,
-    monthly_contribution: monthlyContrib,
-    guaranteed_end_capital: Number(calc.guaranteed_end_capital || 0),
-    months,
-  });
+  /**
+   * Die Bestandsseite je Vertrag (Audit B03).
+   *
+   * Aggregiert gerechnet wird die Kurve falsch, sobald die Vertraege sich
+   * unterscheiden: Steuerfreiheit gilt dann fuer alle oder keinen, und der
+   * Vertragsbeginn des ersten Vertrags bestimmt die Zwoelfjahresfrist aller.
+   * Die Kennzahlen rechnen jeden Vertrag einzeln - die Kurve muss das auch,
+   * sonst widerspricht ihr Endwert den Kacheln darueber.
+   *
+   * Aeltere Datensaetze tragen die Einzelvertraege nicht; dort bleibt es bei
+   * der einen aggregierten Reihe.
+   */
+  const vertraege: LVEingabe[] = calc.results?.lvs_inputs?.length
+    ? calc.results.lvs_inputs
+    : [
+        {
+          label: "LV 1",
+          monthly_contribution: monthlyContrib,
+          current_capital: startCapital,
+          guaranteed_end_capital: Number(calc.guaranteed_end_capital || 0),
+          current_product_tax_free: !!calc.current_product_tax_free,
+          contract_start_year: calc.results?.contract_start_years?.[0] ?? null,
+          eingezahlt_bisher: calc.results?.eingezahlt_bisher_gesamt ?? null,
+        },
+      ];
+
+  const bestandsreihen = vertraege.map((v) => ({
+    vertrag: v,
+    reihe: buildGuaranteedSeries({
+      initial_capital: v.current_capital,
+      monthly_contribution: v.monthly_contribution,
+      guaranteed_end_capital: v.guaranteed_end_capital,
+      months,
+    }),
+  }));
 
   const points: { year: number; age: number; fondsLV: number; bestand: number }[] = [];
 
@@ -69,63 +97,64 @@ export function baueBestAdviceReihen(calc: BestAdviceModel, mode: BestAdviceModu
     const year = m / 12;
     const age = calculateAgeAtPayout(calc.birth_year, year);
     const lvPoint = lv.series[m - 1];
-    const bestandPoint = bestand[m - 1];
 
     if (mode === "gross") {
       points.push({
         year,
         age,
         fondsLV: Math.round(lvPoint.capital),
-        bestand: Math.round(bestandPoint.capital),
+        bestand: Math.round(
+          bestandsreihen.reduce((summe, b) => summe + b.reihe[m - 1].capital, 0)
+        ),
       });
-    } else {
-      const lvTax = calculateLifeInsuranceTax(
-        lvPoint.capital - lvPoint.contributions_cum,
-        year,
+      continue;
+    }
+
+    const lvTax = calculateLifeInsuranceTax(
+      lvPoint.capital - lvPoint.contributions_cum,
+      year,
+      age,
+      lvTaxOptions
+    );
+
+    const bestandNet = bestandsreihen.reduce((summe, { vertrag, reihe }) => {
+      const punkt = reihe[m - 1];
+      if (vertrag.current_product_tax_free) return summe + punkt.capital;
+
+      // Bestands-LV ist ebenfalls eine Versicherung → Halbeinkünfte-Regel.
+      // Der Vertragsbeginn zaehlt je Vertrag; ohne Angabe die Restlaufzeit.
+      const beginn = vertrag.contract_start_year ?? null;
+      const bestandsJahre =
+        beginn && beginn > 1900 ? new Date().getFullYear() + year - beginn : year;
+
+      // Steuerlich zaehlen die eingezahlten Beitraege, nicht der heutige
+      // Rueckkaufswert. `buildGuaranteedSeries` beginnt seine Beitragssumme
+      // beim heutigen Kapital - wer frueher mehr eingezahlt hat, als der
+      // Vertrag heute wert ist, bekaeme sonst zu hohe Gewinne und damit zu
+      // viel Steuer.
+      const basisHeute = beitragsbasis({
+        eingezahltBisher: vertrag.eingezahlt_bisher,
+        aktuellerWert: vertrag.current_capital,
+        monatsbeitrag: 0,
+        monate: 0,
+      });
+      const beitraegeBisJetzt =
+        basisHeute + (punkt.contributions_cum - vertrag.current_capital);
+      const steuer = calculateLifeInsuranceTax(
+        punkt.capital - beitraegeBisJetzt,
+        bestandsJahre,
         age,
         lvTaxOptions
       );
+      return summe + punkt.capital - steuer;
+    }, 0);
 
-      // Bestands-LV ist ebenfalls eine Versicherung → Halbeinkünfte-Regel.
-      // Der Vertragsbeginn wird seit Audit F06 mitgespeichert; damit zählt die
-      // Gesamtlaufzeit statt nur der Restlaufzeit (Alt-Datensätze: Rückfall).
-      const vertragsbeginn = calc.results?.contract_start_years?.[0] ?? null;
-      const bestandsJahre =
-        vertragsbeginn && vertragsbeginn > 1900
-          ? new Date().getFullYear() + year - vertragsbeginn
-          : year;
-      let bestandNet = bestandPoint.capital;
-      if (!calc.current_product_tax_free) {
-        // Audit B03: Steuerlich zaehlen die eingezahlten Beitraege, nicht der
-        // heutige Rueckkaufswert. `buildGuaranteedSeries` beginnt seine
-        // Beitragssumme beim heutigen Kapital - wer frueher mehr eingezahlt
-        // hat, als der Vertrag heute wert ist, bekam hier zu hohe Gewinne und
-        // damit zu viel Steuer. Die Kurve wich dann von der Kennzahl ab, die
-        // dieselbe Rechnung mit der richtigen Basis macht.
-        const basisHeute = beitragsbasis({
-          eingezahltBisher: calc.results?.eingezahlt_bisher_gesamt ?? null,
-          aktuellerWert: startCapital,
-          monatsbeitrag: 0,
-          monate: 0,
-        });
-        const beitraegeBisJetzt =
-          basisHeute + (bestandPoint.contributions_cum - startCapital);
-        const bestandTax = calculateLifeInsuranceTax(
-          bestandPoint.capital - beitraegeBisJetzt,
-          bestandsJahre,
-          age,
-          lvTaxOptions
-        );
-        bestandNet = bestandPoint.capital - bestandTax;
-      }
-
-      points.push({
-        year,
-        age,
-        fondsLV: Math.round(lvPoint.capital - lvTax),
-        bestand: Math.round(bestandNet),
-      });
-    }
+    points.push({
+      year,
+      age,
+      fondsLV: Math.round(lvPoint.capital - lvTax),
+      bestand: Math.round(bestandNet),
+    });
   }
 
   return points;

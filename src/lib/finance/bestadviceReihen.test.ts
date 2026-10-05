@@ -3,7 +3,7 @@ import { baueBestAdviceReihen } from './bestadviceReihen';
 import { beitragsbasis } from './bestadvice';
 import { calculateLifeInsuranceTax } from '@/components/shared/TaxCalculations';
 import { lvTaxOptionsFromSettings } from '@/entities/UserDefaults';
-import type { BestAdviceModel } from '@/entities/BestAdviceCalculation';
+import type { BestAdviceModel, LVEingabe } from '@/entities/BestAdviceCalculation';
 
 /**
  * Der Bestandsvertrag ist heute weniger wert, als eingezahlt wurde – der
@@ -104,6 +104,85 @@ describe('BestAdvice-Reihen (B03)', () => {
   it('zeigt im Bruttomodus den unversteuerten Verlauf', () => {
     const reihe = baueBestAdviceReihen(fall(), 'gross');
     expect(reihe[reihe.length - 1].bestand).toBe(100_000);
+  });
+
+  it('rechnet jeden Vertrag mit seinen eigenen Steuermerkmalen (B03)', () => {
+    // Zwei Vertraege: einer steuerfrei, einer nicht, verschiedene
+    // Vertragsbeginne. Aggregiert gerechnet gilt die Steuerfreiheit fuer alle
+    // oder keinen - und der Endwert stimmt dann nicht mehr.
+    const vertraege: LVEingabe[] = [
+      {
+        label: 'LV 1',
+        monthly_contribution: 100,
+        current_capital: 30_000,
+        guaranteed_end_capital: 100_000,
+        current_product_tax_free: false,
+        contract_start_year: 2010,
+        eingezahlt_bisher: 40_000,
+      },
+      {
+        label: 'LV 2',
+        monthly_contribution: 50,
+        current_capital: 10_000,
+        guaranteed_end_capital: 40_000,
+        current_product_tax_free: true,
+        contract_start_year: 2020,
+        eingezahlt_bisher: 12_000,
+      },
+    ];
+    const calc = fall({
+      current_monthly_contribution: 150,
+      current_capital: 40_000,
+      guaranteed_end_capital: 140_000,
+    });
+    calc.results!.lvs_inputs = vertraege;
+
+    const letzte = baueBestAdviceReihen(calc, 'net');
+    const ende = letzte[letzte.length - 1].bestand;
+
+    // Soll: jeder Vertrag einzeln, dann summiert - wie es die Kennzahlen tun
+    const soll = vertraege.reduce((summe, v) => {
+      if (v.current_product_tax_free) return summe + v.guaranteed_end_capital;
+      return summe + kennzahlBestandNetto(fall({
+        current_monthly_contribution: v.monthly_contribution,
+        current_capital: v.current_capital,
+        guaranteed_end_capital: v.guaranteed_end_capital,
+        results: {
+          ...fall().results!,
+          contract_start_years: [v.contract_start_year ?? null],
+          eingezahlt_bisher_gesamt: v.eingezahlt_bisher ?? undefined,
+        },
+      }));
+    }, 0);
+    expect(ende).toBe(Math.round(soll));
+
+    // Gegenprobe: Der steuerfreie Vertrag darf die Steuer des anderen nicht
+    // mitbestimmen - aggregiert waere das Ergebnis ein anderes.
+    const aggregiert = { ...calc, results: { ...calc.results!, lvs_inputs: undefined } };
+    const aggEnde = baueBestAdviceReihen(aggregiert as BestAdviceModel, 'net');
+    expect(aggEnde[aggEnde.length - 1].bestand).not.toBe(ende);
+  });
+
+  it('summiert im Bruttomodus ueber alle Vertraege (B03)', () => {
+    const calc = fall({ guaranteed_end_capital: 140_000 });
+    calc.results!.lvs_inputs = [
+      {
+        label: 'LV 1',
+        monthly_contribution: 100,
+        current_capital: 30_000,
+        guaranteed_end_capital: 100_000,
+        current_product_tax_free: false,
+      },
+      {
+        label: 'LV 2',
+        monthly_contribution: 50,
+        current_capital: 10_000,
+        guaranteed_end_capital: 40_000,
+        current_product_tax_free: true,
+      },
+    ];
+    const reihe = baueBestAdviceReihen(calc, 'gross');
+    expect(reihe[reihe.length - 1].bestand).toBe(140_000);
   });
 
   it('liefert eine Zeile je Laufzeitjahr', () => {

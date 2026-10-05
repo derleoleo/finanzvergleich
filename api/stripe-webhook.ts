@@ -281,7 +281,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Schritt 1: beanspruchen. Ein haengengebliebener Versuch darf nach
         // einer Weile erneut aufgenommen werden - sonst bliebe die Werbung
-        // fuer immer in_arbeit.
+        // fuer immer in_arbeit. Ein frischer Versuch dagegen laeuft gerade
+        // woanders; dann wird vertagt statt uebernommen.
         const wiederaufnahmeAb = new Date(Date.now() - WIEDERAUFNAHME_MS).toISOString();
         const { data: beansprucht, error: anspruchFehler } = await supabase
           .from("werbungen")
@@ -400,13 +401,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return "ok";
       };
 
-      // Wie lange ein laufender Versuch als abgebrochen gilt. Dieselbe Frist
-      // wie in `belohne` - sonst meldete die Suche einen Datensatz als
-      // wiederaufnehmbar, den die Beanspruchung danach ablehnt.
-      const steckengeblieben = new Date(Date.now() - WIEDERAUFNAHME_MS).toISOString();
-      const offenOderHaengend =
-        `status.eq.${WERBUNG_STATUS.registriert},` +
-        `and(status.eq.${WERBUNG_STATUS.inArbeit},in_arbeit_seit.lt."${steckengeblieben}")`;
+      // Jede noch nicht abgeschlossene Werbung, unabhaengig vom Alter des
+      // laufenden Versuchs.
+      //
+      // Frueher schnitt dieser Filter laufende Versuche innerhalb der Frist
+      // weg. Dann war die Liste leer, `belohne` wurde gar nicht erst gerufen,
+      // und der Webhook antwortete 200 - Stripe stellte nie wieder zu. Die
+      // Frist gehoert deshalb nur an eine Stelle: in `belohne`, wo sie ueber
+      // Beanspruchen, Vertagen oder Aufgeben entscheidet.
+      const nochOffen =
+        `status.eq.${WERBUNG_STATUS.registriert},status.eq.${WERBUNG_STATUS.inArbeit}`;
 
       // Rolle 1: Der Zahlende wurde geworben → Anspruch entsteht jetzt.
       //
@@ -419,7 +423,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .from("werbungen")
         .select("id, werber_user_id, qualifiziert_am")
         .eq("geworbener_user_id", zahlerId)
-        .or(offenOderHaengend)
+        .or(nochOffen)
         .maybeSingle();
       if (geworbenerFehler) {
         console.error("[stripe-webhook] werbungen nicht lesbar", geworbenerFehler);
@@ -449,7 +453,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .from("werbungen")
         .select("id, werber_user_id")
         .eq("werber_user_id", zahlerId)
-        .or(offenOderHaengend)
+        .or(nochOffen)
         .not("qualifiziert_am", "is", null);
       if (werberListeFehler) {
         console.error("[stripe-webhook] offene Werbungen nicht lesbar", werberListeFehler);
