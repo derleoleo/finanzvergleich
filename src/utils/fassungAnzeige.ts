@@ -47,6 +47,46 @@ const BESCHRIFTUNGEN: Record<string, string> = {
   wechselkosten_gesamt: 'Wechselkosten gesamt',
   eingezahlt_bisher_gesamt: 'Bisher eingezahlt',
   break_even_rendite: 'Break-even-Rendite',
+  // Eingabefelder des Altersvorsorgedepots
+  geburtsjahr: 'Geburtsjahr',
+  beitragsjahrStart: 'Erstes Beitragsjahr',
+  auszahlungsbeginnAlter: 'Auszahlung ab Alter',
+  auszahlplanEndalter: 'Auszahlplan bis Alter',
+  berechtigung: 'Zulageberechtigung',
+  splitting: 'Zusammenveranlagung',
+  kinder: 'Kinder',
+  ehegatteMittelbarBerechtigt: 'Ehegatte mittelbar berechtigt',
+  eigenbeitragEhegatteUnmittelbar: 'Eigenbeitrag des Ehegatten',
+  eigenbeitragMonatlich: 'Eigenbeitrag monatlich',
+  beitragsdynamikPaJahr: 'Beitragsdynamik p. a.',
+  zvEJahr: 'Zu versteuerndes Einkommen',
+  kirchensteuersatz: 'Kirchensteuersatz',
+  soliBeruecksichtigen: 'Solidaritätszuschlag',
+  steuersatzImAlter: 'Steuersatz im Alter',
+  effektivkostenPaJahr: 'Effektivkosten p. a.',
+  fixkostenProJahr: 'Fixkosten pro Jahr',
+  renditeBruttoPaJahr: 'Rendite brutto p. a.',
+  auszahlform: 'Auszahlform',
+  teilkapitalAnteil: 'Teilkapitalanteil',
+  rentenfaktorProZehntausend: 'Rentenfaktor je 10.000 €',
+  kvStatusImAlter: 'Krankenversicherung im Alter',
+  vergleichspartner: 'Vergleich mit',
+  depotKostenPaJahr: 'Depotkosten p. a.',
+  vergleichsmodus: 'Vergleichsbasis',
+  sparerpauschbetrag: 'Sparerpauschbetrag',
+  inflationPaJahr: 'Inflation p. a.',
+  zulagenZuflussVerzoegerungJahre: 'Zulagen fließen verzögert zu (Jahre)',
+  erstattungReinvestieren: 'Erstattung wieder anlegen',
+  zweitvertrag: 'Zweiter Vertrag',
+  // Eingabefelder der uebrigen Rechner
+  contract_duration_years: 'Laufzeit',
+  monthly_contribution: 'Monatlicher Beitrag',
+  assumed_annual_return: 'Angenommene Rendite p. a.',
+  lump_sum: 'Einmalanlage',
+  birth_year: 'Geburtsjahr',
+  depot_costs_annual: 'Depotkosten p. a.',
+  lv_cost_type: 'Kostenangabe der Police',
+  dynamik_percent: 'Beitragsdynamik',
   current_age: 'Alter heute',
   end_age: 'Endalter',
   start_age: 'Beginn-Alter',
@@ -202,7 +242,18 @@ export function kennzahlenLesen(results: Record<string, unknown>): [string, numb
  * Prozentpunkte in den Ergebnissen; als Euro ausgegeben ergäben sie Unsinn
  * („Effektivkosten 1 €").
  */
-export type Einheit = 'euro' | 'prozent' | 'alter' | 'jahre' | 'monate';
+export type Einheit =
+  | 'euro'
+  | 'prozent'
+  /** Dezimalanteil (0,005 = 0,5 %). Das AVD-Modul rechnet durchweg so. */
+  | 'anteil'
+  | 'alter'
+  | 'jahre'
+  | 'monate'
+  /** Kalenderjahr - ohne Tausenderpunkt, sonst steht da "1.985". */
+  | 'jahreszahl'
+  /** Blanke Anzahl, etwa Kinder. */
+  | 'anzahl';
 
 /**
  * Die Einheit laesst sich aus dem Namen nicht zuverlaessig erraten:
@@ -233,12 +284,40 @@ const EINHEITEN: Record<string, Einheit> = {
   month: 'monate',
   months: 'monate',
   entnahmemonate: 'monate',
+  // Kalenderjahre
+  geburtsjahr: 'jahreszahl',
+  birth_year: 'jahreszahl',
+  beitragsjahrStart: 'jahreszahl',
+  // Altersangaben des AVD-Moduls
+  auszahlungsbeginnAlter: 'alter',
+  auszahlplanEndalter: 'alter',
+  alterBeiAuszahlung: 'alter',
+  alter_heute: 'alter',
+  retirement_age_input: 'alter',
+  // Anzahlen, keine Betraege
+  kinder: 'anzahl',
+  kinderGeborenVor2008: 'anzahl',
+  kinderGeborenAb2008: 'anzahl',
+  zulagenZuflussVerzoegerungJahre: 'jahre',
+  // Dezimalanteile des AVD-Moduls (0,005 = 0,5 %)
+  effektivkostenPaJahr: 'anteil',
+  renditeBruttoPaJahr: 'anteil',
+  depotKostenPaJahr: 'anteil',
+  inflationPaJahr: 'anteil',
+  beitragsdynamikPaJahr: 'anteil',
+  kirchensteuersatz: 'anteil',
+  steuersatzImAlter: 'anteil',
+  teilkapitalAnteil: 'anteil',
+  terPaJahr: 'anteil',
 };
 
 export function einheitFuer(schluessel: string): Einheit {
   const bekannt = EINHEITEN[schluessel];
   if (bekannt) return bekannt;
   if (/_percent$|rendite|quote$/i.test(schluessel)) return 'prozent';
+  // Das AVD-Modul fuehrt alle Saetze als Dezimalanteil und benennt sie
+  // einheitlich auf "...PaJahr" oder "...satz".
+  if (/PaJahr$|satz$/.test(schluessel)) return 'anteil';
   return 'euro';
 }
 
@@ -265,8 +344,14 @@ export function formatiereKennzahl(schluessel: string, wert: number): string {
       return `${zahl(wert)} Jahre`;
     case 'jahre':
       return wert === 1 ? '1 Jahr' : `${zahl(wert)} Jahre`;
+    case 'anteil':
+      return `${zahl(wert * 100, 2)} %`;
     case 'monate':
       return wert === 1 ? '1 Monat' : `${zahl(wert)} Monate`;
+    case 'jahreszahl':
+      return String(Math.round(wert));
+    case 'anzahl':
+      return zahl(wert);
     default:
       return `${zahl(wert)} €`;
   }
@@ -305,6 +390,61 @@ export function sortiereKennzahlen(eintraege: [string, number][]): [string, numb
     if (unterschied !== 0) return unterschied;
     return beschriftung(a[0]).localeCompare(beschriftung(b[0]), 'de');
   });
+}
+
+/**
+ * Auswahlwerte, wie sie in der Datenbank stehen, in Beratungssprache. Ohne
+ * das stuende in der Fassung "auszahlplan" oder "pflicht".
+ */
+const WERTE: Record<string, string> = {
+  auszahlplan: 'Auszahlplan',
+  leibrente: 'Leibrente',
+  unmittelbar: 'unmittelbar zulageberechtigt',
+  mittelbar: 'mittelbar zulageberechtigt',
+  keine: 'nicht zulageberechtigt',
+  pflicht: 'pflichtversichert',
+  freiwillig: 'freiwillig versichert',
+  privat: 'privat versichert',
+  depot: 'freies Depot',
+  fonds_lv: 'Fondspolice',
+  riester_alt: 'Riester-Bestandsvertrag',
+  gleicher_nettoaufwand: 'gleicher Netto-Aufwand',
+  gleicher_bruttobeitrag: 'gleicher Bruttobeitrag',
+  eur: 'tatsächliche Kosten (€)',
+  prozent: 'Effektivkosten (%)',
+  net: 'nach Steuern',
+  gross: 'vor Steuern',
+};
+
+/** Ein gespeicherter Auswahlwert, lesbar gemacht. */
+export function wertText(wert: string): string {
+  return WERTE[wert] ?? wert;
+}
+
+/**
+ * Die gespeicherten Eingaben einer Fassung, lesbar aufbereitet.
+ *
+ * Ohne sie zeigt die Fassung ein Ergebnis, aber nicht, womit gerechnet
+ * wurde - und genau das macht einen Beratungsstand nachvollziehbar.
+ *
+ * Verschachteltes (Fondslisten, Bestandsvertraege) bleibt aussen vor: Es
+ * sinnvoll darzustellen setzt Kenntnis des jeweiligen Rechners voraus, und
+ * eine rohe JSON-Zeile vor einem Kunden waere schlimmer als nichts.
+ */
+export function eingabenLesen(form: unknown): [string, string][] {
+  if (!form || typeof form !== 'object') return [];
+  const eintraege: [string, string][] = [];
+  for (const [schluessel, wert] of Object.entries(form as Record<string, unknown>)) {
+    if (wert === null || wert === undefined || wert === '') continue;
+    if (typeof wert === 'boolean') {
+      eintraege.push([schluessel, wert ? 'ja' : 'nein']);
+    } else if (typeof wert === 'number') {
+      eintraege.push([schluessel, formatiereKennzahl(schluessel, wert)]);
+    } else if (typeof wert === 'string') {
+      eintraege.push([schluessel, wertText(wert)]);
+    }
+  }
+  return eintraege.sort((a, b) => beschriftung(a[0]).localeCompare(beschriftung(b[0]), 'de'));
 }
 
 /** Datum und Uhrzeit, wie sie in der Oberfläche erscheinen sollen. */

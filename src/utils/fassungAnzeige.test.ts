@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  eingabenLesen,
   einheitFuer,
   formatiereKennzahl,
   istProzent,
@@ -78,6 +79,75 @@ describe('Reihen einer gespeicherten Fassung', () => {
     expect(reihenLesen('keine Reihe')).toBeNull();
     expect(reihenLesen({ punkte: [] })).toBeNull();
     expect(reihenLesen({ punkte: 'kaputt' })).toBeNull();
+  });
+});
+
+describe('Eingaben einer gespeicherten Fassung', () => {
+  it('bereitet Zahlen, Texte und Schalter lesbar auf', () => {
+    const e = Object.fromEntries(
+      eingabenLesen({
+        name: 'Musterfall',
+        end_age: 85,
+        monthly_contribution: 150,
+        soliBeruecksichtigen: true,
+        splitting: false,
+      })
+    );
+    expect(e.name).toBe('Musterfall');
+    expect(e.end_age).toBe('85 Jahre');
+    expect(e.monthly_contribution).toBe('150 €');
+    expect(e.soliBeruecksichtigen).toBe('ja');
+    expect(e.splitting).toBe('nein');
+  });
+
+  it('laesst Leeres und Verschachteltes weg', () => {
+    const k = eingabenLesen({
+      leer: '',
+      nichts: null,
+      fehlt: undefined,
+      fonds: [{ allocation_eur: 100 }],
+      bestandsvertrag: { kosten: 1 },
+      beitrag: 80,
+    }).map(([s]) => s);
+    expect(k).toEqual(['beitrag']);
+  });
+
+  it('setzt Jahreszahlen, Alter und Dezimalquoten richtig', () => {
+    const e = Object.fromEntries(
+      eingabenLesen({
+        geburtsjahr: 1985,
+        auszahlplanEndalter: 85,
+        effektivkostenPaJahr: 0.005,
+        kirchensteuersatz: 0.09,
+        kinder: 2,
+      })
+    );
+    // Vorher stand hier "1.985 €", "85 €" und "0 €"
+    expect(e.geburtsjahr).toBe('1985');
+    expect(e.auszahlplanEndalter).toBe('85 Jahre');
+    expect(e.effektivkostenPaJahr).toBe('0,50 %');
+    expect(e.kirchensteuersatz).toBe('9,00 %');
+    expect(e.kinder).toBe('2');
+  });
+
+  it('schreibt Auswahlwerte aus', () => {
+    const e = Object.fromEntries(
+      eingabenLesen({
+        auszahlform: 'auszahlplan',
+        berechtigung: 'unmittelbar',
+        kvStatusImAlter: 'pflicht',
+        vergleichspartner: 'fonds_lv',
+      })
+    );
+    expect(e.auszahlform).toBe('Auszahlplan');
+    expect(e.berechtigung).toBe('unmittelbar zulageberechtigt');
+    expect(e.kvStatusImAlter).toBe('pflichtversichert');
+    expect(e.vergleichspartner).toBe('Fondspolice');
+  });
+
+  it('verkraftet fehlende Eingaben', () => {
+    expect(eingabenLesen(null)).toEqual([]);
+    expect(eingabenLesen('kaputt')).toEqual([]);
   });
 });
 

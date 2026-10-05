@@ -39,6 +39,7 @@ import { usePDFExport } from '@/utils/usePDFExport';
 import PDFSectionDialog from '@/components/pdf/PDFSectionDialog';
 import {
   beschriftung,
+  eingabenLesen,
   formatiereKennzahl,
   kennzahlenLesen,
   reihenLesen,
@@ -106,6 +107,7 @@ export default function FassungAnsicht() {
   const stempel = fassung.results as Partial<ModellStempel>;
   const kennzahlen = sortiereKennzahlen(kennzahlenLesen(fassung.results));
   const reihen = reihenLesen(fassung.reihen);
+  const eingaben = eingabenLesen(fassung.form);
   const bewertetAm = stempel.bewertet_am
     ? new Date(stempel.bewertet_am).toLocaleDateString('de-DE')
     : null;
@@ -120,6 +122,7 @@ export default function FassungAnsicht() {
 
   const abschnitte = [
     { id: 'kennzahlen', label: 'Kennzahlen' },
+    ...(eingaben.length > 0 ? [{ id: 'eingaben', label: 'Eingaben' }] : []),
     ...(reihen ? [{ id: 'verlauf', label: 'Verlauf' }] : []),
     ...(reihen ? [{ id: 'tabelle', label: 'Tabelle' }] : []),
   ];
@@ -192,6 +195,34 @@ export default function FassungAnsicht() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Audit A03: Ohne die Eingaben zeigt die Fassung ein Ergebnis, aber
+            nicht, womit gerechnet wurde. */}
+        {eingaben.length > 0 && (
+          <div data-pdf-section="eingaben">
+            <Card className="border-0 shadow-lg bg-white">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-bold text-slate-900">Eingaben</CardTitle>
+                <p className="text-xs text-slate-500 mt-1">
+                  Die Angaben, mit denen diese Fassung gerechnet wurde.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
+                  {eingaben.map(([schluessel, wert]) => (
+                    <div
+                      key={schluessel}
+                      className="flex items-baseline justify-between gap-4 border-b border-slate-100 py-1"
+                    >
+                      <span className="text-sm text-slate-600">{beschriftung(schluessel)}</span>
+                      <span className="text-sm font-medium text-slate-900 text-right">{wert}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {reihen && (
           <div data-pdf-section="verlauf">
