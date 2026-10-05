@@ -46,10 +46,38 @@ describe('Reihen einer gespeicherten Fassung', () => {
     expect(reihenLesen([{ avd: 100, depot: 90 }])).toBeNull();
   });
 
+  it('nimmt die Beschriftungen der Fassung, wenn sie welche mitbringt', () => {
+    // Im AVD heisst die zweite Kurve immer `depot`, auch wenn sie eine
+    // Fondspolice abbildet. Ohne mitgelieferte Namen stuende "Depot" darueber.
+    const r = reihenLesen({
+      punkte: mitAlter,
+      beschriftungen: {
+        avd: 'Altersvorsorgedepot (vor Steuern)',
+        depot: 'Fondspolice (vor Steuern)',
+      },
+      hinweis: 'Nominale Werte vor der abschließenden Besteuerung.',
+    })!;
+    expect(r.beschriften('depot')).toBe('Fondspolice (vor Steuern)');
+    expect(r.hinweis).toContain('Nominale Werte');
+  });
+
+  it('faellt fuer unbenannte Schluessel auf die allgemeine Zuordnung zurueck', () => {
+    const r = reihenLesen({ punkte: mitAlter, beschriftungen: { depot: 'Fondspolice' } })!;
+    expect(r.beschriften('avd')).toBe('Altersvorsorgedepot');
+  });
+
+  it('liest alte Fassungen weiter, die nur ein Array gespeichert haben', () => {
+    const r = reihenLesen(mitAlter)!;
+    expect(r.beschriften('depot')).toBe('Depot');
+    expect(r.hinweis).toBeUndefined();
+  });
+
   it('verkraftet leere und fehlerhafte Eingaben', () => {
     expect(reihenLesen([])).toBeNull();
     expect(reihenLesen(null)).toBeNull();
     expect(reihenLesen('keine Reihe')).toBeNull();
+    expect(reihenLesen({ punkte: [] })).toBeNull();
+    expect(reihenLesen({ punkte: 'kaputt' })).toBeNull();
   });
 });
 

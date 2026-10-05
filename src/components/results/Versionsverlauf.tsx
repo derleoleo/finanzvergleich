@@ -161,10 +161,10 @@ export default function Versionsverlauf({ fallTabelle, fallId, neuLadenAb = 0 }:
                   <Tooltip
                     formatter={(wert: unknown, name: unknown) => [
                       formatCurrency(Number(wert || 0)),
-                      beschriftung(String(name)),
+                      gezeichnet.beschriften(String(name)),
                     ]}
                   />
-                  <Legend formatter={(name) => beschriftung(String(name))} />
+                  <Legend formatter={(name) => gezeichnet.beschriften(String(name))} />
                   {gezeichnet.linien.map((schluessel, i) => (
                     <Line
                       key={schluessel}

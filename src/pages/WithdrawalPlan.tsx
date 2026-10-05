@@ -233,6 +233,34 @@ export default function WithdrawalPlan() {
   // Audit N03: Beim Öffnen eines gespeicherten Plans die damaligen Kennzahlen
   // zeigen. Felder, die ältere Datensätze nicht haben, bleiben weg statt als
   // Null zu erscheinen.
+  /**
+   * Was in die Fassung geht (Audit A03).
+   *
+   * Bisher nur Szenario A. War der Szenario-Vergleich eingeschaltet, sah der
+   * Berater zwei Verlaeufe, die Fassung hielt aber nur einen fest - die
+   * gespeicherte Auswertung war damit nicht die gezeigte.
+   */
+  const fassungsReihen = () => {
+    const punkte = withdrawalData.map((z, i) => ({
+      jahr: z.year,
+      alter: z.age,
+      kapital: z.endCapital,
+      entnahme: z.withdrawal,
+      ...(compareEnabled && compareData[i] ? { kapital_b: compareData[i].endCapital } : {}),
+    }));
+    return {
+      punkte,
+      beschriftungen: compareEnabled
+        ? {
+            kapital: `Restkapital bei ${fmt(customWithdrawal)}/Jahr`,
+            kapital_b: `Restkapital bei ${fmt(compareWithdrawal)}/Jahr`,
+            entnahme: 'Entnahme',
+          }
+        : { kapital: 'Restkapital', entnahme: 'Entnahme' },
+      hinweis: 'Werte zu Jahresende. Steuern auf Entnahmen sind nicht enthalten.',
+    };
+  };
+
   const gespeicherteKennzahlen = useMemo<GespeicherteKennzahl[]>(() => {
     if (!gespeicherteErgebnisse) return [];
     const g = gespeicherteErgebnisse;
@@ -305,7 +333,7 @@ export default function WithdrawalPlan() {
           name: nutzlast.name,
           form: nutzlast.form,
           results: nutzlast.results as unknown as Record<string, unknown>,
-          reihen: withdrawalData,
+          reihen: fassungsReihen(),
         });
         setFassungFehlt(stand.stand === 'fehlt' ? stand : null);
         setVersionenStand((n) => n + 1);

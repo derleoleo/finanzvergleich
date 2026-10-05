@@ -114,14 +114,50 @@ export type GezeichneteReihen = {
    * eine Euro-Formatierung.
    */
   zeitspalten: string[];
+  /**
+   * Beschriftung einer Linie. Bringt die Fassung eigene Namen mit, gelten
+   * diese - sonst die allgemeine Zuordnung.
+   */
+  beschriften: (schluessel: string) => string;
+  /** Was die Reihe darstellt, z. B. "nominal, vor Steuern". */
+  hinweis?: string;
 };
+
+/**
+ * Form der gespeicherten Reihen.
+ *
+ * Frueher nur ein Array. Das reichte nicht: Im AVD heisst die zweite Kurve
+ * immer `depot`, auch wenn sie eine Fondspolice oder einen Riester-Vertrag
+ * abbildet - der allgemeine Renderer schrieb dann "Depot" darueber. Und ob
+ * nominal oder real gerechnet wurde, stand nirgends. Die Fassung kann ihre
+ * Beschriftungen deshalb mitbringen. Alte Fassungen bleiben lesbar.
+ */
+type ReihenUmschlag = {
+  punkte: unknown;
+  beschriftungen?: Record<string, string>;
+  hinweis?: string;
+};
+
+function auspacken(reihen: unknown): ReihenUmschlag {
+  if (
+    reihen &&
+    typeof reihen === 'object' &&
+    !Array.isArray(reihen) &&
+    'punkte' in (reihen as Record<string, unknown>)
+  ) {
+    const u = reihen as ReihenUmschlag;
+    return { punkte: u.punkte, beschriftungen: u.beschriftungen, hinweis: u.hinweis };
+  }
+  return { punkte: reihen };
+}
 
 /**
  * Die Reihen sehen je Rechner anders aus. Statt sieben Spezialfälle zu pflegen
  * wird die Form gelesen: der erste Zeitschlüssel ist die Achse, jeder weitere
  * Zahlenwert eine Linie.
  */
-export function reihenLesen(reihen: unknown): GezeichneteReihen | null {
+export function reihenLesen(eingabe: unknown): GezeichneteReihen | null {
+  const { punkte: reihen, beschriftungen, hinweis } = auspacken(eingabe);
   if (!Array.isArray(reihen) || reihen.length === 0) return null;
   const erste = reihen[0];
   if (typeof erste !== 'object' || erste === null) return null;
@@ -141,7 +177,14 @@ export function reihenLesen(reihen: unknown): GezeichneteReihen | null {
   const zeitspalten = schluessel.filter((k) => k !== achse && istZeit(k) && istZahl(k));
   if (linien.length === 0) return null;
 
-  return { daten: reihen as Record<string, number>[], achse, linien, zeitspalten };
+  return {
+    daten: reihen as Record<string, number>[],
+    achse,
+    linien,
+    zeitspalten,
+    beschriften: (k) => beschriftungen?.[k] ?? beschriftung(k),
+    hinweis,
+  };
 }
 
 /** Zahlenwerte aus `results`, ohne die Felder des Modellstempels. */

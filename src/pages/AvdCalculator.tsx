@@ -333,6 +333,45 @@ export default function AvdCalculator() {
     ),
   }));
 
+  /**
+   * Was in die Fassung geht (Audit A05).
+   *
+   * Zwei Unterschiede zu `verlaufsdaten`: Es wird immer nominal gerechnet,
+   * und die Beschriftungen reisen mit.
+   *
+   * Nominal, weil `showReal` ein Anzeigeschalter ist. Eine im Real-Modus
+   * gespeicherte Fassung trug bisher reale Kurven neben nominalen Kennzahlen,
+   * ohne dass das irgendwo stand. Ein Schalter darf das Archivformat nicht
+   * unbemerkt veraendern.
+   *
+   * Die Beschriftungen, weil die zweite Kurve immer `depot` heisst - auch
+   * wenn sie eine Fondspolice oder einen Riester-Vertrag abbildet. Der
+   * allgemeine Renderer schrieb darueber "Depot".
+   */
+  const fassungsReihen = {
+    punkte: ergebnis.jahre.map((j, i) => ({
+      jahr: j.jahr,
+      alter: j.alter,
+      avd: Math.round(j.kapitalGesamt),
+      depot: Math.round(
+        ergebnis.riesterAlt?.kapitalProJahr[i] ??
+          ergebnis.fondsLv?.kapitalProJahr[i] ??
+          j.depotKapital
+      ),
+      eingezahlt: Math.round(
+        ergebnis.jahre
+          .slice(0, j.jahr - ergebnis.jahre[0].jahr + 1)
+          .reduce((s, x) => s + x.eigenbeitrag, 0)
+      ),
+    })),
+    beschriftungen: {
+      avd: 'Altersvorsorgedepot (vor Steuern)',
+      depot: `${vergleichName} (vor Steuern)`,
+      eingezahlt: 'Eigenbeiträge',
+    },
+    hinweis: 'Nominale Werte vor der abschließenden Besteuerung.',
+  };
+
   const endAvd = showReal ? ergebnis.endkapitalNachSteuerReal : ergebnis.endkapitalNachSteuer;
   const endVergleichNominal = ergebnis.riesterAlt
     ? ergebnis.riesterAlt.endkapitalNachSteuer
@@ -423,7 +462,7 @@ export default function AvdCalculator() {
           name: nutzlast.name,
           form: nutzlast.form,
           results: nutzlast.results as unknown as Record<string, unknown>,
-          reihen: verlaufsdaten,
+          reihen: fassungsReihen,
         });
         setFassungFehlt(stand.stand === 'fehlt' ? stand : null);
         setVersionenStand((n) => n + 1);

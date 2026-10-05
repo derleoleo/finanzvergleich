@@ -198,6 +198,11 @@ export default function FassungAnsicht() {
             <Card className="border-0 shadow-lg bg-white">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg font-bold text-slate-900">Verlauf</CardTitle>
+                {/* Ohne diese Angabe bleibt offen, ob die Kurven nominal oder
+                    real und vor oder nach Steuern gemeint sind. */}
+                {reihen.hinweis && (
+                  <p className="text-xs text-slate-500 mt-1">{reihen.hinweis}</p>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="h-80 w-full">
@@ -212,11 +217,11 @@ export default function FassungAnsicht() {
                       <Tooltip
                         formatter={(wert: unknown, name: unknown) => [
                           formatCurrency(Number(wert || 0)),
-                          beschriftung(String(name)),
+                          reihen.beschriften(String(name)),
                         ]}
-                        labelFormatter={(w) => `${beschriftung(reihen.achse)} ${w}`}
+                        labelFormatter={(w) => `${reihen.beschriften(reihen.achse)} ${w}`}
                       />
-                      <Legend formatter={(name) => beschriftung(String(name))} />
+                      <Legend formatter={(name) => reihen.beschriften(String(name))} />
                       {reihen.linien.map((schluessel, i) => (
                         <Line
                           key={schluessel}
@@ -253,11 +258,11 @@ export default function FassungAnsicht() {
                     <TableHeader>
                       <TableRow className="border-slate-200">
                         <TableHead className="font-semibold text-slate-700">
-                          {beschriftung(reihen.achse)}
+                          {reihen.beschriften(reihen.achse)}
                         </TableHead>
                         {reihen.zeitspalten.map((schluessel) => (
                           <TableHead key={schluessel} className="font-semibold text-slate-700">
-                            {beschriftung(schluessel)}
+                            {reihen.beschriften(schluessel)}
                           </TableHead>
                         ))}
                         {reihen.linien.map((schluessel) => (
@@ -265,7 +270,7 @@ export default function FassungAnsicht() {
                             key={schluessel}
                             className="font-semibold text-slate-700 text-right"
                           >
-                            {beschriftung(schluessel)}
+                            {reihen.beschriften(schluessel)}
                           </TableHead>
                         ))}
                       </TableRow>
