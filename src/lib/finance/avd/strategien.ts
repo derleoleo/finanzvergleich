@@ -57,8 +57,39 @@ export type Strategie = {
   kapitalProJahr: number[];
 };
 
+/**
+ * Das rechnerisch beste Verhaeltnis zwischen AVD und Zweitvertrag.
+ *
+ * Abgrenzung zum `Aufteilungspunkt`: Der ist der Zulagenknick, eine reine
+ * Rechtsgroesse - ab 360 EUR im Jahr halbiert sich die Grundzulage. Das
+ * Optimum hier haengt zusaetzlich an Rendite, Kosten, Laufzeit und vor allem
+ * am Steuersatz im Alter; es ist also nur so belastbar wie diese Annahmen.
+ * Beides nebeneinander auszuweisen ist Absicht: Die eine Zahl ist Gesetz, die
+ * andere eine Prognose.
+ */
+export type AufteilungsOptimum = {
+  /** Bester AVD-Anteil in Euro je Monat; darf 0 oder der volle Beitrag sein. */
+  monatsbeitrag: number;
+  endkapitalNachSteuer: number;
+  /** Was das Optimum gegenueber dem Zulagenknick bringt. Nie negativ. */
+  vorteilGegenVorschlag: number;
+  /** Spanne, in der das Ergebnis um weniger als `plateauToleranz` abweicht. */
+  plateauVon: number;
+  plateauBis: number;
+  plateauToleranz: number;
+  /**
+   * Das Plateau deckt fast den ganzen Bereich ab - die Aufteilung ist dann
+   * nahezu gleichgueltig, und eine Punktempfehlung waere Scheingenauigkeit.
+   */
+  weitgehendGleichgueltig: boolean;
+  /** Abgetastete Punkte, von der Oberflaeche als Kurve verwendbar. */
+  stuetzstellen: { monatlich: number; endkapital: number }[];
+};
+
 export type StrategienErgebnis = {
   aufteilungspunkt: Aufteilungspunkt;
+  /** Rechnerisches Optimum; fehlt, wenn nichts aufzuteilen ist. */
+  optimum?: AufteilungsOptimum;
   /** Tatsächlich verwendeter Aufteilungsbetrag (Vorschlag oder Eingabe). */
   aufteilungMonatlich: number;
   /** true, wenn der Beitrag den Aufteilungspunkt nicht übersteigt – Z wäre X. */
@@ -254,8 +285,13 @@ export function berechneStrategien(args: {
   };
 
   // --- Z: Aufteilung -------------------------------------------------------
-  const avdTeil = simuliereAvd({ ...ohneDynamik, eigenbeitragMonatlich: aufteilung });
-  const zweit = zweitvertragRechnen(ohneDynamik, rest, args.zweitvertrag, jahre);
+  const { avdTeil, zweit } = kombinationRechnen(
+    ohneDynamik,
+    aufteilung,
+    rest,
+    args.zweitvertrag,
+    jahre
+  );
 
   const strategieZ: Strategie = {
     id: 'kombination',
@@ -286,6 +322,32 @@ export function berechneStrategien(args: {
   };
   hinweise.push(...zweit.hinweise);
 
+  // --- Rechnerisches Optimum ----------------------------------------------
+  // Der Zulagenknick ist eine Rechtsgroesse und oft nicht der beste Punkt:
+  // Solange der Steuersatz im Alter niedrig ist, schlaegt der gefoerderte
+  // Vertrag das Depot auch oberhalb von 360 EUR im Jahr. Deshalb wird der
+  // tatsaechliche Hochpunkt gesucht und beides nebeneinander ausgewiesen.
+  const obergrenzeAufteilung = Math.min(voll, GESETZ.EINZAHLUNG_MAX / 12);
+  let optimum: AufteilungsOptimum | undefined;
+  if (voll > 0 && obergrenzeAufteilung > 0) {
+    const amVorschlag = Math.max(0, Math.min(obergrenzeAufteilung, vorschlag));
+    const endkapitalVorschlag = kombinationRechnen(
+      ohneDynamik,
+      amVorschlag,
+      voll - amVorschlag,
+      args.zweitvertrag,
+      jahre
+    ).endkapital;
+    optimum = sucheOptimum({
+      ohneDynamik,
+      voll,
+      obergrenze: obergrenzeAufteilung,
+      zweitvertrag: args.zweitvertrag,
+      jahre,
+      endkapitalVorschlag,
+    });
+  }
+
   const strategien = [strategieX, strategieY, strategieZ];
   // Eine gesetzlich unmögliche Variante darf nicht als Sieger erscheinen
   const waehlbar = strategien.filter((s) => !s.unzulaessig);
@@ -295,6 +357,7 @@ export function berechneStrategien(args: {
 
   return {
     aufteilungspunkt,
+    optimum,
     aufteilungMonatlich: aufteilung,
     kombinationEntfaellt,
     strategien,
@@ -373,5 +436,98 @@ function zweitvertragRechnen(
     endkapitalNachSteuer: nurDepot.depot.endkapitalNetto,
     kapitalProJahr: nurDepot.jahre.map((j) => j.depotKapital),
     hinweise: [],
+  };
+}
+
+/**
+ * Ein Durchlauf der Aufteilung. Eigene Funktion, damit die Suche nach dem
+ * Optimum garantiert denselben Rechenweg nimmt wie die angezeigte Kachel -
+ * sonst stuende im Vorschlag eine Zahl, die die Kachel nicht bestaetigt.
+ */
+function kombinationRechnen(
+  ohneDynamik: AvdEingabe,
+  aufteilung: number,
+  rest: number,
+  zweitvertrag: ZweitvertragArt,
+  jahre: number
+) {
+  const avdTeil = simuliereAvd({ ...ohneDynamik, eigenbeitragMonatlich: aufteilung });
+  const zweit = zweitvertragRechnen(ohneDynamik, rest, zweitvertrag, jahre);
+  return { avdTeil, zweit, endkapital: avdTeil.endkapitalNachSteuer + zweit.endkapitalNachSteuer };
+}
+
+/** Anteil des Endkapitals, innerhalb dessen zwei Aufteilungen als gleichwertig gelten. */
+const PLATEAU_ANTEIL = 0.005;
+
+/**
+ * Sucht den Aufteilungsbetrag mit dem hoechsten Endkapital nach Steuern.
+ *
+ * Bewusst ein Raster und keine Ternaersuche: Die Kurve ist nicht eingipflig.
+ * Knapp oberhalb von null faellt sie zunaechst ab - ein kleiner Beitrag bindet
+ * Geld bis 65 im nachgelagert besteuerten Vertrag, loest aber noch keine volle
+ * Zulage aus. Danach steigt sie bis zum Zulagenknick. Eine Suche, die
+ * Eingipfligkeit unterstellt, liefe in dieses lokale Tal.
+ *
+ * Zwei Durchgaenge: ein grobes Raster ueber den ganzen Bereich, dann ein
+ * feines um den Treffer herum. Die Raender gehoeren dazu, denn haeufig ist
+ * "alles ins AVD" tatsaechlich das Beste.
+ */
+function sucheOptimum(args: {
+  ohneDynamik: AvdEingabe;
+  voll: number;
+  obergrenze: number;
+  zweitvertrag: ZweitvertragArt;
+  jahre: number;
+  /** Endkapital des Zulagenknicks, als Vergleichsmassstab. */
+  endkapitalVorschlag: number;
+}): AufteilungsOptimum {
+  const { ohneDynamik, voll, obergrenze, zweitvertrag, jahre } = args;
+  const bewertet = new Map<number, number>();
+  const bewerte = (a: number): number => {
+    const vorhanden = bewertet.get(a);
+    if (vorhanden !== undefined) return vorhanden;
+    const k = kombinationRechnen(ohneDynamik, a, voll - a, zweitvertrag, jahre).endkapital;
+    bewertet.set(a, k);
+    return k;
+  };
+
+  // Grobes Raster: rund 40 Punkte, mindestens 1 EUR Schrittweite
+  const grob = Math.max(1, Math.round(obergrenze / 40));
+  for (let a = 0; a <= obergrenze; a += grob) bewerte(a);
+  bewerte(obergrenze);
+
+  let bester = 0;
+  for (const [a, k] of bewertet) if (k > (bewertet.get(bester) ?? -Infinity)) bester = a;
+
+  // Feines Raster um den Treffer, damit der Knick nicht zwischen zwei
+  // Rasterpunkten verschwindet
+  if (grob > 1) {
+    const von = Math.max(0, bester - grob);
+    const bis = Math.min(obergrenze, bester + grob);
+    for (let a = von; a <= bis; a++) bewerte(a);
+    for (const [a, k] of bewertet) if (k > (bewertet.get(bester) ?? -Infinity)) bester = a;
+  }
+
+  const stuetzstellen = [...bewertet.entries()]
+    .map(([monatlich, endkapital]) => ({ monatlich, endkapital }))
+    .sort((x, y) => x.monatlich - y.monatlich);
+
+  const hoechstes = bewertet.get(bester) ?? 0;
+  const toleranz = Math.abs(hoechstes) * PLATEAU_ANTEIL;
+  const nahe = stuetzstellen.filter((x) => x.endkapital >= hoechstes - toleranz);
+  const plateauVon = nahe.length > 0 ? nahe[0].monatlich : bester;
+  const plateauBis = nahe.length > 0 ? nahe[nahe.length - 1].monatlich : bester;
+
+  return {
+    monatsbeitrag: bester,
+    endkapitalNachSteuer: hoechstes,
+    vorteilGegenVorschlag: Math.max(0, hoechstes - args.endkapitalVorschlag),
+    plateauVon,
+    plateauBis,
+    plateauToleranz: toleranz,
+    // Deckt das Plateau fast den ganzen Bereich ab, ist die Wahl beinahe
+    // gleichgueltig und eine Punktempfehlung Scheingenauigkeit.
+    weitgehendGleichgueltig: obergrenze > 0 && plateauBis - plateauVon >= obergrenze * 0.8,
+    stuetzstellen,
   };
 }

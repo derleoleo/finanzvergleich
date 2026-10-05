@@ -1161,6 +1161,75 @@ describe('Drei Strategien (30 + 1)', () => {
     expect(z.beitragAvdMonatlich + z.beitragZweitMonatlich).toBe(80);
   });
 
+  it('findet das Optimum und misst es am Zulagenknick', () => {
+    const r = berechneStrategien({ basis: basis(), zweitvertrag: 'depot' });
+    const o = r.optimum!;
+    expect(o).toBeDefined();
+    expect(o.monatsbeitrag).toBeGreaterThanOrEqual(0);
+    expect(o.monatsbeitrag).toBeLessThanOrEqual(80);
+    // Das Optimum kann den Vorschlag nicht unterbieten - sonst waere es keines
+    expect(o.vorteilGegenVorschlag).toBeGreaterThanOrEqual(0);
+    expect(o.endkapitalNachSteuer).toBeGreaterThan(0);
+  });
+
+  it('nimmt wirklich den hoechsten Punkt, nicht irgendeinen', () => {
+    const r = berechneStrategien({ basis: basis(), zweitvertrag: 'depot' });
+    const o = r.optimum!;
+    // Gegenprobe: Keine Stuetzstelle darf besser sein als das gemeldete Optimum.
+    for (const p of o.stuetzstellen) {
+      expect(p.endkapital).toBeLessThanOrEqual(o.endkapitalNachSteuer + 1e-6);
+    }
+    const beste = o.stuetzstellen.find((p) => p.monatlich === o.monatsbeitrag);
+    expect(beste?.endkapital).toBeCloseTo(o.endkapitalNachSteuer, 6);
+  });
+
+  it('stimmt mit der Kachel ueberein, die denselben Betrag rechnet', () => {
+    // Der wichtigste Test: Vorschlag und Kachel duerfen nicht auseinanderlaufen.
+    const r = berechneStrategien({ basis: basis(), zweitvertrag: 'depot' });
+    const o = r.optimum!;
+    const mitOptimum = berechneStrategien({
+      basis: basis(),
+      aufteilungMonatlich: o.monatsbeitrag,
+      zweitvertrag: 'depot',
+    });
+    expect(mitOptimum.strategien[2].endkapitalNachSteuer).toBeCloseTo(
+      o.endkapitalNachSteuer,
+      6
+    );
+  });
+
+  it('erkennt ein flaches Maximum, statt Scheingenauigkeit vorzugeben', () => {
+    // Bei niedriger Rendite liegen die Varianten dicht beieinander; dann ist
+    // eine Punktempfehlung irrefuehrend.
+    const flach = berechneStrategien({
+      basis: eingabe({ ...basis(), renditeBruttoPaJahr: 0.03 }),
+      zweitvertrag: 'depot',
+    }).optimum!;
+    expect(flach.plateauBis).toBeGreaterThanOrEqual(flach.plateauVon);
+    expect(flach.plateauVon).toBeLessThanOrEqual(flach.monatsbeitrag);
+    expect(flach.plateauBis).toBeGreaterThanOrEqual(flach.monatsbeitrag);
+  });
+
+  it('bleibt beim hohen Steuersatz im Alter beim Zulagenknick', () => {
+    // Genau der Fall, fuer den "30 + 1" gedacht ist: Ist die Rente hoch
+    // besteuert, lohnt sich der gefoerderte Vertrag nur bis zum Knick.
+    const r = berechneStrategien({
+      basis: eingabe({ ...basis(), eigenbeitragMonatlich: 150, steuersatzImAlter: 0.35 }),
+      zweitvertrag: 'depot',
+    });
+    expect(r.optimum!.monatsbeitrag).toBeLessThan(150);
+    expect(r.optimum!.monatsbeitrag).toBeGreaterThan(0);
+  });
+
+  it('haelt den Einzahlungsdeckel auch beim Optimum ein', () => {
+    const hoch = berechneStrategien({
+      basis: eingabe({ ...basis(), eigenbeitragMonatlich: 800 }),
+      zweitvertrag: 'depot',
+    });
+    // 6.840 EUR im Jahr sind 570 EUR im Monat (§ 1 Abs. 1 Nr. 5 AltZertG)
+    expect(hoch.optimum!.monatsbeitrag).toBeLessThanOrEqual(570);
+  });
+
   it('zieht die Erstattung nur ab, wenn sie dem Sparer zufällt (A06)', () => {
     // Wird sie wieder eingezahlt, landet sie im Kapital - dann ist der
     // Eigenaufwand der volle Beitrag. Vorher wurde sie immer abgezogen und

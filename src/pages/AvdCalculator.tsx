@@ -1129,6 +1129,56 @@ export default function AvdCalculator() {
                     {strategien.aufteilungspunkt.begruendung} Der Punkt folgt allein der
                     Zulagenstaffel – Kosten, Laufzeit und spätere Besteuerung gehen nicht ein.
                   </p>
+
+                  {/* Das rechnerische Optimum daneben, nicht an seiner Stelle:
+                      Der Zulagenknick ist Gesetz, das Optimum eine Prognose auf
+                      Rendite-, Kosten- und Steuerannahmen. Welche Zahl gilt, ist
+                      eine Beratungsentscheidung. */}
+                  {strategien.optimum && (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-1">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs font-medium text-slate-700">
+                          Rechnerisch am besten:{' '}
+                          {formatCurrency(strategien.optimum.monatsbeitrag)} im Monat
+                        </span>
+                        {strategien.optimum.monatsbeitrag !== strategien.aufteilungMonatlich && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              update('aufteilungMonatlich', strategien.optimum!.monatsbeitrag)
+                            }
+                          >
+                            Übernehmen
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {strategien.optimum.weitgehendGleichgueltig ? (
+                          <>
+                            Zwischen{' '}
+                            {formatCurrency(strategien.optimum.plateauVon)} und{' '}
+                            {formatCurrency(strategien.optimum.plateauBis)} macht die Aufteilung
+                            kaum einen Unterschied – eine genaue Zahl wäre hier
+                            Scheingenauigkeit.
+                          </>
+                        ) : strategien.optimum.vorteilGegenVorschlag > 0 ? (
+                          <>
+                            {formatCurrency(strategien.optimum.vorteilGegenVorschlag)} mehr
+                            Endkapital nach Steuern als beim Zulagenknick. Gleichwertig bleibt es
+                            zwischen {formatCurrency(strategien.optimum.plateauVon)} und{' '}
+                            {formatCurrency(strategien.optimum.plateauBis)}.
+                          </>
+                        ) : (
+                          <>Der Zulagenknick ist hier zugleich der beste Punkt.</>
+                        )}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        Diese Zahl hängt an Rendite, Kosten, Laufzeit und vor allem am
+                        Steuersatz im Alter – sie ist nur so belastbar wie diese Annahmen.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">Rest anlegen in</Label>
