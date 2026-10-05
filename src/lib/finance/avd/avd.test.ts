@@ -1161,6 +1161,48 @@ describe('Drei Strategien (30 + 1)', () => {
     expect(z.beitragAvdMonatlich + z.beitragZweitMonatlich).toBe(80);
   });
 
+  it('zieht die Erstattung nur ab, wenn sie dem Sparer zufällt (A06)', () => {
+    // Wird sie wieder eingezahlt, landet sie im Kapital - dann ist der
+    // Eigenaufwand der volle Beitrag. Vorher wurde sie immer abgezogen und
+    // der Aufwand damit zu niedrig ausgewiesen.
+    const ohne = berechneStrategien({
+      basis: eingabe({ ...basis(), erstattungReinvestieren: false }),
+      zweitvertrag: 'depot',
+    });
+    const mit = berechneStrategien({
+      basis: eingabe({ ...basis(), erstattungReinvestieren: true }),
+      zweitvertrag: 'depot',
+    });
+    const x = (r: ReturnType<typeof berechneStrategien>) => r.strategien[0];
+
+    expect(mit.strategien[0].summeNettoaufwand).toBeCloseTo(
+      mit.strategien[0].summeEigenbeitraege,
+      6
+    );
+    expect(x(ohne).summeNettoaufwand).toBeLessThan(x(ohne).summeEigenbeitraege);
+    // Gleiches gilt für die Kombination
+    expect(mit.strategien[2].summeNettoaufwand).toBeCloseTo(
+      mit.strategien[2].summeEigenbeitraege,
+      6
+    );
+  });
+
+  it('weist den Riester-Vergleich nicht als ungefördert aus (A06)', () => {
+    const r = berechneStrategien({
+      basis: eingabe({
+        ...basis(),
+        vergleichspartner: 'riester_alt',
+        riester: { beitragspflEinnahmenVorjahr: 45000 },
+      }),
+      zweitvertrag: 'depot',
+    });
+    const y = r.strategien[1];
+    // Seine Zulagen gehen in das Endkapital ein - dann duerfen sie in der
+    // Kachel nicht fehlen.
+    expect(y.summeFoerderung).toBeGreaterThan(0);
+    expect(y.summeNettoaufwand).toBeLessThanOrEqual(y.summeEigenbeitraege);
+  });
+
   it('vergleicht gleichen Eigenaufwand – sonst wäre der Vergleich wertlos', () => {
     const r = berechneStrategien({ basis: basis(), zweitvertrag: 'depot' });
     const [x, y, z] = r.strategien;

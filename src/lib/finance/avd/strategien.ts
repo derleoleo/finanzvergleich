@@ -71,6 +71,23 @@ export type StrategienErgebnis = {
 
 const eur = (betrag: number) => `${Math.round(betrag).toLocaleString('de-DE')} €`;
 
+/**
+ * Was eine Strategie wirklich aus eigener Tasche kostet (Audit A06).
+ *
+ * Die Steuererstattung mindert den Aufwand nur dann, wenn sie dem Sparer
+ * zufliesst. Wird sie wieder eingezahlt, landet sie im Kapital - dann ist der
+ * Aufwand der volle Eigenbeitrag. Dieselbe Unterscheidung trifft die
+ * Hauptsimulation (simulation.ts: `eigenerAufwand`); hier wurde die Erstattung
+ * bisher immer abgezogen und der Aufwand damit zu niedrig ausgewiesen.
+ */
+function nettoaufwand(
+  beitraege: number,
+  erstattung: number,
+  erstattungReinvestieren: boolean
+): number {
+  return erstattungReinvestieren ? beitraege : beitraege - erstattung;
+}
+
 /** Elementweise Summe zweier Jahresreihen; fehlende Jahre zählen als 0. */
 function addiereReihen(a: number[], b: number[]): number[] {
   const laenge = Math.max(a.length, b.length);
@@ -109,9 +126,11 @@ export function berechneStrategien(args: {
     hinweise.push({
       art: 'info',
       text:
-        'Der Strategievergleich rechnet alle drei Wege mit demselben Bruttobeitrag. ' +
-        'Nur so sind sie vergleichbar – die Vergleichsbasis „gleicher Netto-Aufwand" ' +
-        'aus Abschnitt 3 gilt hier nicht.',
+        'Der Strategievergleich rechnet alle drei Wege mit demselben Bruttobeitrag; '  +
+        'die Vergleichsbasis „gleicher Netto-Aufwand“ aus Abschnitt 3 gilt hier nicht. ' +
+        'Gleicher Bruttobeitrag ist dabei nicht gleicher Eigenaufwand: Wege mit ' +
+        'AVD-Anteil bringen eine Steuererstattung, die der Zweitvertrag nicht hat. ' +
+        'Was jede Variante wirklich kostet, steht in ihrer Kachel.',
     });
   }
 
@@ -181,7 +200,11 @@ export function berechneStrategien(args: {
     beitragAvdMonatlich: voll,
     beitragZweitMonatlich: 0,
     summeEigenbeitraege: avdVoll.summeEigenbeitraege,
-    summeNettoaufwand: avdVoll.summeEigenbeitraege - avdVoll.summeSteuererstattung,
+    summeNettoaufwand: nettoaufwand(
+      avdVoll.summeEigenbeitraege,
+      avdVoll.summeSteuererstattung,
+      ohneDynamik.erstattungReinvestieren
+    ),
     summeFoerderung: avdVoll.summeFoerderung,
     endkapitalNachSteuer: avdVoll.endkapitalNachSteuer,
     endkapitalNachSteuerReal: avdVoll.endkapitalNachSteuerReal,
@@ -205,6 +228,11 @@ export function berechneStrategien(args: {
     kapitalProJahrY = avdVoll.jahre.map((j) => j.depotKapital);
   }
 
+  // Audit A06: Der Riester-Bestandsvertrag ist selbst gefoerdert. Ihn mit
+  // null Foerderung und vollem Eigenaufwand auszuweisen, waehrend seine
+  // Zulagen in die Endkapitalrechnung eingehen, widerspricht der eigenen
+  // Rechnung. Depot und Fondspolice sind dagegen tatsaechlich ungefoerdert.
+  const alt = avdVoll.riesterAlt;
   const strategieY: Strategie = {
     id: 'vergleich_voll',
     bezeichnung: `Alles in ${nameVergleichspartner(ohneDynamik)}`,
@@ -212,8 +240,14 @@ export function berechneStrategien(args: {
     beitragAvdMonatlich: 0,
     beitragZweitMonatlich: voll,
     summeEigenbeitraege: avdVoll.summeEigenbeitraege,
-    summeNettoaufwand: avdVoll.summeEigenbeitraege,
-    summeFoerderung: 0,
+    summeNettoaufwand: alt
+      ? nettoaufwand(
+          avdVoll.summeEigenbeitraege,
+          alt.summeSteuererstattung,
+          ohneDynamik.erstattungReinvestieren
+        )
+      : avdVoll.summeEigenbeitraege,
+    summeFoerderung: alt ? alt.summeFoerderung : 0,
     endkapitalNachSteuer: endkapitalY,
     endkapitalNachSteuerReal: real(endkapitalY),
     kapitalProJahr: kapitalProJahrY,
@@ -237,7 +271,11 @@ export function berechneStrategien(args: {
     // Der Zweitvertrag ist ungefördert: Die Fördersumme stammt allein aus dem
     // AVD-Teil, und der Eigenaufwand ist derselbe wie in X und Y.
     summeEigenbeitraege: avdVoll.summeEigenbeitraege,
-    summeNettoaufwand: avdVoll.summeEigenbeitraege - avdTeil.summeSteuererstattung,
+    summeNettoaufwand: nettoaufwand(
+      avdVoll.summeEigenbeitraege,
+      avdTeil.summeSteuererstattung,
+      ohneDynamik.erstattungReinvestieren
+    ),
     summeFoerderung: avdTeil.summeFoerderung,
     endkapitalNachSteuer: avdTeil.endkapitalNachSteuer + zweit.endkapitalNachSteuer,
     endkapitalNachSteuerReal: real(avdTeil.endkapitalNachSteuer + zweit.endkapitalNachSteuer),
