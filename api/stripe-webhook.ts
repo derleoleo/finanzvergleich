@@ -3,7 +3,11 @@ import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import { ABSENDER, liste, mailLayout } from "./_mail-layout.js";
-import { couponFuerWerber, WERBUNG_STATUS } from "./_werbung.js";
+import {
+  couponFuerWerber,
+  WERBUNG_STATUS,
+  WIEDERAUFNAHME_MS,
+} from "./_werbung.js";
 
 // Pflicht: Raw Body für Stripe-Signaturverifikation
 export const config = { api: { bodyParser: false } };
@@ -237,10 +241,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const zahlerId = zahlerAbo.user_id as string;
 
       /**
-       * Schreibt die Gutschrift. Der Datensatz wird zuerst beansprucht und
-       * erst danach der Rabatt in Stripe gesetzt – andernfalls könnten zwei
-       * gleichzeitige Ereignisse beide den Rabatt vergeben. Scheitert Stripe,
-       * wird die Beanspruchung zurückgenommen.
+       * Schreibt die Gutschrift in drei Schritten (Audit A07):
+       *
+       *   registriert → in_arbeit → (Stripe) → belohnt
+       *
+       * Der Zwischenzustand ist der Kern. Vorher wurde sofort auf 'belohnt'
+       * gesetzt und erst danach Stripe gerufen: Brach der Vorgang dazwischen
+       * ab, stand 'belohnt' ohne Rabatt, und Wiederholungen suchten nur nach
+       * 'registriert'. Der Werber wartete dann auf eine Gutschrift, die es
+       * nicht gab.
+       *
+       * Die Beanspruchung verhindert weiterhin, dass zwei gleichzeitige
+       * Ereignisse denselben Rabatt zweimal vergeben. Dass ein abgebrochener
+       * Versuch wiederaufgenommen werden darf, ist gefahrlos, weil der
+       * Stripe-Aufruf einen festen Idempotenzschlüssel je Werbung trägt.
        */
       const belohne = async (werbung: {
         id: string;
@@ -265,38 +279,78 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // nächsten Zahlung des Werbers erneut versucht.
         if (!werberAbo?.stripe_subscription_id) return "offen";
 
+        // Schritt 1: beanspruchen. Ein haengengebliebener Versuch darf nach
+        // einer Weile erneut aufgenommen werden - sonst bliebe die Werbung
+        // fuer immer in_arbeit.
+        const wiederaufnahmeAb = new Date(Date.now() - WIEDERAUFNAHME_MS).toISOString();
         const { data: beansprucht, error: anspruchFehler } = await supabase
           .from("werbungen")
           .update({
-            status: WERBUNG_STATUS.belohnt,
-            stripe_coupon_id: coupon,
-            belohnt_am: new Date().toISOString(),
+            status: WERBUNG_STATUS.inArbeit,
+            in_arbeit_seit: new Date().toISOString(),
           })
           .eq("id", werbung.id)
-          .eq("status", WERBUNG_STATUS.registriert)
+          .or(
+            `status.eq.${WERBUNG_STATUS.registriert},` +
+              `and(status.eq.${WERBUNG_STATUS.inArbeit},in_arbeit_seit.lt."${wiederaufnahmeAb}")`
+          )
           .select("id")
           .maybeSingle();
         if (anspruchFehler) {
           console.error("[stripe-webhook] Werbung nicht beanspruchbar", anspruchFehler);
           return "fehler";
         }
-        // Ein anderes Ereignis war schneller – nichts mehr zu tun.
+        // Ein anderes Ereignis war schneller oder arbeitet gerade daran.
         if (!beansprucht) return "ok";
 
+        // Schritt 2: Rabatt setzen. Der Idempotenzschluessel macht einen
+        // zweiten Versuch mit derselben Werbung bei Stripe wirkungslos -
+        // genau das erlaubt die Wiederaufnahme oben.
         try {
-          await stripe.subscriptions.update(werberAbo.stripe_subscription_id, {
-            discounts: [{ coupon }],
-          });
+          await stripe.subscriptions.update(
+            werberAbo.stripe_subscription_id,
+            { discounts: [{ coupon }] },
+            { idempotencyKey: `werbung-rabatt-${werbung.id}` }
+          );
         } catch (err) {
           console.error("[stripe-webhook] Rabatt konnte nicht gesetzt werden", err);
-          await supabase
+          // Zuruecknehmen, damit der naechste Lauf es sofort erneut versucht.
+          // Misslingt auch das, bleibt der Datensatz in_arbeit - und wird
+          // nach WIEDERAUFNAHME_MS ohnehin wieder aufgegriffen. Der Fehler
+          // gehoert trotzdem ins Protokoll, sonst sieht niemand, dass die
+          // Ruecknahme nicht griff.
+          const { error: ruecknahmeFehler } = await supabase
             .from("werbungen")
-            .update({
-              status: WERBUNG_STATUS.registriert,
-              stripe_coupon_id: null,
-              belohnt_am: null,
-            })
-            .eq("id", werbung.id);
+            .update({ status: WERBUNG_STATUS.registriert, in_arbeit_seit: null })
+            .eq("id", werbung.id)
+            .eq("status", WERBUNG_STATUS.inArbeit);
+          if (ruecknahmeFehler) {
+            console.error(
+              "[stripe-webhook] Ruecknahme der Beanspruchung fehlgeschlagen",
+              { werbung: werbung.id, fehler: ruecknahmeFehler }
+            );
+          }
+          return "fehler";
+        }
+
+        // Schritt 3: erst jetzt gilt die Werbung als belohnt.
+        const { error: abschlussFehler } = await supabase
+          .from("werbungen")
+          .update({
+            status: WERBUNG_STATUS.belohnt,
+            stripe_coupon_id: coupon,
+            belohnt_am: new Date().toISOString(),
+            in_arbeit_seit: null,
+          })
+          .eq("id", werbung.id);
+        if (abschlussFehler) {
+          // Der Rabatt steht bei Stripe, nur die Notiz fehlt. Ein erneuter
+          // Lauf setzt denselben Rabatt dank Idempotenzschluessel nicht
+          // doppelt und kommt wieder hierher.
+          console.error("[stripe-webhook] Abschluss der Werbung fehlgeschlagen", {
+            werbung: werbung.id,
+            fehler: abschlussFehler,
+          });
           return "fehler";
         }
 
@@ -358,11 +412,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Rolle 2: Der Zahlende hat geworben und hat jetzt ein Abo, auf das
       // ein offener Rabatt gelegt werden kann.
+      // Audit A07: Auch haengengebliebene Versuche gehoeren hierher. Ohne sie
+      // bliebe eine Werbung, deren Gutschrift abgebrochen ist, fuer immer in
+      // Arbeit - sie wird sonst von keiner der beiden Rollen wieder gefunden.
+      const steckengeblieben = new Date(Date.now() - WIEDERAUFNAHME_MS).toISOString();
       const { data: alsWerber, error: werberListeFehler } = await supabase
         .from("werbungen")
         .select("id, werber_user_id")
         .eq("werber_user_id", zahlerId)
-        .eq("status", WERBUNG_STATUS.registriert)
+        .or(
+          `status.eq.${WERBUNG_STATUS.registriert},` +
+            `and(status.eq.${WERBUNG_STATUS.inArbeit},in_arbeit_seit.lt."${steckengeblieben}")`
+        )
         .not("qualifiziert_am", "is", null);
       if (werberListeFehler) {
         console.error("[stripe-webhook] offene Werbungen nicht lesbar", werberListeFehler);

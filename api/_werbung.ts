@@ -9,9 +9,19 @@ const CODE_LAENGE = 8;
 
 export const WERBUNG_STATUS = {
   registriert: "registriert",
+  /** Gutschrift laeuft. Siehe Migration 20261005120000 (Audit A07). */
+  inArbeit: "in_arbeit",
   belohnt: "belohnt",
   abgelehnt: "abgelehnt",
 } as const;
+
+/**
+ * Nach dieser Zeit gilt ein laufender Gutschriftversuch als abgebrochen und
+ * darf wieder aufgenommen werden. Grosszuegig bemessen: Ein zweiter Versuch
+ * waehrend eines noch laufenden ersten waere unnoetig, schadet dank des
+ * Idempotenzschluessels aber nicht.
+ */
+export const WIEDERAUFNAHME_MS = 15 * 60 * 1000;
 
 export function erzeugeCode(): string {
   let code = "";
