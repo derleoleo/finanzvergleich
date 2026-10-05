@@ -1192,7 +1192,12 @@ describe('Drei Strategien (30 + 1)', () => {
       basis: eingabe({
         ...basis(),
         vergleichspartner: 'riester_alt',
-        riester: { beitragspflEinnahmenVorjahr: 45000 },
+        riester: {
+          beitragspflEinnahmenVorjahr: 45000,
+          kinderGeborenVor2008: 0,
+          effektivkostenPaJahr: 0.018,
+          renditeBruttoPaJahr: 0.04,
+        },
       }),
       zweitvertrag: 'depot',
     });
