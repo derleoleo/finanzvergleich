@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { modellStempel } from "@/lib/finance/modell";
 import { speicherFehlerText } from "@/utils/speicherFehler";
-import { FallVersion } from "@/entities/FallVersion";
 import EndalterHinweis from "@/components/calculator/EndalterHinweis";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl, toNum } from "@/utils";
+import { fassungFesthalten } from "@/utils/fassungSpeichern";
 import { BestAdviceCalculation } from "@/entities/BestAdviceCalculation";
 import {
   UserDefaults,
@@ -358,7 +358,7 @@ export default function BestAdviceCalculator() {
         results,
       });
       // Fassung festschreiben (Audit O08)
-      await FallVersion.anlegen({
+      const stand = await fassungFesthalten({
         fallTabelle: "best_advice_calculations",
         fallId: newCalc.id,
         name: formData.name || "BestAdvice",
@@ -370,7 +370,11 @@ export default function BestAdviceCalculator() {
         reihen: baueBestAdviceReihen(newCalc, "net"),
       });
       incrementCalculationCount();
-      navigate(createPageUrl("BestAdviceDetail") + `?id=${newCalc.id}`);
+      navigate(createPageUrl("BestAdviceDetail") + `?id=${newCalc.id}`, {
+        // Audit A02: Der Teilerfolg reist mit. Sonst sieht der Nutzer
+        // auf der Auswertung eine Fassung, die es nicht gibt.
+        state: stand.stand === "fehlt" ? { fassungFehlt: stand } : undefined,
+      });
     } catch (e) {
       console.error(e);
       setError(speicherFehlerText(e));

@@ -39,7 +39,7 @@ import { usePDFExport } from '@/utils/usePDFExport';
 import PDFSectionDialog from '@/components/pdf/PDFSectionDialog';
 import {
   beschriftung,
-  istProzent,
+  formatiereKennzahl,
   kennzahlenLesen,
   reihenLesen,
   sortiereKennzahlen,
@@ -184,12 +184,7 @@ export default function FassungAnsicht() {
                   <div key={schluessel} className="rounded-xl border border-slate-200 p-4">
                     <div className="text-xs text-slate-500">{beschriftung(schluessel)}</div>
                     <div className="text-xl font-bold text-slate-900 mt-1">
-                      {istProzent(schluessel)
-                        ? `${wert.toLocaleString('de-DE', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })} %`
-                        : formatCurrency(wert)}
+                      {formatiereKennzahl(schluessel, wert)}
                     </div>
                   </div>
                 ))}

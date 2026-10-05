@@ -47,6 +47,21 @@ const BESCHRIFTUNGEN: Record<string, string> = {
   wechselkosten_gesamt: 'Wechselkosten gesamt',
   eingezahlt_bisher_gesamt: 'Bisher eingezahlt',
   break_even_rendite: 'Break-even-Rendite',
+  current_age: 'Alter heute',
+  end_age: 'Endalter',
+  start_age: 'Beginn-Alter',
+  retirement_age: 'Rentenbeginn',
+  depleted_at_age: 'Kapital aufgebraucht mit',
+  withdrawal_start_age: 'Entnahme ab Alter',
+  withdrawal_end_age: 'Entnahme bis Alter',
+  years_to_retirement: 'Jahre bis zum Rentenbeginn',
+  entnahmemonate: 'Entnahmedauer',
+  monthly_gap: 'Monatliche Lücke',
+  monthly_gap_at_retirement: 'Lücke bei Rentenbeginn',
+  capital_needed_at_retirement: 'Benötigtes Kapital',
+  monthly_savings_needed: 'Notwendige Sparrate',
+  additional_capital_needed: 'Zusätzlich nötiges Kapital',
+  future_value_of_existing: 'Vorhandenes Kapital bei Rentenbeginn',
   // Reihen
   avd: 'Altersvorsorgedepot',
   depot: 'Depot',
@@ -144,8 +159,74 @@ export function kennzahlenLesen(results: Record<string, unknown>): [string, numb
  * Prozentpunkte in den Ergebnissen; als Euro ausgegeben ergäben sie Unsinn
  * („Effektivkosten 1 €").
  */
+export type Einheit = 'euro' | 'prozent' | 'alter' | 'jahre' | 'monate';
+
+/**
+ * Die Einheit laesst sich aus dem Namen nicht zuverlaessig erraten:
+ * `monthly_gap`, `monatsbeitrag` und `admin_costs_monthly_eur` tragen alle
+ * "month" im Namen und sind doch Betraege, waehrend `entnahmemonate` eine
+ * Anzahl ist. Deshalb eine ausdrueckliche Zuordnung; geraten wird nur dort,
+ * wo das Muster eindeutig ist.
+ */
+const EINHEITEN: Record<string, Einheit> = {
+  alter: 'alter',
+  age: 'alter',
+  current_age: 'alter',
+  end_age: 'alter',
+  start_age: 'alter',
+  retirement_age: 'alter',
+  depleted_at_age: 'alter',
+  withdrawal_start_age: 'alter',
+  withdrawal_end_age: 'alter',
+  jahr: 'jahre',
+  jahre: 'jahre',
+  year: 'jahre',
+  years: 'jahre',
+  years_to_retirement: 'jahre',
+  contract_duration_years: 'jahre',
+  laufzeit_jahre: 'jahre',
+  monat: 'monate',
+  monate: 'monate',
+  month: 'monate',
+  months: 'monate',
+  entnahmemonate: 'monate',
+};
+
+export function einheitFuer(schluessel: string): Einheit {
+  const bekannt = EINHEITEN[schluessel];
+  if (bekannt) return bekannt;
+  if (/_percent$|rendite|quote$/i.test(schluessel)) return 'prozent';
+  return 'euro';
+}
+
 export function istProzent(schluessel: string): boolean {
-  return /_percent$|rendite|quote/i.test(schluessel);
+  return einheitFuer(schluessel) === 'prozent';
+}
+
+const zahl = (wert: number, nachkomma = 0) =>
+  wert.toLocaleString('de-DE', {
+    minimumFractionDigits: nachkomma,
+    maximumFractionDigits: nachkomma,
+  });
+
+/**
+ * Eine Kennzahl so setzen, wie ihre Einheit es verlangt. Eine Stelle fuer
+ * Fassungsansicht und Verlaufsfeld, sonst steht dieselbe Zahl an zwei Orten
+ * verschieden da.
+ */
+export function formatiereKennzahl(schluessel: string, wert: number): string {
+  switch (einheitFuer(schluessel)) {
+    case 'prozent':
+      return `${zahl(wert, 2)} %`;
+    case 'alter':
+      return `${zahl(wert)} Jahre`;
+    case 'jahre':
+      return wert === 1 ? '1 Jahr' : `${zahl(wert)} Jahre`;
+    case 'monate':
+      return wert === 1 ? '1 Monat' : `${zahl(wert)} Monate`;
+    default:
+      return `${zahl(wert)} €`;
+  }
 }
 
 /**

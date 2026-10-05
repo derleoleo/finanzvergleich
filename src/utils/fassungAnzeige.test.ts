@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { istProzent, kennzahlenLesen, reihenLesen, sortiereKennzahlen } from './fassungAnzeige';
+import {
+  einheitFuer,
+  formatiereKennzahl,
+  istProzent,
+  kennzahlenLesen,
+  reihenLesen,
+  sortiereKennzahlen,
+} from './fassungAnzeige';
 
 describe('Reihen einer gespeicherten Fassung', () => {
   // Alle Rechner speichern Jahr UND Alter. Wurde das Alter wie ein beliebiger
@@ -62,6 +69,27 @@ describe('Kennzahlen einer gespeicherten Fassung', () => {
     expect(istProzent('li_riy_percent')).toBe(true);
     expect(istProzent('break_even_rendite')).toBe(true);
     expect(istProzent('endkapital_nach_steuer')).toBe(false);
+  });
+
+  it('setzt Altersangaben nicht als Geldbetrag', () => {
+    expect(einheitFuer('end_age')).toBe('alter');
+    expect(einheitFuer('current_age')).toBe('alter');
+    expect(formatiereKennzahl('end_age', 85)).toBe('85 Jahre');
+  });
+
+  it('unterscheidet Zeitraeume von Betraegen trotz aehnlicher Namen', () => {
+    // "month" im Namen heisst nicht Monate: Das sind Betraege.
+    expect(einheitFuer('monthly_gap')).toBe('euro');
+    expect(einheitFuer('monatsbeitrag')).toBe('euro');
+    expect(einheitFuer('admin_costs_monthly_eur')).toBe('euro');
+    // Das hier dagegen ist eine Anzahl
+    expect(einheitFuer('entnahmemonate')).toBe('monate');
+    expect(formatiereKennzahl('entnahmemonate', 240)).toBe('240 Monate');
+    expect(formatiereKennzahl('years_to_retirement', 1)).toBe('1 Jahr');
+  });
+
+  it('setzt unbekannte Kennzahlen als Euro', () => {
+    expect(formatiereKennzahl('endkapital_nach_steuer', 161223)).toBe('161.223 €');
   });
 
   it('stellt das Ergebnis vor seine Bestandteile', () => {

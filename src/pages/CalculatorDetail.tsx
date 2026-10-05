@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { modellStempel } from "@/lib/finance/modell";
-import { FallVersion } from "@/entities/FallVersion";
 import Versionsverlauf from "@/components/results/Versionsverlauf";
+import FassungFehltHinweis from "@/components/results/FassungFehltHinweis";
+import { fassungFesthalten, type FassungStand } from "@/utils/fassungSpeichern";
 import { vertragskosten } from "@/lib/finance/kostenanzeige";
 import ModellHinweis from "@/components/results/ModellHinweis";
 import { calculateAgeAtPayout } from "@/components/shared/TaxCalculations";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Calculation, type CalculationModel } from "@/entities/Calculation";
 import {
@@ -46,6 +47,13 @@ export default function CalculatorDetail() {
   const navigate = useNavigate();
   const [calculation, setCalculation] = useState<CalculationModel | null>(null);
   // Hochzählen nach dem Speichern, damit der Verlauf die neue Fassung lädt
+  // Audit A02: Der Rechner meldet einen Teilerfolg hierher weiter; die
+  // Neuberechnung auf dieser Seite setzt denselben Zustand.
+  const ort = useLocation();
+  const uebergeben = (ort.state as { fassungFehlt?: Extract<FassungStand, { stand: 'fehlt' }> } | null)
+    ?.fassungFehlt;
+  const [fassungFehlt, setFassungFehlt] =
+    useState<Extract<FassungStand, { stand: 'fehlt' }> | null>(uebergeben ?? null);
   const [versionenStand, setVersionenStand] = useState(0);
   const [formData, setFormData] = useState<CalculationModel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -189,7 +197,8 @@ export default function CalculatorDetail() {
     await Calculation.update(calculation.id, updatedData);
     // Jede Neuberechnung ist eine eigene Fassung – die vorherige bleibt
     // unverändert erhalten (Audit O08).
-    await FallVersion.anlegen({
+    // Audit A02: Ein misslungenes Festhalten darf nicht als Erfolg durchgehen.
+    const stand = await fassungFesthalten({
       fallTabelle: "calculations",
       fallId: calculation.id,
       name: formData.name || "Berechnung",
@@ -197,6 +206,7 @@ export default function CalculatorDetail() {
       results: results as unknown as Record<string, unknown>,
       reihen: berechneReihen(),
     });
+    setFassungFehlt(stand.stand === "fehlt" ? stand : null);
     setVersionenStand((n) => n + 1);
     setCalculation(updatedData);
     setFormData(updatedData);
@@ -285,6 +295,16 @@ export default function CalculatorDetail() {
           neuBerechnenLaeuft={isRecalculating}
         />
 
+        {fassungFehlt && (
+          <FassungFehltHinweis
+            nachtrag={fassungFehlt.nachtrag}
+            grund={fassungFehlt.grund}
+            onNachgetragen={() => {
+              setFassungFehlt(null);
+              setVersionenStand((n) => n + 1);
+            }}
+          />
+        )}
         <Versionsverlauf
           fallTabelle="calculations"
           fallId={calculation.id}

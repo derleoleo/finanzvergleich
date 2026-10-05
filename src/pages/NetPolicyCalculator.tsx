@@ -34,8 +34,9 @@ import GespeicherteAuswertung, {
   type GespeicherteKennzahl,
 } from "@/components/results/GespeicherteAuswertung";
 import { speicherFehlerText } from "@/utils/speicherFehler";
-import { FallVersion } from "@/entities/FallVersion";
 import Versionsverlauf from "@/components/results/Versionsverlauf";
+import FassungFehltHinweis from "@/components/results/FassungFehltHinweis";
+import { fassungFesthalten, type FassungStand } from "@/utils/fassungSpeichern";
 import { Input } from "@/components/ui/input";
 import PDFSectionDialog from "@/components/pdf/PDFSectionDialog";
 import { Handshake, FileDown, ArrowLeft, Save } from "lucide-react";
@@ -107,6 +108,8 @@ export default function NetPolicyCalculator() {
   const [speichertGerade, setSpeichertGerade] = useState(false);
   const [speicherHinweis, setSpeicherHinweis] = useState<string | null>(null);
   // Hochzählen nach dem Speichern, damit der Verlauf die neue Fassung lädt
+  const [fassungFehlt, setFassungFehlt] =
+    useState<Extract<FassungStand, { stand: 'fehlt' }> | null>(null);
   const [versionenStand, setVersionenStand] = useState(0);
   // Audit N03: Beim Öffnen wurden nur die Eingaben geladen und neu gerechnet.
   // Die damals gezeigten Zahlen blieben unsichtbar im Datensatz liegen.
@@ -295,7 +298,10 @@ export default function NetPolicyCalculator() {
       }
       // Fassung festschreiben (Audit O08)
       if (fallId) {
-        await FallVersion.anlegen({
+        // Audit A02: Der Ausgang wird ausgewertet. Scheitert das Festhalten,
+        // sieht der Nutzer das und kann es gezielt nachholen - ein erneutes
+        // Speichern legte dagegen einen zweiten Datensatz an.
+        const stand = await fassungFesthalten({
           fallTabelle: "net_policy_calculations",
           fallId,
           name: nutzlast.name,
@@ -303,6 +309,7 @@ export default function NetPolicyCalculator() {
           results: nutzlast.results as unknown as Record<string, unknown>,
           reihen: results.series,
         });
+        setFassungFehlt(stand.stand === 'fehlt' ? stand : null);
         setVersionenStand((n) => n + 1);
       }
       setGespeicherteErgebnisse(nutzlast.results as Record<string, unknown>);
@@ -361,6 +368,16 @@ export default function NetPolicyCalculator() {
           )}
         </div>
 
+{fassungFehlt && (
+  <FassungFehltHinweis
+    nachtrag={fassungFehlt.nachtrag}
+    grund={fassungFehlt.grund}
+    onNachgetragen={() => {
+      setFassungFehlt(null);
+      setVersionenStand((n) => n + 1);
+    }}
+  />
+)}
 <Versionsverlauf
           fallTabelle="net_policy_calculations"
           fallId={gespeicherteId}

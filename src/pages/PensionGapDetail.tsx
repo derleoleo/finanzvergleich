@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import ModellHinweis from "@/components/results/ModellHinweis";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import Versionsverlauf from "@/components/results/Versionsverlauf";
+import FassungFehltHinweis from "@/components/results/FassungFehltHinweis";
+import type { FassungStand } from "@/utils/fassungSpeichern";
 import { createPageUrl } from "@/utils";
 import { PensionGapCalculation, type PensionGapModel } from "@/entities/PensionGapCalculation";
 
@@ -41,6 +44,14 @@ function buildIncomeBreakdown(calc: PensionGapModel) {
 }
 
 export default function PensionGapDetail() {
+  // Audit A02: Der Rechner meldet hierher, wenn die Fassung nicht
+  // festgehalten werden konnte. Ohne diese Anzeige saehe der Nutzer eine
+  // Auswertung und glaubte, sie sei archiviert.
+  const ort = useLocation();
+  const uebergeben = (ort.state as { fassungFehlt?: Extract<FassungStand, { stand: 'fehlt' }> } | null)
+    ?.fassungFehlt;
+  const [fassungFehlt, setFassungFehlt] = useState(uebergeben ?? null);
+  const [versionenStand, setVersionenStand] = useState(0);
   const navigate = useNavigate();
   const [calculation, setCalculation] = useState<PensionGapModel | null>(null);
   const calcId = new URLSearchParams(window.location.search).get("id");
@@ -97,6 +108,23 @@ export default function PensionGapDetail() {
     <>
     <div id="pdf-content" className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-6">
+        {fassungFehlt && (
+          <FassungFehltHinweis
+            nachtrag={fassungFehlt.nachtrag}
+            grund={fassungFehlt.grund}
+            onNachgetragen={() => {
+              setFassungFehlt(null);
+              setVersionenStand((n) => n + 1);
+            }}
+          />
+        )}
+        {/* Audit O08: Fassungen dieses Falls waren hier bisher nicht
+            auffindbar - geschrieben wurden sie trotzdem. */}
+        <Versionsverlauf
+          fallTabelle="pension_gap_calculations"
+          fallId={calculation?.id ?? null}
+          neuLadenAb={versionenStand}
+        />
         <Button variant="ghost" onClick={() => navigate(createPageUrl("PensionGapCalculator"))} className="mb-4" data-pdf-hide>
           <ArrowLeft className="w-4 h-4 mr-2" />Zurück zur Eingabe
         </Button>

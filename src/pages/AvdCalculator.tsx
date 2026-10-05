@@ -31,8 +31,9 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { AvdCalculation } from '@/entities/AvdCalculation';
 import { modellStempel, type ModellStempel } from '@/lib/finance/modell';
-import { FallVersion } from '@/entities/FallVersion';
 import Versionsverlauf from '@/components/results/Versionsverlauf';
+import FassungFehltHinweis from '@/components/results/FassungFehltHinweis';
+import { fassungFesthalten, type FassungStand } from '@/utils/fassungSpeichern';
 import GespeicherteAuswertung, {
   type GespeicherteKennzahl,
 } from '@/components/results/GespeicherteAuswertung';
@@ -159,6 +160,8 @@ export default function AvdCalculator() {
   const [gespeicherteErgebnisse, setGespeicherteErgebnisse] =
     useState<Record<string, unknown> | null>(null);
   // Hochzählen nach dem Speichern, damit der Verlauf die neue Fassung lädt
+  const [fassungFehlt, setFassungFehlt] =
+    useState<Extract<FassungStand, { stand: 'fehlt' }> | null>(null);
   const [versionenStand, setVersionenStand] = useState(0);
 
   useEffect(() => {
@@ -411,7 +414,10 @@ export default function AvdCalculator() {
       // sonst aus dem heutigen Modell und können von denen abweichen, die
       // der Kunde gesehen hat.
       if (fallId) {
-        await FallVersion.anlegen({
+        // Audit A02: Der Ausgang wird ausgewertet. Scheitert das Festhalten,
+        // sieht der Nutzer das und kann es gezielt nachholen - ein erneutes
+        // Speichern legte dagegen einen zweiten Datensatz an.
+        const stand = await fassungFesthalten({
           fallTabelle: 'avd_calculations',
           fallId,
           name: nutzlast.name,
@@ -419,6 +425,7 @@ export default function AvdCalculator() {
           results: nutzlast.results as unknown as Record<string, unknown>,
           reihen: verlaufsdaten,
         });
+        setFassungFehlt(stand.stand === 'fehlt' ? stand : null);
         setVersionenStand((n) => n + 1);
       }
       setGespeicherteErgebnisse(nutzlast.results as Record<string, unknown>);
@@ -480,6 +487,16 @@ export default function AvdCalculator() {
           />
         )}
 
+        {fassungFehlt && (
+          <FassungFehltHinweis
+            nachtrag={fassungFehlt.nachtrag}
+            grund={fassungFehlt.grund}
+            onNachgetragen={() => {
+              setFassungFehlt(null);
+              setVersionenStand((n) => n + 1);
+            }}
+          />
+        )}
         <Versionsverlauf
           fallTabelle="avd_calculations"
           fallId={gespeicherteId}

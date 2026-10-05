@@ -6,6 +6,7 @@ import { calculateAgeAtPayout } from "@/components/shared/TaxCalculations";
 import { speicherFehlerText } from "@/utils/speicherFehler";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { fassungFesthalten } from "@/utils/fassungSpeichern";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import UpgradePrompt from "@/components/UpgradePrompt";
 
@@ -26,7 +27,6 @@ import type { FundEntry } from "@/components/calculator/MultiFundEditor";
 
 import { simulateDepot, simulateLv } from "@/lib/finance/simulation";
 import { buildComparisonResults, buildYearlySeries } from "@/lib/finance/series";
-import { FallVersion } from "@/entities/FallVersion";
 import { aktuellesAlter } from "@/components/calculator/EndalterHinweis";
 import {
   depotTaxOptionsFromDefaults,
@@ -329,7 +329,7 @@ export default function Calculator() {
       const newCalc = await Calculation.create(payload);
       // Fassung festschreiben – misslingt das, ist die Berechnung trotzdem
       // gespeichert. Die Version ist ein Nachweis, kein Ersatz.
-      await FallVersion.anlegen({
+      const stand = await fassungFesthalten({
         fallTabelle: "calculations",
         fallId: newCalc.id,
         name: formData.name || "Berechnung",
@@ -338,7 +338,11 @@ export default function Calculator() {
         reihen: berechneReihen(),
       });
       incrementCalculationCount();
-      navigate(createPageUrl("CalculatorDetail") + `?id=${newCalc.id}`);
+      navigate(createPageUrl("CalculatorDetail") + `?id=${newCalc.id}`, {
+        // Audit A02: Der Teilerfolg reist mit. Sonst sieht der Nutzer
+        // auf der Auswertung eine Fassung, die es nicht gibt.
+        state: stand.stand === "fehlt" ? { fassungFehlt: stand } : undefined,
+      });
     } catch (e) {
       console.error(e);
       setError(speicherFehlerText(e));

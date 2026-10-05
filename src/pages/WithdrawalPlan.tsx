@@ -20,8 +20,9 @@ import GespeicherteAuswertung, {
   type GespeicherteKennzahl,
 } from "@/components/results/GespeicherteAuswertung";
 import { speicherFehlerText } from "@/utils/speicherFehler";
-import { FallVersion } from "@/entities/FallVersion";
 import Versionsverlauf from "@/components/results/Versionsverlauf";
+import FassungFehltHinweis from "@/components/results/FassungFehltHinweis";
+import { fassungFesthalten, type FassungStand } from "@/utils/fassungSpeichern";
 import { Calculation, type CalculationModel } from "@/entities/Calculation";
 import { SinglePaymentCalculation, type SinglePaymentModel } from "@/entities/SinglePaymentCalculation";
 import { BestAdviceCalculation, type BestAdviceModel } from "@/entities/BestAdviceCalculation";
@@ -83,6 +84,8 @@ export default function WithdrawalPlan() {
   const [speichertGerade, setSpeichertGerade] = useState(false);
   const [speicherHinweis, setSpeicherHinweis] = useState<string | null>(null);
   // Hochzählen nach dem Speichern, damit der Verlauf die neue Fassung lädt
+  const [fassungFehlt, setFassungFehlt] =
+    useState<Extract<FassungStand, { stand: 'fehlt' }> | null>(null);
   const [versionenStand, setVersionenStand] = useState(0);
   // Audit N02: Das Startkapital wurde aus der verknüpften Berechnung neu
   // abgeleitet. Wird jene Berechnung später geändert oder gelöscht, stand im
@@ -293,7 +296,10 @@ export default function WithdrawalPlan() {
       }
       // Fassung festschreiben (Audit O08)
       if (fallId) {
-        await FallVersion.anlegen({
+        // Audit A02: Der Ausgang wird ausgewertet. Scheitert das Festhalten,
+        // sieht der Nutzer das und kann es gezielt nachholen - ein erneutes
+        // Speichern legte dagegen einen zweiten Datensatz an.
+        const stand = await fassungFesthalten({
           fallTabelle: "withdrawal_plans",
           fallId,
           name: nutzlast.name,
@@ -301,6 +307,7 @@ export default function WithdrawalPlan() {
           results: nutzlast.results as unknown as Record<string, unknown>,
           reihen: withdrawalData,
         });
+        setFassungFehlt(stand.stand === 'fehlt' ? stand : null);
         setVersionenStand((n) => n + 1);
       }
       // Ab jetzt ist das der gespeicherte Stand: Kapital fixiert, Kennzahlen bekannt
@@ -635,6 +642,16 @@ export default function WithdrawalPlan() {
               </Card>
             </div>
 
+    {fassungFehlt && (
+      <FassungFehltHinweis
+        nachtrag={fassungFehlt.nachtrag}
+        grund={fassungFehlt.grund}
+        onNachgetragen={() => {
+          setFassungFehlt(null);
+          setVersionenStand((n) => n + 1);
+        }}
+      />
+    )}
     <Versionsverlauf
           fallTabelle="withdrawal_plans"
           fallId={gespeicherteId}

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { speicherFehlerText } from "@/utils/speicherFehler";
-import { FallVersion } from "@/entities/FallVersion";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl, toNum } from "@/utils";
+import { fassungFesthalten } from "@/utils/fassungSpeichern";
 import { PensionGapCalculation } from "@/entities/PensionGapCalculation";
 import { UserDefaults } from "@/entities/UserDefaults";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -113,7 +113,7 @@ export default function PensionGapCalculator() {
       const results = { ...calculatePensionGapResults(formData), ...modellStempel() };
       const newCalc = await PensionGapCalculation.create({ ...formData, results });
       // Fassung festschreiben (Audit O08)
-      await FallVersion.anlegen({
+      const stand = await fassungFesthalten({
         fallTabelle: "pension_gap_calculations",
         fallId: newCalc.id,
         name: formData.name || "Rentenlücke",
@@ -125,7 +125,11 @@ export default function PensionGapCalculator() {
         reihen: baueRentenlueckeReihen(newCalc),
       });
       incrementCalculationCount();
-      navigate(createPageUrl("PensionGapDetail") + `?id=${newCalc.id}`);
+      navigate(createPageUrl("PensionGapDetail") + `?id=${newCalc.id}`, {
+        // Audit A02: Der Teilerfolg reist mit. Sonst sieht der Nutzer
+        // auf der Auswertung eine Fassung, die es nicht gibt.
+        state: stand.stand === "fehlt" ? { fassungFehlt: stand } : undefined,
+      });
     } catch (e) {
       console.error(e);
       setError(speicherFehlerText(e));

@@ -24,7 +24,7 @@ import {
 } from '@/entities/FallVersion';
 import {
   beschriftung,
-  istProzent,
+  formatiereKennzahl,
   kennzahlenLesen,
   reihenLesen,
   sortiereKennzahlen,
@@ -145,12 +145,7 @@ export default function Versionsverlauf({ fallTabelle, fallId, neuLadenAb = 0 }:
               <div key={schluessel} className="rounded-lg border border-slate-200 p-3">
                 <div className="text-xs text-slate-500">{beschriftung(schluessel)}</div>
                 <div className="text-base font-bold text-slate-900">
-                  {istProzent(schluessel)
-                    ? `${wert.toLocaleString('de-DE', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })} %`
-                    : formatCurrency(wert)}
+                  {formatiereKennzahl(schluessel, wert)}
                 </div>
               </div>
             ))}
