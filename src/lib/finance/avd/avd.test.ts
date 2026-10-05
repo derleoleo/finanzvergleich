@@ -1198,6 +1198,50 @@ describe('Drei Strategien (30 + 1)', () => {
     );
   });
 
+  it('nennt nur zusammenhaengende Bereiche gleichwertig (B01)', () => {
+    // Frueher wurden einfach kleinster und groesster Punkt innerhalb der
+    // Toleranz genommen. Bei einer Kurve mit Tal lagen dazwischen Punkte weit
+    // darunter - die Oberflaeche behauptete trotzdem, die Wahl sei
+    // gleichgueltig. Gegenprobe ueber mehrere Steuersaetze, weil die Form der
+    // Kurve genau daran haengt.
+    for (const steuersatz of [0.1, 0.22, 0.3, 0.4]) {
+      const r = berechneStrategien({
+        basis: eingabe({
+          ...basis(),
+          eigenbeitragMonatlich: 570,
+          steuersatzImAlter: steuersatz,
+        }),
+        zweitvertrag: 'depot',
+      });
+      const o = r.optimum!;
+      const innen = o.stuetzstellen.filter(
+        (p) => p.monatlich >= o.plateauVon && p.monatlich <= o.plateauBis
+      );
+      for (const p of innen) {
+        expect(
+          p.endkapital,
+          `${steuersatz}: ${p.monatlich} EUR liegt im Plateau, ist aber schlechter`
+        ).toBeGreaterThanOrEqual(o.endkapitalNachSteuer - o.plateauToleranz - 1e-6);
+      }
+      // Der Hochpunkt liegt im eigenen Plateau
+      expect(o.monatsbeitrag).toBeGreaterThanOrEqual(o.plateauVon);
+      expect(o.monatsbeitrag).toBeLessThanOrEqual(o.plateauBis);
+    }
+  });
+
+  it('prueft die gesetzlichen Knicke einzeln (B01)', () => {
+    // Ein Raster kann sie ueberspringen - und genau dort liegt das Optimum oft.
+    const r = berechneStrategien({
+      basis: eingabe({ ...basis(), eigenbeitragMonatlich: 570 }),
+      zweitvertrag: 'depot',
+    });
+    const geprueft = r.optimum!.stuetzstellen.map((p) => p.monatlich);
+    expect(geprueft).toContain(30); // Zulagenknick
+    expect(geprueft).toContain(150); // 1.800 EUR/Jahr
+    expect(geprueft).toContain(570); // Einzahlungsdeckel
+    expect(geprueft).toContain(0);
+  });
+
   it('erkennt ein flaches Maximum, statt Scheingenauigkeit vorzugeben', () => {
     // Bei niedriger Rendite liegen die Varianten dicht beieinander; dann ist
     // eine Punktempfehlung irrefuehrend.

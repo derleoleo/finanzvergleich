@@ -259,7 +259,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const belohne = async (werbung: {
         id: string;
         werber_user_id: string;
-      }): Promise<"ok" | "offen" | "fehler"> => {
+      }): Promise<"ok" | "offen" | "spaeter" | "fehler"> => {
         const coupon = couponFuerWerber();
         if (!coupon) {
           console.error("[stripe-webhook] STRIPE_COUPON_WERBER fehlt", { werbung: werbung.id });
@@ -300,8 +300,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.error("[stripe-webhook] Werbung nicht beanspruchbar", anspruchFehler);
           return "fehler";
         }
-        // Ein anderes Ereignis war schneller oder arbeitet gerade daran.
-        if (!beansprucht) return "ok";
+        // Die Beanspruchung griff nicht. Zwei Gruende sind moeglich, und sie
+        // bedeuten Gegenteiliges (Audit B02): Entweder ist die Gutschrift
+        // laengst erledigt - dann ist alles gut. Oder ein anderer Lauf haelt
+        // den Datensatz gerade und koennte abbrechen. Beides als "ok" zu
+        // melden hiesse, Stripe antwortet 200 und stellt nie wieder zu.
+        if (!beansprucht) {
+          const { data: stand } = await supabase
+            .from("werbungen")
+            .select("status")
+            .eq("id", werbung.id)
+            .maybeSingle();
+          if (stand?.status === WERBUNG_STATUS.belohnt) return "ok";
+          // Noch in Arbeit: Stripe soll das Ereignis spaeter erneut zustellen.
+          // Bis dahin ist die Frist entweder abgelaufen - dann greift die
+          // Wiederaufnahme - oder der andere Lauf ist fertig.
+          console.warn("[stripe-webhook] Werbung gerade in Arbeit, spaeter erneut", {
+            werbung: werbung.id,
+            status: stand?.status,
+          });
+          return "spaeter";
+        }
 
         // Schritt 2: Rabatt setzen. Der Idempotenzschluessel macht einen
         // zweiten Versuch mit derselben Werbung bei Stripe wirkungslos -
@@ -381,12 +400,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return "ok";
       };
 
+      // Wie lange ein laufender Versuch als abgebrochen gilt. Dieselbe Frist
+      // wie in `belohne` - sonst meldete die Suche einen Datensatz als
+      // wiederaufnehmbar, den die Beanspruchung danach ablehnt.
+      const steckengeblieben = new Date(Date.now() - WIEDERAUFNAHME_MS).toISOString();
+      const offenOderHaengend =
+        `status.eq.${WERBUNG_STATUS.registriert},` +
+        `and(status.eq.${WERBUNG_STATUS.inArbeit},in_arbeit_seit.lt."${steckengeblieben}")`;
+
       // Rolle 1: Der Zahlende wurde geworben → Anspruch entsteht jetzt.
+      //
+      // Audit B02: Auch hier gehören hängengebliebene Versuche dazu. Suchte
+      // diese Abfrage nur nach `registriert`, fand eine erneute Zustellung
+      // desselben Ereignisses den Datensatz nach einem Abbruch nie wieder -
+      // die Wiederaufnahme hätte dann vom Werber abgehängen, der womoeglich
+      // erst in einem Jahr wieder zahlt.
       const { data: alsGeworbener, error: geworbenerFehler } = await supabase
         .from("werbungen")
         .select("id, werber_user_id, qualifiziert_am")
         .eq("geworbener_user_id", zahlerId)
-        .eq("status", WERBUNG_STATUS.registriert)
+        .or(offenOderHaengend)
         .maybeSingle();
       if (geworbenerFehler) {
         console.error("[stripe-webhook] werbungen nicht lesbar", geworbenerFehler);
@@ -412,18 +445,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Rolle 2: Der Zahlende hat geworben und hat jetzt ein Abo, auf das
       // ein offener Rabatt gelegt werden kann.
-      // Audit A07: Auch haengengebliebene Versuche gehoeren hierher. Ohne sie
-      // bliebe eine Werbung, deren Gutschrift abgebrochen ist, fuer immer in
-      // Arbeit - sie wird sonst von keiner der beiden Rollen wieder gefunden.
-      const steckengeblieben = new Date(Date.now() - WIEDERAUFNAHME_MS).toISOString();
       const { data: alsWerber, error: werberListeFehler } = await supabase
         .from("werbungen")
         .select("id, werber_user_id")
         .eq("werber_user_id", zahlerId)
-        .or(
-          `status.eq.${WERBUNG_STATUS.registriert},` +
-            `and(status.eq.${WERBUNG_STATUS.inArbeit},in_arbeit_seit.lt."${steckengeblieben}")`
-        )
+        .or(offenOderHaengend)
         .not("qualifiziert_am", "is", null);
       if (werberListeFehler) {
         console.error("[stripe-webhook] offene Werbungen nicht lesbar", werberListeFehler);
@@ -435,6 +461,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const ergebnis = await belohne(werbung);
         if (ergebnis === "fehler") {
           return res.status(500).json({ error: "Gutschrift fehlgeschlagen" });
+        }
+        if (ergebnis === "spaeter") {
+          // Kein Fehler, aber auch kein Abschluss - Stripe stellt erneut zu.
+          return res.status(500).json({ error: "Gutschrift noch in Arbeit" });
         }
       }
       break;

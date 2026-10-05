@@ -345,6 +345,13 @@ export function berechneStrategien(args: {
       zweitvertrag: args.zweitvertrag,
       jahre,
       endkapitalVorschlag,
+      // Die Stellen, an denen die Foerderung springt: der Zulagenknick, die
+      // Grenze des gefoerderten Eigenbeitrags und der Einzahlungsdeckel.
+      knicke: [
+        aufteilungspunkt.monatsbeitrag,
+        GESETZ.GEFOERDERTER_EIGENBEITRAG_MAX / 12,
+        GESETZ.EINZAHLUNG_MAX / 12,
+      ],
     });
   }
 
@@ -468,9 +475,10 @@ const PLATEAU_ANTEIL = 0.005;
  * Zulage aus. Danach steigt sie bis zum Zulagenknick. Eine Suche, die
  * Eingipfligkeit unterstellt, liefe in dieses lokale Tal.
  *
- * Zwei Durchgaenge: ein grobes Raster ueber den ganzen Bereich, dann ein
- * feines um den Treffer herum. Die Raender gehoeren dazu, denn haeufig ist
- * "alles ins AVD" tatsaechlich das Beste.
+ * Drei Durchgaenge: die gesetzlich ausgezeichneten Punkte und Raender, ein
+ * grobes Raster darueber, dann ein feines um den Treffer. Die Knicke einzeln
+ * zu pruefen ist noetig, weil ein Raster sie sonst ueberspringen kann - und
+ * genau dort liegt das Optimum haeufig.
  */
 function sucheOptimum(args: {
   ohneDynamik: AvdEingabe;
@@ -480,43 +488,76 @@ function sucheOptimum(args: {
   jahre: number;
   /** Endkapital des Zulagenknicks, als Vergleichsmassstab. */
   endkapitalVorschlag: number;
+  /** Stellen, an denen die Foerderung springt - sie gehoeren immer geprueft. */
+  knicke: number[];
 }): AufteilungsOptimum {
   const { ohneDynamik, voll, obergrenze, zweitvertrag, jahre } = args;
   const bewertet = new Map<number, number>();
   const bewerte = (a: number): number => {
-    const vorhanden = bewertet.get(a);
+    const punkt = Math.round(Math.min(obergrenze, Math.max(0, a)));
+    const vorhanden = bewertet.get(punkt);
     if (vorhanden !== undefined) return vorhanden;
-    const k = kombinationRechnen(ohneDynamik, a, voll - a, zweitvertrag, jahre).endkapital;
-    bewertet.set(a, k);
+    const k = kombinationRechnen(ohneDynamik, punkt, voll - punkt, zweitvertrag, jahre)
+      .endkapital;
+    bewertet.set(punkt, k);
     return k;
   };
+
+  // Raender und gesetzliche Knicke zuerst - haeufig liegt das Optimum dort
+  bewerte(0);
+  bewerte(obergrenze);
+  for (const k of args.knicke) bewerte(k);
 
   // Grobes Raster: rund 40 Punkte, mindestens 1 EUR Schrittweite
   const grob = Math.max(1, Math.round(obergrenze / 40));
   for (let a = 0; a <= obergrenze; a += grob) bewerte(a);
-  bewerte(obergrenze);
 
-  let bester = 0;
-  for (const [a, k] of bewertet) if (k > (bewertet.get(bester) ?? -Infinity)) bester = a;
+  const besterAus = (): number => {
+    let b = 0;
+    let hoch = -Infinity;
+    for (const [a, k] of bewertet) {
+      if (k > hoch) {
+        hoch = k;
+        b = a;
+      }
+    }
+    return b;
+  };
 
-  // Feines Raster um den Treffer, damit der Knick nicht zwischen zwei
+  let bester = besterAus();
+
+  // Feines Raster um den Treffer, damit der Hochpunkt nicht zwischen zwei
   // Rasterpunkten verschwindet
   if (grob > 1) {
     const von = Math.max(0, bester - grob);
     const bis = Math.min(obergrenze, bester + grob);
     for (let a = von; a <= bis; a++) bewerte(a);
-    for (const [a, k] of bewertet) if (k > (bewertet.get(bester) ?? -Infinity)) bester = a;
+    bester = besterAus();
   }
+
+  const hoechstes = bewertet.get(bester) ?? 0;
+  const toleranz = Math.abs(hoechstes) * PLATEAU_ANTEIL;
+
+  /**
+   * Die Spanne, in der die Aufteilung kaum einen Unterschied macht.
+   *
+   * Entscheidend ist, dass sie **zusammenhaengend** ist: Frueher wurde einfach
+   * der kleinste und groesste Punkt innerhalb der Toleranz genommen. Bei einer
+   * Kurve mit Tal lagen dazwischen Punkte, die weit darunter lagen - die
+   * Oberflaeche behauptete dann fuer den ganzen Bereich, die Wahl sei
+   * gleichgueltig. Deshalb wird vom Hochpunkt aus in Ein-Euro-Schritten nach
+   * aussen gegangen, solange die Toleranz haelt, und beim ersten Ausreisser
+   * abgebrochen.
+   */
+  const haeltToleranz = (a: number) => bewerte(a) >= hoechstes - toleranz;
+  let plateauVon = bester;
+  while (plateauVon > 0 && haeltToleranz(plateauVon - 1)) plateauVon--;
+  let plateauBis = bester;
+  while (plateauBis < obergrenze && haeltToleranz(plateauBis + 1)) plateauBis++;
 
   const stuetzstellen = [...bewertet.entries()]
     .map(([monatlich, endkapital]) => ({ monatlich, endkapital }))
     .sort((x, y) => x.monatlich - y.monatlich);
-
-  const hoechstes = bewertet.get(bester) ?? 0;
-  const toleranz = Math.abs(hoechstes) * PLATEAU_ANTEIL;
-  const nahe = stuetzstellen.filter((x) => x.endkapital >= hoechstes - toleranz);
-  const plateauVon = nahe.length > 0 ? nahe[0].monatlich : bester;
-  const plateauBis = nahe.length > 0 ? nahe[nahe.length - 1].monatlich : bester;
 
   return {
     monatsbeitrag: bester,

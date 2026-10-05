@@ -16,6 +16,7 @@ import {
 } from "@/components/shared/TaxCalculations";
 import { simulateLv } from "@/lib/finance/simulation";
 import { buildGuaranteedSeries } from "@/lib/finance/series";
+import { beitragsbasis } from "@/lib/finance/bestadvice";
 
 export type BestAdviceModus = "gross" | "net";
 
@@ -95,8 +96,22 @@ export function baueBestAdviceReihen(calc: BestAdviceModel, mode: BestAdviceModu
           : year;
       let bestandNet = bestandPoint.capital;
       if (!calc.current_product_tax_free) {
+        // Audit B03: Steuerlich zaehlen die eingezahlten Beitraege, nicht der
+        // heutige Rueckkaufswert. `buildGuaranteedSeries` beginnt seine
+        // Beitragssumme beim heutigen Kapital - wer frueher mehr eingezahlt
+        // hat, als der Vertrag heute wert ist, bekam hier zu hohe Gewinne und
+        // damit zu viel Steuer. Die Kurve wich dann von der Kennzahl ab, die
+        // dieselbe Rechnung mit der richtigen Basis macht.
+        const basisHeute = beitragsbasis({
+          eingezahltBisher: calc.results?.eingezahlt_bisher_gesamt ?? null,
+          aktuellerWert: startCapital,
+          monatsbeitrag: 0,
+          monate: 0,
+        });
+        const beitraegeBisJetzt =
+          basisHeute + (bestandPoint.contributions_cum - startCapital);
         const bestandTax = calculateLifeInsuranceTax(
-          bestandPoint.capital - bestandPoint.contributions_cum,
+          bestandPoint.capital - beitraegeBisJetzt,
           bestandsJahre,
           age,
           lvTaxOptions
