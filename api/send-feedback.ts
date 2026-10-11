@@ -9,6 +9,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Resend } from "resend";
 import { ABSENDER, mailLayout } from "./_mail-layout.js";
 import { createClient } from "@supabase/supabase-js";
+import { darfAufrufen, zuVieleAufrufe } from "./_drossel.js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -46,6 +47,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     data: { user },
   } = await supabase.auth.getUser(token);
   if (!user?.email) return res.status(401).json({ error: "Unauthorized" });
+
+  // Jeder Aufruf verschickt eine Mail ueber den Resend-Zugang des Betreibers.
+  // Ohne Bremse genuegt ein kostenloses Konto, um das in einer Schleife zu
+  // tun - das kostet Geld und beschaedigt den Ruf der Absenderdomain.
+  const supabaseAdmin = createClient(
+    process.env.VITE_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  if (!(await darfAufrufen(supabaseAdmin, user.id, "feedback"))) {
+    return res.status(429).json(zuVieleAufrufe("feedback"));
+  }
 
   const { typ, nachricht, email } = (req.body ?? {}) as {
     typ?: string;

@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
+import { darfAufrufen, zuVieleAufrufe } from "./_drossel.js";
 import Stripe from "stripe";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -17,6 +18,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     process.env.VITE_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
+
+  // Eine Kontoloeschung ist endgueltig und selten.
+  if (!(await darfAufrufen(supabaseAdmin, user.id, "konto"))) {
+    return res.status(429).json(zuVieleAufrufe("konto"));
+  }
 
   // Laufendes Abo zuerst beenden – sonst wird weiter abgebucht, obwohl der
   // Zugang weg ist und der Kunde sich nicht mehr einloggen kann.

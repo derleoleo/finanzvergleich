@@ -117,12 +117,15 @@ export default function Layout({ children }: Props) {
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [feedbackSent, setFeedbackSent] = useState(false);
-  const [feedbackError, setFeedbackError] = useState(false);
+  // Text statt Schalter: Die Drosselung nennt eine Grenze, und die gehoert
+  // dem Nutzer gesagt - sonst steht da „Fehler“ und er versucht es sofort
+  // wieder.
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const handleSendFeedback = async () => {
     if (!feedbackMessage.trim()) return;
     setIsSending(true);
-    setFeedbackError(false);
+    setFeedbackError(null);
 
     try {
       // Eigene Funktion statt Formspree: kein weiterer Auftragsverarbeiter,
@@ -143,7 +146,13 @@ export default function Layout({ children }: Props) {
         }),
       });
 
-      if (!res.ok) throw new Error("Feedback fehlgeschlagen");
+      if (!res.ok) {
+        const grund = await res
+          .json()
+          .then((d: { error?: string }) => d?.error)
+          .catch(() => undefined);
+        throw new Error(grund || "Feedback fehlgeschlagen");
+      }
 
       setFeedbackMessage("");
       setFeedbackEmail("");
@@ -154,8 +163,12 @@ export default function Layout({ children }: Props) {
         setFeedbackSent(false);
         setShowFeedback(false);
       }, 2000);
-    } catch {
-      setFeedbackError(true);
+    } catch (e) {
+      setFeedbackError(
+        e instanceof Error && e.message
+          ? e.message
+          : "Fehler beim Senden. Bitte später erneut versuchen."
+      );
     } finally {
       setIsSending(false);
     }
@@ -336,9 +349,7 @@ export default function Layout({ children }: Props) {
                 />
 
                 {feedbackError && (
-                  <p className="text-xs text-red-500">
-                    Fehler beim Senden. Bitte später erneut versuchen.
-                  </p>
+                  <p className="text-xs text-red-500">{feedbackError}</p>
                 )}
 
                 <Button

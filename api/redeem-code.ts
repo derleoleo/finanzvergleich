@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
+import { darfAufrufen, zuVieleAufrufe } from "./_drossel.js";
 
 /**
  * Meldungen für den Nutzer. Die Datenbank gibt nur ein Kürzel zurück; der
@@ -48,6 +49,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     process.env.VITE_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
+
+  // Gegen das Durchprobieren von Testcodes.
+  if (!(await darfAufrufen(supabaseAdmin, user.id, "code"))) {
+    return res.status(429).json(zuVieleAufrufe("code"));
+  }
 
   // Prüfen, beanspruchen und freischalten in einer Transaktion. Vorher waren
   // das vier Anfragen: Dazwischen konnte ein zweiter Aufruf denselben Code

@@ -6,6 +6,7 @@
 //         (siehe stripe-webhook.ts).
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
+import { darfAufrufen, zuVieleAufrufe } from "./_drossel.js";
 import { holeOderErzeugeCode, normalisiereCode, WERBUNG_STATUS } from "./_werbung.js";
 
 const BASIS_URL = "https://www.vorsorgewaage.de";
@@ -38,7 +39,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+
+  // Den eigenen Code zu lesen ist harmlos; einen fremden einzutragen nicht.
+  // Deshalb zwei Budgets - sonst sperrt sich aus, wer die Seite oft oeffnet.
   if (req.method === "GET") {
+    if (!(await darfAufrufen(supabaseAdmin, user.id, "empfehlung"))) {
+      return res.status(429).json(zuVieleAufrufe("empfehlung"));
+    }
+
     const code = await holeOderErzeugeCode(supabaseAdmin, user.id);
     if (!code) return res.status(500).json({ error: "Code konnte nicht erzeugt werden" });
 
@@ -57,6 +65,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === "POST") {
+    if (!(await darfAufrufen(supabaseAdmin, user.id, "empfehlung_code"))) {
+      return res.status(429).json(zuVieleAufrufe("empfehlung_code"));
+    }
     const code = normalisiereCode((req.body as { code?: string })?.code);
     if (!code) return res.status(400).json({ error: "Code fehlt" });
 

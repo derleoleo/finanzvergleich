@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { darfAufrufen, zuVieleAufrufe } from "./_drossel.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -24,6 +25,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     process.env.VITE_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
+
+  // Zahlungsvorgaenge in Serie deuten auf Missbrauch.
+  if (!(await darfAufrufen(supabaseAdmin, user.id, "kasse"))) {
+    return res.status(429).json(zuVieleAufrufe("kasse"));
+  }
 
   const { data: sub } = await supabaseAdmin
     .from("subscriptions")
