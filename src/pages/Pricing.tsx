@@ -228,9 +228,14 @@ export default function Pricing() {
           </span>
           <button
             onClick={() => setBilling(billing === "monthly" ? "yearly" : "monthly")}
-            className={`relative w-14 h-7 rounded-full transition-colors duration-200 focus:outline-none ${
+            // `focus:outline-none` ohne Ersatz macht den Fokus unsichtbar -
+            // wer mit der Tastatur navigiert, sieht dann nicht, wo er steht.
+            className={`relative w-14 h-7 rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
               billing === "yearly" ? "bg-slate-800" : "bg-slate-300"
             }`}
+            role="switch"
+            aria-checked={billing === "yearly"}
+            aria-label="Zwischen monatlicher und jährlicher Zahlweise wechseln"
           >
             <span
               className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${

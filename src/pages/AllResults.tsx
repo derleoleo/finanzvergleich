@@ -211,8 +211,13 @@ export default function AllResults() {
               const { Icon, color } = typeIcon(item.type);
               const summary = resultSummary(item);
               return (
+                // Der Klick auf die ganze Karte ist eine Bequemlichkeit fuer
+                // die Maus. Bedient wird sie ueber den Knopf rechts - eine
+                // Karte mit role="button" haette die Loeschschaltflaeche in
+                // sich verschachtelt, und verschachtelte Bedienelemente sind
+                // fuer Tastatur und Vorlesesoftware nicht eindeutig.
                 <Card key={`${item.type}-${item.data.id}`}
-                  className="border-0 shadow-lg bg-white cursor-pointer hover:shadow-xl transition-all duration-200 group"
+                  className="border-0 shadow-lg bg-white cursor-pointer hover:shadow-xl transition-all duration-200 group focus-within:ring-2 focus-within:ring-blue-500"
                   onClick={() => openCalc(item)}>
                   <CardContent className="p-5">
                     <div className="flex items-center gap-4">
@@ -241,7 +246,19 @@ export default function AllResults() {
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
-                      <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 shrink-0 transition-colors" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openCalc(item);
+                        }}
+                        className="text-slate-400 hover:text-slate-900 h-8 w-8 p-0 shrink-0"
+                        aria-label={`${item.data.name} öffnen`}
+                        title="Berechnung öffnen"
+                      >
+                        <ArrowRight className="w-4 h-4 group-hover:text-slate-700 transition-colors" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

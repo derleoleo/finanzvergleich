@@ -14,8 +14,13 @@ export function Button({
   size = "md",
   ...props
 }: Props) {
+  // Der Fokusrahmen gehoert an die Grundkomponente, nicht an jeden Aufrufer:
+  // Sonst haengt die Tastaturbedienbarkeit davon ab, ob jemand daran gedacht
+  // hat. `focus-visible` zeigt ihn nur bei Tastaturnutzung, nicht beim Klick.
   const base =
-    "inline-flex items-center justify-center rounded-xl font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none";
+    "inline-flex items-center justify-center rounded-xl font-medium transition-colors " +
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 " +
+    "focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none";
 
   const variantClass =
     variant === "outline"
