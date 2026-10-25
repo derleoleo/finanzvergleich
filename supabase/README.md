@@ -24,7 +24,15 @@ Tabellen, Fremdschlüssel und vor allem die Zugriffsregeln (Row Level Security)
 liegen deshalb nur in der Cloud. Folgen: Die Regeln lassen sich nicht im Code
 prüfen, und nach einem Unfall gibt es keine Vorlage zum Wiederherstellen.
 
-Einmalig nachholen, dann ist der Stand versioniert:
+**Teilweise nachgeholt am 25.10.2026:** Die Zugriffsregeln und die
+Funktionsrechte stehen jetzt in `migrations/00000000000000_ausgangsstand_rls.sql`.
+Abgezogen wurde über `pg_policies` und `pg_get_functiondef()` im SQL-Editor –
+`supabase db dump` setzt Docker voraus, das hier nicht installiert ist.
+
+Offen bleiben die **Tabellendefinitionen**. Die sind weniger heikel: Eine
+falsche Spalte fällt im Betrieb auf, eine falsche Zugriffsregel nicht.
+
+Für den vollständigen Abzug (mit Docker):
 
 ```bash
 npx supabase login
