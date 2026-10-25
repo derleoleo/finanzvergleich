@@ -51,6 +51,56 @@ Codeliste zu kennen – die steht in `TEST_CODES` und wird in der Anwendung gepr
 Offen war nur Kosmetik und der Nachweisschutz für Einwilligungen; beides
 behebt `migrations/20260928120000_rls_haerten.sql`.
 
+## Das Testkonto braucht einen bezahlten Zugang
+
+Der angemeldete Playwright-Durchlauf (`e2e/beratungsablauf.spec.ts`) prüft auch
+das Altersvorsorgedepot. Das ist eine `PaidRoute` – ohne bezahlten Zugang steht
+der Test vor der Bezahlschranke und findet kein Eingabefeld.
+
+Betroffen sind **zwei** Konten, und das ist leicht zu uebersehen:
+
+- in CI das Konto aus `E2E_EMAIL`,
+- lokal das Konto, zu dem `.playwright-auth.json` gehoert (die gespeicherte
+  Sitzung aus `scripts/screenshots.mjs` - in der Regel das eigene).
+
+Beide brauchen einen **von Hand gesetzten** Eintrag in `subscriptions`:
+`plan = 'business'`, `status = 'trialing'`, `stripe_subscription_id = null`,
+`current_period_end` weit in der Zukunft.
+
+**Beim Aufräumen von Premium-Status müssen diese Zeilen stehen bleiben.** Sie
+sehen aus wie manuelle Hochstufungen – weil sie welche sind. Ein pauschales
+
+```sql
+update public.subscriptions set plan = 'free' where stripe_subscription_id is null;
+```
+
+macht den AVD-Test rot, und zwar erst beim nächsten Lauf in CI. Genau das ist am
+25.10.2026 passiert.
+
+Wiederherstellen:
+
+```sql
+insert into public.subscriptions
+  (user_id, plan, status, current_period_end, cancel_at_period_end, updated_at)
+select u.id, 'business', 'trialing', now() + interval '10 years', false, now()
+from auth.users u
+where u.email in ('<E2E_EMAIL>', '<eigenes Konto>')
+on conflict (user_id) do update
+  set plan = excluded.plan,
+      status = excluded.status,
+      stripe_subscription_id = null,
+      current_period_end = excluded.current_period_end,
+      cancel_at_period_end = false,
+      updated_at = now();
+```
+
+Das ferne Enddatum ist Absicht: `hat_aktives_abo()` prüft bei Zeilen ohne
+Stripe-Abo das Datum. Ein ablaufender Testzugang ließe den Durchlauf irgendwann
+ohne erkennbaren Grund scheitern.
+
+Ein `update` ohne `returning` meldet im SQL-Editor übrigens immer „No rows
+returned" – auch wenn keine Zeile passte. Zum Prüfen gehört eine eigene Abfrage.
+
 ## Worauf bei den Zugriffsregeln zu achten ist
 
 Für jede Tabelle mit Nutzerdaten (`calculations`, `single_payment_calculations`,
