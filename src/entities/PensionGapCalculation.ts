@@ -31,6 +31,11 @@ export type PensionGapResults = {
   abzuege_gesetzliche_rente_percent?: number;
   /** Einnahmen nach Abzuegen, wie sie in die Rechnung eingingen. */
   einnahmen_monatlich?: number;
+  /**
+   * Alter, ab dem die Luecke auftritt (Audit E01). Bei festen Einnahmen kann
+   * sie erst Jahre nach dem Rentenbeginn beginnen.
+   */
+  luecke_ab_alter?: number;
   modell_version?: string;
   bewertet_am?: string;
   rechtsstand?: string;

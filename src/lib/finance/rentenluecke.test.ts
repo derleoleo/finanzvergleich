@@ -198,3 +198,85 @@ describe("Abzuege auf die gesetzliche Rente (Audit C04)", () => {
     expect(r.einnahmen_monatlich).toBe(1300);
   });
 });
+
+describe("Später entstehende Lücke (Audit E01)", () => {
+  /**
+   * Der Fall aus der Nachprüfung: Heute reichen die festen Einnahmen, in
+   * wenigen Jahren nicht mehr. Die Rechnung meldete "gedeckt" und null
+   * Kapitalbedarf, weil sie am Rentenbeginn abbrach.
+   */
+  const spaetereLuecke = (over: Partial<RentenlueckeEingabe> = {}) =>
+    berechneRentenluecke(
+      basis({
+        birth_year: 1959,
+        retirement_age: 67,
+        withdrawal_end_age: 90,
+        desired_monthly_income: 2000,
+        expected_statutory_pension: 2100,
+        occupational_pension_bav: 0,
+        existing_capital: 0,
+        assumed_annual_return: 4,
+        inflation_percent: 2,
+        einnahmen_basis: "rentenbeginn",
+        ...over,
+      }),
+      new Date(2026, 9, 26)
+    );
+
+  it("meldet den Kapitalbedarf, obwohl die Lücke bei Rentenbeginn null ist", () => {
+    const r = spaetereLuecke();
+    expect(r.gap_already_covered).toBe(false);
+    expect(r.monthly_gap_at_retirement).toBe(0);
+    // Unabhängige monatliche Gegenrechnung: rund 64.394 €
+    expect(r.capital_needed_at_retirement).toBeGreaterThan(64_000);
+    expect(r.capital_needed_at_retirement).toBeLessThan(64_800);
+    // Der Rentenbeginn ist hier schon erreicht - zu sparen ist nichts mehr,
+    // das Kapital muesste bereits da sein. Genau diese Lage soll der Rechner
+    // benennen, statt "gedeckt" zu melden.
+    expect(r.retirement_reached).toBe(true);
+    expect(r.additional_capital_needed).toBeGreaterThan(64_000);
+  });
+
+  it("sagt, ab welchem Alter die Lücke auftritt", () => {
+    const r = spaetereLuecke();
+    // 2.000 € x 1,02^t übersteigt 2.100 € nach gut zweieinhalb Jahren
+    expect(r.luecke_ab_alter).toBeGreaterThan(69);
+    expect(r.luecke_ab_alter).toBeLessThan(70);
+  });
+
+  it("bleibt gedeckt, wenn die Einnahmen dauerhaft reichen", () => {
+    // Ohne Inflation wächst der Bedarf nicht - dann gibt es wirklich nichts
+    // zu schließen.
+    const ohneTeuerung = spaetereLuecke({ inflation_percent: 0 });
+    expect(ohneTeuerung.gap_already_covered).toBe(true);
+    expect(ohneTeuerung.capital_needed_at_retirement).toBe(0);
+    expect(ohneTeuerung.luecke_ab_alter).toBeUndefined();
+
+    // Und auch mit Teuerung, wenn der Abstand groß genug ist
+    const reichlich = spaetereLuecke({ expected_statutory_pension: 6000 });
+    expect(reichlich.gap_already_covered).toBe(true);
+    expect(reichlich.luecke_ab_alter).toBeUndefined();
+  });
+
+  it("nennt bei sofortiger Lücke den Rentenbeginn", () => {
+    const r = spaetereLuecke({ expected_statutory_pension: 1000 });
+    expect(r.gap_already_covered).toBe(false);
+    // Der erste Monat der Entnahme, also unmittelbar zum Rentenbeginn
+    expect(r.luecke_ab_alter).toBeCloseTo(67 + 1 / 12, 6);
+  });
+
+  it("lässt die Konvention 'heute' unberührt", () => {
+    // Dort ist die Frage am Rentenbeginn entschieden, weil die Einnahmen
+    // mitwachsen: Wer heute genug hat, hat auch später genug.
+    const r = berechneRentenluecke(
+      basis({
+        desired_monthly_income: 2000,
+        expected_statutory_pension: 2100,
+        einnahmen_basis: "heute",
+      }),
+      heute
+    );
+    expect(r.gap_already_covered).toBe(true);
+    expect(r.capital_needed_at_retirement).toBe(0);
+  });
+});

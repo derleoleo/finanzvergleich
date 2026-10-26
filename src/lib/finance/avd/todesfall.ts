@@ -476,7 +476,18 @@ export function berechneTodesfallSzenarien(args: {
     );
     const restGef = rest * anteilGef;
     const restUngef = rest * (1 - anteilGef);
-    const verbrauchtAnteil = restkapitalBeiBeginn > 0 ? rest / restkapitalBeiBeginn : 0;
+    /*
+     * Anteil am gesamten Kapital zum Auszahlungsbeginn - einschliesslich des
+     * Teilkapitals (Audit E03).
+     *
+     * Vorher war der Nenner das Kapital *nach* der Teilentnahme. Direkt nach
+     * Beginn war der Quotient damit immer eins: Bei 30 % Teilkapital wurde die
+     * gesamte Foerderung zurueckgefordert, obwohl knapp ein Drittel planmaessig
+     * ausgezahlt und dabei besteuert worden war. Richtig ist der Anteil am
+     * Ganzen - dann bleiben nach einer 30-%-Entnahme 70 % der Foerderung im
+     * Raum.
+     */
+    const verbrauchtAnteil = gesamtBeiBeginn > 0 ? rest / gesamtBeiBeginn : 0;
 
     // Anteilig, weil § 93 Abs. 1 S. 1 EStG von den „auf den Auszahlungsbetrag
     // entfallenden" Zulagen spricht: Die bereits gezahlten Raten waren
@@ -556,7 +567,20 @@ function depotRestNachSteuer(args: {
 }): number {
   const { r, e, rMonatDepot, monateSeitBeginn } = args;
   let kapital = r.depot.endkapitalVorSteuer;
-  let einstand = Math.max(0, r.depot.eingezahlt);
+  /*
+   * Der steuerliche Einstand, nicht die Einzahlungen (Audit E02).
+   *
+   * Bereits ueber die Vorabpauschale versteuerte Betraege erhoehen den
+   * Einstand (§ 19 Abs. 1 InvStG) - sonst wird derselbe Gewinn zweimal
+   * belastet. Die regulaere Depotrechnung beruecksichtigt das; hier stand
+   * dagegen nur `eingezahlt`, und der Todesfall wies zum selben Stichtag ein
+   * um mehrere Tausend Euro kleineres Netto aus als der normale Verkauf.
+   * Die letzte Jahreszeile traegt den vollen Einstand.
+   */
+  let einstand = Math.max(
+    0,
+    r.jahre[r.jahre.length - 1]?.depotEinstand ?? r.depot.eingezahlt
+  );
   const rate = r.depot.monatsentnahmeBrutto;
 
   for (let m = 1; m <= monateSeitBeginn; m++) {

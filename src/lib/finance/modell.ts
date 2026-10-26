@@ -9,9 +9,27 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-26e" as const;
+export const MODELL_VERSION = "2026-10-27" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-27",
+    aenderung:
+      "Drei Fehler der Nachpruefung vom 26.10.2026. Rentenluecke: Bei festen " +
+      "Einnahmen zum Rentenbeginn entscheidet jetzt der ganze " +
+      "Entnahmehorizont darueber, ob eine Luecke besteht - vorher brach die " +
+      "Rechnung am Rentenbeginn ab und meldete \"gedeckt\", obwohl der " +
+      "steigende Bedarf die festen Einnahmen wenige Jahre spaeter uebersteigt " +
+      "(im geprueften Fall 64.394 EUR Kapitalbedarf statt null). Das Alter, " +
+      "ab dem die Luecke auftritt, steht jetzt in Ergebnis und Oberflaeche. " +
+      "Todesfall: Das freie Depot rechnet mit dem vollen steuerlichen " +
+      "Einstand einschliesslich der ueber die Vorabpauschale versteuerten " +
+      "Betraege (§ 19 Abs. 1 InvStG) - sonst wurde derselbe Gewinn zweimal " +
+      "belastet. Und die anteilige Rueckforderung bezieht sich auf das " +
+      "gesamte Kapital zum Auszahlungsbeginn: Nach einer planmaessigen " +
+      "Teilentnahme von 30 Prozent bleiben 70 Prozent der Foerderung im Raum, " +
+      "vorher die ganze.",
+  },
   {
     version: "2026-10-26e",
     aenderung:

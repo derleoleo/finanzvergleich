@@ -260,7 +260,18 @@ export default function PensionGapCalculator() {
                   <NumericInput step="0.1" value={formData.assumed_annual_return}
                     onChange={(val) => update("assumed_annual_return", val)} className={inputClass} />
                 </div>
-                {!vorschau.gap_already_covered && (
+                {!vorschau.gap_already_covered &&
+                  vorschau.monthly_gap_at_retirement === 0 &&
+                  vorschau.luecke_ab_alter !== undefined && (
+                    <p className="text-xs text-amber-700 mt-2">
+                      Zum Rentenbeginn reichen die festen Einnahmen noch. Weil der
+                      Bedarf weiter steigt, entsteht die Lücke ab Alter{" "}
+                      {vorschau.luecke_ab_alter.toFixed(1).replace(".", ",")} – dafür
+                      braucht es trotzdem Kapital.
+                    </p>
+                  )}
+                {!vorschau.gap_already_covered &&
+                  vorschau.monthly_gap_at_retirement > 0 && (
                   <p className="text-xs text-slate-600 mt-2">
                     In heutiger Kaufkraft. Zum Rentenbeginn in{" "}
                     {vorschau.years_to_retirement}{" "}

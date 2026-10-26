@@ -322,6 +322,12 @@ export default function PensionGapDetail() {
                     {r.einnahmen_basis === "rentenbeginn"
                       ? " Die Einnahmen waren feste Beträge zum Rentenbeginn; ihre Kaufkraft sinkt im Ruhestand."
                       : " Bedarf und Einnahmen standen in heutiger Kaufkraft und steigen mit der Inflation."}
+                    {r.luecke_ab_alter !== undefined &&
+                    (r.monthly_gap_at_retirement ?? 0) === 0
+                      ? ` Zum Rentenbeginn reichten die Einnahmen noch; die Lücke entsteht ab Alter ${r.luecke_ab_alter
+                          .toFixed(1)
+                          .replace(".", ",")}.`
+                      : ""}
                     {r.abzuege_gesetzliche_rente_percent
                       ? ` Von der gesetzlichen Rente wurden ${r.abzuege_gesetzliche_rente_percent} % für Steuer und Kranken-/Pflegeversicherung abgezogen.`
                       : " Die gesetzliche Rente galt als Nettobetrag."}

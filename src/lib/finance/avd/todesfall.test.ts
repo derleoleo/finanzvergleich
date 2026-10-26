@@ -248,3 +248,56 @@ describe('Rechenhelfer', () => {
     expect(barwertRaten(0, 0.01, 12)).toBe(0);
   });
 });
+
+describe('Gegenproben der Nachprüfung (E02, E03)', () => {
+  it('liquidiert das freie Depot zum Rentenbeginn wie die reguläre Rechnung (E02)', () => {
+    // Am selben Stichtag, vor der ersten Rate, muss derselbe Betrag
+    // herauskommen. Vorher fehlten im Todesfall die bereits über die
+    // Vorabpauschale versteuerten Beträge im Einstand (§ 19 Abs. 1 InvStG) -
+    // derselbe Gewinn wurde zweimal belastet.
+    const e = eingabe();
+    const r = simuliereAvd(e);
+    const [beiBeginn] = szenarien(e, [67]);
+    expect(beiBeginn.freiesDepot).toBeCloseTo(r.depot.endkapitalNetto, 6);
+  });
+
+  it('verlangt einen Einstand über den Einzahlungen (E02)', () => {
+    // Gegenprobe zur Probe selbst: Ohne positive Vorabpauschalen wäre der
+    // Test wertlos, weil beide Wege ohnehin gleich rechnen.
+    const r = simuliereAvd(eingabe());
+    const letzte = r.jahre[r.jahre.length - 1];
+    expect(letzte.depotEinstand).toBeGreaterThan(r.depot.eingezahlt);
+  });
+
+  it('mindert die Rückforderung um das planmäßig ausgezahlte Teilkapital (E03)', () => {
+    // 30 % werden zu Beginn planmäßig ausgezahlt und dabei besteuert. Für
+    // diesen Teil gibt es keine Rückforderung mehr; es bleiben 70 %.
+    const ohne = eingabe({ teilkapitalAnteil: 0 });
+    const mit = eingabe({ teilkapitalAnteil: 0.3 });
+    const rOhne = simuliereAvd(ohne);
+    const rMit = simuliereAvd(mit);
+    const [sOhne] = szenarien(ohne, [67]);
+    const [sMit] = szenarien(mit, [67]);
+
+    expect(sOhne.sonstige.rueckforderung).toBeCloseTo(rOhne.summeFoerderung, 0);
+    expect(sMit.sonstige.rueckforderung).toBeLessThan(sOhne.sonstige.rueckforderung);
+    // 70 % der Förderung, nicht die ganze
+    expect(sMit.sonstige.rueckforderung).toBeCloseTo(rMit.summeFoerderung * 0.7, 0);
+  });
+
+  it('bezieht die Rückforderung durchgehend auf das Ganze (E03)', () => {
+    // Auch später muss der Anteil am gesamten Kapital zum Auszahlungsbeginn
+    // gelten, nicht am Rest nach der Teilentnahme.
+    const e = eingabe({ teilkapitalAnteil: 0.3 });
+    const r = simuliereAvd(e);
+    const gesamt = r.gefoerderterKapitalanteil + r.ungefoerderterKapitalanteil;
+    for (const alter of [67, 72, 80]) {
+      const [s] = szenarien(e, [alter]);
+      const anteil = s.ehegatte.kapitalGesamt / gesamt;
+      expect(
+        s.sonstige.rueckforderung,
+        `Alter ${alter}`
+      ).toBeCloseTo(r.summeFoerderung * anteil, 0);
+    }
+  });
+});
