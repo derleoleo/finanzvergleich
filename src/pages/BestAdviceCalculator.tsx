@@ -31,6 +31,7 @@ import { formatCurrency } from "@/components/shared/CurrencyDisplay";
 import {
   calculateAgeAtPayout,
   calculateLifeInsuranceTax,
+  lvAltersgrenze,
 } from "@/components/shared/TaxCalculations";
 import { simulateLv } from "@/lib/finance/simulation";
 import { baueBestAdviceReihen } from "@/lib/finance/bestadviceReihen";
@@ -53,6 +54,11 @@ type ExtraLV = {
   eingezahlt_bisher?: number | null;
   /** Einmalige Kosten beim Wechsel, z. B. Storno oder Übertragung. */
   wechselkosten?: number;
+  /**
+   * Fondsgebunden oder klassisch? Entscheidet über die 15-%-Teilfreistellung
+   * (§ 20 Abs. 1 Nr. 6 S. 9 EStG) – Audit C02.
+   */
+  fondsgebunden: boolean;
 };
 
 type FormData = {
@@ -64,6 +70,8 @@ type FormData = {
   current_capital: number;
   guaranteed_end_capital: number;
   current_contract_start_year: number | null;
+  /** Fondsgebunden oder klassisch (Audit C02). */
+  current_fondsgebunden: boolean;
   /** Bis heute eingezahlte Beiträge des Bestandsvertrags (Audit F06). */
   current_eingezahlt_bisher: number | null;
   /** Einmalige Wechselkosten des Bestandsvertrags. */
@@ -93,6 +101,12 @@ function makeDefaults(): FormData {
     name: `BestAdvice ${new Date().toLocaleDateString("de-DE")}`,
     current_monthly_contribution: d.monthly_contribution,
     current_product_tax_free: false,
+    // Klassisch ist die Vorgabe, weil der Bestand in dieser Analyse typisch
+    // eine garantierte Kapitallebensversicherung ist - genau deshalb steht
+    // daneben ein Feld fuer das garantierte Endkapital. Frueher rechnete die
+    // Seite stillschweigend mit einer Fondspolice und zog deren
+    // Teilfreistellung ab (Audit C02).
+    current_fondsgebunden: false,
     contract_duration_years: d.contract_duration_years,
     current_capital: 10000,
     guaranteed_end_capital: 80000,
@@ -132,6 +146,28 @@ function getCurrentAge(birthYear: number) {
   return y - birthYear;
 }
 
+/**
+ * Was die gewaehlten Merkmale steuerlich bedeuten - in einem Satz.
+ *
+ * Ohne diesen Satz sieht eine niedrigere Steuer bei einem Altvertrag wie ein
+ * Fehler aus: Die beguenstigte Altersgrenze liegt dort bei 60, nicht bei 62
+ * (§ 52 Abs. 28 S. 7 EStG).
+ */
+function steuerHinweis(
+  fondsgebunden: boolean,
+  vertragsBeginnJahr?: number | null
+): string {
+  const grenze = lvAltersgrenze(vertragsBeginnJahr);
+  const alter =
+    vertragsBeginnJahr && vertragsBeginnJahr > 1900
+      ? `Vertrag von ${vertragsBeginnJahr}: beguenstigt ab Alter ${grenze}`
+      : `ohne Vertragsbeginn wird Alter ${grenze} angesetzt`;
+  const freistellung = fondsgebunden
+    ? "15 % Teilfreistellung auf die Ertraege (§ 20 Abs. 1 Nr. 6 S. 9 EStG)"
+    : "keine Teilfreistellung - die gibt es nur fuer fondsgebundene Policen";
+  return `${freistellung}; ${alter} und ab 12 Jahren Laufzeit greift der halbe Unterschiedsbetrag.`;
+}
+
 export default function BestAdviceCalculator() {
   const navigate = useNavigate();
   const defaults = useMemo(() => makeDefaults(), []);
@@ -161,6 +197,7 @@ export default function BestAdviceCalculator() {
       guaranteed_end_capital: toNum(formData.guaranteed_end_capital),
       current_product_tax_free: formData.current_product_tax_free,
       contract_start_year: formData.current_contract_start_year,
+      fondsgebunden: formData.current_fondsgebunden,
       eingezahlt_bisher: formData.current_eingezahlt_bisher,
       wechselkosten: toNum(formData.current_wechselkosten),
     },
@@ -251,12 +288,14 @@ export default function BestAdviceCalculator() {
         const startYear = toNum(lv.contract_start_year ?? 0);
         const qualDuration =
           startYear > 1900 ? payoutYear - startYear : years;
-        tax = calculateLifeInsuranceTax(
-          gains,
-          qualDuration,
-          age_at_payout,
-          lvTaxOptions
-        );
+        tax = calculateLifeInsuranceTax(gains, qualDuration, age_at_payout, {
+          ...lvTaxOptions,
+          // Audit C02: Vertragsart und Abschlussjahr gehoeren zum Vertrag,
+          // nicht in eine Pauschale. `?? true` deckt Faelle vor dem
+          // 26.10.2026 ab, die das Merkmal nicht tragen.
+          fondsgebunden: lv.fondsgebunden ?? true,
+          vertragsBeginnJahr: lv.contract_start_year ?? null,
+        });
       }
       return {
         label: lv.label,
@@ -333,6 +372,7 @@ export default function BestAdviceCalculator() {
         guaranteed_end_capital: toNum(lv.guaranteed_end_capital),
         current_product_tax_free: !!lv.current_product_tax_free,
         contract_start_year: lv.contract_start_year ?? null,
+        fondsgebunden: !!lv.fondsgebunden,
         eingezahlt_bisher: lv.eingezahlt_bisher ?? null,
       })),
       // Annahmen zum Berechnungszeitpunkt mitspeichern → geräteunabhängige Anzeige
@@ -577,6 +617,35 @@ export default function BestAdviceCalculator() {
                     ]}
                   />
                 </div>
+                {/*
+                  Audit C02: Die 15-%-Teilfreistellung setzt Investmenterträge
+                  voraus; eine klassische Police hat keine. Vorher rechnete die
+                  Seite jeden Bestandsvertrag als Fondspolice.
+                */}
+                {!formData.current_product_tax_free && (
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center gap-3">
+                      <Label className="text-sm font-medium text-slate-700">Vertragsart</Label>
+                      <SegmentedToggle
+                        ariaLabel="Vertragsart des Bestandsvertrags"
+                        value={formData.current_fondsgebunden ? "fonds" : "klassisch"}
+                        onChange={(wert) =>
+                          update("current_fondsgebunden", wert === "fonds")
+                        }
+                        options={[
+                          { value: "klassisch", label: "Klassisch" },
+                          { value: "fonds", label: "Fondsgebunden" },
+                        ]}
+                      />
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      {steuerHinweis(
+                        formData.current_fondsgebunden,
+                        formData.current_contract_start_year
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Weitere LVs */}
@@ -679,6 +748,30 @@ export default function BestAdviceCalculator() {
                       ]}
                     />
                   </div>
+                  {!lv.current_product_tax_free && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <Label className="text-sm font-medium text-slate-700">Vertragsart</Label>
+                        <SegmentedToggle
+                          ariaLabel="Vertragsart dieses Bestandsvertrags"
+                          value={lv.fondsgebunden ? "fonds" : "klassisch"}
+                          onChange={(wert) => {
+                            const updated = formData.extra_lvs.map((x) =>
+                              x.id === lv.id ? { ...x, fondsgebunden: wert === "fonds" } : x
+                            );
+                            update("extra_lvs", updated);
+                          }}
+                          options={[
+                            { value: "klassisch", label: "Klassisch" },
+                            { value: "fonds", label: "Fondsgebunden" },
+                          ]}
+                        />
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {steuerHinweis(lv.fondsgebunden, lv.contract_start_year)}
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -694,6 +787,7 @@ export default function BestAdviceCalculator() {
                     current_capital: 0,
                     guaranteed_end_capital: 0,
                     current_product_tax_free: false,
+                    fondsgebunden: false,
                   };
                   update("extra_lvs", [...(formData.extra_lvs ?? []), newLV]);
                 }}

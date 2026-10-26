@@ -66,12 +66,11 @@ function kennzahlBestandNetto(calc: BestAdviceModel): number {
   const laufzeit =
     beginn && beginn > 1900 ? new Date().getFullYear() + jahre - beginn : jahre;
   const alter = calc.birth_year > 0 ? new Date().getFullYear() + jahre - calc.birth_year : 0;
-  const steuer = calculateLifeInsuranceTax(
-    brutto - basis,
-    laufzeit,
-    alter,
-    lvTaxOptionsFromSettings(calc.results!.tax_settings!)
-  );
+  const steuer = calculateLifeInsuranceTax(brutto - basis, laufzeit, alter, {
+    ...lvTaxOptionsFromSettings(calc.results!.tax_settings!),
+    fondsgebunden: calc.results?.lvs_inputs?.[0]?.fondsgebunden ?? true,
+    vertragsBeginnJahr: beginn,
+  });
   return brutto - steuer;
 }
 
@@ -187,5 +186,88 @@ describe('BestAdvice-Reihen (B03)', () => {
 
   it('liefert eine Zeile je Laufzeitjahr', () => {
     expect(baueBestAdviceReihen(fall(), 'net')).toHaveLength(20);
+  });
+});
+
+describe('Vertragsart je Bestandsvertrag (Audit C02)', () => {
+  /** Zwei Vertraege: einer klassisch von 2010, einer fondsgebunden von 2015. */
+  const zweiVertraege = (): LVEingabe[] => [
+    {
+      label: 'Klassik 2010',
+      monthly_contribution: 100,
+      current_capital: 30_000,
+      guaranteed_end_capital: 60_000,
+      current_product_tax_free: false,
+      contract_start_year: 2010,
+      eingezahlt_bisher: 20_000,
+      fondsgebunden: false,
+    },
+    {
+      label: 'Fondspolice 2015',
+      monthly_contribution: 100,
+      current_capital: 30_000,
+      guaranteed_end_capital: 60_000,
+      current_product_tax_free: false,
+      contract_start_year: 2015,
+      eingezahlt_bisher: 20_000,
+      fondsgebunden: true,
+    },
+  ];
+
+  const mitVertraegen = (lvs: LVEingabe[]) =>
+    fall({
+      results: {
+        ...fall().results!,
+        lvs_inputs: lvs,
+        contract_start_years: lvs.map((l) => l.contract_start_year ?? null),
+      },
+    });
+
+  it('rechnet die klassische Police ohne Teilfreistellung', () => {
+    // Derselbe Vertrag einmal klassisch, einmal fondsgebunden: Die
+    // Teilfreistellung ist der einzige Unterschied, also muss die klassische
+    // Police mehr Steuer tragen und weniger Netto uebrig lassen.
+    const [klassisch] = zweiVertraege();
+    const nurKlassisch = baueBestAdviceReihen(mitVertraegen([klassisch]), 'net');
+    const nurFonds = baueBestAdviceReihen(
+      mitVertraegen([{ ...klassisch, fondsgebunden: true }]),
+      'net'
+    );
+    const letzteK = nurKlassisch[nurKlassisch.length - 1].bestand;
+    const letzteF = nurFonds[nurFonds.length - 1].bestand;
+    expect(letzteK).toBeLessThan(letzteF);
+  });
+
+  it('behandelt mehrere Vertraege mit je eigenen Merkmalen', () => {
+    const reihe = baueBestAdviceReihen(mitVertraegen(zweiVertraege()), 'net');
+    const summe = reihe[reihe.length - 1].bestand;
+    // Die Summe liegt zwischen zweimal klassisch und zweimal fondsgebunden -
+    // waere das Merkmal weiterhin pauschal, traefe sie einen der Raender.
+    const beideKlassisch = baueBestAdviceReihen(
+      mitVertraegen(zweiVertraege().map((l) => ({ ...l, fondsgebunden: false }))),
+      'net'
+    );
+    const beideFonds = baueBestAdviceReihen(
+      mitVertraegen(zweiVertraege().map((l) => ({ ...l, fondsgebunden: true }))),
+      'net'
+    );
+    const u = beideKlassisch[beideKlassisch.length - 1].bestand;
+    const o = beideFonds[beideFonds.length - 1].bestand;
+    expect(summe).toBeGreaterThan(u);
+    expect(summe).toBeLessThan(o);
+  });
+
+  it('rechnet Faelle ohne das Merkmal weiter als Fondspolice', () => {
+    // Datensaetze vor dem 26.10.2026 tragen es nicht. Eine andere Annahme
+    // liesse gespeicherte Kennzahlen und neu gezeichnete Kurve auseinanderlaufen.
+    const [vertrag] = zweiVertraege();
+    const ohneMerkmal = { ...vertrag } as LVEingabe;
+    delete (ohneMerkmal as { fondsgebunden?: boolean }).fondsgebunden;
+    const alt = baueBestAdviceReihen(mitVertraegen([ohneMerkmal]), 'net');
+    const fonds = baueBestAdviceReihen(
+      mitVertraegen([{ ...vertrag, fondsgebunden: true }]),
+      'net'
+    );
+    expect(alt[alt.length - 1].bestand).toBe(fonds[fonds.length - 1].bestand);
   });
 });

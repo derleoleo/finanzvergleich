@@ -144,7 +144,19 @@ export function baueBestAdviceReihen(calc: BestAdviceModel, mode: BestAdviceModu
         punkt.capital - beitraegeBisJetzt,
         bestandsJahre,
         age,
-        lvTaxOptions
+        {
+          ...lvTaxOptions,
+          // Audit C02: Die Teilfreistellung setzt eine fondsgebundene Police
+          // voraus, und die Altersgrenze haengt am Abschlussjahr. Beides war
+          // vorher fest verdrahtet.
+          //
+          // `?? true` nur beim Lesen: Faelle vor dem 26.10.2026 tragen das
+          // Merkmal nicht, wurden aber als fondsgebunden gerechnet. Eine
+          // andere Annahme liesse Kurve und gespeicherte Kennzahlen
+          // auseinanderlaufen.
+          fondsgebunden: vertrag.fondsgebunden ?? true,
+          vertragsBeginnJahr: beginn,
+        }
       );
       return summe + punkt.capital - steuer;
     }, 0);

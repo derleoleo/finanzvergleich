@@ -26,6 +26,15 @@ export type LVEingabe = {
   current_product_tax_free: boolean;
   contract_start_year?: number | null;
   eingezahlt_bisher?: number | null;
+  /**
+   * Fondsgebunden oder klassisch? Nur fondsgebundene Policen tragen die
+   * 15-%-Teilfreistellung (§ 20 Abs. 1 Nr. 6 S. 9 EStG) – Audit C02.
+   *
+   * Optional, weil Datensätze vor dem 26.10.2026 das Merkmal nicht kennen.
+   * Beim Lesen gilt für die dann `true`, die damalige Annahme: Nur so
+   * stimmen gespeicherte Kennzahlen und neu gezeichnete Kurve überein.
+   */
+  fondsgebunden?: boolean;
 };
 
 export type BestAdviceResults = {

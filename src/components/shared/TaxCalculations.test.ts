@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   calculateCapitalGainsTax,
   calculateLifeInsuranceTax,
+  lvAltersgrenze,
   calculateMonthlyReturn,
   calculateZillmerMonths,
 } from "./TaxCalculations";
@@ -104,5 +105,74 @@ describe("Hilfsfunktionen", () => {
     expect(calculateZillmerMonths(60)).toBe(60);
     expect(calculateZillmerMonths(300)).toBe(60);
     expect(calculateZillmerMonths(0)).toBe(1);
+  });
+});
+
+describe("Vertragsart und Abschlussjahr (Audit C02)", () => {
+  // Die zwei Proben aus dem Audit vom 12.10.2026, jeweils 20.000 EUR Gewinn,
+  // persoenlicher Satz 20 %, ohne Soli und Kirchensteuer.
+  it("klassische Police: halber Unterschiedsbetrag ohne Teilfreistellung", () => {
+    // Vorher: 1.700 EUR, weil pauschal 15 % Teilfreistellung abgezogen wurden.
+    const steuer = calculateLifeInsuranceTax(20000, 20, 67, {
+      personalIncomeTaxRate: 0.2,
+      fondsgebunden: false,
+      vertragsBeginnJahr: 2013,
+    });
+    expect(steuer).toBeCloseTo(2000, 6);
+    expect(steuer).toBeCloseTo(20000 * 0.5 * 0.2, 6);
+  });
+
+  it("Vertrag von 2008: beguenstigt schon ab Alter 60", () => {
+    // Vorher: 4.250 EUR, weil die Altersgrenze fest bei 62 lag und der Fall
+    // damit in die Abgeltungsteuer fiel (§ 52 Abs. 28 S. 7 EStG).
+    const steuer = calculateLifeInsuranceTax(20000, 19, 60, {
+      personalIncomeTaxRate: 0.2,
+      fondsgebunden: false,
+      vertragsBeginnJahr: 2008,
+    });
+    expect(steuer).toBeCloseTo(2000, 6);
+  });
+
+  it("derselbe Vertrag ab 2012 verlangt Alter 62", () => {
+    const steuer = calculateLifeInsuranceTax(20000, 19, 60, {
+      personalIncomeTaxRate: 0.2,
+      fondsgebunden: false,
+      vertragsBeginnJahr: 2012,
+    });
+    // Nicht beguenstigt: Abgeltungsteuer auf die ganzen Ertraege
+    expect(steuer).toBeCloseTo(20000 * 0.25, 6);
+  });
+
+  it("fondsgebunden bleibt bei der Teilfreistellung", () => {
+    // Gegenprobe: Die bisherigen Zahlen aendern sich nicht, solange der
+    // Vertrag fondsgebunden und neu ist.
+    expect(
+      calculateLifeInsuranceTax(20000, 20, 67, {
+        personalIncomeTaxRate: 0.2,
+        fondsgebunden: true,
+      })
+    ).toBeCloseTo(20000 * 0.425 * 0.2, 6);
+    expect(
+      calculateLifeInsuranceTax(20000, 11, 67, { fondsgebunden: true })
+    ).toBeCloseTo(20000 * 0.85 * 0.25, 6);
+  });
+
+  it("ohne Angabe gilt die Fondspolice mit Altersgrenze 62", () => {
+    // Vorgabe fuer die uebrigen Rechner: Sie vergleichen neue Fondspolicen.
+    expect(calculateLifeInsuranceTax(20000, 20, 67)).toBeCloseTo(
+      20000 * 0.425 * 0.2,
+      6
+    );
+    expect(calculateLifeInsuranceTax(20000, 20, 61)).toBeCloseTo(20000 * 0.85 * 0.25, 6);
+  });
+
+  it("nennt die Altersgrenze zum Abschlussjahr", () => {
+    expect(lvAltersgrenze(2011)).toBe(60);
+    expect(lvAltersgrenze(2012)).toBe(62);
+    expect(lvAltersgrenze(2026)).toBe(62);
+    // Keine oder unbrauchbare Angabe: der strengere Regelfall
+    expect(lvAltersgrenze(null)).toBe(62);
+    expect(lvAltersgrenze(undefined)).toBe(62);
+    expect(lvAltersgrenze(0)).toBe(62);
   });
 });

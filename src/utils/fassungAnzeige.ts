@@ -105,6 +105,10 @@ const BESCHRIFTUNGEN: Record<string, string> = {
   szenario_tod_3_vergleich: 'Szenario 3: freies Depot nach Steuern',
   // Eingaben des Todesfallblocks
   todesfallAlter: 'Alter bei Tod (Szenarien)',
+  // BestAdvice: Merkmale des Bestandsvertrags (Audit C02)
+  current_fondsgebunden: 'Bestandsvertrag fondsgebunden',
+  fondsgebunden: 'fondsgebunden',
+  current_product_tax_free: 'Bestandsvertrag steuerfrei',
   rentengarantiezeitJahre: 'Rentengarantiezeit',
   // Alter Feldname derselben Groesse - alte Fassungen bleiben lesbar
   vergleich_monatsentnahme_netto: 'Freies Depot: Entnahme netto',

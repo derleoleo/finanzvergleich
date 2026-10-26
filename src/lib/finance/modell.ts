@@ -9,9 +9,23 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-26b" as const;
+export const MODELL_VERSION = "2026-10-26c" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-26c",
+    aenderung:
+      "BestAdvice: Bestandsvertraege tragen jetzt ihre eigene Vertragsart und " +
+      "ihr Abschlussjahr. Die 15-%-Teilfreistellung gilt nur noch fuer " +
+      "fondsgebundene Policen (§ 20 Abs. 1 Nr. 6 S. 9 EStG) - eine klassische " +
+      "Kapitallebensversicherung hat keine Investmentertraege. Und die " +
+      "beguenstigte Altersgrenze liegt erst bei Vertraegen ab 2012 bei 62, " +
+      "davor bei 60 (§ 52 Abs. 28 S. 7 EStG). Vorher galt pauschal " +
+      "fondsgebunden und 62: Ein klassischer Vertrag wurde zu niedrig " +
+      "besteuert, ein Altvertrag mit Auszahlung vor 62 zu hoch. Gespeicherte " +
+      "Faelle ohne das neue Merkmal werden weiter als Fondspolice gerechnet, " +
+      "damit Kennzahlen und Kurve zusammenpassen.",
+  },
   {
     version: "2026-10-26b",
     aenderung:

@@ -72,18 +72,71 @@ export type LifeInsuranceTaxOptions = {
   solidaritaetszuschlag?: boolean;
   // Kirchensteuer: 8% oder 9% als Zuschlag auf die Steuer
   kirchensteuer_percent?: number;
+  /**
+   * Fondsgebundene Police? Nur dann greift die 15-%-Teilfreistellung
+   * (§ 20 Abs. 1 Nr. 6 S. 9 EStG) – sie setzt Investmenterträge voraus. Eine
+   * klassische Kapitallebensversicherung hat keine, dort sind die Erträge
+   * ungeschmälert anzusetzen.
+   *
+   * Vorgabe `true`: Die Rechner dieses Produkts vergleichen fondsgebundene
+   * Policen. Der Bestandsvergleich fragt es je Vertrag ab (Audit C02).
+   */
+  fondsgebunden?: boolean;
+  /**
+   * Jahr des Vertragsabschlusses – entscheidet über die begünstigte
+   * Altersgrenze: Verträge ab 2012 verlangen Alter 62
+   * (§ 52 Abs. 28 S. 7 EStG), davor genügt Alter 60
+   * (§ 20 Abs. 1 Nr. 6 S. 2 EStG).
+   *
+   * Ohne Angabe wird 62 angesetzt, weil neu abgeschlossene Verträge der
+   * Regelfall dieser Rechner sind.
+   */
+  vertragsBeginnJahr?: number | null;
 };
 
+/** Ab diesem Abschlussjahr gilt die höhere Altersgrenze (§ 52 Abs. 28 S. 7 EStG). */
+export const LV_ALTERSGRENZE_AB_2012 = 62;
+/** Für früher abgeschlossene Verträge (§ 20 Abs. 1 Nr. 6 S. 2 EStG). */
+export const LV_ALTERSGRENZE_BIS_2011 = 60;
+
 /**
- * LV-Steuer (fondsgebundene Police):
- * - Wenn Laufzeit >= 12 Jahre UND Alter bei Auszahlung >= 62:
- *   Halbeinkünfteverfahren: 50% der Gewinne steuerpflichtig, davor 15%
- *   Teilfreistellung (§ 20 Abs. 1 Nr. 6 Satz 9 EStG) → 50% × 85% = 42,5%
- *   der Gewinne steuerpflichtig, versteuert mit dem persönlichen Satz
- *   (Default 20%).
- * - Sonst: Abgeltungsteuer 25% auf 85% der Gewinne (15% Teilfreistellung
- *   gilt auch ohne Halbeinkünfte-Qualifikation).
- * In beiden Fällen erhöhen SolZ/KiSt (falls gesetzt) die Steuer als Zuschlag.
+ * Welche Altersgrenze gilt für das Halbeinkünfteverfahren?
+ *
+ * Getrennte Funktion, weil die Oberfläche sie nennen muss: Wer einen Vertrag
+ * von 2008 eingibt, soll lesen, dass dort 60 gilt – sonst sieht eine
+ * scheinbar zu niedrige Steuer wie ein Fehler aus.
+ */
+export function lvAltersgrenze(vertragsBeginnJahr?: number | null): number {
+  const jahr = Number(vertragsBeginnJahr);
+  if (!Number.isFinite(jahr) || jahr <= 1900) return LV_ALTERSGRENZE_AB_2012;
+  return jahr >= 2012 ? LV_ALTERSGRENZE_AB_2012 : LV_ALTERSGRENZE_BIS_2011;
+}
+
+/**
+ * Steuer auf die Erträge einer Lebens-/Rentenversicherung bei Kapitalauszahlung.
+ *
+ * Zwei Merkmale des Vertrags entscheiden mit, und beide waren vorher fest
+ * verdrahtet (Audit C02):
+ *
+ * 1. **Fondsgebunden oder klassisch.** Die 15-%-Teilfreistellung
+ *    (§ 20 Abs. 1 Nr. 6 S. 9 EStG) setzt Investmenterträge voraus. Für eine
+ *    klassische Police gibt es sie nicht. Pauschal angewandt sprach die
+ *    Rechnung einem klassischen Bestandsvertrag eine Freistellung zu, die
+ *    ihm nicht zusteht: 1.700 € statt 2.000 € bei 20.000 € Gewinn.
+ * 2. **Jahr des Vertragsabschlusses.** Die begünstigte Altersgrenze liegt
+ *    erst für Verträge ab 2012 bei 62 (§ 52 Abs. 28 S. 7 EStG), davor bei 60.
+ *    Mit festen 62 fiel ein Vertrag von 2008 mit Auszahlung bei 60 aus dem
+ *    Halbeinkünfteverfahren heraus – 4.250 € statt 2.000 €.
+ *
+ * Rechenweg:
+ * - Laufzeit >= 12 Jahre UND Alter bei Auszahlung >= Altersgrenze:
+ *   halber Unterschiedsbetrag zum persönlichen Satz (Vorgabe 20 %), bei
+ *   fondsgebundenen Policen zusätzlich die Teilfreistellung
+ *   (50 % × 85 % = 42,5 % der Erträge).
+ * - sonst: Abgeltungsteuer 25 % auf die Erträge, bei fondsgebundenen
+ *   Policen auf 85 % davon.
+ * - SolZ und Kirchensteuer kommen in beiden Fällen als Zuschlag auf die
+ *   Steuer.
  */
 export function calculateLifeInsuranceTax(
   gains: number,
@@ -99,15 +152,17 @@ export function calculateLifeInsuranceTax(
   const kistFactor = Math.max(0, options.kirchensteuer_percent ?? 0) / 100;
   const surcharge = 1 + soliFactor + kistFactor;
 
-  const qualifiesHEV = dur >= 12 && age >= 62;
+  // Nur fondsgebundene Policen tragen die Teilfreistellung (Satz 9).
+  const fondsgebunden = options.fondsgebunden ?? true;
+  const nachTeilfreistellung = fondsgebunden ? 0.85 : 1;
+  const altersgrenze = lvAltersgrenze(options.vertragsBeginnJahr);
+  const qualifiesHEV = dur >= 12 && age >= altersgrenze;
 
   if (!qualifiesHEV) {
-    // Abgeltungsteuer auf 85% der Gewinne (15% Teilfreistellung, Satz 9)
-    return g * 0.85 * 0.25 * surcharge;
+    return g * nachTeilfreistellung * 0.25 * surcharge;
   }
 
   const personalRate = options.personalIncomeTaxRate ?? 0.20; // Default 20%
-  // Halbeinkünfteverfahren: 50% × 85% = 42,5% der Gewinne steuerpflichtig
-  const taxableShare = 0.50 * 0.85; // = 0.425
-  return g * taxableShare * personalRate * surcharge;
+  // Halber Unterschiedsbetrag, bei Fondspolicen nach Teilfreistellung
+  return g * 0.5 * nachTeilfreistellung * personalRate * surcharge;
 }
