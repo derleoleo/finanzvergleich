@@ -391,6 +391,12 @@ export default function Pricing() {
             <p className="text-xs text-slate-500 mb-4">
               Sie haben einen Testcode erhalten? Geben Sie ihn hier ein und erhalten Sie 30 Tage Premium-Zugang.
             </p>
+            {/* Beide Codearten nebeneinander verwechselt man leicht: Der
+                Testcode schaltet hier frei, ein Rabattcode gehört auf die
+                Bezahlseite von Stripe. */}
+            <p className="text-xs text-slate-400 mb-4">
+              Einen Rabattcode für das Abo geben Sie dagegen beim Bezahlen ein.
+            </p>
             <div className="flex gap-2">
               <input
                 type="text"

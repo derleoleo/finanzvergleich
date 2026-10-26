@@ -95,7 +95,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       trial_period_days: 30,
       metadata: { supabase_user_id: user.id },
     },
-    ...(coupon ? { discounts: [{ coupon }] } : {}),
+    // Stripe erlaubt beides nie zugleich: einen fest gesetzten Rabatt
+    // (`discounts`) oder das Eingabefeld für Gutscheincodes
+    // (`allow_promotion_codes`). Der Empfehlungsrabatt geht vor – er ist schon
+    // zugesagt, und ein eingetippter Code würde ihn verdrängen. Alle anderen
+    // können ihren Code beim Bezahlen selbst eingeben; ohne dieses Feld war ein
+    // Gutschein nur von Hand im Stripe-Konto einlösbar.
+    ...(coupon ? { discounts: [{ coupon }] } : { allow_promotion_codes: true }),
     metadata: { supabase_user_id: user.id },
     success_url: `${req.headers.origin}/pricing?checkout=success`,
     cancel_url: `${req.headers.origin}/pricing`,
