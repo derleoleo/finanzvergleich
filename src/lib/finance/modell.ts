@@ -9,9 +9,22 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-26c" as const;
+export const MODELL_VERSION = "2026-10-26d" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-26d",
+    aenderung:
+      "BestAdvice: Der Wechsel kostet jetzt auch Steuer. Der Rueckkauf eines " +
+      "Bestandsvertrags ist steuerpflichtig (§ 20 Abs. 1 Nr. 6 EStG), und " +
+      "dabei zaehlt das heutige Alter - nicht das Alter bei Auszahlung. " +
+      "Vorher wanderte der Rueckkaufswert abzueglich der Wechselkosten " +
+      "ungeschmaelert in die Fonds-LV, waehrend die Ablaufsteuer bei " +
+      "Fortfuehrung gerechnet wurde; der Wechsel stand damit um die " +
+      "Kuendigungssteuer zu gut da. Die Oberflaeche zeigt den Weg vom " +
+      "Rueckkaufswert zum Startkapital offen und laesst sich auf einen " +
+      "bereits bekannten Netto-Auszahlungsbetrag umschalten.",
+  },
   {
     version: "2026-10-26c",
     aenderung:

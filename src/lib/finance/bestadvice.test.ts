@@ -4,7 +4,9 @@ import {
   breakEvenDetail,
   breakEvenEinordnung,
   breakEvenRendite,
+  uebertragBeiKuendigung,
 } from "./bestadvice";
+import { calculateLifeInsuranceTax } from "@/components/shared/TaxCalculations";
 import { simulateLv } from "./simulation";
 
 const basis = {
@@ -83,5 +85,140 @@ describe('Randfaelle erreichen die Anzeige (Audit O07)', () => {
     // zu null zusammengefasst und beide als "nicht erreichbar" angezeigt.
     expect(breakEvenEinordnung(zuHoch)).not.toBe(breakEvenEinordnung(schonErreicht));
     expect(breakEvenEinordnung(schonErreicht)).toContain('ohne Wertzuwachs');
+  });
+});
+
+describe("Übertrag bei Kündigung (Audit C03)", () => {
+  /** Die Steuerfunktion des Produkts, mit den Merkmalen des Altvertrags. */
+  const steuerFuer = (
+    fondsgebunden: boolean,
+    vertragsBeginnJahr: number | null,
+    personalIncomeTaxRate = 0.2
+  ) =>
+    (ertrag: number, laufzeit: number, alter: number) =>
+      calculateLifeInsuranceTax(ertrag, laufzeit, alter, {
+        fondsgebunden,
+        vertragsBeginnJahr,
+        personalIncomeTaxRate,
+      });
+
+  it("zieht die Steuer des Rückkaufs ab – die Probe aus dem Audit", () => {
+    // Klassischer Vertrag, Rückkaufswert 50.000 EUR, eingezahlt 30.000 EUR,
+    // Kündigung vor der beguenstigten Altersgrenze: 25 % auf 20.000 EUR
+    // Ertrag. Vorher starteten die 50.000 EUR ungeschmaelert im neuen Vertrag.
+    const u = uebertragBeiKuendigung({
+      rueckkaufswert: 50_000,
+      eingezahltBisher: 30_000,
+      laufzeitBisHeute: 15,
+      alterHeute: 50,
+      steuer: steuerFuer(false, 2010),
+    });
+    expect(u.ertrag).toBe(20_000);
+    expect(u.kuendigungssteuer).toBeCloseTo(5_000, 6);
+    expect(u.uebertrag).toBeCloseTo(45_000, 6);
+  });
+
+  it("rechnet mit dem heutigen Alter, nicht mit dem bei Auszahlung", () => {
+    // Derselbe Vertrag: Mit 50 greift die Beguenstigung nicht, mit 62 schon.
+    const jung = uebertragBeiKuendigung({
+      rueckkaufswert: 50_000,
+      eingezahltBisher: 30_000,
+      laufzeitBisHeute: 15,
+      alterHeute: 50,
+      steuer: steuerFuer(false, 2013),
+    });
+    const alt = uebertragBeiKuendigung({
+      rueckkaufswert: 50_000,
+      eingezahltBisher: 30_000,
+      laufzeitBisHeute: 15,
+      alterHeute: 62,
+      steuer: steuerFuer(false, 2013),
+    });
+    expect(jung.kuendigungssteuer).toBeCloseTo(20_000 * 0.25, 6);
+    expect(alt.kuendigungssteuer).toBeCloseTo(20_000 * 0.5 * 0.2, 6);
+    expect(alt.uebertrag).toBeGreaterThan(jung.uebertrag);
+  });
+
+  it("lässt einen steuerfreien Altvertrag unangetastet", () => {
+    const u = uebertragBeiKuendigung({
+      rueckkaufswert: 50_000,
+      eingezahltBisher: 30_000,
+      steuerfrei: true,
+      laufzeitBisHeute: 25,
+      alterHeute: 55,
+      steuer: steuerFuer(false, 2000),
+    });
+    expect(u.kuendigungssteuer).toBe(0);
+    expect(u.uebertrag).toBe(50_000);
+  });
+
+  it("besteuert einen bereits netto eingetragenen Betrag nicht zweimal", () => {
+    const u = uebertragBeiKuendigung({
+      rueckkaufswert: 45_000,
+      eingezahltBisher: 30_000,
+      schonNetto: true,
+      laufzeitBisHeute: 15,
+      alterHeute: 50,
+      steuer: steuerFuer(false, 2010),
+    });
+    expect(u.kuendigungssteuer).toBe(0);
+    expect(u.uebertrag).toBe(45_000);
+  });
+
+  it("zieht Steuer und Kosten nebeneinander ab", () => {
+    const u = uebertragBeiKuendigung({
+      rueckkaufswert: 50_000,
+      eingezahltBisher: 30_000,
+      wechselkosten: 1_500,
+      laufzeitBisHeute: 15,
+      alterHeute: 50,
+      steuer: steuerFuer(false, 2010),
+    });
+    expect(u.uebertrag).toBeCloseTo(50_000 - 5_000 - 1_500, 6);
+  });
+
+  it("hält den Übertrag bei null, statt negativ zu werden", () => {
+    const u = uebertragBeiKuendigung({
+      rueckkaufswert: 10_000,
+      eingezahltBisher: 0,
+      wechselkosten: 20_000,
+      laufzeitBisHeute: 5,
+      alterHeute: 40,
+      steuer: steuerFuer(true, 2015),
+    });
+    expect(u.uebertrag).toBe(0);
+  });
+
+  it("ohne Angabe der Beiträge bleibt der Rückkaufswert die Basis", () => {
+    // Dann ist der Ertrag null - dieselbe Ersatzgroesse wie in `beitragsbasis`,
+    // und der Rechner weist an anderer Stelle darauf hin.
+    const u = uebertragBeiKuendigung({
+      rueckkaufswert: 50_000,
+      laufzeitBisHeute: 15,
+      alterHeute: 50,
+      steuer: steuerFuer(false, 2010),
+    });
+    expect(u.ertrag).toBe(0);
+    expect(u.kuendigungssteuer).toBe(0);
+    expect(u.uebertrag).toBe(50_000);
+  });
+
+  it("macht die Teilfreistellung der Fondspolice sichtbar", () => {
+    const gemeinsam = {
+      rueckkaufswert: 50_000,
+      eingezahltBisher: 30_000,
+      laufzeitBisHeute: 15,
+      alterHeute: 50,
+    };
+    const klassisch = uebertragBeiKuendigung({
+      ...gemeinsam,
+      steuer: steuerFuer(false, 2010),
+    });
+    const fonds = uebertragBeiKuendigung({
+      ...gemeinsam,
+      steuer: steuerFuer(true, 2010),
+    });
+    expect(fonds.kuendigungssteuer).toBeLessThan(klassisch.kuendigungssteuer);
+    expect(fonds.kuendigungssteuer).toBeCloseTo(20_000 * 0.85 * 0.25, 6);
   });
 });

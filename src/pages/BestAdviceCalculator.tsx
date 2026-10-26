@@ -35,7 +35,7 @@ import {
 } from "@/components/shared/TaxCalculations";
 import { simulateLv } from "@/lib/finance/simulation";
 import { baueBestAdviceReihen } from "@/lib/finance/bestadviceReihen";
-import { beitragsbasis, breakEvenDetail } from "@/lib/finance/bestadvice";
+import { beitragsbasis, uebertragBeiKuendigung, breakEvenDetail } from "@/lib/finance/bestadvice";
 
 const DRAFT_KEY = "fv_bestadvice_draft_v1";
 
@@ -59,6 +59,11 @@ type ExtraLV = {
    * (§ 20 Abs. 1 Nr. 6 S. 9 EStG) – Audit C02.
    */
   fondsgebunden: boolean;
+  /**
+   * Ist der eingetragene heutige Wert bereits der Netto-Auszahlungsbetrag?
+   * Dann rechnet der Rechner keine Kündigungssteuer mehr (Audit C03).
+   */
+  rueckkaufswert_ist_netto?: boolean;
 };
 
 type FormData = {
@@ -72,6 +77,8 @@ type FormData = {
   current_contract_start_year: number | null;
   /** Fondsgebunden oder klassisch (Audit C02). */
   current_fondsgebunden: boolean;
+  /** Heutiger Wert ist schon netto – keine Kündigungssteuer rechnen (Audit C03). */
+  current_rueckkaufswert_ist_netto: boolean;
   /** Bis heute eingezahlte Beiträge des Bestandsvertrags (Audit F06). */
   current_eingezahlt_bisher: number | null;
   /** Einmalige Wechselkosten des Bestandsvertrags. */
@@ -107,6 +114,7 @@ function makeDefaults(): FormData {
     // Seite stillschweigend mit einer Fondspolice und zog deren
     // Teilfreistellung ab (Audit C02).
     current_fondsgebunden: false,
+    current_rueckkaufswert_ist_netto: false,
     contract_duration_years: d.contract_duration_years,
     current_capital: 10000,
     guaranteed_end_capital: 80000,
@@ -198,6 +206,7 @@ export default function BestAdviceCalculator() {
       current_product_tax_free: formData.current_product_tax_free,
       contract_start_year: formData.current_contract_start_year,
       fondsgebunden: formData.current_fondsgebunden,
+      rueckkaufswert_ist_netto: formData.current_rueckkaufswert_ist_netto,
       eingezahlt_bisher: formData.current_eingezahlt_bisher,
       wechselkosten: toNum(formData.current_wechselkosten),
     },
@@ -207,13 +216,50 @@ export default function BestAdviceCalculator() {
   const totalMonthly = allLVs.reduce((s, lv) => s + lv.monthly_contribution, 0);
   const totalCapital = allLVs.reduce((s, lv) => s + lv.current_capital, 0);
   const effectiveMonthly = formData.fonds_lv_monthly_override ?? totalMonthly;
-  // Beim Wechsel fallen Storno-/Übertragungskosten an; sie mindern das
-  // Kapital, das tatsächlich in der Fonds-LV ankommt (Audit F06).
-  const summeWechselkosten = allLVs.reduce((s, lv) => s + toNum(lv.wechselkosten ?? 0), 0);
-  const effectiveCapital = Math.max(
-    0,
-    (formData.fonds_lv_capital_override ?? totalCapital) - summeWechselkosten
+
+  /**
+   * Was aus jedem Bestandsvertrag wirklich in die Fonds-LV fließt.
+   *
+   * Audit C03: Die Kündigung ist ein steuerpflichtiger Vorgang. Vorher ging
+   * der Rückkaufswert abzüglich der Wechselkosten ungeschmälert über – der
+   * Wechsel stand um die Kündigungssteuer zu gut da. Beim Rückkauf zählt das
+   * heutige Alter, nicht das Alter bei Auszahlung.
+   */
+  const uebertraege = (() => {
+    const steuerOptionen = lvTaxOptionsFromSettings(taxSettingsSnapshot());
+    const jetzt = new Date().getFullYear();
+    return allLVs.map((lv) => {
+      const beginn = toNum(lv.contract_start_year ?? 0);
+      return uebertragBeiKuendigung({
+        rueckkaufswert: toNum(lv.current_capital),
+        eingezahltBisher: lv.eingezahlt_bisher,
+        steuerfrei: lv.current_product_tax_free,
+        schonNetto: lv.rueckkaufswert_ist_netto,
+        laufzeitBisHeute: beginn > 1900 ? jetzt - beginn : 0,
+        alterHeute: currentAge,
+        wechselkosten: toNum(lv.wechselkosten ?? 0),
+        steuer: (ertrag, laufzeit, alter) =>
+          calculateLifeInsuranceTax(ertrag, laufzeit, alter, {
+            ...steuerOptionen,
+            fondsgebunden: lv.fondsgebunden ?? true,
+            vertragsBeginnJahr: lv.contract_start_year ?? null,
+          }),
+      });
+    });
+  })();
+
+  const summeWechselkosten = uebertraege.reduce((s, u) => s + u.wechselkosten, 0);
+  const summeKuendigungssteuer = uebertraege.reduce(
+    (s, u) => s + u.kuendigungssteuer,
+    0
   );
+  const summeUebertrag = uebertraege.reduce((s, u) => s + u.uebertrag, 0);
+  // Ein überschriebenes Startkapital gilt als bewusst gesetzter Netto-Wert und
+  // wird nur noch um die Wechselkosten gemindert.
+  const effectiveCapital =
+    formData.fonds_lv_capital_override != null
+      ? Math.max(0, formData.fonds_lv_capital_override - summeWechselkosten)
+      : summeUebertrag;
   const isMultiLV = (formData.extra_lvs ?? []).length > 0;
 
   const calculateResults = () => {
@@ -355,6 +401,11 @@ export default function BestAdviceCalculator() {
         depot_gross
       ),
       wechselkosten_gesamt: Math.round(summeWechselkosten),
+      // Audit C03: Der Weg vom Rückkaufswert zum Startkapital gehört in die
+      // Fassung - sonst lässt sich später nicht nachlesen, warum die Fonds-LV
+      // mit weniger begonnen hat als der Bestand wert war.
+      kuendigungssteuer_gesamt: Math.round(summeKuendigungssteuer),
+      netto_uebertrag_gesamt: Math.round(effectiveCapital),
       eingezahlt_bisher_gesamt: allLVs.reduce(
         (summe, lv) => summe + toNum(lv.eingezahlt_bisher ?? 0),
         0
@@ -373,6 +424,7 @@ export default function BestAdviceCalculator() {
         current_product_tax_free: !!lv.current_product_tax_free,
         contract_start_year: lv.contract_start_year ?? null,
         fondsgebunden: !!lv.fondsgebunden,
+        rueckkaufswert_ist_netto: !!lv.rueckkaufswert_ist_netto,
         eingezahlt_bisher: lv.eingezahlt_bisher ?? null,
       })),
       // Annahmen zum Berechnungszeitpunkt mitspeichern → geräteunabhängige Anzeige
@@ -600,8 +652,10 @@ export default function BestAdviceCalculator() {
                       onChange={(val) => update("current_wechselkosten", val)}
                       className="bg-white border-slate-300 focus:border-blue-500" />
                     <p className="text-xs text-slate-500">
-                      Storno-, Übertragungs- oder Abschlusskosten; mindern das Kapital,
-                      das in der Fonds-LV ankommt.
+                      Nur Kosten des <em>alten</em> Vertrags: Storno- oder
+                      Übertragungsgebühren. Die Abschlusskosten der neuen Fonds-LV
+                      gehören in deren Kostenfelder weiter unten – hier eingetragen
+                      würden sie zweimal abgezogen.
                     </p>
                   </div>
                 </div>
@@ -643,6 +697,29 @@ export default function BestAdviceCalculator() {
                         formData.current_fondsgebunden,
                         formData.current_contract_start_year
                       )}
+                    </p>
+                    <div className="flex items-center gap-3 pt-1">
+                      <Label className="text-sm font-medium text-slate-700">
+                        Heutiger Wert ist
+                      </Label>
+                      <SegmentedToggle
+                        ariaLabel="Heutiger Wert des Bestandsvertrags"
+                        value={
+                          formData.current_rueckkaufswert_ist_netto ? "netto" : "brutto"
+                        }
+                        onChange={(wert) =>
+                          update("current_rueckkaufswert_ist_netto", wert === "netto")
+                        }
+                        options={[
+                          { value: "brutto", label: "Rückkaufswert brutto" },
+                          { value: "netto", label: "Auszahlung netto" },
+                        ]}
+                      />
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      {formData.current_rueckkaufswert_ist_netto
+                        ? "Der Betrag gilt als bereits versteuert – es wird keine Kündigungssteuer mehr abgezogen."
+                        : "Beim Wechsel wird die Steuer auf den Rückkauf abgezogen (§ 20 Abs. 1 Nr. 6 EStG). Liegt eine Netto-Auskunft des Versicherers vor, bitte umschalten."}
                     </p>
                   </div>
                 )}
@@ -770,6 +847,27 @@ export default function BestAdviceCalculator() {
                       <p className="text-xs text-slate-500">
                         {steuerHinweis(lv.fondsgebunden, lv.contract_start_year)}
                       </p>
+                      <div className="flex items-center gap-3">
+                        <Label className="text-sm font-medium text-slate-700">
+                          Heutiger Wert ist
+                        </Label>
+                        <SegmentedToggle
+                          ariaLabel="Heutiger Wert dieses Bestandsvertrags"
+                          value={lv.rueckkaufswert_ist_netto ? "netto" : "brutto"}
+                          onChange={(wert) => {
+                            const updated = formData.extra_lvs.map((x) =>
+                              x.id === lv.id
+                                ? { ...x, rueckkaufswert_ist_netto: wert === "netto" }
+                                : x
+                            );
+                            update("extra_lvs", updated);
+                          }}
+                          options={[
+                            { value: "brutto", label: "Rückkaufswert brutto" },
+                            { value: "netto", label: "Auszahlung netto" },
+                          ]}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -788,6 +886,7 @@ export default function BestAdviceCalculator() {
                     guaranteed_end_capital: 0,
                     current_product_tax_free: false,
                     fondsgebunden: false,
+                    rueckkaufswert_ist_netto: false,
                   };
                   update("extra_lvs", [...(formData.extra_lvs ?? []), newLV]);
                 }}
@@ -826,9 +925,88 @@ export default function BestAdviceCalculator() {
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <p className="text-sm text-blue-700">
                   {isMultiLV
-                    ? "Das Gesamtkapital und die Gesamtsparrate aller Bestandsverträge werden in die Fonds-LV übertragen."
-                    : "Das aktuelle Kapital wird in die Fonds-LV übertragen; die Sparrate fließt weiterhin monatlich ein."}
+                    ? "Das Kapital aller Bestandsverträge wird in die Fonds-LV übertragen – nach Steuer und Kosten der Kündigung. Die Gesamtsparrate fließt weiterhin monatlich ein."
+                    : "Das aktuelle Kapital wird in die Fonds-LV übertragen – nach Steuer und Kosten der Kündigung. Die Sparrate fließt weiterhin monatlich ein."}
                 </p>
+              </div>
+
+              {/*
+                Audit C03: Der Rückkauf ist steuerpflichtig
+                (§ 20 Abs. 1 Nr. 6 EStG), und beim Rückkauf zählt das heutige
+                Alter. Vorher wanderte der Rückkaufswert ungeschmälert in den
+                neuen Vertrag; die Ablaufsteuer bei Fortführung wurde dagegen
+                gerechnet. Deshalb steht der Weg jetzt offen da.
+              */}
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <div className="text-sm font-semibold text-slate-700">
+                  Was beim Wechsel ankommt
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600">
+                      {isMultiLV ? "Rückkaufswerte gesamt" : "Rückkaufswert"}
+                    </span>
+                    <span className="font-medium">{formatCurrency(totalCapital)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600">
+                      − Steuer auf die Kündigung
+                      {summeKuendigungssteuer > 0 && (
+                        <span className="block text-xs text-slate-400">
+                          Ertrag heute, Alter {currentAge} – beim Rückkauf zählt
+                          nicht das Alter bei Auszahlung
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className={
+                        summeKuendigungssteuer > 0
+                          ? "font-medium text-amber-700"
+                          : "font-medium text-slate-400"
+                      }
+                    >
+                      {summeKuendigungssteuer > 0
+                        ? `− ${formatCurrency(summeKuendigungssteuer)}`
+                        : "keine"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600">− Kosten der Kündigung</span>
+                    <span
+                      className={
+                        summeWechselkosten > 0
+                          ? "font-medium text-amber-700"
+                          : "font-medium text-slate-400"
+                      }
+                    >
+                      {summeWechselkosten > 0
+                        ? `− ${formatCurrency(summeWechselkosten)}`
+                        : "keine"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-slate-200 pt-2">
+                    <span className="font-semibold text-slate-700">
+                      = Startkapital der Fonds-LV
+                    </span>
+                    <span className="font-bold text-slate-900">
+                      {formatCurrency(effectiveCapital)}
+                    </span>
+                  </div>
+                </div>
+                {formData.fonds_lv_capital_override != null && (
+                  <p className="text-xs text-amber-700">
+                    Das Startkapital ist von Hand überschrieben. Dann wird keine
+                    Kündigungssteuer mehr abgezogen – nur noch die Kosten.
+                  </p>
+                )}
+                {summeKuendigungssteuer === 0 &&
+                  formData.fonds_lv_capital_override == null && (
+                    <p className="text-xs text-slate-500">
+                      Keine Steuer: Entweder ist der Vertrag steuerfrei, der
+                      eingetragene Wert gilt bereits als netto, es gibt keinen
+                      Ertrag, oder die Begünstigung greift schon heute.
+                    </p>
+                  )}
               </div>
 
               {/* Überschreibbare Summen bei mehreren LVs */}

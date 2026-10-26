@@ -107,6 +107,10 @@ const BESCHRIFTUNGEN: Record<string, string> = {
   todesfallAlter: 'Alter bei Tod (Szenarien)',
   // BestAdvice: Merkmale des Bestandsvertrags (Audit C02)
   current_fondsgebunden: 'Bestandsvertrag fondsgebunden',
+  current_rueckkaufswert_ist_netto: 'Heutiger Wert ist netto',
+  rueckkaufswert_ist_netto: 'Wert ist netto',
+  kuendigungssteuer_gesamt: 'Steuer auf die Kündigung',
+  netto_uebertrag_gesamt: 'Startkapital der Fonds-LV nach Steuer und Kosten',
   fondsgebunden: 'fondsgebunden',
   current_product_tax_free: 'Bestandsvertrag steuerfrei',
   rentengarantiezeitJahre: 'Rentengarantiezeit',

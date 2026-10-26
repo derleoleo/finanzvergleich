@@ -35,6 +35,8 @@ export type LVEingabe = {
    * stimmen gespeicherte Kennzahlen und neu gezeichnete Kurve überein.
    */
   fondsgebunden?: boolean;
+  /** War der eingetragene heutige Wert schon netto? (Audit C03) */
+  rueckkaufswert_ist_netto?: boolean;
 };
 
 export type BestAdviceResults = {
@@ -66,6 +68,13 @@ export type BestAdviceResults = {
   /** Vollstaendiges Ergebnis inkl. Unterscheidung der Randfaelle. */
   break_even?: BreakEvenErgebnis;
   wechselkosten_gesamt?: number;
+  /**
+   * Steuer auf den Rückkauf der Bestandsverträge und das, was danach in die
+   * Fonds-LV fließt (Audit C03). Ältere Datensätze: undefined – dort wanderte
+   * der Rückkaufswert ungeschmälert über.
+   */
+  kuendigungssteuer_gesamt?: number;
+  netto_uebertrag_gesamt?: number;
   eingezahlt_bisher_gesamt?: number;
   contract_start_years?: (number | null)[];
   modell_version?: string;

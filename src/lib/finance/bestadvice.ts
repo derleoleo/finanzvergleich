@@ -25,6 +25,74 @@ export function beitragsbasis(args: {
   return bisher + Math.max(0, args.monatsbeitrag) * Math.max(0, args.monate);
 }
 
+/**
+ * Was von einem gekündigten Bestandsvertrag tatsächlich in den neuen Vertrag
+ * fließt (Audit C03).
+ *
+ * Vorher wanderte der Rückkaufswert abzüglich der eingegebenen Wechselkosten
+ * ungeschmälert in die Fonds-LV. Die Kündigung ist aber ein steuerpflichtiger
+ * Vorgang: Rückkäufe sind von § 20 Abs. 1 Nr. 6 EStG erfasst, und beim
+ * Rückkauf zählt das **heutige** Alter, nicht das Alter bei Auszahlung –
+ * genau daran scheitert die Begünstigung meist. Die Ablaufsteuer bei
+ * Fortführung wurde gerechnet, die Kündigungssteuer nicht; der Wechsel stand
+ * damit um die Steuer zu gut da.
+ *
+ * Die Steuerregel selbst liegt in `calculateLifeInsuranceTax`; sie wird hier
+ * als Funktion übergeben, damit dieses Modul keine Abhängigkeit zu den
+ * Steuerhelfern der Oberfläche braucht und der Rechenweg prüfbar bleibt.
+ */
+export function uebertragBeiKuendigung(args: {
+  /** Heutiger Rückkaufswert. */
+  rueckkaufswert: number;
+  /** Bis heute eingezahlte Beiträge, falls bekannt. */
+  eingezahltBisher?: number | null;
+  /** Steuerfreier Altvertrag (z. B. vor 2005)? Dann fällt keine Steuer an. */
+  steuerfrei?: boolean;
+  /**
+   * Ist der eingetragene Wert schon der Netto-Auszahlungsbetrag? Dann rechnet
+   * hier nichts mehr, sonst würde dieselbe Steuer zweimal abgezogen.
+   */
+  schonNetto?: boolean;
+  /** Laufzeit bis heute in Jahren; 0, wenn der Vertragsbeginn fehlt. */
+  laufzeitBisHeute: number;
+  /** Alter heute – beim Rückkauf zählt es, nicht das Alter bei Auszahlung. */
+  alterHeute: number;
+  /** Einmalige Kosten der Kündigung oder Übertragung. */
+  wechselkosten?: number;
+  /** Die Steuerfunktion, aufgerufen mit (Ertrag, Laufzeit, Alter). */
+  steuer: (ertrag: number, laufzeitJahre: number, alter: number) => number;
+}): {
+  rueckkaufswert: number;
+  /** Steuerlicher Ertrag des Rückkaufs. */
+  ertrag: number;
+  kuendigungssteuer: number;
+  wechselkosten: number;
+  /** Was in den neuen Vertrag fließt. */
+  uebertrag: number;
+} {
+  const brutto = Math.max(0, Number(args.rueckkaufswert) || 0);
+  const kosten = Math.max(0, Number(args.wechselkosten) || 0);
+  const basis = beitragsbasis({
+    eingezahltBisher: args.eingezahltBisher,
+    aktuellerWert: brutto,
+    monatsbeitrag: 0,
+    monate: 0,
+  });
+  const ertrag = Math.max(0, brutto - basis);
+  const steuer =
+    args.steuerfrei || args.schonNetto
+      ? 0
+      : Math.max(0, args.steuer(ertrag, args.laufzeitBisHeute, args.alterHeute));
+
+  return {
+    rueckkaufswert: brutto,
+    ertrag,
+    kuendigungssteuer: steuer,
+    wechselkosten: kosten,
+    uebertrag: Math.max(0, brutto - steuer - kosten),
+  };
+}
+
 /** Warum keine Zahl herauskam – die beiden Fälle bedeuten Gegenteiliges. */
 export type BreakEvenGrund = "zu_hoch" | "schon_erreicht";
 
