@@ -467,9 +467,15 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
    * Prüfung 3 der Analyse: Ein Archiv-Schreibfehler darf nicht als Erfolg
    * erscheinen.
    *
-   * Der Fehler wird erzwungen, indem die Anfrage an `fall_versionen`
+   * Der Fehler wird erzwungen, indem der Aufruf von `fassung_anlegen`
    * abgewiesen wird. Danach muss die Oberfläche das sagen — und der
    * Nachtrag muss die Fassung tatsächlich erzeugen.
+   *
+   * Vorher zielte die Abweisung auf die Tabelle `fall_versionen`. Seit der
+   * Besitzprüfung (Audit D01) schreibt der Client dort nicht mehr direkt,
+   * sondern über die Datenbankfunktion – die Abweisung traf ins Leere, die
+   * Fassung gelang, und der Test wartete auf einen Hinweis, der zu Recht
+   * ausblieb. Wenn der Schreibweg wechselt, muss diese Stelle mitwandern.
    */
   test("Ein misslungenes Festhalten wird gemeldet und lässt sich nachtragen", async ({
     page,
@@ -482,10 +488,10 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     await anmelden(page);
 
     // Nur das Anlegen einer Fassung scheitern lassen, nicht das Speichern
-    // des Falls selbst.
-    await page.route("**/rest/v1/fall_versionen**", (route) =>
-      route.request().method() === "POST" ? route.abort() : route.continue()
-    );
+    // des Falls selbst. Angelegt wird ueber die Datenbankfunktion
+    // `fassung_anlegen` (Audit D01), nicht mehr ueber die Tabelle.
+    const FASSUNG_ANLEGEN = "**/rest/v1/rpc/fassung_anlegen**";
+    await page.route(FASSUNG_ANLEGEN, (route) => route.abort());
 
     await page.getByLabel("Name der Berechnung").fill(name);
     await page.getByRole("button", { name: "Vergleich berechnen" }).click();
@@ -496,7 +502,7 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     await expect(hinweis).toBeVisible({ timeout: 30_000 });
 
     // Jetzt darf es wieder klappen: Der Nachtrag muss die Fassung erzeugen.
-    await page.unroute("**/rest/v1/fall_versionen**");
+    await page.unroute(FASSUNG_ANLEGEN);
     await page.getByRole("button", { name: /Fassung nachtragen/ }).click();
     await expect(page.getByText(/nachträglich festgehalten/)).toBeVisible({
       timeout: 30_000,
