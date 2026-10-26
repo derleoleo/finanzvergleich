@@ -104,8 +104,10 @@ export default function Defaults() {
                     className={`${inputClass} max-w-[140px]`}
                   />
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Gilt für die LV-Auszahlung bei Verträgen ≥ 12 Jahre &amp; Alter ≥ 62
-                    (Halbeinkünfteverfahren). Steuerpflichtig: 50 % × 85 % = 42,5 % der Gewinne.
+                    Gilt an zwei Stellen: bei der LV-Auszahlung ab 12 Jahren Laufzeit und
+                    Alter ≥ 62 (Halbeinkünfteverfahren – steuerpflichtig sind 50 % × 85 %
+                    = 42,5 % der Gewinne) und im Altersvorsorgedepot als Steuersatz im Alter.
+                    Dort wird das geförderte Kapital voll besteuert, nicht nur der Ertrag.
                   </p>
                 </div>
               </div>

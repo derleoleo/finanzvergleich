@@ -45,7 +45,7 @@ export type UserDefaultsData = {
   handlungsoptionen_enabled: boolean;
 
   // Steuern
-  lv_personal_income_tax_rate: number; // persönlicher Steuersatz bei Halbeinkünfteverfahren (%), z.B. 20
+  lv_personal_income_tax_rate: number; // persönlicher Steuersatz im Alter (%), z.B. 30
   depot_teilfreistellung_percent: number; // Teilfreistellung Depot-Fonds (0/15/30 %)
   apply_solidaritaetszuschlag: boolean; // +5,5 % auf die Steuer (Depot und LV)
   kirchensteuer_percent: number; // 0/8/9 % als Zuschlag auf die Steuer (Depot und LV)
@@ -85,7 +85,12 @@ export const SYSTEM_DEFAULTS: UserDefaultsData = {
   honorarberatung_enabled: false,
   handlungsoptionen_enabled: false,
 
-  lv_personal_income_tax_rate: 20,
+  // 30 % statt bisher 20: Das ist der Satz, auf den es beim Altersvorsorgedepot
+  // ankommt, und er ist für Beratungskunden die realistischere Annahme. Die
+  // Größe gilt überall gleich - im Halbeinkünfteverfahren der Policen und als
+  // Steuersatz im Alter beim AVD. Zwei Vorgaben für dieselbe Zahl würden
+  // auseinanderlaufen.
+  lv_personal_income_tax_rate: 30,
   depot_teilfreistellung_percent: 30,
   // Soli fällt auf Kapitalerträge immer an (keine Freigrenze) → Default an
   apply_solidaritaetszuschlag: true,
