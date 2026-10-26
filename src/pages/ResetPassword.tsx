@@ -16,12 +16,53 @@ export default function ResetPassword() {
   const [success, setSuccess] = useState('')
 
   useEffect(() => {
+    /*
+     * Auf `PASSWORD_RECOVERY` allein ist kein Verlass.
+     *
+     * Der Supabase-Client entsteht beim Laden seines Moduls und verarbeitet
+     * den Link aus der Mail sofort. Diese Seite wird dagegen nachgeladen und
+     * haengt ihren Zuhoerer erst danach ein - das Ereignis ist dann vorbei.
+     * Die Seite blieb deshalb im Anforderungsmodus, und wer auf den Link
+     * klickte, landete wieder beim Feld "E-Mail eingeben". Ein Kreislauf, aus
+     * dem es ohne zweiten Weg kein Entkommen gab.
+     */
+    const hash = window.location.hash
+    const suche = new URLSearchParams(window.location.search)
+
+    // Abgelaufener oder bereits benutzter Link: Das stand bisher nur im
+    // Adressfeld, und die Seite tat, als waere nichts gewesen.
+    const fehlerAusLink =
+      new URLSearchParams(hash.replace(/^#/, '')).get('error_description') ??
+      suche.get('error_description')
+    if (fehlerAusLink) {
+      setError(
+        `${fehlerAusLink}. Bitte fordern Sie einen neuen Link an - er gilt nur begrenzte Zeit.`
+      )
+    }
+
+    const ausWiederherstellung =
+      hash.includes('type=recovery') || suche.has('code') || suche.has('token_hash')
+    if (ausWiederherstellung) setMode('update')
+
+    // Zweiter Weg: Hat der Client den Link schon verarbeitet, ist die Adresse
+    // bereits bereinigt - dann verraet nur noch die bestehende Sitzung, dass
+    // wir aus der Mail kommen. Diese Seite ist ausschliesslich von der
+    // Anmeldeseite aus verlinkt, eine Sitzung hier hat also keinen anderen
+    // Grund.
+    let abgebrochen = false
+    supabase.auth.getSession().then(({ data }) => {
+      if (!abgebrochen && data.session && !fehlerAusLink) setMode('update')
+    })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setMode('update')
       }
     })
-    return () => subscription.unsubscribe()
+    return () => {
+      abgebrochen = true
+      subscription.unsubscribe()
+    }
   }, [])
 
   const handleRequest = async (e: React.FormEvent) => {
