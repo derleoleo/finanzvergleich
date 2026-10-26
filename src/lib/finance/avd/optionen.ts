@@ -17,7 +17,12 @@
 // Produkt nicht, lässt Garantien unangetastet und hebt trotzdem die Förderung.
 
 import { calculateMonthlyReturn } from '@/components/shared/TaxCalculations';
-import { berechneZulagen, berechneZulagenRiesterAlt, guenstigerpruefung } from './zulagen';
+import {
+  berechneZulagen,
+  berechneZulagenRiesterAlt,
+  guenstigerpruefung,
+  kinderKohortenImJahr,
+} from './zulagen';
 import { steuerentlastung, type SteuerZuschlaege } from './tarif';
 import { GESETZ } from './config';
 
@@ -62,6 +67,10 @@ type Gemeinsam = {
   beitragsdynamikPaJahr: number;
   kinderGesamt: number;
   kinderGeborenVor2008: number;
+  /** Erstes Beitragsjahr als Kalenderjahr - nur fuer das Ende des Kindergelds. */
+  beitragsjahrStart: number;
+  /** Letztes Jahr mit Kindergeld, je Kind (Audit C01). */
+  kinderKindergeldBisJahr?: number[];
   alterBeiStart: number;
   zvEJahr: number;
   splitting: boolean;
@@ -104,8 +113,6 @@ function schreibeFort(
   const rMonat = calculateMonthlyReturn(
     ((opts.renditePaJahr || 0) - (opts.kostenPaJahr || 0)) * 100
   );
-  const kinderVor2008 = Math.max(0, Math.min(g.kinderGeborenVor2008, g.kinderGesamt));
-  const kinderAb2008 = Math.max(0, g.kinderGesamt - kinderVor2008);
 
   let kapital = Math.max(0, opts.startkapital);
   let beitragMonatlich = opts.beitraegeFliessen
@@ -122,6 +129,15 @@ function schreibeFort(
     }
     const eigenbeitrag = beitragMonatlich * 12;
 
+    // Die Kinderzulage endet mit dem Kindergeld (C01) - in beiden Regimen.
+    const jahr = g.beitragsjahrStart + t;
+    const kinder = kinderKohortenImJahr(
+      g.kinderGesamt,
+      g.kinderGeborenVor2008,
+      g.kinderKindergeldBisJahr,
+      jahr
+    );
+
     let zulage = 0;
     let erstattung = 0;
     if (eigenbeitrag > 0) {
@@ -129,8 +145,8 @@ function schreibeFort(
         const z = berechneZulagenRiesterAlt({
           eigenbeitrag,
           beitragspflEinnahmenVorjahr: g.zvEJahr,
-          kinderGeborenAb2008: kinderAb2008,
-          kinderGeborenVor2008: kinderVor2008,
+          kinderGeborenAb2008: kinder.ab2008,
+          kinderGeborenVor2008: kinder.vor2008,
           alterZuBeitragsjahresbeginn: g.alterBeiStart + t,
           bebBereitsGenutzt: t > 0,
         });
@@ -143,7 +159,7 @@ function schreibeFort(
       } else {
         const z = berechneZulagen({
           eigenbeitrag,
-          kinder: g.kinderGesamt,
+          kinder: kinder.vor2008 + kinder.ab2008,
           alterZuBeitragsjahresbeginn: g.alterBeiStart + t,
           bebBereitsGenutzt: t > 0,
         });

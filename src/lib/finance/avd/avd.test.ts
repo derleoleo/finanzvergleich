@@ -14,6 +14,9 @@ import {
   berechneZulagenRiesterAlt,
   foerderoptimalerAvdBeitrag,
   guenstigerpruefung,
+  kinderImBeitragsjahr,
+  kinderKohortenImJahr,
+  unbekannteKinder,
 } from './zulagen';
 import {
   GESETZ,
@@ -153,9 +156,8 @@ describe('Zulagen neu – 8.1 der Spezifikation', () => {
 
   it('Flag: Kinderzulage alternativ mit Beitragsverbrauch', () => {
     const flags = {
+      ...RECHTS_FLAGS_DEFAULT,
       kinderzulageProKindUnabhaengig: false,
-      kinderzulageErhoehtSaVolumen: true,
-      ungefoerderterTeilBesteuerung: 'ertragsanteil' as const,
     };
     // 300 € Beitrag, 2 Kinder: unabhängig 600 €, mit Verbrauch nur 300 €
     expect(berechneZulagen({ eigenbeitrag: 300, kinder: 2, flags }).kinderzulage).toBe(300);
@@ -226,11 +228,7 @@ describe('Günstigerprüfung – 8.2 der Spezifikation', () => {
     expect(
       guenstigerpruefung({
         ...basis,
-        flags: {
-          kinderzulageProKindUnabhaengig: true,
-          kinderzulageErhoehtSaVolumen: false,
-          ungefoerderterTeilBesteuerung: 'ertragsanteil',
-        },
+        flags: { ...RECHTS_FLAGS_DEFAULT, kinderzulageErhoehtSaVolumen: false },
       }).sonderausgabenVolumen
     ).toBe(2340);
   });
@@ -1532,5 +1530,72 @@ describe('Eigenaufwand je Strategie (Audit O03)', () => {
     expect(x.summeNettoaufwand).toBeLessThan(y.summeNettoaufwand);
     expect(x.summeNettoaufwand).toBeLessThan(z.summeNettoaufwand);
     expect(z.summeNettoaufwand).toBeLessThan(y.summeNettoaufwand);
+  });
+});
+
+describe('Ende der Kindergeldberechtigung (Audit C01)', () => {
+  it('zaehlt je Beitragsjahr nur noch berechtigte Kinder', () => {
+    // Zwei Kinder, Kindergeld bis 2031 und bis 2035.
+    const bis = [2031, 2035];
+    expect(kinderImBeitragsjahr(2, bis, 2027)).toBe(2);
+    expect(kinderImBeitragsjahr(2, bis, 2031)).toBe(2); // letztes Jahr zaehlt mit
+    expect(kinderImBeitragsjahr(2, bis, 2032)).toBe(1);
+    expect(kinderImBeitragsjahr(2, bis, 2036)).toBe(0);
+  });
+
+  it('rechnet Kinder ohne Angabe weiter mit und benennt sie', () => {
+    // Die alte Annahme bleibt moeglich - aber sie ist jetzt abfragbar.
+    expect(kinderImBeitragsjahr(2, [2031], 2050)).toBe(1);
+    expect(unbekannteKinder(2, [2031])).toBe(1);
+    expect(unbekannteKinder(2, undefined)).toBe(2);
+    expect(unbekannteKinder(2, [2031, 2035])).toBe(0);
+    // Mehr Angaben als Kinder aendern nichts
+    expect(unbekannteKinder(1, [2031, 2035])).toBe(0);
+    expect(kinderImBeitragsjahr(1, [2031, 2035], 2033)).toBe(0);
+  });
+
+  it('ordnet im alten Riester-Recht die frueheren Enden den aelteren Kindern zu', () => {
+    // Ein Kind vor 2008 (185 EUR), eines ab 2008 (300 EUR). Das aeltere
+    // verliert den Anspruch zuerst.
+    const k = (jahr: number) => kinderKohortenImJahr(2, 1, [2030, 2040], jahr);
+    expect(k(2029)).toEqual({ vor2008: 1, ab2008: 1 });
+    expect(k(2031)).toEqual({ vor2008: 0, ab2008: 1 });
+    expect(k(2041)).toEqual({ vor2008: 0, ab2008: 0 });
+  });
+
+  it('senkt die Foerderung, wenn das Kindergeld vorzeitig endet', () => {
+    const ohneEnde = simuliereAvd(eingabe({ kinder: 1 }));
+    const mitEnde = simuliereAvd(
+      eingabe({ kinder: 1, kinderKindergeldBisJahr: [2031] })
+    );
+    // Fuenf Jahre Kinderzulage statt dreissig
+    expect(mitEnde.summeZulagen).toBeLessThan(ohneEnde.summeZulagen);
+    expect(mitEnde.endkapitalNachSteuer).toBeLessThan(ohneEnde.endkapitalNachSteuer);
+    // Die Grundzulage bleibt: ohne Kinder ist es noch weniger
+    const ohneKinder = simuliereAvd(eingabe({ kinder: 0 }));
+    expect(mitEnde.summeZulagen).toBeGreaterThan(ohneKinder.summeZulagen);
+
+    const jahre = mitEnde.jahre;
+    expect(jahre[0].kinderMitZulage).toBe(1);
+    expect(jahre[jahre.length - 1].kinderMitZulage).toBe(0);
+  });
+
+  it('weist auf die unterstellte Dauer hin, solange sie fehlt', () => {
+    const ohne = simuliereAvd(eingabe({ kinder: 2 }));
+    expect(
+      ohne.hinweise.some(
+        (h) => h.art === 'warnung' && h.text.includes('letzte Jahr mit Kindergeld')
+      )
+    ).toBe(true);
+
+    const mit = simuliereAvd(
+      eingabe({ kinder: 2, kinderKindergeldBisJahr: [2031, 2035] })
+    );
+    expect(mit.hinweise.some((h) => h.text.includes('letzte Jahr mit Kindergeld'))).toBe(
+      false
+    );
+    expect(
+      mit.hinweise.some((h) => h.text.includes('Kinderzulage endet nach 2035'))
+    ).toBe(true);
   });
 });

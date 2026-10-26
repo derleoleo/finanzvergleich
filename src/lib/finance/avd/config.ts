@@ -100,12 +100,33 @@ export type RechtsFlags = {
   kinderzulageErhoehtSaVolumen: boolean;
   /** Besteuerung des ungeförderten Vertragsteils in der Auszahlphase. */
   ungefoerderterTeilBesteuerung: 'ertragsanteil' | 'halbeinkuenfte';
+  /**
+   * Stirbt der Sparer nach Beginn der Auszahlphase: Bezieht sich der
+   * Rückzahlungsbetrag nur auf das noch nicht ausgezahlte Kapital?
+   *
+   * § 93 Abs. 1 S. 1 EStG spricht von „den auf den Auszahlungsbetrag
+   * entfallenden" Zulagen – das spricht für anteilig (true). Bereits
+   * ausgezahlte Raten waren planmäßige Leistungen und wurden laufend
+   * besteuert; sie noch einmal zurückzufordern wäre eine Doppelbelastung.
+   * Bei false wird die gesamte Förderung zurückgefordert.
+   */
+  todesfallRueckforderungAnteilig: boolean;
+  /**
+   * Besteuerung der Erträge bei schädlicher Verwendung im Todesfall.
+   *
+   * § 22 Nr. 5 S. 3 EStG ordnet den Vorgang den sonstigen Einkünften zu, also
+   * dem persönlichen Steuersatz ('persoenlich'). 'abgeltung' wäre die
+   * Gegenannahme, dass das Depot wie ein freies Depot behandelt wird.
+   */
+  todesfallErtraegeBesteuerung: 'persoenlich' | 'abgeltung';
 };
 
 export const RECHTS_FLAGS_DEFAULT: RechtsFlags = {
   kinderzulageProKindUnabhaengig: true,
   kinderzulageErhoehtSaVolumen: true, // Gesetzeswortlaut
   ungefoerderterTeilBesteuerung: 'ertragsanteil', // BMF-FAQ-Wortlaut
+  todesfallRueckforderungAnteilig: true, // Gesetzeswortlaut
+  todesfallErtraegeBesteuerung: 'persoenlich', // § 22 Nr. 5 EStG
 };
 
 /** Reine Modellannahmen (keine Rechtsfragen), zentral änderbar. */

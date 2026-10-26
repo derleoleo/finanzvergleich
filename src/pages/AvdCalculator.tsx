@@ -23,6 +23,7 @@ import {
   type ZweitvertragArt,
 } from '@/lib/finance/avd/strategien';
 import { besteOption, zillmerungsverlust } from '@/lib/finance/avd/optionen';
+import { berechneTodesfallSzenarien } from '@/lib/finance/avd/todesfall';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,6 +66,11 @@ type FormData = Omit<AvdEingabe, 'flags'> & {
   aufteilungMonatlich?: number;
   /** Wohin der Betrag oberhalb des Aufteilungspunkts fließt. */
   zweitvertrag: ZweitvertragArt;
+  /**
+   * Alter, zu denen der Todesfall gerechnet wird. Drei Spalten, frei
+   * eingebbar - 50/67/75 ist die Vorgabe, nicht die Vorschrift.
+   */
+  todesfallAlter: number[];
 };
 
 function makeDefaults(): FormData {
@@ -77,6 +83,7 @@ function makeDefaults(): FormData {
     berechtigung: 'unmittelbar',
     splitting: false,
     kinder: 0,
+    kinderKindergeldBisJahr: [],
     ehegatteMittelbarBerechtigt: false,
     eigenbeitragEhegatteUnmittelbar: 0,
     eigenbeitragMonatlich: 150,
@@ -92,9 +99,13 @@ function makeDefaults(): FormData {
     teilkapitalAnteil: 0,
     auszahlplanEndalter: 85,
     rentenfaktorProZehntausend: ANNAHMEN.RENTENFAKTOR_PRO_10K,
+    rentengarantiezeitJahre: 0,
     kvStatusImAlter: 'pflicht',
     vergleichspartner: 'depot',
     depotKostenPaJahr: d.depot_costs_annual / 100,
+    // Jung, Rentenbeginn, deutlich danach - drei Zeitpunkte, an denen sich die
+    // Antwort unterscheidet.
+    todesfallAlter: [50, 67, 75],
     riester: {
       beitragspflEinnahmenVorjahr: 45000,
       kinderGeborenVor2008: 0,
@@ -210,6 +221,39 @@ export default function AvdCalculator() {
       }),
     [formData, optionenAktiv]
   );
+
+  const szenarien = useMemo(
+    () =>
+      berechneTodesfallSzenarien({
+        basis: { ...formData, flags: RECHTS_FLAGS_DEFAULT },
+        ergebnis,
+        alter: formData.todesfallAlter,
+        rentengarantiezeitJahre: formData.rentengarantiezeitJahre,
+        flags: RECHTS_FLAGS_DEFAULT,
+      }),
+    [formData, ergebnis]
+  );
+
+  /**
+   * Dieselbe Rechnung über alle Alter – für die Kurve in der Fassung.
+   *
+   * Drei Spalten zeigen, wo die Antwort kippt; die Kurve zeigt, wann. Teuer
+   * ist das nicht: Die Ansparphase liest nur Jahreszeilen, die Auszahlphase
+   * rechnet eine Monatsschleife je Alter.
+   */
+  const todesfallKurve = useMemo(() => {
+    const alterBeiStart = formData.beitragsjahrStart - formData.geburtsjahr;
+    const bis = Math.max(formData.auszahlungsbeginnAlter, formData.auszahlplanEndalter);
+    const alter: number[] = [];
+    for (let a = alterBeiStart + 1; a <= bis; a++) alter.push(a);
+    return berechneTodesfallSzenarien({
+      basis: { ...formData, flags: RECHTS_FLAGS_DEFAULT },
+      ergebnis,
+      alter,
+      rentengarantiezeitJahre: formData.rentengarantiezeitJahre,
+      flags: RECHTS_FLAGS_DEFAULT,
+    });
+  }, [formData, ergebnis]);
 
   const strategien = useMemo(
     () =>
@@ -374,6 +418,31 @@ export default function AvdCalculator() {
   };
 
   /**
+   * Was im Todesfall bleibt, über alle Alter.
+   *
+   * Eigener Block, weil hier nicht Kapital gezeigt wird, sondern was nach
+   * Rückforderung und Steuer bei den Hinterbliebenen ankommt – mit dem
+   * Verlauf oben wäre das nicht dieselbe Größe.
+   */
+  const todesfallReihen = {
+    titel: 'Was im Todesfall bleibt',
+    punkte: todesfallKurve.map((sz) => ({
+      alter: sz.alter,
+      an_ehegatten: Math.round(sz.ehegatte.verfuegbar),
+      an_sonstige_erben: Math.round(sz.sonstige.verfuegbar),
+      freies_depot: Math.round(sz.freiesDepot ?? 0),
+    })),
+    beschriftungen: {
+      an_ehegatten: 'Übertragung auf einen Vertrag des Ehegatten',
+      an_sonstige_erben: 'Auszahlung an sonstige Erben',
+      freies_depot: 'Freies Depot nach Abgeltungsteuer',
+    },
+    hinweis:
+      'Nach Rückforderung der Förderung (§ 93 Abs. 1 EStG) und Steuer auf die ' +
+      'Erträge. Ohne Erbschaftsteuer.',
+  };
+
+  /**
    * Die drei Strategien als eigener Reihenblock.
    *
    * Bewusst getrennt vom Hauptverlauf: Der Strategievergleich rechnet ohne
@@ -508,6 +577,20 @@ export default function AvdCalculator() {
           // Fondspolice oder Riester gewaehlt ist. "vergleich_..." liess sich
           // als Auszahlung des gewaehlten Partners lesen.
           freies_depot_entnahme_netto: Math.round(ergebnis.depot.monatsentnahmeNetto),
+          // Todesfall: flach je Szenario, weil die Fassungsansicht nur
+          // Zahlen und Texte liest - verschachtelte Objekte fallen dort durch.
+          ...Object.fromEntries(
+            szenarien.flatMap((sz, i) => [
+              [`szenario_tod_${i + 1}_alter`, sz.alter],
+              [`szenario_tod_${i + 1}_ehegatte`, Math.round(sz.ehegatte.verfuegbar)],
+              [`szenario_tod_${i + 1}_sonstige`, Math.round(sz.sonstige.verfuegbar)],
+              [
+                `szenario_tod_${i + 1}_rueckforderung`,
+                Math.round(sz.sonstige.rueckforderung),
+              ],
+              [`szenario_tod_${i + 1}_vergleich`, Math.round(sz.freiesDepot ?? 0)],
+            ])
+          ),
           ...modellStempel(),
         },
       };
@@ -535,7 +618,7 @@ export default function AvdCalculator() {
           name: nutzlast.name,
           form: nutzlast.form,
           results: nutzlast.results as unknown as Record<string, unknown>,
-          reihen: [fassungsReihen, strategieReihen],
+          reihen: [fassungsReihen, strategieReihen, todesfallReihen],
         });
         setFassungFehlt(stand.stand === 'fehlt' ? stand : null);
         setVersionenStand((n) => n + 1);
@@ -689,10 +772,81 @@ export default function AvdCalculator() {
                   <NumericInput value={formData.beitragsjahrStart} onChange={(v) => update('beitragsjahrStart', v)} className={inputClass} />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">Kinder (Kindergeld)</Label>
-                  <NumericInput value={formData.kinder} onChange={(v) => update('kinder', Math.max(0, Math.round(v)))} className={inputClass} />
+                  <Label htmlFor="avd-kinder" className="text-sm font-medium text-slate-700">
+                    Kinder (Kindergeld)
+                  </Label>
+                  <NumericInput
+                    id="avd-kinder"
+                    value={formData.kinder}
+                    onChange={(v) => {
+                      const anzahl = Math.max(0, Math.round(v));
+                      setFormData((vorher) => ({
+                        ...vorher,
+                        kinder: anzahl,
+                        // Mehr Endjahre als Kinder wuerden stillschweigend
+                        // mitzaehlen - die Liste folgt der Anzahl.
+                        kinderKindergeldBisJahr: (vorher.kinderKindergeldBisJahr ?? []).slice(
+                          0,
+                          anzahl
+                        ),
+                      }));
+                    }}
+                    className={inputClass}
+                  />
                 </div>
               </div>
+
+              {/*
+                Audit C01: Die Kinderzulage haengt an der Kindergeldfestsetzung
+                und endet mit ihr (§ 85 EStG). Ohne diese Angabe rechnet die
+                Prognose sie bis zum Rentenbeginn weiter - das ueberschaetzt die
+                Foerderung um Jahrzehnte.
+              */}
+              {formData.kinder > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-700">
+                    Letztes Jahr mit Kindergeld
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {Array.from({ length: formData.kinder }, (_, i) => (
+                      <div className="space-y-2" key={i}>
+                        <Label
+                          htmlFor={`avd-kindergeld-bis-${i + 1}`}
+                          className="text-xs text-slate-500"
+                        >
+                          Kind {i + 1}
+                        </Label>
+                        <NumericInput
+                          id={`avd-kindergeld-bis-${i + 1}`}
+                          value={formData.kinderKindergeldBisJahr?.[i] ?? 0}
+                          onChange={(v) => {
+                            const jahr = Math.max(0, Math.round(v));
+                            setFormData((vorher) => {
+                              const liste = [
+                                ...(vorher.kinderKindergeldBisJahr ?? []),
+                              ];
+                              while (liste.length < vorher.kinder) liste.push(0);
+                              liste[i] = jahr;
+                              return {
+                                ...vorher,
+                                kinderKindergeldBisJahr: liste.slice(0, vorher.kinder),
+                              };
+                            });
+                          }}
+                          className={inputClass}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Jahr der letzten Kindergeldfestsetzung – in der Regel das Jahr des
+                    18. Geburtstags, bei Ausbildung oder Studium bis zum 25. Danach
+                    entfällt die Kinderzulage, die Grundzulage bleibt. 0 bedeutet
+                    unbekannt; dann wird die Zulage bis zum Rentenbeginn weitergerechnet
+                    und der Rechner weist darauf hin.
+                  </p>
+                </div>
+              )}
               {formData.berechtigung === 'mittelbar' && (
                 <div className="space-y-2 max-w-sm">
                   <Label className="text-sm font-medium text-slate-700">Eigenbeitrag des Ehegatten p.a. (€)</Label>
@@ -1653,6 +1807,237 @@ export default function AvdCalculator() {
           </Card>
         </div>
 
+        {/* 5. Todesfall-Szenarien */}
+        <div data-pdf-section="szenarien">
+          <Card className="border-0 shadow-lg bg-white">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-slate-900">
+                5. Wenn der Kunde stirbt
+              </CardTitle>
+              <p className="text-sm text-slate-500">
+                Bis hierher rechnet alles mit einem langen Leben. Stirbt der Kunde, ist die
+                Förderung grundsätzlich zurückzuzahlen (§ 93 Abs. 1 EStG) – außer das
+                Vermögen geht auf einen Altersvorsorgevertrag des Ehegatten über.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Eingaben */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4" data-pdf-hide>
+                {formData.todesfallAlter.map((alter, i) => (
+                  <div className="space-y-2" key={i}>
+                    <Label
+                      htmlFor={`avd-todesfall-alter-${i + 1}`}
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Alter bei Tod {i + 1}
+                    </Label>
+                    <NumericInput
+                      id={`avd-todesfall-alter-${i + 1}`}
+                      value={alter}
+                      onChange={(v) =>
+                        update(
+                          'todesfallAlter',
+                          formData.todesfallAlter.map((a, j) =>
+                            j === i ? Math.max(0, Math.round(v)) : a
+                          )
+                        )
+                      }
+                      className={inputClass}
+                    />
+                  </div>
+                ))}
+                {formData.auszahlform === 'leibrente' && (
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="avd-rentengarantiezeit"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Rentengarantiezeit
+                    </Label>
+                    <select
+                      id="avd-rentengarantiezeit"
+                      className={selectClass}
+                      value={formData.rentengarantiezeitJahre ?? 0}
+                      onChange={(ev) =>
+                        update('rentengarantiezeitJahre', Number(ev.target.value))
+                      }
+                    >
+                      <option value={0}>keine</option>
+                      <option value={10}>10 Jahre</option>
+                      <option value={20}>20 Jahre</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Tabelle: Spalten sind die drei Zeitpunkte */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-slate-500">
+                      <th className="py-2 pr-4 font-medium">Zum Todeszeitpunkt</th>
+                      {szenarien.map((sz, i) => (
+                        <th key={i} className="py-2 px-3 font-medium text-right">
+                          Tod mit {sz.alter}
+                          <span className="block text-xs font-normal text-slate-400">
+                            {sz.phase === 'vor_beginn'
+                              ? 'vor Vertragsbeginn'
+                              : sz.phase === 'anspar'
+                                ? `Ansparphase, ${sz.jahr}`
+                                : sz.phase === 'auszahl'
+                                  ? `Auszahlphase, ${sz.jahr}`
+                                  : 'nach Planende'}
+                          </span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="text-slate-700">
+                    <tr className="border-t border-slate-100">
+                      <td className="py-2 pr-4">Im Vertrag vorhanden</td>
+                      {szenarien.map((sz, i) => (
+                        <td key={i} className="py-2 px-3 text-right">
+                          {formatCurrency(sz.ehegatte.kapitalGesamt)}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr className="border-t border-slate-100">
+                      <td className="py-2 pr-4">
+                        − Rückforderung der Förderung
+                        <span className="block text-xs text-slate-400">
+                          Zulagen und festgestellte Steuerermäßigung
+                        </span>
+                      </td>
+                      {szenarien.map((sz, i) => (
+                        <td key={i} className="py-2 px-3 text-right text-amber-700">
+                          {sz.sonstige.rueckforderung > 0
+                            ? `− ${formatCurrency(sz.sonstige.rueckforderung)}`
+                            : '–'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr className="border-t border-slate-100">
+                      <td className="py-2 pr-4">− Steuer auf die Erträge</td>
+                      {szenarien.map((sz, i) => (
+                        <td key={i} className="py-2 px-3 text-right text-amber-700">
+                          {sz.sonstige.steuer > 0
+                            ? `− ${formatCurrency(sz.sonstige.steuer)}`
+                            : '–'}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr className="border-t border-slate-200 bg-slate-50 font-semibold">
+                      <td className="py-2 pr-4">= an sonstige Erben</td>
+                      {szenarien.map((sz, i) => (
+                        <td key={i} className="py-2 px-3 text-right">
+                          {formatCurrency(sz.sonstige.verfuegbar)}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr className="border-t border-slate-200 bg-blue-50 font-semibold">
+                      <td className="py-2 pr-4">
+                        = auf einen Vertrag des Ehegatten
+                        <span className="block text-xs font-normal text-slate-500">
+                          förderunschädlich, Steuer erst bei dessen Auszahlung
+                        </span>
+                      </td>
+                      {szenarien.map((sz, i) => (
+                        <td key={i} className="py-2 px-3 text-right">
+                          {formatCurrency(sz.ehegatte.verfuegbar)}
+                        </td>
+                      ))}
+                    </tr>
+                    {szenarien.some((sz) => sz.teilkapitalBereitsAusgezahlt > 0) && (
+                      <tr className="border-t border-slate-100">
+                        <td className="py-2 pr-4">
+                          + bereits ausgezahltes Teilkapital
+                          <span className="block text-xs text-slate-400">
+                            privates Vermögen, netto
+                          </span>
+                        </td>
+                        {szenarien.map((sz, i) => (
+                          <td key={i} className="py-2 px-3 text-right">
+                            {sz.teilkapitalBereitsAusgezahlt > 0
+                              ? formatCurrency(sz.teilkapitalBereitsAusgezahlt)
+                              : '–'}
+                          </td>
+                        ))}
+                      </tr>
+                    )}
+                    <tr className="border-t border-slate-200">
+                      <td className="py-2 pr-4 pt-4 text-slate-500">
+                        Freies Depot, nach Abgeltungsteuer
+                      </td>
+                      {szenarien.map((sz, i) => (
+                        <td key={i} className="py-2 px-3 pt-4 text-right">
+                          {sz.freiesDepot != null ? formatCurrency(sz.freiesDepot) : '–'}
+                        </td>
+                      ))}
+                    </tr>
+                    {szenarien.some((sz) => sz.fondsLv != null) && (
+                      <tr className="border-t border-slate-100">
+                        <td className="py-2 pr-4 text-slate-500">
+                          Fondspolice: Todesfallleistung
+                          <span className="block text-xs text-slate-400">
+                            einkommensteuerfrei, keine Rückforderung
+                          </span>
+                        </td>
+                        {szenarien.map((sz, i) => (
+                          <td key={i} className="py-2 px-3 text-right">
+                            {sz.fondsLv != null ? formatCurrency(sz.fondsLv) : '–'}
+                          </td>
+                        ))}
+                      </tr>
+                    )}
+                    {szenarien.some((sz) => sz.riesterAlt != null) && (
+                      <tr className="border-t border-slate-100">
+                        <td className="py-2 pr-4 text-slate-500">
+                          Riester-Altvertrag: an sonstige Erben
+                        </td>
+                        {szenarien.map((sz, i) => (
+                          <td key={i} className="py-2 px-3 text-right">
+                            {sz.riesterAlt != null
+                              ? formatCurrency(sz.riesterAlt.verfuegbar)
+                              : '–'}
+                          </td>
+                        ))}
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Hinweise, ohne Wiederholungen über die drei Spalten */}
+              <div className="space-y-2">
+                {[
+                  ...new Set(
+                    szenarien.flatMap((sz) => sz.hinweise.map((h) => `${h.art}|${h.text}`))
+                  ),
+                ].map((eintrag, i) => {
+                  const trenner = eintrag.indexOf('|');
+                  const art = eintrag.slice(0, trenner);
+                  const text = eintrag.slice(trenner + 1);
+                  return (
+                    <p
+                      key={i}
+                      className={`text-xs flex items-start gap-2 ${
+                        art === 'warnung' ? 'text-amber-700' : 'text-slate-500'
+                      }`}
+                    >
+                      {art === 'warnung' ? (
+                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                      ) : (
+                        <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                      )}
+                      {text}
+                    </p>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Rechtsstand */}
         <Card className="border-0 shadow-lg bg-white">
           <CardContent className="p-6 space-y-2">
@@ -1694,6 +2079,7 @@ export default function AvdCalculator() {
               ? [{ id: 'optionen', label: 'Wechselanalyse (4 Optionen)' }]
               : []),
             { id: 'auszahlung', label: 'Auszahlphase' },
+            { id: 'szenarien', label: 'Todesfall und Hinterbliebene' },
           ]}
           isExporting={isExporting}
           onExport={(ids) => doExport(ids, 'altersvorsorgedepot', 'Altersvorsorgedepot')}

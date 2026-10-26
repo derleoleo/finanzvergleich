@@ -10,7 +10,7 @@
 // und (3) dem Renditepotenzial (Beitragsgarantie begrenzt die Aktienquote).
 
 import { calculateMonthlyReturn } from '@/components/shared/TaxCalculations';
-import { berechneZulagenRiesterAlt, RIESTER_ALT } from './zulagen';
+import { berechneZulagenRiesterAlt, kinderKohortenImJahr, RIESTER_ALT } from './zulagen';
 import { steuerentlastung, type SteuerZuschlaege } from './tarif';
 
 export type RiesterAltEingabeVergleich = {
@@ -39,6 +39,15 @@ export type RiesterAltErgebnis = {
   endkapitalNominal: number;
   endkapitalNachSteuer: number;
   kapitalProJahr: number[];
+  /**
+   * Bis zum Ende des jeweiligen Jahres erhaltene Foerderung (Zulagen und
+   * Steuererstattung). Genau dieser Betrag ist im Todesfall zurueckzuzahlen,
+   * wenn das Kapital nicht auf einen Vertrag des Ehegatten geht
+   * (§ 93 Abs. 1 EStG).
+   */
+  foerderungKumuliertProJahr: number[];
+  /** Bis zum Ende des Jahres eingezahlte Eigenbeitraege - Grundlage der Ertragsbesteuerung. */
+  eigenbeitraegeKumuliertProJahr: number[];
 };
 
 /**
@@ -55,6 +64,10 @@ export function simuliereRiesterAlt(args: {
   eigenbeitragMonatlichStart: number;
   beitragsdynamikPaJahr: number;
   kinderGesamt: number;
+  /** Erstes Beitragsjahr als Kalenderjahr - nur fuer das Ende des Kindergelds. */
+  beitragsjahrStart: number;
+  /** Letztes Jahr mit Kindergeld, je Kind (Audit C01). */
+  kinderKindergeldBisJahr?: number[];
   alterBeiStart: number;
   zvEJahr: number;
   splitting: boolean;
@@ -67,11 +80,6 @@ export function simuliereRiesterAlt(args: {
 }): RiesterAltErgebnis {
   const r = args.riester;
   const jahre = Math.max(1, Math.round(args.jahre));
-  const kinderVor2008 = Math.max(
-    0,
-    Math.min(Math.floor(r.kinderGeborenVor2008 || 0), args.kinderGesamt)
-  );
-  const kinderAb2008 = Math.max(0, args.kinderGesamt - kinderVor2008);
 
   const rMonat = calculateMonthlyReturn(
     ((r.renditeBruttoPaJahr || 0) - (r.effektivkostenPaJahr || 0)) * 100
@@ -84,6 +92,8 @@ export function simuliereRiesterAlt(args: {
   let summeErstattung = 0;
   const zulagenEingang: number[] = new Array(jahre + 3).fill(0);
   const kapitalProJahr: number[] = [];
+  const foerderungKumuliertProJahr: number[] = [];
+  const eigenbeitraegeKumuliertProJahr: number[] = [];
 
   let zulagenanspruchJahr1 = 0;
   let mindesteigenbeitragJahr1 = 0;
@@ -94,11 +104,19 @@ export function simuliereRiesterAlt(args: {
     if (t > 0) beitragMonatlich *= 1 + (args.beitragsdynamikPaJahr || 0);
     const eigenbeitrag = beitragMonatlich * 12;
 
+    // Die Kinderzulage endet mit dem Kindergeld, auch im alten Recht (C01).
+    const kinder = kinderKohortenImJahr(
+      args.kinderGesamt,
+      r.kinderGeborenVor2008,
+      args.kinderKindergeldBisJahr,
+      args.beitragsjahrStart + t
+    );
+
     const z = berechneZulagenRiesterAlt({
       eigenbeitrag,
       beitragspflEinnahmenVorjahr: r.beitragspflEinnahmenVorjahr,
-      kinderGeborenAb2008: kinderAb2008,
-      kinderGeborenVor2008: kinderVor2008,
+      kinderGeborenAb2008: kinder.ab2008,
+      kinderGeborenVor2008: kinder.vor2008,
       alterZuBeitragsjahresbeginn: args.alterBeiStart + t,
       bebBereitsGenutzt: t > 0,
     });
@@ -137,6 +155,8 @@ export function simuliereRiesterAlt(args: {
     summeZulagen += z.zulage;
     summeErstattung += erstattung;
     kapitalProJahr.push(kapital);
+    foerderungKumuliertProJahr.push(summeZulagen + summeErstattung);
+    eigenbeitraegeKumuliertProJahr.push(summeEigen);
   }
 
   for (let t = jahre; t < zulagenEingang.length; t++) kapital += zulagenEingang[t];
@@ -161,6 +181,8 @@ export function simuliereRiesterAlt(args: {
     endkapitalNominal: kapital,
     endkapitalNachSteuer: kapital * (1 - s),
     kapitalProJahr,
+    foerderungKumuliertProJahr,
+    eigenbeitraegeKumuliertProJahr,
   };
 }
 

@@ -32,6 +32,75 @@ export type ZulagenErgebnis = {
 };
 
 /**
+ * Wie viele Kinder bringen in diesem Beitragsjahr noch eine Zulage?
+ *
+ * Die Kinderzulage haengt an der Kindergeldfestsetzung (§ 85 EStG): Sie endet,
+ * wenn das Kindergeld endet - in der Regel mit 18, bei Ausbildung spaeter.
+ * Vorher rechnete die Simulation jedes Jahr mit derselben Kinderzahl, also
+ * auch noch dreissig Jahre nach dem letzten Kindergeldmonat (Audit C01).
+ *
+ * `bisJahr` nennt je Kind das letzte Jahr mit Kindergeld. Kinder ohne Angabe
+ * zaehlen weiter mit - das ist die alte Annahme, und sie muss benannt werden,
+ * statt sie unsichtbar zu lassen: `unbekannteKinder` liefert ihre Anzahl.
+ */
+export function kinderImBeitragsjahr(
+  kinder: number,
+  bisJahr: number[] | undefined,
+  jahr: number
+): number {
+  const gesamt = Math.max(0, Math.floor(Number(kinder) || 0));
+  const angaben = (bisJahr ?? [])
+    .map((j) => Math.floor(Number(j) || 0))
+    .filter((j) => j > 0)
+    .slice(0, gesamt);
+  const nochBerechtigt = angaben.filter((j) => j >= jahr).length;
+  const ohneAngabe = gesamt - angaben.length;
+  return nochBerechtigt + ohneAngabe;
+}
+
+/**
+ * Dieselbe Frage fuer das alte Riester-Recht, das zwei Kinderzulagen kennt:
+ * 300 € fuer ab 2008 geborene Kinder, 185 € davor.
+ *
+ * Welches Enddatum zu welcher Gruppe gehoert, sagt die Eingabe nicht - sie
+ * nennt nur Anzahlen je Gruppe und eine Liste von Endjahren. Angenommen wird
+ * deshalb: Die frueher endenden Berechtigungen gehoeren zu den aelteren, also
+ * den vor 2008 geborenen Kindern. Das ist die naheliegende Zuordnung, weil
+ * Kindergeld am Alter haengt. Kinder ohne Angabe zaehlen weiter mit.
+ */
+export function kinderKohortenImJahr(
+  kinderGesamt: number,
+  kinderVor2008: number,
+  bisJahr: number[] | undefined,
+  jahr: number
+): { vor2008: number; ab2008: number } {
+  const gesamt = Math.max(0, Math.floor(Number(kinderGesamt) || 0));
+  const vorAnzahl = Math.max(0, Math.min(Math.floor(Number(kinderVor2008) || 0), gesamt));
+  // Unbekannte Enden als "laeuft weiter" einsortieren, damit die Reihenfolge
+  // die aelteren Kinder zuerst nimmt.
+  const enden = (bisJahr ?? [])
+    .map((j) => Math.floor(Number(j) || 0))
+    .filter((j) => j > 0)
+    .slice(0, gesamt)
+    .sort((a, b) => a - b);
+  while (enden.length < gesamt) enden.push(Number.POSITIVE_INFINITY);
+
+  const vor2008 = enden.slice(0, vorAnzahl).filter((j) => j >= jahr).length;
+  const ab2008 = enden.slice(vorAnzahl).filter((j) => j >= jahr).length;
+  return { vor2008, ab2008 };
+}
+
+/** Kinder, zu denen kein Ende der Kindergeldberechtigung angegeben ist. */
+export function unbekannteKinder(kinder: number, bisJahr: number[] | undefined): number {
+  const gesamt = Math.max(0, Math.floor(Number(kinder) || 0));
+  const angaben = (bisJahr ?? [])
+    .map((j) => Math.floor(Number(j) || 0))
+    .filter((j) => j > 0)
+    .slice(0, gesamt);
+  return gesamt - angaben.length;
+}
+
+/**
  * Zulagen nach neuem Recht (§§ 84, 85, 86 EStG n.F.).
  *
  * Grund- und Kinderzulage greifen auf denselben Eigenbeitrag zu; es gibt keine

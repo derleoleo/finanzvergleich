@@ -37,6 +37,28 @@ export type AvdResults = {
   freies_depot_entnahme_netto?: number;
   /** @deprecated Altbestand bis 2026-10-05; bedeutete dasselbe (Audit B05). */
   vergleich_monatsentnahme_netto?: number;
+  /**
+   * Todesfall-Szenarien, flach je Zeitpunkt (1 bis 3).
+   *
+   * Flach und nicht verschachtelt, weil die Fassungsansicht nur Zahlen und
+   * Texte liest. `_ehegatte` ist die foerderunschaedliche Uebertragung,
+   * `_sonstige` die Auszahlung an andere Erben, `_vergleich` das freie Depot.
+   */
+  szenario_tod_1_alter?: number;
+  szenario_tod_1_ehegatte?: number;
+  szenario_tod_1_sonstige?: number;
+  szenario_tod_1_rueckforderung?: number;
+  szenario_tod_1_vergleich?: number;
+  szenario_tod_2_alter?: number;
+  szenario_tod_2_ehegatte?: number;
+  szenario_tod_2_sonstige?: number;
+  szenario_tod_2_rueckforderung?: number;
+  szenario_tod_2_vergleich?: number;
+  szenario_tod_3_alter?: number;
+  szenario_tod_3_ehegatte?: number;
+  szenario_tod_3_sonstige?: number;
+  szenario_tod_3_rueckforderung?: number;
+  szenario_tod_3_vergleich?: number;
   modell_version?: string;
   bewertet_am?: string;
   rechtsstand?: string;

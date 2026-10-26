@@ -9,9 +9,25 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-26" as const;
+export const MODELL_VERSION = "2026-10-26b" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-26b",
+    aenderung:
+      "Altersvorsorgedepot: neuer Abschnitt zum Todesfall. Fuer drei eingebbare " +
+      "Alter wird gezeigt, was den Hinterbliebenen bleibt - getrennt nach " +
+      "Uebertragung auf einen Vertrag des Ehegatten (foerderunschaedlich) und " +
+      "Auszahlung an sonstige Erben (Rueckforderung der Foerderung nach " +
+      "§ 93 Abs. 1 EStG und Steuer auf die Ertraege). Gespeicherte Auswertungen " +
+      "tragen die drei Szenarien und eine Kurve ueber alle Alter. Die " +
+      "bisherigen Rechenwege und Kennzahlen bleiben unveraendert. " +
+      "Ausserdem endet die Kinderzulage jetzt mit dem Kindergeld: Je Kind " +
+      "laesst sich das letzte Jahr mit Kindergeldfestsetzung eintragen " +
+      "(§ 85 EStG). Vorher rechnete die Prognose dieselbe Kinderzahl bis zum " +
+      "Rentenbeginn weiter. Ohne Angabe bleibt es dabei - dann weist der " +
+      "Rechner die Annahme aber aus.",
+  },
   {
     version: "2026-10-26",
     aenderung:

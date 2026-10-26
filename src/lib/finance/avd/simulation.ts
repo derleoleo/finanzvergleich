@@ -23,7 +23,7 @@ import {
   ertragsanteilFuer,
   type RechtsFlags,
 } from './config';
-import { berechneZulagen, guenstigerpruefung, type Berechtigung } from './zulagen';
+import { kinderImBeitragsjahr, unbekannteKinder, berechneZulagen, guenstigerpruefung, type Berechtigung } from './zulagen';
 import {
   simuliereRiesterAlt,
   sockelbetragsSchwelle,
@@ -58,6 +58,14 @@ export type AvdEingabe = {
   // Familie
   splitting: boolean;
   kinder: number;
+  /**
+   * Letztes Jahr mit Kindergeld, je Kind (Audit C01).
+   *
+   * Die Kinderzulage haengt an der Kindergeldfestsetzung und endet mit ihr.
+   * Fehlt die Angabe fuer ein Kind, zaehlt es weiter mit - dann weist die
+   * Simulation darauf hin, statt die Annahme zu verschweigen.
+   */
+  kinderKindergeldBisJahr?: number[];
   ehegatteMittelbarBerechtigt: boolean;
   eigenbeitragEhegatteUnmittelbar?: number;
 
@@ -81,6 +89,15 @@ export type AvdEingabe = {
   teilkapitalAnteil: number;
   auszahlplanEndalter: number;
   rentenfaktorProZehntausend: number;
+  /**
+   * Rentengarantiezeit der Leibrente in Jahren (0, 10 oder 20 sind ueblich).
+   *
+   * Sie aendert die laufende Rente hier bewusst nicht - der Rentenfaktor ist
+   * eine Eingabe und muss zur gewaehlten Garantiezeit passen. Gebraucht wird
+   * sie fuer den Todesfall: Ohne Garantiezeit endet die Leibrente mit dem Tod
+   * und den Hinterbliebenen bleibt nichts (siehe todesfall.ts).
+   */
+  rentengarantiezeitJahre?: number;
   kvStatusImAlter: 'pflicht' | 'freiwillig' | 'privat';
 
   // Vergleich
@@ -126,6 +143,29 @@ export type JahresZeile = {
   kapitalGesamt: number;
   kapitalGesamtReal: number;
   depotKapital: number;
+  /** Kinder, fuer die in diesem Jahr noch Kindergeld lief (C01). */
+  kinderMitZulage: number;
+  /**
+   * Zulagen, die in diesem Jahr gutgeschrieben wurden - nicht der Anspruch
+   * des Jahres. Beides faellt wegen der verzoegerten Gutschrift auseinander.
+   * Das Todesfallszenario braucht den Zufluss: Nur gutgeschriebene Zulagen
+   * stecken im Kapital, zurueckzuzahlen ist dagegen der Anspruch.
+   */
+  zulageZugeflossen: number;
+  /**
+   * Eigene Zahlungen in den gefoerderten Topf in diesem Jahr: Eigenbeitrag bis
+   * zum Hoechstbetrag und, falls sie wieder angelegt wird, die
+   * Steuererstattung. Grundlage fuer die Ertragsbesteuerung bei schaedlicher
+   * Verwendung (§ 22 Nr. 5 S. 3 EStG).
+   */
+  eigenzahlungGefoerdert: number;
+  /**
+   * Einstandswert des Vergleichsdepots am Jahresende, einschliesslich der
+   * bereits ueber die Vorabpauschale versteuerten Betraege. Ohne diesen Wert
+   * liesse sich die Depotsteuer zu einem Zeitpunkt vor dem Laufzeitende nur
+   * schaetzen.
+   */
+  depotEinstand: number;
 };
 
 export type AuszahlErgebnis = {
@@ -244,6 +284,34 @@ export function pruefeEingabe(e: AvdEingabe): Hinweis[] {
       text: 'Mit Kindern ist die volle Kinderzulage bereits ab 300 € pro Jahr (25 €/Monat) erreicht – der Beitrag liegt darunter.',
     });
   }
+  // Audit C01: Ohne Enddatum rechnet die Prognose die Kinderzulage bis zum
+  // Auszahlungsbeginn weiter. Das kann richtig sein, ist aber eine Annahme -
+  // und sie war bisher nirgends zu lesen.
+  const ohneEnde = unbekannteKinder(e.kinder, e.kinderKindergeldBisJahr);
+  if (ohneEnde > 0) {
+    h.push({
+      art: 'warnung',
+      text:
+        ohneEnde === 1
+          ? 'Für ein Kind fehlt das letzte Jahr mit Kindergeld. Dafür wird die Kinderzulage bis zum Auszahlungsbeginn weitergerechnet – das überschätzt die Förderung, wenn die Festsetzung vorher endet (§ 85 EStG).'
+          : `Für ${ohneEnde} Kinder fehlt das letzte Jahr mit Kindergeld. Dafür wird die Kinderzulage bis zum Auszahlungsbeginn weitergerechnet – das überschätzt die Förderung, wenn die Festsetzung vorher endet (§ 85 EStG).`,
+    });
+  }
+  const enden = (e.kinderKindergeldBisJahr ?? [])
+    .map((j) => Math.floor(Number(j) || 0))
+    .filter((j) => j > 0);
+  if (enden.length > 0) {
+    const letztes = Math.max(...enden);
+    const alterBeiStartKinder = e.beitragsjahrStart - e.geburtsjahr;
+    const letztesBeitragsjahr =
+      e.beitragsjahrStart + (e.auszahlungsbeginnAlter - alterBeiStartKinder) - 1;
+    if (letztes < letztesBeitragsjahr) {
+      h.push({
+        art: 'info',
+        text: `Die Kinderzulage endet nach ${letztes}; die Beitragsjahre danach (bis ${letztesBeitragsjahr}) tragen nur noch Grundzulage und Steuervorteil.`,
+      });
+    }
+  }
   if (
     e.auszahlungsbeginnAlter < GESETZ.AUSZAHLUNG_ALTER_MIN ||
     e.auszahlungsbeginnAlter > GESETZ.AUSZAHLUNG_ALTER_MAX
@@ -340,10 +408,17 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
     const eigenGef = Math.min(eigenbeitrag, GESETZ.GEFOERDERTER_EIGENBEITRAG_MAX);
     const eigenUngef = Math.max(0, eigenbeitrag - GESETZ.GEFOERDERTER_EIGENBEITRAG_MAX);
 
+    // Nicht `e.kinder`: Die Kinderzulage endet mit dem Kindergeld (C01).
+    const kinderDiesesJahr = kinderImBeitragsjahr(
+      e.kinder,
+      e.kinderKindergeldBisJahr,
+      jahr
+    );
+
     const z = berechneZulagen({
       eigenbeitrag,
       eigenbeitragEhegatteUnmittelbar: e.eigenbeitragEhegatteUnmittelbar,
-      kinder: e.kinder,
+      kinder: kinderDiesesJahr,
       alterZuBeitragsjahresbeginn: alter,
       bebBereitsGenutzt: t > 0,
       berechtigung: e.berechtigung,
@@ -442,6 +517,11 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
       kapitalGesamt,
       kapitalGesamtReal: kapitalGesamt / deflatorFuer(e.inflationPaJahr, t + 1),
       depotKapital,
+      kinderMitZulage: kinderDiesesJahr,
+      zulageZugeflossen: zuflussDiesesJahr,
+      eigenzahlungGefoerdert:
+        eigenGef + (e.erstattungReinvestieren ? g.zusaetzlicheErstattung : 0),
+      depotEinstand: depotEingezahlt + depotVersteuerteVorabpauschalen,
     });
   }
 
@@ -480,6 +560,8 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
           eigenbeitragMonatlichStart: e.eigenbeitragMonatlich,
           beitragsdynamikPaJahr: e.beitragsdynamikPaJahr,
           kinderGesamt: e.kinder,
+          beitragsjahrStart: e.beitragsjahrStart,
+          kinderKindergeldBisJahr: e.kinderKindergeldBisJahr,
           alterBeiStart,
           zvEJahr: e.zvEJahr,
           splitting: e.splitting,
@@ -501,6 +583,8 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
           beitragsdynamikPaJahr: e.beitragsdynamikPaJahr,
           kinderGesamt: e.kinder,
           kinderGeborenVor2008: e.riester.kinderGeborenVor2008,
+          beitragsjahrStart: e.beitragsjahrStart,
+          kinderKindergeldBisJahr: e.kinderKindergeldBisJahr,
           alterBeiStart,
           zvEJahr: e.zvEJahr,
           splitting: e.splitting,
