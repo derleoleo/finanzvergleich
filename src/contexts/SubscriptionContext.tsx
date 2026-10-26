@@ -14,6 +14,8 @@ type Plan = "free" | "professional" | "business";
 type SubscriptionContextType = {
   plan: Plan;
   isPaid: boolean;
+  /** Gibt es bei Stripe einen Kunden? Nur dann lässt sich dort etwas verwalten. */
+  hatStripeKonto: boolean;
   totalCalculationCount: number;
   monthlyCalculationCount: number;
   canCreateCalculation: boolean;
@@ -28,6 +30,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [plan, setPlan] = useState<Plan>("free");
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [hatStripeKonto, setHatStripeKonto] = useState(false);
   const [totalCalculationCount, setTotalCalculationCount] = useState(0);
   const [monthlyCalculationCount, setMonthlyCalculationCount] = useState(0);
 
@@ -45,7 +48,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       // Plan laden
       const { data: sub } = await supabase
         .from("subscriptions")
-        .select("plan, status, current_period_end, stripe_subscription_id")
+        .select("plan, status, current_period_end, stripe_subscription_id, stripe_customer_id")
         .eq("user_id", user.id)
         .single();
 
@@ -53,6 +56,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       // veralten, wenn ein Webhook verzögert ankommt. Ohne Stripe-Abo (Testcode)
       // gibt es kein Ereignis, das den Zugang beendet: Da zählt das Enddatum.
       const perStripe = Boolean(sub?.stripe_subscription_id);
+      // Nur wer bei Stripe geführt wird, kann dort auch etwas verwalten.
+      // Von Hand vergebene Zugänge (Testcode, Eintrag im SQL-Editor) haben
+      // keinen Kunden bei Stripe – für die ist das Abo-Portal leer.
+      setHatStripeKonto(Boolean(sub?.stripe_customer_id));
       const nochGueltig =
         perStripe ||
         !sub?.current_period_end ||
@@ -122,6 +129,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       value={{
         plan,
         isPaid,
+        hatStripeKonto,
         totalCalculationCount,
         monthlyCalculationCount,
         canCreateCalculation,

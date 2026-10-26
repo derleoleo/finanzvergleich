@@ -42,11 +42,12 @@ const PRICE_IDS = {
 
 export default function Pricing() {
   const { session } = useAuth();
-  const { isPaid, refreshSubscription } = useSubscription();
+  const { isPaid, hatStripeKonto, refreshSubscription } = useSubscription();
   const [searchParams] = useSearchParams();
   const [billing, setBilling] = useState<Billing>("monthly");
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState("");
 
   // Consent-Gate
   const [consentGateOpen, setConsentGateOpen] = useState(false);
@@ -126,6 +127,7 @@ export default function Pricing() {
 
   const handlePortal = async () => {
     if (!session) return;
+    setPortalError("");
     setPortalLoading(true);
     try {
       const res = await fetch("/api/create-portal-session", {
@@ -135,10 +137,26 @@ export default function Pricing() {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
-      const { url } = await res.json();
-      if (url) window.location.href = url;
+      // Ohne diese Prüfung verschluckte die Seite jede Absage des Servers:
+      // `url` blieb leer, es wurde nichts geladen und nichts gemeldet - der
+      // Knopf tat scheinbar gar nichts.
+      const antwort = (await res.json().catch(() => ({}))) as {
+        url?: string;
+        error?: string;
+      };
+      if (!res.ok || !antwort.url) {
+        setPortalError(
+          antwort.error ??
+            "Die Abo-Verwaltung ließ sich nicht öffnen. Bitte versuchen Sie es erneut."
+        );
+        return;
+      }
+      window.location.href = antwort.url;
     } catch (err) {
       console.error("Portal-Fehler:", err);
+      setPortalError(
+        "Die Abo-Verwaltung ließ sich nicht öffnen. Bitte prüfen Sie Ihre Verbindung."
+      );
     } finally {
       setPortalLoading(false);
     }
@@ -303,7 +321,16 @@ export default function Pricing() {
             </div>
 
             <div className="pt-2">
-              {isPaid ? (
+              {isPaid && !hatStripeKonto ? (
+                /* Von Hand freigeschaltete Zugänge (Testcode, Eintrag in der
+                   Datenbank) haben keinen Kunden bei Stripe. Fuer die gibt es
+                   dort nichts zu verwalten – der Knopf konnte nur ins Leere
+                   führen. */
+                <p className="text-sm text-slate-300 text-center">
+                  Ihr Premium-Zugang wurde direkt freigeschaltet, nicht über
+                  Stripe. Es gibt daher kein Abo zu verwalten.
+                </p>
+              ) : isPaid ? (
                 <Button
                   className="w-full bg-blue-500 hover:bg-blue-400 text-white border-0"
                   onClick={handlePortal}
@@ -325,6 +352,11 @@ export default function Pricing() {
                 <Button variant="outline" className="w-full" disabled>
                   Demnächst verfügbar
                 </Button>
+              )}
+              {portalError && (
+                <p className="text-sm text-red-200 bg-red-900/40 rounded-lg px-3 py-2 mt-3">
+                  {portalError}
+                </p>
               )}
             </div>
           </div>

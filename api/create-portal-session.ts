@@ -38,7 +38,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .single();
 
   if (!sub?.stripe_customer_id) {
-    return res.status(400).json({ error: "Kein Stripe-Customer gefunden" });
+    // Diese Meldung erreicht den Nutzer wortwörtlich. Sie muss deshalb
+    // sagen, was los ist – nicht, wie es intern heißt.
+    return res.status(400).json({
+      error:
+        "Für diesen Zugang gibt es kein Stripe-Abo – er wurde direkt freigeschaltet. Es gibt daher nichts zu verwalten.",
+    });
   }
 
   const portalSession = await stripe.billingPortal.sessions.create({
