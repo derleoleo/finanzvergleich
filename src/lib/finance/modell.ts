@@ -9,9 +9,23 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-26d" as const;
+export const MODELL_VERSION = "2026-10-26e" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-26e",
+    aenderung:
+      "Rentenluecke: Der Geldwert der Einnahmen ist jetzt eine Angabe und " +
+      "keine stille Annahme. Bisher galt immer heutige Kaufkraft - die " +
+      "Einnahmen stiegen also mit der Inflation. Wer feste Zusagen zum " +
+      "Rentenbeginn eintrug, bekam eine Luecke zu einer anderen Annahme. " +
+      "Neu waehlbar: fester Betrag zum Rentenbeginn; dann wird nur der Bedarf " +
+      "hochgerechnet, und das Zielkapital traegt die im Ruhestand wachsende " +
+      "Luecke. Dazu ein Feld fuer Abzuege auf die gesetzliche Rente (Steuer " +
+      "und KV/PV), weil die Renteninformation der DRV brutto ausweist. " +
+      "Vorgaben unveraendert: heutige Kaufkraft, keine Abzuege - gespeicherte " +
+      "Faelle rechnen damit Zahl fuer Zahl wie bisher.",
+  },
   {
     version: "2026-10-26d",
     aenderung:

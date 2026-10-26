@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import {
@@ -38,6 +39,10 @@ type FormData = {
   rental_income: number;
   existing_capital: number;
   assumed_annual_return: number;
+  /** Geldwert der Einnahmen (Audit C04). */
+  einnahmen_basis: 'heute' | 'rentenbeginn';
+  /** Abzüge auf die gesetzliche Rente in Prozent: KV/PV und Steuer. */
+  abzuege_gesetzliche_rente_percent: number;
 };
 
 function makeDefaults(): FormData {
@@ -54,6 +59,9 @@ function makeDefaults(): FormData {
     rental_income: 0,
     existing_capital: 20000,
     assumed_annual_return: d.assumed_annual_return,
+    // Vorgabe wie bisher gerechnet - aber jetzt sichtbar und umschaltbar.
+    einnahmen_basis: 'heute',
+    abzuege_gesetzliche_rente_percent: 0,
   };
 }
 
@@ -82,6 +90,8 @@ function wirksameEingaben(form: FormData) {
     ...form,
     withdrawal_end_age: form.withdrawal_end_age,
     inflation_percent: d.inflation_percent,
+    einnahmen_basis: form.einnahmen_basis,
+    abzuege_gesetzliche_rente_percent: form.abzuege_gesetzliche_rente_percent,
   };
 }
 
@@ -110,11 +120,17 @@ export default function PensionGapCalculator() {
   const currentYear = new Date().getFullYear();
   const currentAge = currentYear - toNum(formData.birth_year);
   const yearsToRetirement = Math.max(0, toNum(formData.retirement_age) - currentAge);
-  const totalMonthlyIncome = toNum(formData.expected_statutory_pension)
-    + toNum(formData.occupational_pension_bav)
-    + toNum(formData.basis_rente)
-    + toNum(formData.rental_income);
-  const monthlyGapPreview = toNum(formData.desired_monthly_income) - totalMonthlyIncome;
+  /*
+   * Die Vorschau kommt aus derselben Rechnung wie das Ergebnis.
+   *
+   * Vorher addierte die Seite die Einnahmen selbst und bildete die Differenz
+   * von Hand. Mit der waehlbaren Konvention und den Abzuegen auf die
+   * gesetzliche Rente (Audit C04) waere das eine zweite Wahrheit geworden:
+   * Die Vorschau haette eine andere Luecke gezeigt als die Auswertung.
+   */
+  const vorschau = calculatePensionGapResults(formData);
+  const totalMonthlyIncome = vorschau.einnahmen_monatlich;
+  const monthlyGapPreview = vorschau.monthly_gap;
 
   const handleCalculate = async () => {
     setError(null);
@@ -244,6 +260,18 @@ export default function PensionGapCalculator() {
                   <NumericInput step="0.1" value={formData.assumed_annual_return}
                     onChange={(val) => update("assumed_annual_return", val)} className={inputClass} />
                 </div>
+                {!vorschau.gap_already_covered && (
+                  <p className="text-xs text-slate-600 mt-2">
+                    In heutiger Kaufkraft. Zum Rentenbeginn in{" "}
+                    {vorschau.years_to_retirement}{" "}
+                    {vorschau.years_to_retirement === 1 ? "Jahr" : "Jahren"} sind das{" "}
+                    {new Intl.NumberFormat("de-DE", {
+                      style: "currency",
+                      currency: "EUR",
+                    }).format(vorschau.monthly_gap_at_retirement)}
+                    /Monat.
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -260,21 +288,82 @@ export default function PensionGapCalculator() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-slate-700">
-                  <div className="flex items-center gap-2"><Euro className="w-4 h-4" />Gewünschtes Monatseinkommen (€)</div>
+                <Label htmlFor="pg-bedarf" className="text-sm font-medium text-slate-700">
+                  <div className="flex items-center gap-2"><Euro className="w-4 h-4" />Gewünschtes Monatseinkommen (€), netto in heutiger Kaufkraft</div>
                 </Label>
-                <NumericInput value={formData.desired_monthly_income}
+                <NumericInput id="pg-bedarf" value={formData.desired_monthly_income}
                   onChange={(val) => update("desired_monthly_income", val)}
                   className="bg-blue-50 border-blue-200 focus:border-blue-500 font-semibold" />
+                <p className="text-xs text-slate-500">
+                  Was heute an Kaufkraft gebraucht würde. Die Rechnung schreibt den
+                  Betrag mit der Inflation auf den Rentenbeginn fort.
+                </p>
               </div>
 
               <div className="border-t border-slate-100 pt-4">
-                <div className="text-sm font-medium text-slate-600 mb-4">Erwartete Einnahmen:</div>
+                <div className="text-sm font-medium text-slate-600 mb-4">
+                  Erwartete Einnahmen (netto, je Monat):
+                </div>
+
+                {/*
+                  Audit C04: Dieselbe Subtraktion beantwortet zwei verschiedene
+                  Fragen, je nachdem, in welchem Geldwert die Einnahmen stehen.
+                  Die Rechnung unterstellte stillschweigend heutige Kaufkraft;
+                  wer einen fest zugesagten Betrag eintrug, bekam eine Zahl zu
+                  einer anderen Annahme.
+                */}
+                <div className="mb-4 space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Die Beträge unten sind
+                  </Label>
+                  <SegmentedToggle
+                    ariaLabel="Geldwert der Einnahmen"
+                    value={formData.einnahmen_basis}
+                    onChange={(wert) =>
+                      update("einnahmen_basis", wert === "rentenbeginn" ? "rentenbeginn" : "heute")
+                    }
+                    options={[
+                      { value: "heute", label: "in heutiger Kaufkraft" },
+                      { value: "rentenbeginn", label: "Betrag zum Rentenbeginn" },
+                    ]}
+                  />
+                  <p className="text-xs text-slate-500">
+                    {formData.einnahmen_basis === "heute"
+                      ? "Die Einnahmen steigen bis zum Rentenbeginn mit der Inflation – wie der Bedarf. Gerechnet wird die Differenz von heute, hochgerechnet auf den Rentenbeginn."
+                      : "Feste Zusagen zum Rentenbeginn, die danach nominal gleich bleiben. Nur der Bedarf wird hochgerechnet; im Ruhestand wächst die Lücke, weil die Einnahmen an Kaufkraft verlieren."}
+                  </p>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">Gesetzliche Rente (€/Monat)</Label>
-                    <NumericInput value={formData.expected_statutory_pension}
+                    <Label htmlFor="pg-rente" className="text-sm font-medium text-slate-700">
+                      Gesetzliche Rente (€/Monat)
+                    </Label>
+                    <NumericInput id="pg-rente" value={formData.expected_statutory_pension}
                       onChange={(val) => update("expected_statutory_pension", val)} className={inputClass} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="pg-abzuege"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Abzüge auf die gesetzliche Rente (%)
+                    </Label>
+                    <NumericInput
+                      id="pg-abzuege"
+                      step="0.1"
+                      value={formData.abzuege_gesetzliche_rente_percent}
+                      onChange={(val) =>
+                        update(
+                          "abzuege_gesetzliche_rente_percent",
+                          Math.min(100, Math.max(0, val))
+                        )
+                      }
+                      className={inputClass}
+                    />
+                    <p className="text-xs text-slate-500">
+                      Kranken- und Pflegeversicherung sowie Steuer. Die
+                      Renteninformation der DRV weist brutto aus.
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">Betriebliche Altersvorsorge (€/Monat)</Label>
@@ -293,6 +382,17 @@ export default function PensionGapCalculator() {
                   </div>
                 </div>
               </div>
+
+              {toNum(formData.expected_statutory_pension) > 0 &&
+                toNum(formData.abzuege_gesetzliche_rente_percent) === 0 && (
+                  <p className="text-xs text-amber-700 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    Die gesetzliche Rente gilt hier als Nettobetrag. Die
+                    Renteninformation der DRV ist brutto – ohne Steuern und ohne
+                    Kranken- und Pflegeversicherung. Wird sie ungeprüft
+                    übernommen, fällt die Lücke zu klein aus.
+                  </p>
+                )}
 
               {/* Live-Vorschau */}
               <div className={`rounded-xl p-4 border ${monthlyGapPreview > 0 ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}>

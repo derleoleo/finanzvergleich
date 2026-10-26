@@ -316,6 +316,15 @@ export default function PensionGapDetail() {
                       : ""}
                     . Zielkapital zur Deckung der Lücke bis Alter{" "}
                     {r.withdrawal_end_age ?? 90}.
+                    {/* Audit C04: Ohne die Konvention ist die Lücke nicht
+                        einzuordnen - dieselbe Subtraktion beantwortet zwei
+                        verschiedene Fragen. */}
+                    {r.einnahmen_basis === "rentenbeginn"
+                      ? " Die Einnahmen waren feste Beträge zum Rentenbeginn; ihre Kaufkraft sinkt im Ruhestand."
+                      : " Bedarf und Einnahmen standen in heutiger Kaufkraft und steigen mit der Inflation."}
+                    {r.abzuege_gesetzliche_rente_percent
+                      ? ` Von der gesetzlichen Rente wurden ${r.abzuege_gesetzliche_rente_percent} % für Steuer und Kranken-/Pflegeversicherung abgezogen.`
+                      : " Die gesetzliche Rente galt als Nettobetrag."}
                   </p>
                 </CardContent>
               </Card>

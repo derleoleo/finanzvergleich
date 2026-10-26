@@ -92,3 +92,109 @@ describe("Rentenlücke (F15)", () => {
     expect(r.capital_needed_at_retirement).toBeCloseTo(r.monthly_gap_at_retirement * 276, -3);
   });
 });
+
+describe("Geldwert der Einnahmen (Audit C04)", () => {
+  // Die Probe aus dem Audit: 3.000 EUR Bedarf heute, 2.000 EUR Einnahmen,
+  // 27 Jahre bis zur Rente (Fixture), 2 % Inflation.
+  const probe = (over = {}) =>
+    basis({
+      desired_monthly_income: 3000,
+      expected_statutory_pension: 2000,
+      ...over,
+    });
+
+  it("rechnet mit heutiger Kaufkraft wie bisher", () => {
+    const r = berechneRentenluecke(probe({ einnahmen_basis: "heute" }), heute);
+    expect(r.einnahmen_basis).toBe("heute");
+    // Differenz zuerst, dann hochrechnen: 1.000 EUR x 1,02^27
+    expect(r.monthly_gap).toBe(1000);
+    expect(r.monthly_gap_at_retirement).toBe(Math.round(1000 * 1.02 ** 27));
+  });
+
+  it("rechnet feste Betraege zum Rentenbeginn anders - und sagt es", () => {
+    const r = berechneRentenluecke(probe({ einnahmen_basis: "rentenbeginn" }), heute);
+    expect(r.einnahmen_basis).toBe("rentenbeginn");
+    // Nur der Bedarf steigt: 3.000 x 1,02^27 - 2.000
+    expect(r.monthly_gap_at_retirement).toBe(Math.round(3000 * 1.02 ** 27 - 2000));
+    // In heutiger Kaufkraft werden die Einnahmen abgezinst
+    expect(r.monthly_gap).toBe(Math.round(3000 - 2000 / 1.02 ** 27));
+    // Die Konvention macht den Unterschied, nicht die Subtraktion
+    const heuteBasis = berechneRentenluecke(probe({ einnahmen_basis: "heute" }), heute);
+    expect(r.monthly_gap_at_retirement).toBeGreaterThan(
+      heuteBasis.monthly_gap_at_retirement
+    );
+  });
+
+  it("fordert bei festen Einnahmen mehr Kapital, weil die Luecke waechst", () => {
+    // Im Ruhestand verlieren feste Einnahmen Kaufkraft: Der Bedarf steigt
+    // weiter, die Einnahmen nicht. Eine konstante Rate wuerde das Kapital zu
+    // klein rechnen.
+    const fest = berechneRentenluecke(probe({ einnahmen_basis: "rentenbeginn" }), heute);
+    const mitwachsend = berechneRentenluecke(probe({ einnahmen_basis: "heute" }), heute);
+    expect(fest.capital_needed_at_retirement).toBeGreaterThan(
+      mitwachsend.capital_needed_at_retirement
+    );
+    expect(Number.isFinite(fest.capital_needed_at_retirement)).toBe(true);
+  });
+
+  it("gilt ohne Angabe weiter als heutige Kaufkraft", () => {
+    const r = berechneRentenluecke(probe(), heute);
+    expect(r.einnahmen_basis).toBe("heute");
+  });
+
+  it("entscheidet die Deckung am Rentenbeginn", () => {
+    // Heute reichen die 3.100 EUR, zum Rentenbeginn nicht mehr: Wird die
+    // Deckung am heutigen Betrag geprueft, verschwindet die Luecke zu Unrecht.
+    const r = berechneRentenluecke(
+      probe({ expected_statutory_pension: 3100, einnahmen_basis: "rentenbeginn" }),
+      heute
+    );
+    expect(r.gap_already_covered).toBe(false);
+    expect(r.monthly_gap_at_retirement).toBeGreaterThan(0);
+  });
+});
+
+describe("Abzuege auf die gesetzliche Rente (Audit C04)", () => {
+  it("nimmt die Eingabe ohne Angabe als netto", () => {
+    const r = berechneRentenluecke(basis(), heute);
+    expect(r.abzuege_gesetzliche_rente_percent).toBe(0);
+    expect(r.einnahmen_monatlich).toBe(1500);
+  });
+
+  it("zieht Kranken-, Pflegeversicherung und Steuer ab", () => {
+    // Die Renteninformation der DRV ist brutto - 1.500 EUR brutto sind bei
+    // 12 % Abzuegen 1.320 EUR netto, und die Luecke waechst entsprechend.
+    const r = berechneRentenluecke(
+      basis({ abzuege_gesetzliche_rente_percent: 12 }),
+      heute
+    );
+    expect(r.einnahmen_monatlich).toBe(1320);
+    expect(r.monthly_gap).toBe(3000 - 1320);
+    const ohne = berechneRentenluecke(basis(), heute);
+    expect(r.monthly_savings_needed).toBeGreaterThan(ohne.monthly_savings_needed);
+  });
+
+  it("laesst nur sinnvolle Abzuege zu", () => {
+    expect(
+      berechneRentenluecke(basis({ abzuege_gesetzliche_rente_percent: -5 }), heute)
+        .abzuege_gesetzliche_rente_percent
+    ).toBe(0);
+    expect(
+      berechneRentenluecke(basis({ abzuege_gesetzliche_rente_percent: 150 }), heute)
+        .abzuege_gesetzliche_rente_percent
+    ).toBe(100);
+  });
+
+  it("betrifft nur die gesetzliche Rente", () => {
+    const r = berechneRentenluecke(
+      basis({
+        expected_statutory_pension: 1000,
+        occupational_pension_bav: 500,
+        abzuege_gesetzliche_rente_percent: 20,
+      }),
+      heute
+    );
+    // 1.000 x 0,8 + 500 = 1.300
+    expect(r.einnahmen_monatlich).toBe(1300);
+  });
+});

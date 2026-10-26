@@ -151,6 +151,10 @@ const BESCHRIFTUNGEN: Record<string, string> = {
   monthly_contribution: 'Monatlicher Beitrag',
   assumed_annual_return: 'Angenommene Rendite p. a.',
   inflation_percent: 'Inflation p. a.',
+  // Rentenluecke: Konvention der Einnahmen (Audit C04)
+  einnahmen_basis: 'Geldwert der Einnahmen',
+  abzuege_gesetzliche_rente_percent: 'Abzüge auf die gesetzliche Rente',
+  einnahmen_monatlich: 'Einnahmen nach Abzügen',
   lump_sum: 'Einmalanlage',
   birth_year: 'Geburtsjahr',
   depot_costs_annual: 'Depotkosten p. a.',
@@ -555,6 +559,8 @@ const WERTE: Record<string, string> = {
   gleicher_bruttobeitrag: 'gleicher Bruttobeitrag',
   eur: 'tatsächliche Kosten (€)',
   prozent: 'Effektivkosten (%)',
+  heute: 'in heutiger Kaufkraft',
+  rentenbeginn: 'fester Betrag zum Rentenbeginn',
   net: 'nach Steuern',
   gross: 'vor Steuern',
 };

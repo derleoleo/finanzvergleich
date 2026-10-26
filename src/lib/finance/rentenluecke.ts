@@ -8,10 +8,32 @@
 //   realen Zins (Rendite abzüglich Inflation), nicht mit dem nominalen.
 // - Der Planungshorizont ist eingebbar (Vorgabe: Alter 90).
 //
+// Welche Konvention gilt, sagt `einnahmen_basis` (Audit C04). Vorher war sie
+// unsichtbar: Die Rechnung unterstellte, dass auch die Einnahmen in heutiger
+// Kaufkraft angegeben sind und bis zum Rentenbeginn mit der Inflation steigen.
+// Wer stattdessen einen fest zugesagten Betrag zum Rentenbeginn eintrug, bekam
+// eine Lücke, die zu einer anderen Annahme gehört - bei 3.000 EUR Bedarf,
+// 2.000 EUR Einnahmen, 30 Jahren und 2 % Inflation 1.811 EUR statt 3.434 EUR.
+// Beide Zahlen sind richtig, aber nur eine passt zur Eingabe.
+//
 // Bewusste Vereinfachungen, die sichtbar bleiben müssen:
 // - Steuern auf Entnahmen sind nicht abgebildet; die Lücke versteht sich netto.
-// - Gesetzliche Rente und Betriebsrente werden ohne eigene Dynamik fortgeschrieben.
+//   Für die gesetzliche Rente gibt es `abzuege_gesetzliche_rente_percent`:
+//   Die Renteninformation der DRV weist brutto aus, ohne Steuern und ohne
+//   Kranken- und Pflegeversicherung.
+// - Betriebsrente, Basisrente und Mieteinnahmen werden ohne eigene Dynamik
+//   fortgeschrieben; sie folgen der gewählten Konvention.
 import { calculateMonthlyReturn } from "@/components/shared/TaxCalculations";
+
+/**
+ * In welchem Geldwert stehen die Einnahmen im Formular?
+ *
+ * `heute`: in heutiger Kaufkraft; sie steigen bis zum Rentenbeginn mit der
+ * Inflation (die bisherige, unausgesprochene Annahme).
+ * `rentenbeginn`: fest zugesagte Beträge zum Rentenbeginn, die danach nominal
+ * gleich bleiben - ihre Kaufkraft sinkt also im Ruhestand.
+ */
+export type EinnahmenBasis = 'heute' | 'rentenbeginn';
 
 export type RentenlueckeEingabe = {
   birth_year: number;
@@ -27,6 +49,14 @@ export type RentenlueckeEingabe = {
   assumed_annual_return: number;
   /** Jährliche Teuerung in Prozent. */
   inflation_percent: number;
+  /** Geldwert der Einnahmen; Vorgabe `heute` (Audit C04). */
+  einnahmen_basis?: EinnahmenBasis;
+  /**
+   * Abzüge auf die gesetzliche Rente in Prozent: Kranken- und
+   * Pflegeversicherung sowie Steuer. Vorgabe 0 - dann gilt die Eingabe als
+   * Nettobetrag. Die Renteninformation der DRV ist brutto.
+   */
+  abzuege_gesetzliche_rente_percent?: number;
 };
 
 export type RentenlueckeErgebnis = {
@@ -45,6 +75,12 @@ export type RentenlueckeErgebnis = {
   withdrawal_end_age: number;
   /** Monate, für die das Kapital ab Entnahmebeginn reichen muss. */
   entnahmemonate: number;
+  /** Die Konvention, mit der gerechnet wurde (Audit C04). */
+  einnahmen_basis: EinnahmenBasis;
+  /** Die angesetzten Abzüge auf die gesetzliche Rente, in Prozent. */
+  abzuege_gesetzliche_rente_percent: number;
+  /** Summe der Einnahmen nach Abzügen, wie sie in die Rechnung eingeht. */
+  einnahmen_monatlich: number;
   /**
    * Die Teuerung, mit der tatsächlich gerechnet wurde.
    *
@@ -61,6 +97,40 @@ const zahl = (wert: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
+/**
+ * Barwert einer Luecke, die im Ruhestand waechst.
+ *
+ * Gebraucht nur fuer `einnahmen_basis: 'rentenbeginn'`: Dort bleiben die
+ * Einnahmen nominal gleich, waehrend der Bedarf weiter mit der Inflation
+ * steigt. Die Luecke des Monats m ist also
+ * `Bedarf * (1+i)^(m/12) - Einnahmen`, abgezinst mit dem Nominalzins. Eine
+ * Annuitaet mit konstanter Rate wuerde das Kapital zu klein rechnen.
+ *
+ * Monatsweise und nicht in geschlossener Form, weil die Luecke in den ersten
+ * Jahren noch null sein kann (wenn die Einnahmen anfangs reichen) - ein
+ * geschlossener Ausdruck wuerde dort negative Betraege gegenrechnen.
+ */
+function barwertWachsenderLuecke(args: {
+  bedarfBeiRentenbeginn: number;
+  einnahmenFest: number;
+  inflation: number;
+  nominalzinsJahr: number;
+  monate: number;
+}): number {
+  const monate = Math.max(0, Math.round(args.monate));
+  if (monate === 0) return 0;
+  const iMonat = calculateMonthlyReturn(args.inflation * 100);
+  const zMonat = calculateMonthlyReturn(args.nominalzinsJahr * 100);
+  let barwert = 0;
+  let bedarf = args.bedarfBeiRentenbeginn;
+  for (let m = 1; m <= monate; m++) {
+    const luecke = Math.max(0, bedarf - args.einnahmenFest);
+    barwert += luecke / Math.pow(1 + zMonat, m);
+    bedarf *= 1 + iMonat;
+  }
+  return barwert;
+}
+
 export function berechneRentenluecke(
   eingabe: RentenlueckeEingabe,
   heute: Date = new Date()
@@ -71,20 +141,64 @@ export function berechneRentenluecke(
   const years_to_retirement = Math.max(0, retirement_age - current_age);
   const retirement_reached = years_to_retirement === 0;
 
-  const monthly_gap =
-    zahl(eingabe.desired_monthly_income) -
-    (zahl(eingabe.expected_statutory_pension) +
-      zahl(eingabe.occupational_pension_bav) +
-      zahl(eingabe.basis_rente) +
-      zahl(eingabe.rental_income));
-
   const inflation_percent = zahl(eingabe.inflation_percent);
+  const einnahmen_basis: EinnahmenBasis =
+    eingabe.einnahmen_basis === 'rentenbeginn' ? 'rentenbeginn' : 'heute';
+  const abzuege_gesetzliche_rente_percent = Math.min(
+    100,
+    Math.max(0, zahl(eingabe.abzuege_gesetzliche_rente_percent))
+  );
 
-  if (monthly_gap <= 0) {
+  // Die Renteninformation der DRV weist brutto aus. Wer sie ungeprueft
+  // uebernimmt, rechnet mit einem Netto, das es nicht gibt (Audit C04).
+  const gesetzlicheNetto =
+    zahl(eingabe.expected_statutory_pension) *
+    (1 - abzuege_gesetzliche_rente_percent / 100);
+
+  const einnahmen_monatlich =
+    gesetzlicheNetto +
+    zahl(eingabe.occupational_pension_bav) +
+    zahl(eingabe.basis_rente) +
+    zahl(eingabe.rental_income);
+
+  const bedarf = zahl(eingabe.desired_monthly_income);
+  const inflationFaktor = Math.pow(
+    1 + inflation_percent / 100,
+    years_to_retirement
+  );
+
+  /*
+   * Zwei Konventionen, zwei Rechenwege - und zwar bewusst getrennt:
+   *
+   * `heute`: Bedarf und Einnahmen stehen in derselben Kaufkraft. Die Differenz
+   * wird gebildet und erst dann hochgerechnet. Das ist die bisherige Rechnung;
+   * gespeicherte Faelle bleiben deshalb Zahl fuer Zahl gleich.
+   *
+   * `rentenbeginn`: Die Einnahmen sind feste Betraege zum Rentenbeginn. Dann
+   * darf nur der Bedarf hochgerechnet werden, und die Luecke in heutiger
+   * Kaufkraft ergibt sich umgekehrt durch Abzinsen der Einnahmen - sonst
+   * stuenden in einer Differenz zwei verschiedene Geldwerte.
+   */
+  const monthly_gap =
+    einnahmen_basis === 'heute'
+      ? bedarf - einnahmen_monatlich
+      : bedarf - einnahmen_monatlich / (inflationFaktor || 1);
+  const monthly_gap_at_retirement_roh =
+    einnahmen_basis === 'heute'
+      ? monthly_gap * inflationFaktor
+      : bedarf * inflationFaktor - einnahmen_monatlich;
+
+  // Gedeckt ist die Luecke dann, wenn sie zum Rentenbeginn gedeckt ist. Bei
+  // festen Einnahmen kann sie heute gedeckt aussehen und spaeter doch
+  // auftreten - deshalb entscheidet dieser Zeitpunkt.
+  if (monthly_gap_at_retirement_roh <= 0) {
     return {
       current_age,
       years_to_retirement,
       inflation_percent,
+      einnahmen_basis,
+      abzuege_gesetzliche_rente_percent,
+      einnahmen_monatlich: Math.round(einnahmen_monatlich),
       monthly_gap: 0,
       monthly_gap_at_retirement: 0,
       capital_needed_at_retirement: 0,
@@ -101,9 +215,7 @@ export function berechneRentenluecke(
   const rendite = zahl(eingabe.assumed_annual_return) / 100;
   const inflation = inflation_percent / 100;
 
-  // Die Lücke von heute kostet bei Rentenbeginn mehr
-  const monthly_gap_at_retirement =
-    monthly_gap * Math.pow(1 + inflation, years_to_retirement);
+  const monthly_gap_at_retirement = monthly_gap_at_retirement_roh;
 
   // Realzins nach Fisher; damit bleibt die Kaufkraft der Entnahme erhalten
   const realzinsJahr = inflation > -1 ? (1 + rendite) / (1 + inflation) - 1 : rendite;
@@ -115,10 +227,25 @@ export function berechneRentenluecke(
   const monate_rente = Math.max(1, Math.round((withdrawal_end_age - beginnAlter) * 12));
 
   const capital_needed_at_retirement =
-    Math.abs(realzinsMonat) > 1e-9
-      ? (monthly_gap_at_retirement * (1 - Math.pow(1 + realzinsMonat, -monate_rente))) /
-        realzinsMonat
-      : monthly_gap_at_retirement * monate_rente;
+    einnahmen_basis === 'heute'
+      ? // Reale Verzinsung haelt die Kaufkraft der Entnahme konstant - das
+        // passt, weil in dieser Konvention auch die Einnahmen mit der
+        // Inflation steigen.
+        Math.abs(realzinsMonat) > 1e-9
+        ? (monthly_gap_at_retirement *
+            (1 - Math.pow(1 + realzinsMonat, -monate_rente))) /
+          realzinsMonat
+        : monthly_gap_at_retirement * monate_rente
+      : // Feste Einnahmen verlieren im Ruhestand Kaufkraft: Der Bedarf steigt
+        // weiter, die Einnahmen nicht. Die Luecke waechst also jedes Jahr, und
+        // eine Annuitaet mit konstanter Rate wuerde sie unterschaetzen.
+        barwertWachsenderLuecke({
+          bedarfBeiRentenbeginn: bedarf * inflationFaktor,
+          einnahmenFest: einnahmen_monatlich,
+          inflation,
+          nominalzinsJahr: rendite,
+          monate: monate_rente,
+        });
 
   const future_value_of_existing =
     zahl(eingabe.existing_capital) * Math.pow(1 + rendite, years_to_retirement);
@@ -144,6 +271,9 @@ export function berechneRentenluecke(
     current_age,
     years_to_retirement,
     inflation_percent,
+    einnahmen_basis,
+    abzuege_gesetzliche_rente_percent,
+    einnahmen_monatlich: Math.round(einnahmen_monatlich),
     monthly_gap: Math.round(monthly_gap),
     monthly_gap_at_retirement: Math.round(monthly_gap_at_retirement),
     capital_needed_at_retirement: Math.round(capital_needed_at_retirement),

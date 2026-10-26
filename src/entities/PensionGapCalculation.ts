@@ -21,6 +21,16 @@ export type PensionGapResults = {
    * unbekannt und wird nicht behauptet.
    */
   inflation_percent?: number;
+  /**
+   * In welchem Geldwert die Einnahmen standen (Audit C04): `heute` =
+   * heutige Kaufkraft, steigt mit der Inflation; `rentenbeginn` = fester
+   * Betrag zum Rentenbeginn. Aeltere Faelle: undefined, dort galt `heute`.
+   */
+  einnahmen_basis?: 'heute' | 'rentenbeginn';
+  /** Abzuege auf die gesetzliche Rente in Prozent (KV/PV und Steuer). */
+  abzuege_gesetzliche_rente_percent?: number;
+  /** Einnahmen nach Abzuegen, wie sie in die Rechnung eingingen. */
+  einnahmen_monatlich?: number;
   modell_version?: string;
   bewertet_am?: string;
   rechtsstand?: string;
