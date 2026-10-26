@@ -305,7 +305,17 @@ export default function PensionGapDetail() {
                     </ResponsiveContainer>
                   </div>
                   <p className="text-xs text-slate-500 mt-2">
-                    Annahme: {calculation.assumed_annual_return}% jährliche Rendite. Zielkapital zur Deckung der Lücke bis Alter 90.
+                    {/* Die Teuerung stand hier nicht, obwohl sie die Lücke
+                        hochrechnet (Audit C08). Aeltere Faelle haben den Satz
+                        nicht gespeichert - dann wird er auch nicht behauptet.
+                        Das Endalter kam ebenfalls aus der Luft: Es stand fest
+                        "90", waehrend der Fall ein anderes tragen kann. */}
+                    Annahme: {calculation.assumed_annual_return}% jährliche Rendite
+                    {r.inflation_percent !== undefined
+                      ? `, ${r.inflation_percent}% Inflation`
+                      : ""}
+                    . Zielkapital zur Deckung der Lücke bis Alter{" "}
+                    {r.withdrawal_end_age ?? 90}.
                   </p>
                 </CardContent>
               </Card>

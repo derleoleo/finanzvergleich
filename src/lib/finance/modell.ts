@@ -9,9 +9,20 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-05c" as const;
+export const MODELL_VERSION = "2026-10-26" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-26",
+    aenderung:
+      "Altersvorsorgedepot: Der Aufteilungsvorschlag bleibt bei einem Budget " +
+      "mit Centbeträgen im Rahmen. Vorher wurde der Betrag zuerst auf das " +
+      "Budget begrenzt und danach auf ganze Euro gerundet - bei 29,80 € " +
+      "Budget empfahl der Rechner 30 € und für den zweiten Vertrag blieben " +
+      "-0,20 €. Dasselbe galt für die Spanne gleichwertiger Aufteilungen. " +
+      "Rentenlücke: Gespeicherte Auswertungen tragen zusätzlich die " +
+      "verwendete Teuerung; die Rechenwege bleiben unverändert.",
+  },
   {
     version: "2026-10-05c",
     aenderung:

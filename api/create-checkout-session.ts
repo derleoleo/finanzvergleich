@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
-import { darfAufrufen, zuVieleAufrufe } from "./_drossel.js";
+import { drosselAntwort, pruefeDrossel } from "./_drossel.js";
 import { couponFuerGeworbenen, WERBUNG_STATUS } from "./_werbung.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -45,8 +45,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   );
 
   // Zahlungsvorgaenge in Serie deuten auf Missbrauch.
-  if (!(await darfAufrufen(supabaseAdmin, user.id, "kasse"))) {
-    return res.status(429).json(zuVieleAufrufe("kasse"));
+  const drossel_kasse = await pruefeDrossel(supabaseAdmin, user.id, "kasse");
+  if (drossel_kasse !== "ok") {
+    const a = drosselAntwort(drossel_kasse, "kasse");
+    return res.status(a.status).json(a.koerper);
   }
 
   // Vorhandene stripe_customer_id laden

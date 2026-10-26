@@ -3,6 +3,8 @@
 ## Was hier liegt
 
 - `migrations/` – SQL-Änderungen am Schema, in zeitlicher Reihenfolge.
+- `zugriffsregeln-stand.sql` – Abzug der Zugriffsregeln und Funktionsrechte zum
+  Nachlesen. Keine Migration (siehe unten).
 - `email-templates/` – die Auth-Mailvorlagen. Sie werden **nicht** automatisch
   ausgerollt, sondern im Dashboard unter *Authentication → Emails* eingefügt.
   Erzeugt werden sie von `scripts/generate-email-templates.mjs`.
@@ -17,6 +19,10 @@ Mit CLI (einmalig `npx supabase link --project-ref <ref>`):
 npx supabase db push
 ```
 
+`db push` spielt die Dateien in `migrations/` in Zeitstempelreihenfolge ein.
+Das setzt voraus, dass die Datenbank den Ausgangsstand schon hat – siehe den
+nächsten Abschnitt.
+
 ## Fehlender Ausgangsstand (wichtig)
 
 Das Schema wurde ursprünglich im Dashboard angelegt, nicht per Migration.
@@ -25,12 +31,21 @@ liegen deshalb nur in der Cloud. Folgen: Die Regeln lassen sich nicht im Code
 prüfen, und nach einem Unfall gibt es keine Vorlage zum Wiederherstellen.
 
 **Teilweise nachgeholt am 25.10.2026:** Die Zugriffsregeln und die
-Funktionsrechte stehen jetzt in `migrations/00000000000000_ausgangsstand_rls.sql`.
-Abgezogen wurde über `pg_policies` und `pg_get_functiondef()` im SQL-Editor –
-`supabase db dump` setzt Docker voraus, das hier nicht installiert ist.
+Funktionsrechte stehen jetzt in `zugriffsregeln-stand.sql` – **neben**
+`migrations/`, nicht darin. Abgezogen wurde über `pg_policies` und
+`pg_get_functiondef()` im SQL-Editor – `supabase db dump` setzt Docker voraus,
+das hier nicht installiert ist.
 
-Offen bleiben die **Tabellendefinitionen**. Die sind weniger heikel: Eine
-falsche Spalte fällt im Betrieb auf, eine falsche Zugriffsregel nicht.
+Warum nicht als Migration: Die Datei trug den Zeitstempel 00000000000000 und
+lief damit vor den Tabellen, die sie anfasst. `db push` auf eine leere
+Datenbank brach daran ab (Audit D02). Der Abzug beschreibt einen Stand, er
+stellt ihn nicht her.
+
+Offen bleiben die **Tabellendefinitionen**. Solange sie fehlen, lässt sich aus
+diesem Ordner **keine leere Datenbank aufbauen** – `db push` ist hier der Weg
+für einzelne Änderungen an der bestehenden Datenbank, nicht für einen
+Neuaufbau. Die Lücke ist weniger heikel als falsche Zugriffsregeln: Eine
+fehlende Spalte fällt im Betrieb sofort auf.
 
 Für den vollständigen Abzug (mit Docker):
 

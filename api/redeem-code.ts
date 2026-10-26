@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
-import { darfAufrufen, zuVieleAufrufe } from "./_drossel.js";
+import { drosselAntwort, pruefeDrossel } from "./_drossel.js";
 
 /**
  * Meldungen für den Nutzer. Die Datenbank gibt nur ein Kürzel zurück; der
@@ -51,8 +51,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   );
 
   // Gegen das Durchprobieren von Testcodes.
-  if (!(await darfAufrufen(supabaseAdmin, user.id, "code"))) {
-    return res.status(429).json(zuVieleAufrufe("code"));
+  const drossel_code = await pruefeDrossel(supabaseAdmin, user.id, "code");
+  if (drossel_code !== "ok") {
+    const a = drosselAntwort(drossel_code, "code");
+    return res.status(a.status).json(a.koerper);
   }
 
   // Prüfen, beanspruchen und freischalten in einer Transaktion. Vorher waren

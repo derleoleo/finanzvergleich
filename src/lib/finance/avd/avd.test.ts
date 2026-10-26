@@ -1229,6 +1229,29 @@ describe('Drei Strategien (30 + 1)', () => {
     }
   });
 
+  it('bleibt bei einem Budget mit Cents im Rahmen (C06)', () => {
+    // Frueher wurde erst begrenzt und dann gerundet: Aus 29,80 EUR Budget
+    // wurde ein Vorschlag von 30 EUR, der Zweitvertrag bekam -0,20 EUR.
+    for (const budget of [29.8, 0.4, 149.99, 570.55]) {
+      const r = berechneStrategien({
+        basis: eingabe({ ...basis(), eigenbeitragMonatlich: budget }),
+        zweitvertrag: 'depot',
+      });
+      const o = r.optimum!;
+      expect(o.monatsbeitrag, `${budget}: Vorschlag`).toBeLessThanOrEqual(budget);
+      expect(o.monatsbeitrag).toBeGreaterThanOrEqual(0);
+      expect(o.plateauBis, `${budget}: Plateau-Ende`).toBeLessThanOrEqual(budget);
+      expect(o.plateauVon).toBeGreaterThanOrEqual(0);
+      for (const p of o.stuetzstellen) {
+        expect(p.monatlich, `${budget}: Stuetzstelle`).toBeLessThanOrEqual(budget);
+      }
+      // Der Rest fuer den Zweitvertrag darf nie negativ werden
+      const z = r.strategien[2];
+      expect(z.beitragZweitMonatlich).toBeGreaterThanOrEqual(0);
+      expect(z.beitragAvdMonatlich + z.beitragZweitMonatlich).toBeCloseTo(budget, 6);
+    }
+  });
+
   it('prueft die gesetzlichen Knicke einzeln (B01)', () => {
     // Ein Raster kann sie ueberspringen - und genau dort liegt das Optimum oft.
     const r = berechneStrategien({

@@ -9,7 +9,8 @@
 // - LV/EUR-Modus bei reiner Einmalanlage (kein Beitrag): Abschlusskosten upfront
 //   vom Startkapital abgezogen.
 // - LV/Prozent-Modus: Effektivkosten monatlich vom Kapital; Split Abschluss/Verwaltung
-//   nach einheitlicher Regel (siehe splitLvEffectiveCosts).
+//   im Prozentmodus als Renditeminderung (PRIIPs), ohne Aufteilung in
+//   Abschluss und Verwaltung - die gibt diese Angabe nicht her.
 // - Depot: Ausgabeaufschlag auf Startkapital und jeden Beitrag; Depot- und
 //   Fondskosten monatlich vom Kapital.
 // - Beitragsdynamik (dynamik_percent): der Monatsbeitrag steigt nach jeweils

@@ -16,7 +16,17 @@
 -- `supabase db dump`, und das setzt Docker voraus. Die Regeln sind der
 -- sicherheitsrelevante Teil; eine falsche Spalte fällt im Betrieb auf.
 --
--- Im Supabase SQL-Editor ausführen – oder einfach als Nachweis liegen lassen.
+-- Diese Datei liegt bewusst **nicht** in `migrations/`.
+--
+-- Sie lag dort bis zum 26.10.2026 mit dem Zeitstempel 00000000000000, also vor
+-- allen anderen Migrationen. Damit war die Kette nicht mehr ausführbar: Die
+-- erste Anweisung schaltet die Zeilensicherheit für `api_aufrufe` ein, und
+-- diese Tabelle entsteht erst in der Migration vom 11.10. Auf einer leeren
+-- Datenbank bricht das ab (Audit D02). Für eine bestehende Datenbank, in der
+-- alle Tabellen vorhanden sind, läuft die Datei dagegen durch.
+--
+-- Sie ist also ein Abzug zum Nachlesen und Wiederherstellen, keine Migration:
+-- im Supabase SQL-Editor ausführen – oder einfach als Nachweis liegen lassen.
 
 -- ---------------------------------------------------------------------------
 -- Zeilensicherheit aktiv: 16 Tabellen
@@ -136,10 +146,9 @@ create policy consents_lesen on public.finanzvergleich_consents
   as permissive for select to authenticated
   using ((auth.uid() = user_id));
 
-drop policy if exists versionen_anlegen on public.fall_versionen;
-create policy versionen_anlegen on public.fall_versionen
-  as permissive for insert to authenticated
-  with check ((auth.uid() = user_id));
+-- Kein INSERT: Fassungen entstehen nur über `fassung_anlegen`, weil erst die
+-- Funktion prüft, ob der Fall dem Konto gehört (Audit D01, Migration
+-- 20261026120000).
 
 drop policy if exists versionen_lesen on public.fall_versionen;
 create policy versionen_lesen on public.fall_versionen
@@ -175,7 +184,7 @@ create policy versionen_loeschen on public.fall_versionen
 --   hat_aktives_abo, berechnungen_dieser_monat, pruefe_free_kontingent
 --     -> 20260928090000_free_limit_serverseitig.sql
 --        und 20260929150000_kontingent_zaehler.sql
---   naechste_fallversion   -> 20261003120000_fallversionen.sql
+--   fassung_anlegen        -> 20261026120000_fassung_besitz.sql
 --   code_einloesen         -> 20261004120000_code_einloesung_atomar.sql
 --   drossel_zaehlen        -> 20261011120000_api_drosselung.sql
 --
@@ -186,6 +195,10 @@ create policy versionen_loeschen on public.fall_versionen
 --   drossel_zaehlen            nur service_role  (entscheidet ueber Zugang)
 --   hat_aktives_abo            nur service_role  (siehe 20261025120000)
 --   berechnungen_dieser_monat  nur service_role  (siehe 20261025120000)
---   naechste_fallversion       offen - beschraenkt sich selbst ueber auth.uid()
+--   fassung_anlegen            authenticated - prueft den Fallbesitz selbst
 --   pruefe_free_kontingent     Triggerfunktion, nicht sinnvoll direkt rufbar
+--
+-- Entfallen am 26.10.2026: naechste_fallversion. Sie zaehlte nur die eigenen
+-- Zeilen, waehrend die Eindeutigkeit global gilt - die Nummer konnte also
+-- bereits belegt sein. Jetzt zieht `fassung_anlegen` sie selbst.
 -- ---------------------------------------------------------------------------

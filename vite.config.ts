@@ -13,6 +13,8 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    // Auch die Serverfunktionen: Die Drosselung entscheidet ueber Kosten
+    // und Zugang, ihre Regeln gehoeren nicht nur in einen Kommentar.
+    include: ["src/**/*.test.ts", "api/**/*.test.ts"],
   },
 });

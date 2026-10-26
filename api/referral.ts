@@ -6,7 +6,7 @@
 //         (siehe stripe-webhook.ts).
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
-import { darfAufrufen, zuVieleAufrufe } from "./_drossel.js";
+import { drosselAntwort, pruefeDrossel } from "./_drossel.js";
 import { holeOderErzeugeCode, normalisiereCode, WERBUNG_STATUS } from "./_werbung.js";
 
 const BASIS_URL = "https://www.vorsorgewaage.de";
@@ -43,8 +43,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Den eigenen Code zu lesen ist harmlos; einen fremden einzutragen nicht.
   // Deshalb zwei Budgets - sonst sperrt sich aus, wer die Seite oft oeffnet.
   if (req.method === "GET") {
-    if (!(await darfAufrufen(supabaseAdmin, user.id, "empfehlung"))) {
-      return res.status(429).json(zuVieleAufrufe("empfehlung"));
+    const drossel_empfehlung = await pruefeDrossel(supabaseAdmin, user.id, "empfehlung");
+    if (drossel_empfehlung !== "ok") {
+      const a = drosselAntwort(drossel_empfehlung, "empfehlung");
+      return res.status(a.status).json(a.koerper);
     }
 
     const code = await holeOderErzeugeCode(supabaseAdmin, user.id);
@@ -65,8 +67,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === "POST") {
-    if (!(await darfAufrufen(supabaseAdmin, user.id, "empfehlung_code"))) {
-      return res.status(429).json(zuVieleAufrufe("empfehlung_code"));
+    const drossel_empfehlung_code = await pruefeDrossel(supabaseAdmin, user.id, "empfehlung_code");
+    if (drossel_empfehlung_code !== "ok") {
+      const a = drosselAntwort(drossel_empfehlung_code, "empfehlung_code");
+      return res.status(a.status).json(a.koerper);
     }
     const code = normalisiereCode((req.body as { code?: string })?.code);
     if (!code) return res.status(400).json({ error: "Code fehlt" });

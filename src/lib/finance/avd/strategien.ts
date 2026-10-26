@@ -494,7 +494,11 @@ function sucheOptimum(args: {
   const { ohneDynamik, voll, obergrenze, zweitvertrag, jahre } = args;
   const bewertet = new Map<number, number>();
   const bewerte = (a: number): number => {
-    const punkt = Math.round(Math.min(obergrenze, Math.max(0, a)));
+    // Erst runden, dann begrenzen. Die umgekehrte Reihenfolge hob den Rand
+    // wieder an: Bei 29,80 EUR Budget wurde aus der Obergrenze ein Vorschlag
+    // von 30 EUR, und fuer den Zweitvertrag blieben -0,20 EUR. Der Rand behaelt
+    // so seine Cents, das Raster dazwischen bleibt in ganzen Euro.
+    const punkt = Math.min(obergrenze, Math.max(0, Math.round(a)));
     const vorhanden = bewertet.get(punkt);
     if (vorhanden !== undefined) return vorhanden;
     const k = kombinationRechnen(ohneDynamik, punkt, voll - punkt, zweitvertrag, jahre)
@@ -550,10 +554,33 @@ function sucheOptimum(args: {
    * abgebrochen.
    */
   const haeltToleranz = (a: number) => bewerte(a) >= hoechstes - toleranz;
+
+  /**
+   * Naechster Rasterpunkt nach aussen, innerhalb der Grenzen.
+   *
+   * `null` heisst: Der Rand ist erreicht. Ohne diese Abfrage lief die Schleife
+   * bei einem Budget mit Cents ueber die Grenze hinaus - der naechste Punkt
+   * wurde beim Rechnen auf die Obergrenze zurueckgeholt, hielt die Toleranz
+   * damit zwangslaeufig, und das Plateau endete oberhalb des Budgets.
+   */
+  const nachAussen = (a: number, richtung: 1 | -1): number | null => {
+    const roh = richtung === 1 ? Math.floor(a) + 1 : Math.ceil(a) - 1;
+    const begrenzt = Math.min(obergrenze, Math.max(0, roh));
+    return begrenzt === a ? null : begrenzt;
+  };
+
   let plateauVon = bester;
-  while (plateauVon > 0 && haeltToleranz(plateauVon - 1)) plateauVon--;
+  for (;;) {
+    const naechster = nachAussen(plateauVon, -1);
+    if (naechster === null || !haeltToleranz(naechster)) break;
+    plateauVon = naechster;
+  }
   let plateauBis = bester;
-  while (plateauBis < obergrenze && haeltToleranz(plateauBis + 1)) plateauBis++;
+  for (;;) {
+    const naechster = nachAussen(plateauBis, 1);
+    if (naechster === null || !haeltToleranz(naechster)) break;
+    plateauBis = naechster;
+  }
 
   const stuetzstellen = [...bewertet.entries()]
     .map(([monatlich, endkapital]) => ({ monatlich, endkapital }))

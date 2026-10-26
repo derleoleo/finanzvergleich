@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Resend } from "resend";
 import { ABSENDER, liste, mailLayout } from "./_mail-layout.js";
 import { createClient } from "@supabase/supabase-js";
-import { darfAufrufen, zuVieleAufrufe } from "./_drossel.js";
+import { drosselAntwort, pruefeDrossel } from "./_drossel.js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -25,8 +25,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     process.env.VITE_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
-  if (!(await darfAufrufen(supabaseAdmin, user.id, "willkommensmail"))) {
-    return res.status(429).json(zuVieleAufrufe("willkommensmail"));
+  const drossel_willkommensmail = await pruefeDrossel(supabaseAdmin, user.id, "willkommensmail");
+  if (drossel_willkommensmail !== "ok") {
+    const a = drosselAntwort(drossel_willkommensmail, "willkommensmail");
+    return res.status(a.status).json(a.koerper);
   }
 
   const { error } = await resend.emails.send({

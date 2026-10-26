@@ -15,6 +15,12 @@ export type PensionGapResults = {
   withdrawal_end_age?: number;
   /** Monate, für die das Kapital ab Entnahmebeginn reichen muss (N05). */
   entnahmemonate?: number;
+  /**
+   * Die verwendete Teuerung (Audit C08). Optional, weil Faelle vor dem
+   * 26.10.2026 sie nicht gespeichert haben - fuer die bleibt die Annahme
+   * unbekannt und wird nicht behauptet.
+   */
+  inflation_percent?: number;
   modell_version?: string;
   bewertet_am?: string;
   rechtsstand?: string;

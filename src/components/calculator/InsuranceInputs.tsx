@@ -1,11 +1,10 @@
 // src/components/calculator/InsuranceInputs.tsx
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { Label } from "@/components/ui/label";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
-import { Button } from "@/components/ui/button";
 import { Shield, Percent } from "lucide-react";
 import MultiFundEditor, { type FundEntry } from "./MultiFundEditor";
 
@@ -31,8 +30,6 @@ type Props = {
 
 
 export default function InsuranceInputs({ formData, updateFormData }: Props) {
-  const [showEffectiveDetails, setShowEffectiveDetails] = useState(false);
-
   const contractYears = toNumber(formData.contract_duration_years);
   const contractMonths = Math.max(1, Math.floor(contractYears * 12));
 
@@ -40,7 +37,6 @@ export default function InsuranceInputs({ formData, updateFormData }: Props) {
     formData.life_insurance_acquisition_costs_eur
   );
   const adminMonthlyEur = toNumber(formData.lv_admin_costs_monthly_eur);
-  const effPercent = toNumber(formData.lv_effective_costs_percent);
 
   const actualBreakdown = useMemo(() => {
     if (formData.lv_cost_type !== "eur") return null;
@@ -50,11 +46,6 @@ export default function InsuranceInputs({ formData, updateFormData }: Props) {
       adminMonthly: adminMonthlyEur,
     });
   }, [formData.lv_cost_type, contractMonths, acquisitionEur, adminMonthlyEur]);
-
-  const isShort = contractMonths <= 60;
-  const effectiveSplit = isShort
-    ? { upfront: 0.6, ongoing: 0.4, label: "60/40 (Laufzeit ≤ 5 Jahre)" }
-    : { upfront: 0.7, ongoing: 0.3, label: "70/30 (Standard)" };
 
   return (
     <Card className="border-0 shadow-lg bg-white">
@@ -77,10 +68,7 @@ export default function InsuranceInputs({ formData, updateFormData }: Props) {
             <SegmentedToggle
               ariaLabel="Kostentyp"
               value={formData.lv_cost_type === "percent" ? "percent" : "eur"}
-              onChange={(wert) => {
-                updateFormData("lv_cost_type", wert);
-                if (wert === "percent") setShowEffectiveDetails(false);
-              }}
+              onChange={(wert) => updateFormData("lv_cost_type", wert)}
               options={[
                 { value: "eur", label: "Tatsächliche Kosten (€)" },
                 { value: "percent", label: "Effektivkosten (%)" },
@@ -249,87 +237,24 @@ export default function InsuranceInputs({ formData, updateFormData }: Props) {
                 </p>
               </div>
 
-              {/* Detail-Button */}
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-slate-500">
-                  {showEffectiveDetails ? effectiveSplit.label : ""}
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowEffectiveDetails((v) => !v)}
-                  className="text-slate-700"
-                >
-                  {showEffectiveDetails
-                    ? "Details ausblenden"
-                    : "Details anzeigen"}
-                </Button>
+              {/* Früher stand hier eine Aufteilung in „anfangsnah“ und
+                  „laufend“ (70/30 bzw. 60/40) samt modellierter Zeiträume.
+                  Die Rechnung kennt diese Aufteilung nicht: Im Prozentmodus
+                  zieht sie den Wert als Renditeminderung über die ganze
+                  Laufzeit ab (PRIIPs). Eine Oberfläche, die mehr behauptet,
+                  als gerechnet wird, führt die Beratung in die Irre. */}
+              <div className="rounded-xl border border-slate-200 bg-white p-4 text-xs text-slate-500 space-y-1">
+                <p>
+                  Der Wert wirkt über die ganze Laufzeit als Abschlag auf die
+                  Rendite, nicht als fester Euro-Abzug.
+                </p>
+                <p>
+                  Wie er sich auf Abschluss- und Verwaltungskosten verteilt,
+                  bleibt offen – diese Angabe enthält es nicht. Soll die
+                  Aufteilung in Ergebnis und Grafik erscheinen, geben Sie die
+                  tatsächlichen Kosten in Euro ein.
+                </p>
               </div>
-
-              {showEffectiveDetails && (
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-semibold text-slate-800">
-                      Effektivkosten-Aufteilung (Modell)
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {effectiveSplit.label}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                    <div className="p-3 bg-violet-50 border border-violet-100 rounded-lg">
-                      <div className="text-violet-700 font-medium">
-                        Effektivkosten gesamt
-                      </div>
-                      <div className="mt-1">
-                        <span className="font-semibold">
-                          {effPercent.toFixed(2)}% p.a.
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500 mt-1">
-                        wirkt als Rendite-Abschlag, nicht als fixer €-Abzug.
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                      <div className="text-blue-700 font-medium">
-                        „anfangsnah“ Anteil
-                      </div>
-                      <div className="mt-1">
-                        <span className="font-semibold">
-                          {Math.round(effectiveSplit.upfront * 100)}%
-                        </span>{" "}
-                        <span className="text-slate-600">
-                          (Monat 1–60 modelliert)
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                      <div className="text-slate-700 font-medium">
-                        „laufend“ Anteil
-                      </div>
-                      <div className="mt-1">
-                        <span className="font-semibold">
-                          {Math.round(effectiveSplit.ongoing * 100)}%
-                        </span>{" "}
-                        <span className="text-slate-600">
-                          (über Laufzeit modelliert)
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-slate-500 mt-2">
-                    Hinweis: Diese Aufteilung ist eine Modellierung zur
-                    Visualisierung (70/30 bzw. 60/40), da Effektivkosten als
-                    Rendite-Abschlag angegeben werden.
-                  </p>
-                </div>
-              )}
             </div>
           )}
         </div>

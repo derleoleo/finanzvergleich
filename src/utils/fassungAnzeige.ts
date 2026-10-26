@@ -123,6 +123,7 @@ const BESCHRIFTUNGEN: Record<string, string> = {
   contract_duration_years: 'Laufzeit',
   monthly_contribution: 'Monatlicher Beitrag',
   assumed_annual_return: 'Angenommene Rendite p. a.',
+  inflation_percent: 'Inflation p. a.',
   lump_sum: 'Einmalanlage',
   birth_year: 'Geburtsjahr',
   depot_costs_annual: 'Depotkosten p. a.',

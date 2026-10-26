@@ -70,13 +70,23 @@ function saveDraft(data: FormData) {
   try { localStorage.setItem(DRAFT_KEY, JSON.stringify(data)); } catch { /* ignore */ }
 }
 
-function calculatePensionGapResults(form: FormData) {
+/**
+ * Die wirksamen Eingaben: Formular plus die Teuerung aus den
+ * Voreinstellungen. Letztere stand nirgends im gespeicherten Fall, obwohl sie
+ * jede Zahl beeinflusst (Audit C08) - wer die Voreinstellung spaeter aenderte,
+ * konnte die alte Annahme nicht mehr nachlesen.
+ */
+function wirksameEingaben(form: FormData) {
   const d = UserDefaults.load();
-  return berechneRentenluecke({
+  return {
     ...form,
     withdrawal_end_age: form.withdrawal_end_age,
     inflation_percent: d.inflation_percent,
-  });
+  };
+}
+
+function calculatePensionGapResults(form: FormData) {
+  return berechneRentenluecke(wirksameEingaben(form));
 }
 
 export default function PensionGapCalculator() {
@@ -117,7 +127,7 @@ export default function PensionGapCalculator() {
         fallTabelle: "pension_gap_calculations",
         fallId: newCalc.id,
         name: formData.name || "Rentenlücke",
-        form: formData as unknown as Record<string, unknown>,
+        form: wirksameEingaben(formData) as unknown as Record<string, unknown>,
         results: results as unknown as Record<string, unknown>,
         // Audit O08: dieselbe Reihe, die die Detailseite zeichnet. Ist die
         // Lücke bereits gedeckt, gibt es keinen Sparplan und damit auch

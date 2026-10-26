@@ -59,11 +59,17 @@ export class FallVersion {
   /**
    * Schreibt die nächste Version fest.
    *
-   * Die Nummer kommt aus der Datenbank, nicht aus dem Browser: Zwei offene
-   * Fenster würden sonst dieselbe ziehen. Kollidieren zwei Aufrufe trotzdem,
-   * greift die Eindeutigkeit der Spalte und der zweite Versuch holt die neue
-   * Nummer. Ein Fehlschlag darf das Speichern des Falls nicht scheitern
-   * lassen – die Version ist eine Beigabe, kein Ersatz.
+   * Angelegt wird ausschließlich über `fassung_anlegen` in der Datenbank. Die
+   * Funktion prüft, dass der Fall dem angemeldeten Konto gehört, und zieht die
+   * Nummer selbst. Direktes Einfügen ist seit der Migration vom 26.10.2026
+   * nicht mehr erlaubt: Vorher ließ sich eine Fassung zu einer fremden
+   * Fall-Kennung ablegen, die der Eigentümer nie sah - sein nächstes Speichern
+   * lief dann in die Eindeutigkeitsverletzung (Audit D01).
+   *
+   * Kollidieren zwei gleichzeitige Aufrufe auf demselben Fall, greift die
+   * Eindeutigkeit der Spalte und der zweite Versuch holt die neue Nummer. Ein
+   * Fehlschlag darf das Speichern des Falls nicht scheitern lassen - die
+   * Version ist eine Beigabe, kein Ersatz.
    */
   static async anlegen(eingabe: {
     fallTabelle: FallTabelle
@@ -73,37 +79,17 @@ export class FallVersion {
     results: Record<string, unknown>
     reihen?: unknown
   }): Promise<FallVersionModel | null> {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return null
-
     for (let versuch = 0; versuch < 3; versuch++) {
-      const { data: naechste, error: nummerFehler } = await supabase.rpc(
-        'naechste_fallversion',
-        { p_fall_tabelle: eingabe.fallTabelle, p_fall_id: eingabe.fallId }
-      )
-      if (nummerFehler) {
-        console.error('FallVersion: Nummer nicht ermittelbar', nummerFehler)
-        return null
-      }
+      const { data, error } = await supabase.rpc('fassung_anlegen', {
+        p_fall_tabelle: eingabe.fallTabelle,
+        p_fall_id: eingabe.fallId,
+        p_name: eingabe.name,
+        p_form: eingabe.form,
+        p_results: eingabe.results,
+        p_reihen: eingabe.reihen ?? null,
+      })
 
-      const { data, error } = await supabase
-        .from(TABELLE)
-        .insert({
-          user_id: user.id,
-          fall_tabelle: eingabe.fallTabelle,
-          fall_id: eingabe.fallId,
-          version: (naechste as number) ?? 1,
-          name: eingabe.name,
-          form: eingabe.form,
-          results: eingabe.results,
-          reihen: eingabe.reihen ?? null,
-        })
-        .select()
-        .single()
-
-      if (!error) return data as FallVersionModel
+      if (!error) return (data ?? null) as FallVersionModel | null
       // 23505 = Eindeutigkeitsverletzung: jemand war schneller, neu versuchen
       if (error.code !== '23505') {
         console.error('FallVersion: konnte nicht angelegt werden', error)

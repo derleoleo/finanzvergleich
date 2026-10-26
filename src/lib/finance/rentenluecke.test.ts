@@ -25,6 +25,20 @@ describe("Rentenlücke (F15)", () => {
     expect(r.monthly_savings_needed).toBe(0);
   });
 
+  it("gibt die verwendete Teuerung zurück, auch ohne Lücke (C08)", () => {
+    // Der Satz kommt aus den Voreinstellungen und stand deshalb in keinem
+    // gespeicherten Fall. Wer die Voreinstellung spaeter aenderte, konnte die
+    // Annahme einer alten Berechnung nicht mehr nachlesen.
+    const mit = berechneRentenluecke(basis({ inflation_percent: 2.5 }), heute);
+    expect(mit.inflation_percent).toBe(2.5);
+    const ohne = berechneRentenluecke(
+      basis({ expected_statutory_pension: 3200, inflation_percent: 3 }),
+      heute
+    );
+    expect(ohne.gap_already_covered).toBe(true);
+    expect(ohne.inflation_percent).toBe(3);
+  });
+
   it("rechnet die Lücke mit Inflation auf den Rentenbeginn hoch", () => {
     const r = berechneRentenluecke(basis(), heute);
     expect(r.monthly_gap).toBe(1500);

@@ -45,6 +45,15 @@ export type RentenlueckeErgebnis = {
   withdrawal_end_age: number;
   /** Monate, für die das Kapital ab Entnahmebeginn reichen muss. */
   entnahmemonate: number;
+  /**
+   * Die Teuerung, mit der tatsächlich gerechnet wurde.
+   *
+   * Sie kommt aus den Voreinstellungen, nicht aus dem Formular. Ohne diesen
+   * Rückgabewert stand sie in keinem gespeicherten Fall – wer eine alte
+   * Berechnung später ansah, konnte die wichtigste Annahme nicht nachlesen
+   * (Audit C08).
+   */
+  inflation_percent: number;
 };
 
 const zahl = (wert: unknown): number => {
@@ -69,10 +78,13 @@ export function berechneRentenluecke(
       zahl(eingabe.basis_rente) +
       zahl(eingabe.rental_income));
 
+  const inflation_percent = zahl(eingabe.inflation_percent);
+
   if (monthly_gap <= 0) {
     return {
       current_age,
       years_to_retirement,
+      inflation_percent,
       monthly_gap: 0,
       monthly_gap_at_retirement: 0,
       capital_needed_at_retirement: 0,
@@ -87,7 +99,7 @@ export function berechneRentenluecke(
   }
 
   const rendite = zahl(eingabe.assumed_annual_return) / 100;
-  const inflation = zahl(eingabe.inflation_percent) / 100;
+  const inflation = inflation_percent / 100;
 
   // Die Lücke von heute kostet bei Rentenbeginn mehr
   const monthly_gap_at_retirement =
@@ -131,6 +143,7 @@ export function berechneRentenluecke(
   return {
     current_age,
     years_to_retirement,
+    inflation_percent,
     monthly_gap: Math.round(monthly_gap),
     monthly_gap_at_retirement: Math.round(monthly_gap_at_retirement),
     capital_needed_at_retirement: Math.round(capital_needed_at_retirement),

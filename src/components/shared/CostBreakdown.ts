@@ -1,7 +1,10 @@
 // src/shared/CostBreakdown.ts
 // Single Source of Truth: Kosten-Aufschlüsselung für LV & Depot
 // - LV "actual": Abschluss/Vertrieb gezillmert (max 60 Monate) + Verwaltung monatlich über Laufzeit
-// - LV "effective": 70/30 (Sonderfall <= 60 Monate: 60/40) -> upfront/ongoing verteilt
+// Im Prozentmodus (Effektivkosten) gibt es hier bewusst nichts: Die Rechnung
+// zieht den Wert als Renditeminderung ab und kennt keine Aufteilung in
+// Abschluss und Verwaltung. Eine erfundene Quote stand hier bis 26.10.2026 und
+// widersprach der Engine.
 // - Depot "actual": initial charge (AA) + depot fee monatlich (optional: spreadMonths für AA)
 
 export type CostModel = "lv" | "depot";
@@ -181,124 +184,6 @@ export function buildLvCostBreakdownActual(
 }
 
 /* ------------------------ LV: EFFECTIVE (70/30) ------------------------ */
-
-export type EffectiveShares = {
-  normal: { upfront: number; ongoing: number }; // sum = 1
-  short: { upfront: number; ongoing: number }; // sum = 1
-  shortThresholdMonths: number; // Default: 60
-};
-
-export type BuildLvEffectiveArgs = {
-  contractMonths: number;
-
-  /**
-   * Gesamtkosten über die komplette Laufzeit in €,
-   * die nach 70/30 (bzw. 60/40 bei <= 60 Monaten) verteilt werden.
-   */
-  totalCosts: number;
-
-  /** Verteilmonate für upfront (Default: 60) */
-  upfrontCapMonths?: number;
-
-  /** Default: 70/30 und short <= 60: 60/40 */
-  shares?: Partial<EffectiveShares>;
-};
-
-const DEFAULT_SHARES: EffectiveShares = {
-  normal: { upfront: 0.7, ongoing: 0.3 },
-  short: { upfront: 0.6, ongoing: 0.4 },
-  shortThresholdMonths: 60,
-};
-
-function resolveShares(custom?: Partial<EffectiveShares>): EffectiveShares {
-  const merged: EffectiveShares = {
-    normal: {
-      upfront: custom?.normal?.upfront ?? DEFAULT_SHARES.normal.upfront,
-      ongoing: custom?.normal?.ongoing ?? DEFAULT_SHARES.normal.ongoing,
-    },
-    short: {
-      upfront: custom?.short?.upfront ?? DEFAULT_SHARES.short.upfront,
-      ongoing: custom?.short?.ongoing ?? DEFAULT_SHARES.short.ongoing,
-    },
-    shortThresholdMonths:
-      custom?.shortThresholdMonths ?? DEFAULT_SHARES.shortThresholdMonths,
-  };
-
-  // minimal guard: normalize to sum=1 if user sets weird numbers
-  const fix = (u: number, o: number) => {
-    const s = u + o;
-    if (!Number.isFinite(s) || s <= 0) return { upfront: 0.7, ongoing: 0.3 };
-    return { upfront: u / s, ongoing: o / s };
-  };
-
-  merged.normal = fix(nn(merged.normal.upfront), nn(merged.normal.ongoing));
-  merged.short = fix(nn(merged.short.upfront), nn(merged.short.ongoing));
-  merged.shortThresholdMonths = Math.max(
-    1,
-    Math.floor(merged.shortThresholdMonths)
-  );
-
-  return merged;
-}
-
-/**
- * LV Effektivkosten:
- * - totalCosts wird nach Shares verteilt:
- *   - standard: 70% upfront / 30% ongoing
- *   - bei Laufzeit <= 60 Monate: 60% upfront / 40% ongoing
- * - upfront wird über min(60, Laufzeit) Monate verteilt (oder upfrontCapMonths)
- * - ongoing gleichmäßig über Laufzeit
- */
-export function buildLvCostBreakdownEffective(
-  args: BuildLvEffectiveArgs
-): CostBreakdown {
-  const months = toSafeMonths(args.contractMonths);
-  const totalCosts = nn(args.totalCosts);
-
-  const shares = resolveShares(args.shares);
-  const useShort = months <= shares.shortThresholdMonths;
-
-  const sh = useShort ? shares.short : shares.normal;
-
-  const upfrontTotal = totalCosts * sh.upfront;
-  const ongoingTotal = totalCosts * sh.ongoing;
-
-  const cap = args.upfrontCapMonths ?? 60;
-
-  const upfrontMonths = Math.min(Math.max(1, Math.floor(cap)), months);
-  const upfrontPerMonth = div(upfrontTotal, upfrontMonths);
-
-  const ongoingMonths = months;
-  const ongoingPerMonth = div(ongoingTotal, ongoingMonths);
-
-  const t = buildTotals(months, upfrontPerMonth, ongoingPerMonth);
-
-  return {
-    months,
-    upfront: {
-      total: upfrontTotal,
-      months: upfrontMonths,
-      perMonth: upfrontPerMonth,
-    },
-    ongoing: {
-      total: ongoingTotal,
-      months: ongoingMonths,
-      perMonth: ongoingPerMonth,
-    },
-    totals: {
-      total: totalCosts,
-      perMonthYears1to5: t.perMonthYears1to5,
-      perMonthAfter5y: t.perMonthAfter5y,
-    },
-    meta: {
-      model: "lv",
-      mode: "effective",
-      notes: useShort
-        ? "Effektivkosten (short): 60/40"
-        : "Effektivkosten (normal): 70/30",
-    },
-  };
-}
 
 /* -------------------------- DEPOT: ACTUAL -------------------------- */
 
