@@ -87,22 +87,45 @@ indizes as (
       where rel.relnamespace = 'public'::regnamespace
     )
   group by tablename
+),
+zeilensicherheit as (
+  -- Ob eine Tabelle Zeilensicherheit hat, gehört zum Ausgangsstand.
+  --
+  -- Eine neu aufgebaute Datenbank stünde sonst offen, bis jemand
+  -- `zugriffsregeln-stand.sql` nachschiebt – genau davor warnt der
+  -- Supabase-Editor zu Recht. Die Regeln selbst stehen dort; hier geht es nur
+  -- um den Schalter, und der wird aus der Produktion übernommen statt geraten.
+  select
+    rel.relname as table_name,
+    rel.relrowsecurity as an
+  from pg_class rel
+  where rel.relnamespace = 'public'::regnamespace
+    and rel.relkind = 'r'
 )
 select
   '-- Ausgangsstand der Tabellen, abgezogen am ' ||
   to_char(now(), 'DD.MM.YYYY') || E'.\n' ||
   '-- Erzeugt von supabase/schema-abzug.sql. Nur Struktur, keine Daten.' ||
+  E'\n' ||
+  '-- Die Zugriffsregeln selbst stehen in supabase/zugriffsregeln-stand.sql;' ||
+  E'\n' ||
+  '-- ohne sie ist eine Tabelle mit Zeilensicherheit vollständig gesperrt.' ||
   E'\n\n' ||
   string_agg(
     format(
-      E'create table if not exists public.%I (\n%s\n);\n%s%s',
+      E'create table if not exists public.%I (\n%s\n);\n%s%s%s',
       s.table_name,
       s.spaltenliste,
       coalesce(E'\n' || b.liste || E'\n', ''),
-      coalesce(E'\n' || i.liste || E'\n', '')
+      coalesce(E'\n' || i.liste || E'\n', ''),
+      case when z.an
+        then format(E'\nalter table public.%I enable row level security;\n', s.table_name)
+        else format(E'\n-- Hinweis: public.%I hatte in der Produktion KEINE Zeilensicherheit.\n', s.table_name)
+      end
     ),
     E'\n' order by s.table_name
   ) as ausgangsstand
 from spalten s
 left join bedingungen b on b.table_name = s.table_name
-left join indizes i on i.table_name = s.table_name;
+left join indizes i on i.table_name = s.table_name
+left join zeilensicherheit z on z.table_name = s.table_name;
