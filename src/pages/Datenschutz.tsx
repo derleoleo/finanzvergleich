@@ -147,9 +147,21 @@ export default function Datenschutz() {
             </h2>
             <p>
               Zur Messung der Reichweite setzen wir <span className="font-medium">Umami</span> der
-              Umami Software, Inc. (San Francisco, USA) ein. Die Verarbeitung erfolgt in der
-              EU-Region des Dienstes; mit dem Anbieter besteht ein Auftragsverarbeitungsvertrag
-              einschließlich EU-Standardvertragsklauseln. Die Speicherdauer beträgt sechs Monate.
+              Umami Software, Inc. (San Francisco, USA) ein. Die Analysedaten werden in der
+              EU-Region des Dienstes gespeichert; die Aufbewahrungsdauer beträgt sechs Monate.
+              An Auslieferung, Sicherheit, Betriebsprotokollierung und Unterstützung können
+              Dienste außerhalb der EU beteiligt sein. Mit dem Anbieter besteht ein
+              Auftragsverarbeitungsvertrag einschließlich der EU-Standardvertragsklauseln; seine
+              Unterauftragnehmer sind unter{" "}
+              <a
+                href="https://umami.is/subprocessors"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                umami.is/subprocessors
+              </a>{" "}
+              veröffentlicht.
             </p>
             <p className="mt-2">
               <span className="font-medium">Gemessen wird ausschließlich der öffentliche Teil

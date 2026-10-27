@@ -149,7 +149,9 @@ export default function Compliance() {
                     <td className="p-3 border border-slate-200">
                       Reichweitenmessung der öffentlichen Seiten (cookielos)
                     </td>
-                    <td className="p-3 border border-slate-200">EU-Region</td>
+                    <td className="p-3 border border-slate-200">
+                      EU-Region (Analysedaten); Betriebsdienste ggf. USA
+                    </td>
                     <td className="p-3 border border-slate-200">
                       Art. 6 Abs. 1 lit. f DSGVO, SCC + DPA
                     </td>
@@ -187,7 +189,7 @@ export default function Compliance() {
             </p>
             <p className="mt-2">
               Die Reichweite der <span className="font-medium">öffentlichen</span> Seiten messen
-              wir mit Umami (EU-Region), cookielos und ohne Wiedererkennung über Sitzungen hinweg.
+              wir mit Umami, cookielos und ohne Wiedererkennung über Sitzungen hinweg.
               <span className="font-medium"> In der angemeldeten Anwendung wird nicht gemessen</span> –
               sobald eine Anmeldung besteht, verlässt kein Seitenaufruf und kein Klick das System.
               Das ist technisch durchgesetzt, nicht nur zugesagt: Jede Übermittlung läuft durch
