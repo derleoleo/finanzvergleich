@@ -1,7 +1,6 @@
 import { type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import BrandLogo from "@/components/BrandLogo";
-import { Button } from "@/components/ui/button";
 
 /**
  * Kopf und Fuß für öffentliche Seiten außerhalb der Landingpage.
@@ -31,36 +30,46 @@ export default function GastRahmen({
     <>
       <nav className="border-b border-slate-100 bg-white/90 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" aria-label="Zur Startseite">
+          {/* inline-flex: Ein schlichter Anker baut eine Textzeile um das
+              Logo und macht die Leiste zwei Pixel hoeher als die der
+              Startseite, wo die Marke ohne Anker steht. */}
+          <Link to="/" aria-label="Zur Startseite" className="inline-flex">
             <BrandLogo markClassName="h-8 w-8" textClassName="text-xl text-slate-900" />
           </Link>
-          <div className="flex items-center gap-3">
-            <a
-              href="/ratgeber/"
-              className="hidden sm:block text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-            >
-              Ratgeber
-            </a>
-            <Link
-              to="/pricing"
-              className="hidden sm:block text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-            >
-              Preise
-            </Link>
+          {/*
+            Drei Gruppen, genau wie auf der Landingpage: Marke links,
+            Navigation in der Mitte, Aktionen rechts. Vorher steckten
+            Navigation und Aktionen in einer Gruppe - dann schiebt
+            `justify-between` alles an den rechten Rand, und die Leiste sieht
+            anders aus als die der Startseite.
+          */}
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
+            <a href="/ratgeber/" className="hover:text-slate-900 transition-colors">Ratgeber</a>
+            <Link to="/beispiel" className="hover:text-slate-900 transition-colors">Beispielfall</Link>
+            <Link to="/pricing" className="hover:text-slate-900 transition-colors">Preise</Link>
+          </div>
+          {/* min-h-9: Ohne Aktionen faellt die Leiste auf die Hoehe der
+              Marke zusammen und waere auf der Anmeldeseite vier Pixel
+              niedriger als ueberall sonst. */}
+          <div className="flex items-center gap-3 min-h-9">
             {aktionen && (
-              <Link
-                to="/login"
-                className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-              >
-                Anmelden
-              </Link>
-            )}
-            {aktionen && (
-            <Link to="/login">
-              <Button size="sm" className="bg-brand-cyan hover:bg-brand-blue text-white border-0 font-semibold">
-                Kostenlos starten
-              </Button>
-            </Link>
+              <>
+                <Link
+                  to="/login"
+                  className="hidden md:block text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                  Anmelden
+                </Link>
+                {/* Dieselben Klassen wie in Landing.tsx. Die Button-Komponente
+                    hat eine eigene Hoehe und machte die Leiste zwei Pixel
+                    hoeher als die der Startseite. */}
+                <Link
+                  to="/login"
+                  className="text-sm font-semibold bg-brand-cyan hover:bg-brand-blue text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  Kostenlos starten
+                </Link>
+              </>
             )}
           </div>
         </div>

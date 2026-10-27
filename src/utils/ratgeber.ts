@@ -150,6 +150,30 @@ function messskript(mess: Messstelle | undefined): string {
 
 /** Eine Stelle für das Aussehen aller Ratgeberseiten. */
 const STIL = `
+    /*
+     * Dieselbe Schrift wie in der Anwendung.
+     *
+     * Vorher verlangte die Seite Inter, lud sie aber nie - also wich der
+     * Browser auf die Systemschrift aus. Das war der groesste Teil des
+     * Unterschieds: nicht die Anordnung, sondern die Schrift. Die Dateien
+     * liegen in public/fonts und werden vom Build mitgenommen.
+     */
+    @font-face {
+      font-family: "Inter";
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("/fonts/inter-latin.woff2") format("woff2");
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    @font-face {
+      font-family: "Inter";
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("/fonts/inter-latin-ext.woff2") format("woff2");
+      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
     :root {
       --ink: #1A1A2E; --slate: #445566; --muted: #8899BB;
       --border: #E0E8F5; --surface: #F7F9FF; --tint: #F0F5FF;
@@ -169,17 +193,20 @@ const STIL = `
        Seite. */
     .breit { max-width: 72rem; margin: 0 auto; padding: 0 1.5rem; }
     header { border-bottom: 1px solid var(--border); background: rgba(255,255,255,.9); backdrop-filter: blur(4px); position: sticky; top: 0; z-index: 50; }
+    /* Drei Gruppen wie in der Anwendung: Marke links, Navigation in der
+       Mitte, Aktionen rechts. Mit space-between ueber nur zwei Gruppen klebte
+       die Navigation an den Aktionen - das war der sichtbare Unterschied. */
     header .breit { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.5rem; }
-    .marke { display: flex; align-items: center; gap: .5rem; color: var(--ink); font-weight: 700; font-size: 1.25rem; letter-spacing: -.02em; }
+    .kopfaktionen { display: flex; align-items: center; gap: .75rem; }
+    .marke { display: flex; align-items: center; gap: .5rem; color: var(--ink); font-weight: 700; font-size: 1.25rem; letter-spacing: -.025em; }
     .marke:hover { text-decoration: none; }
     .marke .mark { width: 2rem; height: 2rem; flex: none; }
-    .kopfrechts { display: flex; align-items: center; gap: 1.5rem; }
     .kopfnavi { display: flex; gap: 2rem; font-size: .875rem; }
     .kopfnavi a { color: var(--muted); font-weight: 500; }
     .kopfnavi a:hover { color: var(--ink); text-decoration: none; }
     .anmelden { font-size: .875rem; font-weight: 500; color: var(--slate); }
     .anmelden:hover { color: var(--ink); text-decoration: none; }
-    .knopf.klein { margin-top: 0; padding: .5rem 1rem; font-size: .875rem; background: #2563EB; }
+    .knopf.klein { margin-top: 0; padding: .5rem 1rem; font-size: .875rem; line-height: 1.25rem; background: #2563EB; }
     .knopf.klein:hover { background: #1E3A8A; }
     main { padding: 2.5rem 0 3.5rem; }
     h1 { font-size: 2rem; line-height: 1.25; letter-spacing: -.02em; margin: 0 0 .75rem; }
@@ -218,17 +245,15 @@ const STIL = `
     .liste p { margin: 0; color: var(--slate); font-size: .95rem; }
     footer { border-top: 1px solid var(--border); padding: 2rem 0; color: var(--muted); font-size: .8rem; }
     footer .breit { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; justify-content: center; }
+    /* Dieselbe Schwelle wie in der Anwendung (md): Darunter bleiben Marke
+       und Handlungsaufforderung, Navigation und "Anmelden" weichen. */
+    @media (max-width: 767px) {
+      .kopfnavi, .anmelden { display: none; }
+    }
     @media (max-width: 480px) {
       h1 { font-size: 1.6rem; }
-      .kopfnavi { gap: 1rem; font-size: .85rem; }
-      .kopfrechts { gap: 1rem; }
-      .anmelden { display: none; }
-      .marke { font-size: 1.1rem; }
-      header .breit { padding: .75rem 1rem; }
-      /* Marke plus drei Verweise passen nicht nebeneinander und schoeben die
-         ganze Seite nach rechts. Der Beispielfall steht ohnehin am Ende jedes
-         Beitrags als Handlungsaufforderung. */
-      .kopfnavi .beispiel { display: none; }
+      /* Marke und Polsterung bleiben, wie sie sind: Die Anwendung
+         verkleinert dort nichts, und die Leiste soll gleich aussehen. */
     }
 `;
 
@@ -264,12 +289,12 @@ function rahmen(inhalt: string): string {
         ${BILDMARKE}
         Vorsorgewaage
       </a>
-      <div class="kopfrechts">
-        <nav class="kopfnavi">
-          <a href="${RATGEBER_PFAD}/">Ratgeber</a>
-          <a class="beispiel" href="${DOMAIN}/beispiel">Beispielfall</a>
-          <a href="${DOMAIN}/pricing">Preise</a>
-        </nav>
+      <nav class="kopfnavi">
+        <a href="${RATGEBER_PFAD}/">Ratgeber</a>
+        <a class="beispiel" href="${DOMAIN}/beispiel">Beispielfall</a>
+        <a href="${DOMAIN}/pricing">Preise</a>
+      </nav>
+      <div class="kopfaktionen">
         <a class="anmelden" href="${DOMAIN}/login">Anmelden</a>
         <a class="knopf klein" href="${DOMAIN}/login">Kostenlos starten</a>
       </div>
