@@ -21,8 +21,7 @@ export default function CookieBanner() {
         Diese App verwendet ausschließlich technisch notwendige Browser-Speicher
         (localStorage) für Ihre Sitzung, Ihre Eingaben und – wenn Sie über einen
         Empfehlungslink kommen – den Empfehlungscode. Keine Werbe-Cookies, kein
-        Werbe-Tracking. Auf den öffentlichen Seiten messen wir die Reichweite
-        cookielos, in der Anwendung nicht.{" "}
+        Werbe-Tracking; die Reichweitenmessung läuft cookielos.{" "}
         <Link
           to="/datenschutz"
           className="underline text-slate-200 hover:text-white"

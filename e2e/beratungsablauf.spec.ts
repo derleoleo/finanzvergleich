@@ -54,6 +54,30 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
   test.use(HAT_SITZUNG ? { storageState: SITZUNG } : {});
 
   /**
+   * Den Hinweisbalken vorab wegklicken.
+   *
+   * Er steht fest am unteren Rand und liegt ueber dem Inhalt. Playwright
+   * scrollt ein Element vor dem Klick in den sichtbaren Bereich - landet es
+   * dabei unter dem Balken, faengt der den Klick ab, und der Test laeuft in
+   * seine Zeitgrenze statt in eine Fehlermeldung. Genau das ist passiert:
+   * Ein laengerer Bannertext machte den Balken um eine Zeile hoeher, und der
+   * angemeldete Durchlauf stieg von 38 auf 800 Sekunden.
+   *
+   * `addInitScript` laeuft vor dem Seitenskript bei jeder Navigation - also
+   * erscheint der Balken gar nicht erst. Das bildet auch die Wirklichkeit ab:
+   * Ein Mensch klickt ihn einmal weg und sieht ihn nie wieder.
+   */
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem("rc_cookie_consent", "1");
+      } catch {
+        /* Privater Modus: dann bleibt der Balken, der Test klickt ihn weg. */
+      }
+    });
+  });
+
+  /**
    * Stellt sicher, dass der Rechner bedienbar ist.
    *
    * Nicht über die Adresse raten, ob eine Anmeldung nötig ist: Die Umleitung
