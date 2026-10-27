@@ -14,7 +14,19 @@ import { Button } from "@/components/ui/button";
  * Eine Stelle für alle Gastseiten (Preise, Beispielfall): Zwei Fassungen
  * desselben Fußes würden beim nächsten Rechtslink auseinanderlaufen.
  */
-export default function GastRahmen({ children }: { children: ReactNode }) {
+export default function GastRahmen({
+  children,
+  /**
+   * Anmelden und „Kostenlos starten" anzeigen?
+   *
+   * Auf der Anmeldeseite selbst führen beide dorthin, wo man schon ist –
+   * dort bleibt die Leiste bei Marke und Verweisen.
+   */
+  aktionen = true,
+}: {
+  children: ReactNode;
+  aktionen?: boolean;
+}) {
   return (
     <>
       <nav className="border-b border-slate-100 bg-white/90 backdrop-blur-sm sticky top-0 z-50">
@@ -35,17 +47,21 @@ export default function GastRahmen({ children }: { children: ReactNode }) {
             >
               Preise
             </Link>
-            <Link
-              to="/login"
-              className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-            >
-              Anmelden
-            </Link>
+            {aktionen && (
+              <Link
+                to="/login"
+                className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+              >
+                Anmelden
+              </Link>
+            )}
+            {aktionen && (
             <Link to="/login">
-              <Button size="sm" className="bg-slate-900 hover:bg-slate-800 text-white border-0">
+              <Button size="sm" className="bg-brand-cyan hover:bg-brand-blue text-white border-0 font-semibold">
                 Kostenlos starten
               </Button>
             </Link>
+            )}
           </div>
         </div>
       </nav>

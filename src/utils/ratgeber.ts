@@ -164,12 +164,23 @@ const STIL = `
     a { color: var(--brand); text-decoration: none; }
     a:hover { text-decoration: underline; }
     .huelle { max-width: 44rem; margin: 0 auto; padding: 0 1.25rem; }
-    header { border-bottom: 1px solid var(--border); background: #fff; }
-    header .huelle { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.25rem; }
-    .marke { display: flex; align-items: center; gap: .6rem; color: var(--ink); font-weight: 650; font-size: 1.1rem; }
+    /* Kopf und Fuss laufen so breit wie in der Anwendung (max-w-6xl), der
+       Lesetext bleibt schmal. Sonst wirkt die Leiste wie von einer anderen
+       Seite. */
+    .breit { max-width: 72rem; margin: 0 auto; padding: 0 1.5rem; }
+    header { border-bottom: 1px solid var(--border); background: rgba(255,255,255,.9); backdrop-filter: blur(4px); position: sticky; top: 0; z-index: 50; }
+    header .breit { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.5rem; }
+    .marke { display: flex; align-items: center; gap: .5rem; color: var(--ink); font-weight: 700; font-size: 1.25rem; letter-spacing: -.02em; }
     .marke:hover { text-decoration: none; }
-    .kopfnavi { display: flex; gap: 1.25rem; font-size: .9rem; }
-    .kopfnavi a { color: var(--slate); font-weight: 500; }
+    .marke .mark { width: 2rem; height: 2rem; flex: none; }
+    .kopfrechts { display: flex; align-items: center; gap: 1.5rem; }
+    .kopfnavi { display: flex; gap: 2rem; font-size: .875rem; }
+    .kopfnavi a { color: var(--muted); font-weight: 500; }
+    .kopfnavi a:hover { color: var(--ink); text-decoration: none; }
+    .anmelden { font-size: .875rem; font-weight: 500; color: var(--slate); }
+    .anmelden:hover { color: var(--ink); text-decoration: none; }
+    .knopf.klein { margin-top: 0; padding: .5rem 1rem; font-size: .875rem; background: #2563EB; }
+    .knopf.klein:hover { background: #1E3A8A; }
     main { padding: 2.5rem 0 3.5rem; }
     h1 { font-size: 2rem; line-height: 1.25; letter-spacing: -.02em; margin: 0 0 .75rem; }
     h2 { font-size: 1.3rem; line-height: 1.35; margin: 2.5rem 0 .75rem; letter-spacing: -.01em; }
@@ -206,10 +217,14 @@ const STIL = `
     .liste h2 { margin: 0 0 .35rem; font-size: 1.15rem; }
     .liste p { margin: 0; color: var(--slate); font-size: .95rem; }
     footer { border-top: 1px solid var(--border); padding: 2rem 0; color: var(--muted); font-size: .8rem; }
-    footer .huelle { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; justify-content: center; }
+    footer .breit { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; justify-content: center; }
     @media (max-width: 480px) {
       h1 { font-size: 1.6rem; }
-      .kopfnavi { gap: .9rem; font-size: .85rem; }
+      .kopfnavi { gap: 1rem; font-size: .85rem; }
+      .kopfrechts { gap: 1rem; }
+      .anmelden { display: none; }
+      .marke { font-size: 1.1rem; }
+      header .breit { padding: .75rem 1rem; }
       /* Marke plus drei Verweise passen nicht nebeneinander und schoeben die
          ganze Seite nach rechts. Der Beispielfall steht ohnehin am Ende jedes
          Beitrags als Handlungsaufforderung. */
@@ -217,26 +232,54 @@ const STIL = `
     }
 `;
 
+/**
+ * Die Bildmarke, Zeichen für Zeichen aus `components/BrandLogo.tsx`.
+ *
+ * Vorher stand hier eine selbstgezeichnete Waage – ein anderes Zeichen als
+ * auf allen übrigen Seiten. Auf Seiten, die Vertrauen gewinnen sollen, ist
+ * eine abweichende Marke kein Schönheitsfehler.
+ *
+ * Doppelt gepflegt, weil diese Seiten ohne React entstehen. Ein Test hält
+ * beide Fassungen zusammen: Ändert sich die Komponente, fällt es auf.
+ */
+export const BILDMARKE = `<svg viewBox="0 0 48 48" class="mark" aria-hidden="true">
+  <defs><linearGradient id="vw-schale" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#7faaff"/><stop offset="1" stop-color="#0057ff"/>
+  </linearGradient></defs>
+  <rect x="15" y="42" width="18" height="4" rx="2" fill="#0057ff"/>
+  <rect x="22" y="10" width="4" height="34" rx="2" fill="#0057ff"/>
+  <rect x="8" y="9.5" width="32" height="4" rx="2" fill="#0057ff" transform="rotate(10 24 11.5)"/>
+  <circle cx="24" cy="11.5" r="3.5" fill="#0057ff"/>
+  <path d="M8.2 8.7 L2.5 24 M8.2 8.7 L13.9 24" stroke="#0057ff" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M39.8 14.3 L34.1 30 M39.8 14.3 L45.5 30" stroke="#0057ff" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M1.5 24 H14.9 A6.7 5 0 0 1 1.5 24 Z" fill="#0057ff" opacity="0.55"/>
+  <path d="M33.1 30 H46.5 A6.7 5 0 0 1 33.1 30 Z" fill="url(#vw-schale)"/>
+</svg>`;
+
 /** Kopf und Fuß. Das Impressum muss nach § 5 DDG von jeder Seite erreichbar sein. */
 function rahmen(inhalt: string): string {
   return `<header>
-    <div class="huelle">
+    <div class="breit">
       <a class="marke" href="${DOMAIN}/">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0057FF" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v18"/><path d="M5 8h14"/><path d="M5 8 2 15h6Z"/><path d="M19 8l-3 7h6Z"/></svg>
+        ${BILDMARKE}
         Vorsorgewaage
       </a>
-      <nav class="kopfnavi">
-        <a href="${RATGEBER_PFAD}/">Ratgeber</a>
-        <a class="beispiel" href="${DOMAIN}/beispiel">Beispielfall</a>
-        <a href="${DOMAIN}/pricing">Preise</a>
-      </nav>
+      <div class="kopfrechts">
+        <nav class="kopfnavi">
+          <a href="${RATGEBER_PFAD}/">Ratgeber</a>
+          <a class="beispiel" href="${DOMAIN}/beispiel">Beispielfall</a>
+          <a href="${DOMAIN}/pricing">Preise</a>
+        </nav>
+        <a class="anmelden" href="${DOMAIN}/login">Anmelden</a>
+        <a class="knopf klein" href="${DOMAIN}/login">Kostenlos starten</a>
+      </div>
     </div>
   </header>
   <main class="huelle">
 ${inhalt}
   </main>
   <footer>
-    <div class="huelle">
+    <div class="breit">
       <a href="${DOMAIN}/impressum">Impressum</a>
       <a href="${DOMAIN}/datenschutz">Datenschutz</a>
       <a href="${DOMAIN}/agb">AGB</a>

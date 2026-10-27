@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Consent } from '@/entities/Consent'
 import { LEGAL_DOC_VERSION, REQUIRED_CONSENT_TYPES } from '@/utils/legalVersion'
 import { Button } from '@/components/ui/button'
-import { BrandMark, MARKE } from '@/components/BrandLogo'
+import GastRahmen from '@/components/GastRahmen'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
@@ -82,14 +82,13 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <BrandMark className="w-12 h-12" />
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{MARKE}</h1>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+    // Die Marke steht jetzt in der Leiste oben - zweimal untereinander waere
+    // sie einmal zu viel. "Anmelden" und "Kostenlos starten" fuehren hier
+    // dorthin, wo man schon ist, und bleiben deshalb weg.
+    <GastRahmen aktionen={false}>
+      <div className="bg-slate-50 flex items-center justify-center px-4 py-12 sm:py-16">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-lg p-8">
           {/* Tab-Switch */}
           <div className="flex rounded-xl bg-slate-100 p-1 mb-6">
             <button
@@ -212,14 +211,13 @@ export default function Login() {
           </form>
         </div>
 
-        <div className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-slate-400">
-          <Link to="/impressum" className="hover:text-slate-600">Impressum</Link>
-          <Link to="/datenschutz" className="hover:text-slate-600">Datenschutz</Link>
-          <Link to="/agb" className="hover:text-slate-600">AGB</Link>
-          <Link to="/legal/avv" className="hover:text-slate-600">AVV</Link>
-          <a href="mailto:info@vorsorgewaage.de" className="hover:text-slate-600">Support</a>
+          <p className="mt-6 text-center text-xs text-slate-400">
+            <a href="mailto:info@vorsorgewaage.de" className="hover:text-slate-600">
+              Support
+            </a>
+          </p>
         </div>
       </div>
-    </div>
+    </GastRahmen>
   )
 }
