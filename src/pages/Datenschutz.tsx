@@ -304,7 +304,11 @@ export default function Datenschutz() {
                 Registrierung, danach wird er gelöscht
               </li>
             </ul>
-            <p className="mt-2">Es erfolgt kein Tracking oder Analyse des Nutzerverhaltens.</p>
+            <p className="mt-2">
+              Für diese Speichertechnologien erfolgt keine Analyse Ihres Verhaltens und keine
+              Profilbildung. Zur Reichweitenmessung der öffentlichen Seiten – ohne Cookies und
+              ohne Speicherung auf Ihrem Gerät – siehe Abschnitt 7a.
+            </p>
             <p className="mt-2 text-slate-500">
               Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO i. V. m. § 25 Abs. 2 Nr. 2 TDDDG.
             </p>

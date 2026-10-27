@@ -22,7 +22,7 @@ export const FAQ: FaqEintrag[] = [
   },
   {
     q: "Wo werden meine Daten gespeichert?",
-    a: "Berechnungen und Profildaten werden in Supabase (AWS eu-central-1, Frankfurt) gespeichert. Der Auftragsverarbeitungsvertrag (AVV) gemäß Art. 28 DSGVO ist Bestandteil jedes Nutzungsvertrags. Drittanbieter-Tracking findet nicht statt.",
+    a: "Berechnungen und Profildaten werden in Supabase (AWS eu-central-1, Frankfurt) gespeichert. Der Auftragsverarbeitungsvertrag (AVV) gemäß Art. 28 DSGVO ist Bestandteil jedes Nutzungsvertrags. In der angemeldeten Anwendung findet keine Messung statt; Werbe-Tracking setzen wir nirgends ein.",
   },
   {
     q: "Gibt es eine kostenlose Testversion?",
