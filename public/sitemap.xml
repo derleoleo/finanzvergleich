@@ -3,10 +3,13 @@
   Nur öffentlich erreichbare Seiten.
 
   Alles hinter `PageShell` verlangt eine Anmeldung (ProtectedRoute) – das sind
-  sämtliche Rechner, die Ergebnisliste, das Profil und auch `/pricing`. Solche
-  Adressen gehören nicht in eine Sitemap: Der Crawler landet auf der
-  Anmeldeseite und meldet den Eintrag als Fehler. Die Preise stehen ohnehin auf
-  der Landingpage.
+  sämtliche Rechner, die Ergebnisliste und das Profil. Solche Adressen gehören
+  nicht in eine Sitemap: Der Crawler landet auf der Anmeldeseite und meldet den
+  Eintrag als Fehler.
+
+  `/pricing` war aus demselben Grund draußen. Seit dem 27.10.2026 ist die Seite
+  für Gäste offen (`SmartPricing` in src/App.tsx) und gehört hierher: Sie ist
+  die Zielseite für Suche und Anzeigen.
 
   `lastmod` ist das Datum der letzten tatsächlichen Änderung der jeweiligen
   Seite (Stand aus der Versionsgeschichte, 27.10.2026) – kein Zeitstempel des
@@ -21,6 +24,10 @@
   <url>
     <loc>https://www.vorsorgewaage.de/</loc>
     <lastmod>2026-09-30</lastmod>
+  </url>
+  <url>
+    <loc>https://www.vorsorgewaage.de/pricing</loc>
+    <lastmod>2026-10-27</lastmod>
   </url>
   <url>
     <loc>https://www.vorsorgewaage.de/impressum</loc>

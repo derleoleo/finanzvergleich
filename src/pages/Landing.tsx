@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import BrandLogo, { MARKE } from "@/components/BrandLogo";
+import { FAQ as faq } from "@/utils/faq";
 import {
   KLEINUNTERNEHMER_HINWEIS,
   FREI_BERECHNUNGEN_PRO_MONAT,
@@ -16,28 +17,6 @@ import {
   Calculator, DollarSign, Target, TrendingDown, Wallet, Lock, PiggyBank,
 } from "lucide-react";
 
-const faq = [
-  {
-    q: "Ist Vorsorgewaage für Privatpersonen geeignet?",
-    a: "Nein. Die Plattform richtet sich ausschließlich an Finanz- und Versicherungsberater – also Makler, Vermittler und Agenturen. Ein Vertragsschluss mit Privatpersonen ist ausgeschlossen.",
-  },
-  {
-    q: "Handelt es sich um Finanzberatung?",
-    a: "Nein. Vorsorgewaage erstellt ausschließlich modellhafte Simulationen auf Basis der vom Nutzer eingegebenen Parameter. Es erfolgt keine Finanz-, Steuer- oder Rechtsberatung. Die Ergebnisse sind Werkzeuge zur internen Analyse und Kundenkommunikation.",
-  },
-  {
-    q: "Wo werden meine Daten gespeichert?",
-    a: "Berechnungen und Profildaten werden in Supabase (AWS eu-central-1, Frankfurt) gespeichert. Der Auftragsverarbeitungsvertrag (AVV) gemäß Art. 28 DSGVO ist Bestandteil jedes Nutzungsvertrags. Drittanbieter-Tracking findet nicht statt.",
-  },
-  {
-    q: "Gibt es eine kostenlose Testversion?",
-    a: `Ja. Der Free-Plan ist dauerhaft kostenlos und ohne Zahlungsdaten nutzbar. Er umfasst die grundlegenden Rechner (Fonds-Sparvertrag, Einmalanlage) mit ${FREI_BERECHNUNGEN_PRO_MONAT} Berechnungen pro Monat; PDF-Export ist nicht enthalten. Der Premium-Plan startet mit einem 30-tägigen kostenlosen Testzeitraum. Dafür hinterlegen Sie eine Zahlungsmethode – belastet wird erst nach Ablauf der 30 Tage, eine Kündigung vorher ist kostenlos.`,
-  },
-  {
-    q: "Was passiert nach der Probezeit?",
-    a: "Das Abonnement beginnt automatisch nach Ablauf der Probezeit, sofern nicht vorher über das Kundenportal gekündigt wird. Kündigung ist jederzeit möglich und wirkt zum Ende der laufenden Abrechnungsperiode.",
-  },
-];
 
 function BrowserFrame({ src, alt }: { src: string; alt: string }) {
   return (

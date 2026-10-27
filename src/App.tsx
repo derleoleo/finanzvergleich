@@ -95,6 +95,21 @@ function PageShell({ children }: { children: ReactNode }) {
 /**
  * / → Landing für Gäste, Übersicht für eingeloggte Nutzer
  */
+/**
+ * Preise fuer alle sichtbar.
+ *
+ * Die Seite lag hinter `PageShell` und damit hinter `ProtectedRoute`: Jeder
+ * Besucher, der von einer Anzeige oder aus der Suche auf die Preise kam,
+ * landete im Login. Gaeste bekommen sie jetzt ohne Seitenleiste, Angemeldete
+ * unveraendert im gewohnten Rahmen - dasselbe Muster wie `SmartRoot`.
+ */
+function SmartPricing() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Pricing />;
+  return <PageShell><Pricing /></PageShell>;
+}
+
 function SmartRoot() {
   const { user, loading } = useAuth();
   if (loading) return null;
@@ -301,14 +316,7 @@ export default function App() {
               </PageShell>
             }
           />
-          <Route
-            path="/pricing"
-            element={
-              <PageShell>
-                <Pricing />
-              </PageShell>
-            }
-          />
+          <Route path="/pricing" element={<SmartPricing />} />
 
           {/* Fallback */}
           <Route
