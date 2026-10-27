@@ -87,16 +87,27 @@ export default function Landing() {
             <div className="flex flex-col sm:flex-row gap-3 mb-10">
               <Link
                 to="/login"
-              onClick={() => ereignis("landing_cta")}
+                onClick={() => ereignis("landing_cta")}
                 className="inline-flex items-center justify-center gap-2 bg-brand-cyan hover:bg-brand-blue text-white font-semibold px-6 py-3 rounded-lg transition-colors text-sm"
               >
                 Kostenlos starten <ArrowRight className="w-4 h-4" />
               </Link>
+              {/*
+                Der Beispielfall vor den Preisen: Wer das Werkzeug nicht kennt,
+                will erst sehen, was dabei herauskommt. Die Seite rechnet einen
+                echten Fall und verlangt keine Anmeldung.
+              */}
               <Link
-                to={createPageUrl("Pricing")}
+                to="/beispiel"
                 className="inline-flex items-center justify-center gap-2 border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium px-6 py-3 rounded-lg transition-colors text-sm"
               >
-                Preise ansehen
+                Beispielfall ansehen
+              </Link>
+              <Link
+                to={createPageUrl("Pricing")}
+                className="inline-flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 font-medium px-6 py-3 rounded-lg transition-colors text-sm"
+              >
+                Preise
               </Link>
             </div>
             <div className="flex flex-wrap items-center gap-5 text-xs text-slate-400">

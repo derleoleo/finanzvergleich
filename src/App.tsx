@@ -33,6 +33,7 @@ const FassungAnsicht          = lazy(() => import("@/pages/FassungAnsicht"));
 const AllResults              = lazy(() => import("@/pages/AllResults"));
 const SinglePaymentCalculator = lazy(() => import("@/pages/SinglePaymentCalculator"));
 const SinglePaymentDetail     = lazy(() => import("@/pages/SinglePaymentDetail"));
+const Beispiel                = lazy(() => import("@/pages/Beispiel"));
 const BestAdviceCalculator    = lazy(() => import("@/pages/BestAdviceCalculator"));
 const BestAdviceDetail        = lazy(() => import("@/pages/BestAdviceDetail"));
 const NetPolicyCalculator     = lazy(() => import("@/pages/NetPolicyCalculator"));
@@ -317,6 +318,9 @@ export default function App() {
             }
           />
           <Route path="/pricing" element={<SmartPricing />} />
+
+          {/* Beispielfall - oeffentlich, Zielseite fuer Suche und Anzeigen */}
+          <Route path="/beispiel" element={<Beispiel />} />
 
           {/* Fallback */}
           <Route

@@ -20,6 +20,26 @@ test.describe("Öffentliche Seiten", () => {
     expect(fehler, `Konsolenfehler: ${fehler.join(" | ")}`).toHaveLength(0);
   });
 
+  test("Preise und Beispielfall sind ohne Anmeldung erreichbar", async ({ page }) => {
+    // Beide Seiten lagen hinter der Anmeldung bzw. gab es nicht. Sie sind die
+    // Zielseiten fuer Suche und Anzeigen; eine Umleitung zum Login waere der
+    // teuerste denkbare Fehler.
+    await page.goto("/pricing");
+    await expect(page).toHaveURL(/\/pricing$/);
+    await expect(page.getByRole("button", { name: "Kostenlos starten" }).first())
+      .toBeVisible();
+    await expect(page.getByRole("link", { name: "Impressum" }).first()).toBeVisible();
+    // Das Codefeld braucht eine Sitzung und darf Gaesten nicht erscheinen.
+    await expect(page.getByText(/Zugangscode einlösen/)).toHaveCount(0);
+
+    await page.goto("/beispiel");
+    await expect(page).toHaveURL(/\/beispiel$/);
+    await expect(page.getByRole("heading", { name: /Fondspolice oder Depot/ }))
+      .toBeVisible();
+    // Die Zahlen rechnet die Seite selbst; die Beitragssumme ist fest.
+    await expect(page.getByText(/72\.000/).first()).toBeVisible();
+  });
+
   test("Rechtstexte sind erreichbar", async ({ page }) => {
     for (const [pfad, ueberschrift] of [
       ["/impressum", "Impressum"],
