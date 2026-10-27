@@ -4,6 +4,7 @@ import * as Sentry from "@sentry/react";
 import App from "./App";
 import "./index.css";
 import { ohneParameter } from "./utils/fehlerdiagnose";
+import { messungStarten } from "./utils/messung";
 
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
@@ -34,6 +35,10 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     },
   });
 }
+
+// Trichtermessung auf eigener Infrastruktur; ohne Umgebungsvariablen ein
+// Leerlauf (siehe utils/messung.ts).
+messungStarten();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

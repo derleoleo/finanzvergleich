@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import BrandLogo, { MARKE } from "@/components/BrandLogo";
 import { FAQ as faq } from "@/utils/faq";
+import { ereignis } from "@/utils/messung";
 import {
   KLEINUNTERNEHMER_HINWEIS,
   FREI_BERECHNUNGEN_PRO_MONAT,
@@ -52,11 +53,13 @@ export default function Landing() {
             <Link to={createPageUrl("Pricing")} className="hover:text-slate-900 transition-colors">Preise</Link>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/login" className="hidden md:block text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+            <Link to="/login"
+              onClick={() => ereignis("landing_cta")} className="hidden md:block text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
               Anmelden
             </Link>
             <Link
               to="/login"
+              onClick={() => ereignis("landing_cta")}
               className="text-sm font-semibold bg-brand-cyan hover:bg-brand-blue text-white px-4 py-2 rounded-lg transition-colors"
             >
               Kostenlos starten
@@ -84,6 +87,7 @@ export default function Landing() {
             <div className="flex flex-col sm:flex-row gap-3 mb-10">
               <Link
                 to="/login"
+              onClick={() => ereignis("landing_cta")}
                 className="inline-flex items-center justify-center gap-2 bg-brand-cyan hover:bg-brand-blue text-white font-semibold px-6 py-3 rounded-lg transition-colors text-sm"
               >
                 Kostenlos starten <ArrowRight className="w-4 h-4" />
@@ -326,10 +330,11 @@ export default function Landing() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
-              "DSGVO-konform – kein Tracking, keine Werbedaten",
+              "DSGVO-konform – keine Werbe-Tracker, keine Daten an Dritte",
               "AVV (Art. 28 DSGVO) ist Vertragsbestandteil",
               "Datenhaltung in der EU (Frankfurt, AWS eu-central-1)",
               "Kein Drittanbieter-Tracking (kein Google Analytics, kein Facebook Pixel)",
+              "Reichweitenmessung auf eigenem Server, cookielos und ohne Personenbezug",
               "Technische und organisatorische Maßnahmen (TOM) dokumentiert",
               "Subprozessoren transparent gelistet (Supabase, Vercel, Stripe, Resend)",
             ].map((item) => (
@@ -503,6 +508,7 @@ export default function Landing() {
           </p>
           <Link
             to="/login"
+              onClick={() => ereignis("landing_cta")}
             className="inline-flex items-center gap-2 bg-white text-brand-blue hover:bg-blue-50 font-bold px-8 py-3.5 rounded-xl transition-colors"
           >
             Kostenlos starten <ArrowRight className="w-4 h-4" />

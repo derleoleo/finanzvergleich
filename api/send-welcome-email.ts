@@ -51,7 +51,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ],
       knopf: { text: "Zur App", url: "https://www.vorsorgewaage.de" },
       fusszeile:
-        "Im kostenlosen Plan sind drei Berechnungen pro Monat enthalten. Für den Premium-Test hinterlegen Sie eine Zahlungsmethode; berechnet wird erst nach Ablauf der 30 Tage.",
+        "Im kostenlosen Plan sind drei Berechnungen pro Monat enthalten. Für den Premium-Test hinterlegen Sie eine Zahlungsmethode; berechnet wird erst nach Ablauf der 30 Tage. " +
+        // Das Empfehlungsprogramm war bisher nur ueber einen eingeklappten
+        // Knopf in der Seitenleiste zu finden und wurde in keiner Mail
+        // erwaehnt. Ein Satz an der Stelle, an der ohnehin ueber den Zugang
+        // gesprochen wird, kostet nichts.
+        "Übrigens: Unter „Weiterempfehlen“ in der Seitenleiste finden Sie Ihren persönlichen Empfehlungslink – wer darüber Premium abschließt, spart bei der ersten Rechnung, und Sie sparen bei Ihrer.",
     }),
   });
 

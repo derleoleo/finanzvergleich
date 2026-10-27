@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { ereignis } from '@/utils/messung'
 import { supabase } from '@/lib/supabase'
 import { Consent } from '@/entities/Consent'
 import { LEGAL_DOC_VERSION, REQUIRED_CONSENT_TYPES } from '@/utils/legalVersion'
@@ -60,6 +61,7 @@ export default function Login() {
           }
           navigate('/')
         } else {
+          ereignis('registrierung_abgeschlossen')
           setSuccessMessage('Registrierung erfolgreich! Bitte überprüfe deine E-Mails und bestätige dein Konto.')
         }
       }

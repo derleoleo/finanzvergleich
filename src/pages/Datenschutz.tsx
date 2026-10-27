@@ -142,6 +142,36 @@ export default function Datenschutz() {
           </section>
 
           <section>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">
+              7a. Reichweitenmessung
+            </h2>
+            <p>
+              Zur Messung der Reichweite unserer öffentlichen Seiten setzen wir die freie
+              Software <span className="font-medium">Umami</span> ein, die wir auf eigener
+              Infrastruktur betreiben. Es findet keine Übermittlung an Dritte statt.
+            </p>
+            <p className="mt-2">
+              Die Messung arbeitet <span className="font-medium">ohne Cookies</span> und ohne
+              Kennungen, die auf Ihrem Gerät gespeichert werden. Eine Einwilligung nach
+              § 25 TDDDG ist deshalb nicht erforderlich. Erfasst werden die aufgerufene
+              Seite, die verweisende Adresse, Browser- und Betriebssystemfamilie, Land sowie
+              Zeitpunkt. Die IP-Adresse wird zur Ermittlung des Landes verarbeitet und nicht
+              gespeichert.
+            </p>
+            <p className="mt-2">
+              Zusätzlich zählen wir einzelne Schritte innerhalb des Anmeldevorgangs
+              (z. B. „Registrierung abgeschlossen", „Berechnung gespeichert"). Diese Zählung
+              enthält keine Nutzerkennung, keine E-Mail-Adresse und keine Inhalte Ihrer
+              Berechnungen – sie sagt nur, dass ein Schritt stattgefunden hat. Eine
+              Zuordnung zu Ihrer Person ist uns damit nicht möglich.
+            </p>
+            <p className="mt-2 text-slate-500">
+              Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der
+              bedarfsgerechten Gestaltung unseres Angebots).
+            </p>
+          </section>
+
+          <section>
             <h2 className="text-lg font-semibold text-slate-900 mb-3">8. Fehlerdiagnose (Sentry)</h2>
             <p>
               Zur Erkennung und Behebung technischer Fehler setzen wir den Dienst Sentry ein:

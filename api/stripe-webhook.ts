@@ -202,6 +202,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               "BestAdvice-Analyse, Rentenlücke, Entnahmeplan und Altersvorsorgedepot",
               "PDF-Export mit Ihrem Logo und Berater-Profil",
             ]),
+            // Der Moment, in dem ueber das Weiterzahlen entschieden wird, ist
+            // der beste fuer diesen Hinweis - das Abo wird dadurch guenstiger.
+            "Wenn Sie bleiben: Unter „Weiterempfehlen“ in der Seitenleiste liegt Ihr Empfehlungslink. Für jeden Kollegen, der darüber Premium abschließt, wird Ihr eigenes Abo günstiger.",
           ],
           knopf: { text: "Abo verwalten", url: "https://www.vorsorgewaage.de/pricing" },
         }),

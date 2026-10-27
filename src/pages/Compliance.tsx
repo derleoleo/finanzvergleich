@@ -140,11 +140,20 @@ export default function Compliance() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">Kein Tracking, keine Werbung</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">
+              Keine Werbe-Tracker, keine Daten an Dritte
+            </h2>
             <p>
               Diese Plattform verwendet keine Analyse-Tools von Drittanbietern (kein Google Analytics,
-              kein Facebook Pixel, kein Hotjar). Es werden ausschließlich technisch notwendige Cookies
-              und Session-Daten verarbeitet.
+              kein Facebook Pixel, kein Hotjar) und gibt keine Nutzungsdaten an Dritte weiter.
+              Es werden ausschließlich technisch notwendige Cookies und Session-Daten verarbeitet.
+            </p>
+            <p className="mt-2">
+              Die Reichweite unserer öffentlichen Seiten messen wir mit einer auf eigener
+              Infrastruktur betriebenen Software (Umami): ohne Cookies, ohne Kennungen auf Ihrem
+              Gerät und ohne Personenbezug. Einzelne Schritte im Anmeldevorgang werden gezählt,
+              ohne Nutzerkennung und ohne Inhalte Ihrer Berechnungen. Einzelheiten im
+              Datenschutzhinweis, Abschnitt 7a.
             </p>
           </section>
 

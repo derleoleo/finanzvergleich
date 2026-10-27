@@ -2,7 +2,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import BrandLogo from "@/components/BrandLogo";
-import { Check, Zap, Loader2, Tag } from "lucide-react";
+import { ereignis } from "@/utils/messung";
+import { Check, Zap, Loader2, Tag, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Consent } from "@/entities/Consent";
@@ -122,6 +123,10 @@ export default function Pricing() {
   const [codeSuccess, setCodeSuccess] = useState(false);
 
   useEffect(() => {
+    ereignis("preise_gesehen");
+  }, []);
+
+  useEffect(() => {
     if (searchParams.get("checkout") === "success") {
       const timer = setTimeout(() => refreshSubscription(), 2000);
       return () => clearTimeout(timer);
@@ -134,6 +139,7 @@ export default function Pricing() {
     if (!session || !priceId) return;
     setLoadingCheckout(true);
     try {
+      ereignis("kasse_gestartet");
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: {
@@ -153,6 +159,7 @@ export default function Pricing() {
 
   const handleUpgradeClick = async () => {
     if (!session) return;
+    ereignis("upgrade_geklickt");
 
     if (consentChecked && consentOkCached) {
       await handleCheckout();
@@ -447,6 +454,28 @@ export default function Pricing() {
               <li>Kein PDF-Export</li>
               <li>Dauerhaft kostenlos, keine Zahlungsdaten nötig</li>
             </ul>
+          </div>
+        )}
+
+        {/*
+          Weiterempfehlung: Das Programm ist serverseitig fertig, war aber nur
+          ueber einen eingeklappten Knopf in der Seitenleiste zu finden. Hier
+          steht es an der Stelle, an der ueber Geld gesprochen wird.
+        */}
+        {!istGast && (
+          <div className="mt-8 bg-white rounded-2xl border border-slate-200 p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Users className="w-4 h-4 text-slate-500" />
+              <h3 className="text-sm font-semibold text-slate-700">
+                Weiterempfehlen und sparen
+              </h3>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">
+              Ihr persönlicher Empfehlungslink liegt in der Seitenleiste unter
+              „Weiterempfehlen“. Wer darüber Premium abschließt, spart bei der ersten
+              Rechnung – und Sie bekommen den Rabatt auf Ihr laufendes Abo, sobald die
+              erste Zahlung eingegangen ist.
+            </p>
           </div>
         )}
 

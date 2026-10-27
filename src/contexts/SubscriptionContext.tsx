@@ -8,6 +8,7 @@ import {
 } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { ereignis } from "@/utils/messung";
 
 type Plan = "free" | "professional" | "business";
 
@@ -122,6 +123,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const incrementCalculationCount = useCallback(() => {
     setTotalCalculationCount((n) => n + 1);
     setMonthlyCalculationCount((n) => n + 1);
+    // Die eine Stelle, durch die jede gespeicherte Berechnung laeuft - egal
+    // aus welchem Rechner. Gemeldet wird nur, dass es passiert ist.
+    ereignis("berechnung_gespeichert");
   }, []);
 
   return (
