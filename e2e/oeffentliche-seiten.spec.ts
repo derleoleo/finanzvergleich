@@ -40,6 +40,34 @@ test.describe("Öffentliche Seiten", () => {
     await expect(page.getByText(/72\.000/).first()).toBeVisible();
   });
 
+  test("Der Ratgeber ist statisch und traegt eigene Metadaten", async ({ page }) => {
+    // Der ganze Grund fuer das Ratgeber-Plugin: eigener Title, eigene
+    // Description, eigenes Canonical. Liefert Vercel stattdessen die SPA aus,
+    // faellt genau das hier auf.
+    await page.goto("/ratgeber/");
+    await expect(page).toHaveTitle(/^Ratgeber – Vorsorgewaage$/);
+
+    const beitrag = page.getByRole("link", { name: /Grenzförderquote/ }).first();
+    await expect(beitrag).toBeVisible();
+    await beitrag.click();
+
+    await expect(page).toHaveURL(/\/ratgeber\/grenzfoerderquote-altersvorsorgedepot\/$/);
+    await expect(page).toHaveTitle(/^Grenzförderquote beim Altersvorsorgedepot/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      "https://www.vorsorgewaage.de/ratgeber/grenzfoerderquote-altersvorsorgedepot/",
+    );
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+      "content",
+      /Grundzulage im Altersvorsorgedepot/,
+    );
+    // Eine Zahl aus der nachgerechneten Tabelle - sie steht im ausgelieferten
+    // HTML, nicht erst nach dem Ausfuehren von JavaScript.
+    await expect(page.getByText("250,0 %")).toBeVisible();
+    // § 5 DDG: von jeder Seite erreichbar.
+    await expect(page.getByRole("link", { name: "Impressum" })).toBeVisible();
+  });
+
   test("Rechtstexte sind erreichbar", async ({ page }) => {
     for (const [pfad, ueberschrift] of [
       ["/impressum", "Impressum"],

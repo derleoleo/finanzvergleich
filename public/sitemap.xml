@@ -16,6 +16,11 @@
   letzten Deployments. Ein fortgeschriebenes Datum ohne inhaltliche Änderung
   entwertet die Angabe.
 
+  Der Ratgeber unter `/ratgeber/` entsteht beim Bauen aus `ratgeber/*.md`
+  (siehe src/utils/ratgeber.ts) – es sind echte statische Dateien, keine
+  Adressen der Anwendung. Ein Test stellt sicher, dass jeder Beitrag hier
+  steht: src/utils/ratgeber.test.ts.
+
   `changefreq` und `priority` fehlen bewusst: Google wertet beide seit Jahren
   nicht aus. Beim Ändern einer Rechtsseite hier das Datum mitziehen – dasselbe
   gilt für LEGAL_DOC_VERSION in src/utils/legalVersion.ts.
@@ -23,7 +28,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.vorsorgewaage.de/</loc>
-    <lastmod>2026-09-30</lastmod>
+    <lastmod>2026-10-27</lastmod>
+  </url>
+  <url>
+    <loc>https://www.vorsorgewaage.de/ratgeber/</loc>
+    <lastmod>2026-10-27</lastmod>
+  </url>
+  <url>
+    <loc>https://www.vorsorgewaage.de/ratgeber/grenzfoerderquote-altersvorsorgedepot/</loc>
+    <lastmod>2026-10-27</lastmod>
   </url>
   <url>
     <loc>https://www.vorsorgewaage.de/beispiel</loc>
@@ -39,7 +52,7 @@
   </url>
   <url>
     <loc>https://www.vorsorgewaage.de/datenschutz</loc>
-    <lastmod>2026-10-25</lastmod>
+    <lastmod>2026-10-27</lastmod>
   </url>
   <url>
     <loc>https://www.vorsorgewaage.de/agb</loc>
@@ -51,6 +64,6 @@
   </url>
   <url>
     <loc>https://www.vorsorgewaage.de/compliance</loc>
-    <lastmod>2026-09-30</lastmod>
+    <lastmod>2026-10-27</lastmod>
   </url>
 </urlset>

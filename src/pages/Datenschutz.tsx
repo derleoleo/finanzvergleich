@@ -165,8 +165,8 @@ export default function Datenschutz() {
             </p>
             <p className="mt-2">
               <span className="font-medium">Gemessen wird ausschließlich der öffentliche Teil
-              dieser Seite</span> – Startseite, Beispielfall, Preise, Anmeldeseite und die
-              Rechtstexte. Sobald Sie angemeldet sind, findet keine Messung mehr statt: In der
+              dieser Seite</span> – Startseite, Beispielfall, Ratgeber, Preise, Anmeldeseite
+              und die Rechtstexte. Sobald Sie angemeldet sind, findet keine Messung mehr statt: In der
               Anwendung selbst wird kein Seitenaufruf und kein Klick an den Anbieter übermittelt.
             </p>
             <p className="mt-2">

@@ -50,6 +50,9 @@ export default function Landing() {
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
             <a href="#funktionen" className="hover:text-slate-900 transition-colors">Funktionen</a>
             <a href="#rechner" className="hover:text-slate-900 transition-colors">Rechner</a>
+            {/* Der Ratgeber liegt als statische Seite neben der Anwendung,
+                deshalb ein echter Verweis statt eines Router-Links. */}
+            <a href="/ratgeber/" className="hover:text-slate-900 transition-colors">Ratgeber</a>
             <Link to={createPageUrl("Pricing")} className="hover:text-slate-900 transition-colors">Preise</Link>
           </div>
           <div className="flex items-center gap-3">
@@ -532,6 +535,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <BrandLogo className="opacity-60" markClassName="h-7 w-7" textClassName="text-lg text-white" />
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-xs">
+            <a href="/ratgeber/" className="hover:text-white transition-colors">Ratgeber</a>
             <Link to="/impressum" className="hover:text-white transition-colors">Impressum</Link>
             <Link to="/datenschutz" className="hover:text-white transition-colors">Datenschutz</Link>
             <Link to="/agb" className="hover:text-white transition-colors">AGB</Link>

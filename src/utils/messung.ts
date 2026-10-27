@@ -43,6 +43,8 @@
 // Ohne gesetzte Umgebungsvariablen tut dieses Modul gar nichts. Die Anwendung
 // läuft also unverändert weiter, solange keine Zählstelle existiert.
 
+import { ERLAUBTE_PARAMETER_SET } from "./messparameter";
+
 const BASIS = import.meta.env.VITE_UMAMI_URL as string | undefined;
 const SEITE = import.meta.env.VITE_UMAMI_WEBSITE_ID as string | undefined;
 
@@ -94,22 +96,6 @@ export function messungAngemeldet(wert: boolean): void {
   angemeldet = wert;
 }
 
-/**
- * Abfrageteile, die mitgesendet werden dürfen.
- *
- * Eine Positivliste, keine Sperrliste: Alles Unbekannte fällt weg. Eine
- * Sperrliste müsste bei jedem neuen Parameter nachgezogen werden und wäre beim
- * nächsten `?mandant=` still undicht. Erlaubt ist nur, woher ein Besuch kommt –
- * das braucht die Kampagnenauswertung, und es sagt nichts über einen Mandanten.
- */
-const ERLAUBTE_PARAMETER = new Set([
-  "utm_source",
-  "utm_medium",
-  "utm_campaign",
-  "utm_content",
-  "utm_term",
-  "ref",
-]);
 
 /**
  * Entfernt alles aus einer Adresse, was nicht hinausgehen darf: fremde
@@ -125,7 +111,7 @@ export function bereinigteAdresse(adresse: string): string {
     const url = new URL(adresse, "https://www.vorsorgewaage.de");
     const behalten = new URLSearchParams();
     url.searchParams.forEach((wert, name) => {
-      if (ERLAUBTE_PARAMETER.has(name.toLowerCase())) behalten.append(name, wert);
+      if (ERLAUBTE_PARAMETER_SET.has(name.toLowerCase())) behalten.append(name, wert);
     });
     const frage = behalten.toString();
     const pfad = `${url.pathname}${frage ? `?${frage}` : ""}`;
