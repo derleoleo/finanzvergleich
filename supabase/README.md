@@ -111,11 +111,23 @@ where u.email in ('<E2E_EMAIL>', '<eigenes Konto>')
 on conflict (user_id) do update
   set plan = excluded.plan,
       status = excluded.status,
-      stripe_subscription_id = null,
       current_period_end = excluded.current_period_end,
       cancel_at_period_end = false,
-      updated_at = now();
+      updated_at = now()
+  where subscriptions.stripe_subscription_id is null;
 ```
+
+**Die letzte Zeile ist wichtig, seit es echte Abos gibt** (erster Live-Kauf am
+27.10.2026). Hat eines dieser Konten inzwischen selbst bezahlt, trägt seine
+Zeile eine `stripe_subscription_id`. Ohne die Sperre läge darüber ein
+erfundenes „trialing" über zehn Jahre – und es war vorher sogar schlimmer: Die
+frühere Fassung setzte `stripe_subscription_id = null` und hätte die Zeile vom
+echten Abo gelöst. `stripe_customer_id` bleibt in jedem Fall unberührt, denn
+über die findet der Webhook seine Zeile bei Verlängerung und Kündigung
+(`api/stripe-webhook.ts`).
+
+Ein Konto mit echtem Abo braucht die Zeile ohnehin nicht: Es hat Premium
+bereits über Stripe.
 
 Das ferne Enddatum ist Absicht: `hat_aktives_abo()` prüft bei Zeilen ohne
 Stripe-Abo das Datum. Ein ablaufender Testzugang ließe den Durchlauf irgendwann
