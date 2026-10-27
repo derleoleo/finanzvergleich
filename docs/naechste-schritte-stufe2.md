@@ -16,11 +16,31 @@ Stufe 2 hat angefangen.
 | Keine strukturierten Daten | `SoftwareApplication` + `FAQPage` |
 | Sitemap unvollständig | zehn Einträge |
 
-**Stufe 2 — begonnen:** Ratgeber-Infrastruktur steht (`src/utils/ratgeber.ts`,
-Plugin in `vite.config.ts`), Beitrag 1 von 4 ist geschrieben und gegen die
-Engine geprüft.
+**Stufe 2 — abgeschlossen (27.10.2026).** Ratgeber-Infrastruktur steht
+(`src/utils/ratgeber.ts`, Plugin in `vite.config.ts`), alle vier Beiträge sind
+geschrieben und ihre Zahlen werden bei jedem Testlauf gegen die Engine
+nachgerechnet:
 
-## Der nächste Block (2–3 Stunden)
+| Beitrag | Kern |
+|---|---|
+| Grenzförderquote | Die Zulagen-Grenzquote halbiert sich bei 360 € – die Gesamtförderungskurve verdeckt das |
+| Riester-Bestand | Förderregime und Produktmantel sind zwei Entscheidungen; die Kopplung ist unwiderruflich |
+| Was im Todesfall bleibt | In der Ansparphase liegt der geförderte Vertrag vorn; der Bruch kommt mit der Verrentung |
+| Begründungspflicht § 61 VVG | Sechs offene Rechtsfragen, im Extremfall 25.912 € Unterschied im selben Fall |
+
+Die gemeinsame Linie hat sich erst beim Schreiben gezeigt und ist besser als
+die geplante: **Förderung bindet, freies Kapital nicht.**
+
+Nicht mehr offen aus dem Block unten: Punkte 1 und 2 sind erledigt.
+
+## Was als Nächstes ansteht
+
+Stufe 2 ist fertig; die Reihenfolge darunter ist überholt und bleibt nur als
+Beleg stehen. Der nächste sinnvolle Schritt ist **Stufe 3 (Partner)** – und
+davor die vier Wochen Messung, die der Plan verlangt, bevor Reichweite gekauft
+wird.
+
+## Erledigt: der Block vom 27.10. (2–3 Stunden)
 
 Reihenfolge nach Wirkung. Punkt 1 ist der eigentliche Auftrag, 2 und 3 sind
 Zugabe, falls Zeit bleibt.
