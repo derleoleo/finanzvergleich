@@ -1,45 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Nur öffentlich erreichbare Seiten.
+
+  Alles hinter `PageShell` verlangt eine Anmeldung (ProtectedRoute) – das sind
+  sämtliche Rechner, die Ergebnisliste, das Profil und auch `/pricing`. Solche
+  Adressen gehören nicht in eine Sitemap: Der Crawler landet auf der
+  Anmeldeseite und meldet den Eintrag als Fehler. Die Preise stehen ohnehin auf
+  der Landingpage.
+
+  `lastmod` ist das Datum der letzten tatsächlichen Änderung der jeweiligen
+  Seite (Stand aus der Versionsgeschichte, 27.10.2026) – kein Zeitstempel des
+  letzten Deployments. Ein fortgeschriebenes Datum ohne inhaltliche Änderung
+  entwertet die Angabe.
+
+  `changefreq` und `priority` fehlen bewusst: Google wertet beide seit Jahren
+  nicht aus. Beim Ändern einer Rechtsseite hier das Datum mitziehen – dasselbe
+  gilt für LEGAL_DOC_VERSION in src/utils/legalVersion.ts.
+-->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.vorsorgewaage.de/</loc>
-    <lastmod>2026-09-28</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://www.vorsorgewaage.de/pricing</loc>
-    <lastmod>2026-09-28</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <lastmod>2026-09-30</lastmod>
   </url>
   <url>
     <loc>https://www.vorsorgewaage.de/impressum</loc>
     <lastmod>2026-09-28</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
   </url>
   <url>
     <loc>https://www.vorsorgewaage.de/datenschutz</loc>
-    <lastmod>2026-09-28</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
+    <lastmod>2026-10-25</lastmod>
   </url>
   <url>
     <loc>https://www.vorsorgewaage.de/agb</loc>
-    <lastmod>2026-09-28</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
+    <lastmod>2026-09-21</lastmod>
   </url>
   <url>
     <loc>https://www.vorsorgewaage.de/legal/avv</loc>
     <lastmod>2026-09-28</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
   </url>
   <url>
     <loc>https://www.vorsorgewaage.de/compliance</loc>
-    <lastmod>2026-09-28</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
+    <lastmod>2026-09-30</lastmod>
   </url>
 </urlset>
