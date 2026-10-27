@@ -5,6 +5,8 @@
 - `migrations/` – SQL-Änderungen am Schema, in zeitlicher Reihenfolge.
 - `zugriffsregeln-stand.sql` – Abzug der Zugriffsregeln und Funktionsrechte zum
   Nachlesen. Keine Migration (siehe unten).
+- `schema-abzug.sql` – Abfrage, die das DDL der Tabellen erzeugt. Liefert den
+  fehlenden Ausgangsstand ohne Docker (siehe unten).
 - `email-templates/` – die Auth-Mailvorlagen. Sie werden **nicht** automatisch
   ausgerollt, sondern im Dashboard unter *Authentication → Emails* eingefügt.
   Erzeugt werden sie von `scripts/generate-email-templates.mjs`.
@@ -46,6 +48,24 @@ diesem Ordner **keine leere Datenbank aufbauen** – `db push` ist hier der Weg
 für einzelne Änderungen an der bestehenden Datenbank, nicht für einen
 Neuaufbau. Die Lücke ist weniger heikel als falsche Zugriffsregeln: Eine
 fehlende Spalte fällt im Betrieb sofort auf.
+
+**Ohne Docker gibt es jetzt einen Weg:** `schema-abzug.sql` lässt die Datenbank
+ihr eigenes DDL erzeugen – Spalten mit Typ und Vorgabewert, Schlüssel, CHECK-
+Bedingungen und Indizes. Die Abfrage im SQL-Editor ausführen, die **eine**
+Ergebniszelle vollständig kopieren und als
+`migrations/00000000000001_ausgangsstand_tabellen.sql` ablegen. Der Zeitstempel
+muss der kleinste im Ordner sein, damit der Ausgangsstand vor allem anderen
+läuft.
+
+Geprüft ist die Abfrage gegen ein echtes Postgres (pglite) in zwei Stufen: DDL
+erzeugen, dann in eine leere Datenbank einspielen. Spalten, Schlüssel und
+Indizes stimmen danach überein. Was sie nicht liefert: Daten, Rollen und
+Schlüsselmaterial – nur Struktur. Zugriffsregeln stehen in
+`zugriffsregeln-stand.sql`, Funktionen in ihren eigenen Migrationen.
+
+**Der Nachweis fehlt weiter, bis es einmal gelaufen ist.** Ein Ausgangsstand,
+der nie gegen eine leere Datenbank gespielt wurde, ist eine Behauptung. Dafür
+ein Wegwerf-Projekt oder ein lokales Supabase nehmen, nicht die Produktion.
 
 Für den vollständigen Abzug (mit Docker):
 

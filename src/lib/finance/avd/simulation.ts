@@ -98,6 +98,14 @@ export type AvdEingabe = {
    * und den Hinterbliebenen bleibt nichts (siehe todesfall.ts).
    */
   rentengarantiezeitJahre?: number;
+  /**
+   * Persoenlicher Steuersatz der Hinterbliebenen, als Dezimalanteil.
+   *
+   * Eine Hinterbliebenenrente versteuert der Empfaenger, nicht der
+   * Verstorbene. Ohne Angabe rechnet der Todesfall mit dem Satz des Sparers
+   * und sagt das als Annahme - frueher tat er es stillschweigend.
+   */
+  steuersatzHinterbliebene?: number;
   kvStatusImAlter: 'pflicht' | 'freiwillig' | 'privat';
 
   // Vergleich
@@ -179,6 +187,12 @@ export type AuszahlErgebnis = {
   kleinbetragsrenteMoeglich: boolean;
   kvBeitrag: number;
   steuerProMonat: number;
+  /**
+   * Anteil des gefoerderten Kapitals an der Leistung. Der Todesfall braucht
+   * ihn, um die garantierte Restrente mit dem Steuersatz der Hinterbliebenen
+   * zu rechnen, ohne die Aufteilung ein zweites Mal herzuleiten.
+   */
+  anteilGefoerdert: number;
 };
 
 export type DepotVergleich = {
@@ -734,6 +748,44 @@ function nachSteuerKapital(
 }
 
 /**
+ * Steuer auf eine laufende Leistung aus dem Vertrag, pro Monat.
+ *
+ * Eigene Funktion, weil zwei Beteiligte dieselbe Rente versteuern koennen: der
+ * Sparer in der Auszahlphase und - innerhalb einer Rentengarantiezeit - die
+ * Hinterbliebenen, dann aber mit *ihrem* Steuersatz (siehe todesfall.ts). Zwei
+ * Rechenwege fuer dieselbe Frage waeren genau die Doppelung, aus der in diesem
+ * Projekt schon mehrere Abweichungen entstanden sind.
+ *
+ * Der gefoerderte Teil ist voll nachgelagert steuerpflichtig
+ * (§ 22 Nr. 5 S. 1 EStG), der ungefoerderte je Flag mit dem Ertragsanteil oder
+ * nach dem Halbeinkuenfteverfahren. Der Werbungskosten-Pauschbetrag mindert
+ * die Bemessungsgrundlage (§ 9a S. 1 Nr. 3 EStG).
+ */
+export function steuerAufRente(args: {
+  monatsrenteBrutto: number;
+  anteilGefoerdert: number;
+  steuersatz: number;
+  auszahlungsbeginnAlter: number;
+  flags?: RechtsFlags;
+}): number {
+  const flags = args.flags ?? RECHTS_FLAGS_DEFAULT;
+  const brutto = Math.max(0, args.monatsrenteBrutto || 0);
+  const satz = Math.max(0, args.steuersatz || 0);
+  const anteilGef = Math.min(1, Math.max(0, args.anteilGefoerdert));
+
+  const steuerGef = brutto * anteilGef * satz;
+  const renteUngef = brutto * (1 - anteilGef);
+  const steuerUngef =
+    flags.ungefoerderterTeilBesteuerung === 'ertragsanteil'
+      ? renteUngef * ertragsanteilFuer(args.auszahlungsbeginnAlter) * satz
+      : renteUngef * 0.5 * satz;
+  const wkEntlastung =
+    (Math.min(GESETZ.WERBUNGSKOSTEN_PAUSCHBETRAG_RENTE, brutto * 12) * satz) / 12;
+
+  return Math.max(0, steuerGef + steuerUngef - wkEntlastung);
+}
+
+/**
  * Auszahlphase. Der geförderte Teil ist voll nachgelagert steuerpflichtig
  * (§ 22 Nr. 5 S. 1 EStG) – ohne Teilfreistellung, ohne Abgeltungsteuer.
  * Der ungeförderte Teil wird je nach Flag mit dem Ertragsanteil oder nach
@@ -777,20 +829,13 @@ export function berechneAuszahlung(
     monatsrenteBrutto = monatlicheEntnahme(restkapital, rMonat, monate);
   }
 
-  // Steuer auf die laufende Leistung
-  const renteGef = monatsrenteBrutto * anteilGef;
-  const renteUngef = monatsrenteBrutto * (1 - anteilGef);
-  const steuerGef = renteGef * steuersatz;
-  const steuerUngef =
-    flags.ungefoerderterTeilBesteuerung === 'ertragsanteil'
-      ? renteUngef * ertragsanteilFuer(e.auszahlungsbeginnAlter) * steuersatz
-      : renteUngef * 0.5 * steuersatz;
-  // Werbungskosten-Pauschbetrag mindert die Bemessungsgrundlage (§ 9a S. 1 Nr. 3)
-  const wkEntlastung =
-    (Math.min(GESETZ.WERBUNGSKOSTEN_PAUSCHBETRAG_RENTE, monatsrenteBrutto * 12) *
-      steuersatz) /
-    12;
-  const steuerProMonat = Math.max(0, steuerGef + steuerUngef - wkEntlastung);
+  const steuerProMonat = steuerAufRente({
+    monatsrenteBrutto,
+    anteilGefoerdert: anteilGef,
+    steuersatz,
+    auszahlungsbeginnAlter: e.auszahlungsbeginnAlter,
+    flags,
+  });
 
   // KV/PV: Pflichtversicherte in der KVdR zahlen auf private Altersvorsorge nichts
   const kvBeitrag =
@@ -812,6 +857,7 @@ export function berechneAuszahlung(
       monatsrenteBrutto > 0 && monatsrenteBrutto <= kleinbetragsgrenze,
     kvBeitrag,
     steuerProMonat,
+    anteilGefoerdert: anteilGef,
   };
 }
 

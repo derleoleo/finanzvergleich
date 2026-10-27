@@ -119,6 +119,21 @@ export type RechtsFlags = {
    * Gegenannahme, dass das Depot wie ein freies Depot behandelt wird.
    */
   todesfallErtraegeBesteuerung: 'persoenlich' | 'abgeltung';
+  /**
+   * Zaehlen beantragte, aber noch nicht gutgeschriebene Zulagen zum
+   * Rueckzahlungsbetrag?
+   *
+   * § 93 Abs. 1 S. 1 EStG knuepft an die "auf das ausgezahlte
+   * Altersvorsorgevermoegen entfallenden" Zulagen an. Was nie gutgeschrieben
+   * wurde, steckt nicht im ausgezahlten Vermoegen - es flieszt schlicht nicht
+   * mehr zu. Deshalb Vorgabe `true`: nur Zugeflossenes zurueckfordern. Bei
+   * `false` zaehlt der ganze Anspruch, die strengere Lesart.
+   *
+   * Die Steuerermaeszigung aus dem Sonderausgabenabzug ist davon unberuehrt:
+   * Sie hat der Steuerpflichtige erhalten, unabhaengig vom Vertrag
+   * (§ 10a Abs. 4 EStG).
+   */
+  todesfallRueckforderungNurZugeflossen: boolean;
 };
 
 export const RECHTS_FLAGS_DEFAULT: RechtsFlags = {
@@ -127,6 +142,7 @@ export const RECHTS_FLAGS_DEFAULT: RechtsFlags = {
   ungefoerderterTeilBesteuerung: 'ertragsanteil', // BMF-FAQ-Wortlaut
   todesfallRueckforderungAnteilig: true, // Gesetzeswortlaut
   todesfallErtraegeBesteuerung: 'persoenlich', // § 22 Nr. 5 EStG
+  todesfallRueckforderungNurZugeflossen: true, // Gesetzeswortlaut
 };
 
 /** Reine Modellannahmen (keine Rechtsfragen), zentral änderbar. */

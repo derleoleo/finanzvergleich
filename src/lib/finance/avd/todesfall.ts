@@ -37,6 +37,7 @@ import {
   RECHTS_FLAGS_DEFAULT,
   type RechtsFlags,
 } from './config';
+import { steuerAufRente } from './simulation';
 import type { AvdEingabe, AvdErgebnis, Hinweis, JahresZeile } from './simulation';
 
 /** Mindestlaufzeit und Mindestalter des Halbeinkünfteverfahrens (§ 20 Abs. 1 Nr. 6 S. 2). */
@@ -190,6 +191,32 @@ function variante(args: {
   };
 }
 
+/**
+ * Der Rückzahlungsbetrag nach § 93 Abs. 1 EStG.
+ *
+ * Zulagen nur, soweit sie gutgeschrieben wurden: Beantragte, aber noch nicht
+ * zugeflossene Zulagen stecken nicht im ausgezahlten Vermögen – sie fließen
+ * nur nicht mehr zu. Die Steuerermäßigung dagegen hat der Steuerpflichtige
+ * erhalten, unabhängig vom Vertrag (§ 10a Abs. 4 EStG), und zählt immer.
+ * Umschaltbar über `todesfallRueckforderungNurZugeflossen`.
+ */
+function rueckzahlungsbetrag(
+  summen: ReturnType<typeof summenBis>,
+  flags: RechtsFlags,
+  phase: 'anspar' | 'auszahl'
+): number {
+  // In der Auszahlphase ist der Unterschied gegenstandslos: Bis zum
+  // Auszahlungsbeginn sind alle verzoegerten Zulagen gutgeschrieben - die
+  // Simulation bucht die Nachzuegler dort ausdruecklich ein. Nur ein Tod
+  // *waehrend* der Ansparphase kann einen beantragten, noch nicht
+  // zugeflossenen Anspruch offen lassen.
+  const zulagen =
+    phase === 'auszahl' || !flags.todesfallRueckforderungNurZugeflossen
+      ? summen.zulagenAnspruch
+      : summen.zulagenZugeflossen;
+  return zulagen + summen.erstattung;
+}
+
 /** Kumulierte Werte der Jahreszeilen bis einschließlich `index`. */
 function summenBis(jahre: JahresZeile[], index: number) {
   let zulagenAnspruch = 0;
@@ -211,8 +238,6 @@ function summenBis(jahre: JahresZeile[], index: number) {
     erstattung,
     eigenzahlungGef,
     eigenUngef,
-    /** § 93 Abs. 1 EStG: Zulagen plus festgestellte Steuerermäßigungen. */
-    foerderung: zulagenAnspruch + erstattung,
   };
 }
 
@@ -298,7 +323,7 @@ export function berechneTodesfallSzenarien(args: {
       const sonstige = variante({
         kapitalGefoerdert: zeile.kapitalGefoerdert,
         kapitalUngefoerdert: zeile.kapitalUngefoerdert,
-        rueckforderung: summen.foerderung,
+        rueckforderung: rueckzahlungsbetrag(summen, flags, 'anspar'),
         steuer,
       });
 
@@ -309,7 +334,7 @@ export function berechneTodesfallSzenarien(args: {
         steuer: 0,
       });
 
-      if (summen.foerderung + steuer > ehegatte.kapitalGesamt) {
+      if (rueckzahlungsbetrag(summen, flags, 'anspar') + steuer > ehegatte.kapitalGesamt) {
         hinweise.push({
           art: 'warnung',
           text: 'Rückforderung und Steuer übersteigen hier das Vertragsvermögen. Das ist möglich, weil die Steuererstattung auch dann zurückzuzahlen ist, wenn sie nie in den Vertrag eingezahlt wurde – an sonstige Erben geht dann nichts, und der Rest ist aus dem übrigen Nachlass zu tragen.',
@@ -327,7 +352,9 @@ export function berechneTodesfallSzenarien(args: {
       if (zulagenOffen > 0.5) {
         hinweise.push({
           art: 'info',
-          text: `Zulagen über ${Math.round(zulagenOffen).toLocaleString('de-DE')} € waren zum Todeszeitpunkt beantragt, aber noch nicht gutgeschrieben. Sie erhöhen das Kapital nicht mehr, zählen aber zum Rückzahlungsbetrag.`,
+          text: flags.todesfallRueckforderungNurZugeflossen
+            ? `Zulagen über ${Math.round(zulagenOffen).toLocaleString('de-DE')} € waren zum Todeszeitpunkt beantragt, aber noch nicht gutgeschrieben. Sie fließen nicht mehr zu und werden auch nicht zurückgefordert – der Rückzahlungsbetrag umfasst nur, was im Vertrag angekommen ist (§ 93 Abs. 1 S. 1 EStG).`
+            : `Zulagen über ${Math.round(zulagenOffen).toLocaleString('de-DE')} € waren beantragt, aber noch nicht gutgeschrieben. Sie erhöhen das Kapital nicht mehr, zählen hier aber zum Rückzahlungsbetrag – die strengere Lesart.`,
         });
       }
 
@@ -418,7 +445,32 @@ export function berechneTodesfallSzenarien(args: {
     if (e.auszahlform === 'leibrente') {
       const endeGarantie = e.auszahlungsbeginnAlter + garantieJahre;
       const restMonate = Math.max(0, Math.round((endeGarantie - alter) * 12));
-      const barwert = barwertRaten(r.auszahlung.monatsrenteNetto, rMonatVertrag, restMonate);
+
+      /*
+       * Die garantierte Restrente versteuern die Hinterbliebenen, nicht der
+       * Verstorbene.
+       *
+       * Vorher trug der Barwert `monatsrenteNetto` - also die Rente nach dem
+       * Steuersatz und dem Krankenversicherungsstatus des Sparers. Beides
+       * gehoert dem Empfaenger. Ohne eigene Angabe bleibt es beim Satz des
+       * Sparers, aber als benannte Annahme.
+       */
+      const satzHinterbliebene =
+        e.steuersatzHinterbliebene != null && e.steuersatzHinterbliebene >= 0
+          ? e.steuersatzHinterbliebene
+          : steuersatz;
+      const steuerHinterbliebene = steuerAufRente({
+        monatsrenteBrutto: r.auszahlung.monatsrenteBrutto,
+        anteilGefoerdert: r.auszahlung.anteilGefoerdert,
+        steuersatz: satzHinterbliebene,
+        auszahlungsbeginnAlter: e.auszahlungsbeginnAlter,
+        flags,
+      });
+      const renteNettoHinterbliebene = Math.max(
+        0,
+        r.auszahlung.monatsrenteBrutto - steuerHinterbliebene
+      );
+      const barwert = barwertRaten(renteNettoHinterbliebene, rMonatVertrag, restMonate);
 
       if (garantieJahre === 0) {
         hinweise.push({
@@ -433,11 +485,19 @@ export function berechneTodesfallSzenarien(args: {
       } else {
         hinweise.push({
           art: 'info',
-          text: `Innerhalb der Garantiezeit laufen noch ${Math.round(restMonate)} Raten von ${Math.round(r.auszahlung.monatsrenteNetto).toLocaleString('de-DE')} € netto. Gezeigt ist ihr Barwert; an Ehegatten und kindergeldberechtigte Kinder ist die Hinterbliebenenrente förderunschädlich (§ 93 Abs. 1 S. 4 Buchst. a EStG). Für andere Empfänger ist nicht geklärt, ob die Förderung zurückzuzahlen ist – die Rechnung zieht dafür nichts ab.`,
+          text: `Innerhalb der Garantiezeit laufen noch ${Math.round(restMonate)} Raten von ${Math.round(renteNettoHinterbliebene).toLocaleString('de-DE')} € netto. Gezeigt ist ihr Barwert; an Ehegatten und kindergeldberechtigte Kinder ist die Hinterbliebenenrente förderunschädlich (§ 93 Abs. 1 S. 4 Buchst. a EStG). Für andere Empfänger ist nicht geklärt, ob die Förderung zurückzuzahlen ist – die Rechnung zieht dafür nichts ab.`,
         });
         hinweise.push({
           art: 'warnung',
           text: 'Eine Rentengarantiezeit senkt in echten Tarifen den Rentenfaktor. Die Rechnung ändert den eingegebenen Faktor bewusst nicht – er sollte zur gewählten Garantiezeit passen, sonst steht die Rente zu hoch.',
+        });
+        hinweise.push({
+          art: e.steuersatzHinterbliebene != null ? 'info' : 'warnung',
+          text:
+            (e.steuersatzHinterbliebene != null
+              ? `Die Restrente ist mit ${Math.round(satzHinterbliebene * 100)} % Steuersatz der Hinterbliebenen gerechnet.`
+              : `Ohne eigene Angabe ist die Restrente mit dem Steuersatz des Sparers gerechnet (${Math.round(satzHinterbliebene * 100)} %). Der Empfänger versteuert sie aber nach seiner eigenen Lage.`) +
+            ' Kranken- und Pflegeversicherung der Hinterbliebenen sind nicht abgebildet; bei freiwillig Versicherten mindern sie die Rente zusätzlich.',
         });
       }
 
@@ -492,9 +552,10 @@ export function berechneTodesfallSzenarien(args: {
     // Anteilig, weil § 93 Abs. 1 S. 1 EStG von den „auf den Auszahlungsbetrag
     // entfallenden" Zulagen spricht: Die bereits gezahlten Raten waren
     // planmäßige Leistungen und wurden laufend besteuert.
+    const foerderungGesamt = rueckzahlungsbetrag(summenGesamt, flags, 'auszahl');
     const rueckforderung = flags.todesfallRueckforderungAnteilig
-      ? summenGesamt.foerderung * verbrauchtAnteil
-      : summenGesamt.foerderung;
+      ? foerderungGesamt * verbrauchtAnteil
+      : foerderungGesamt;
 
     const steuer = steuerSchaedlich({
       kapitalGefoerdert: restGef,

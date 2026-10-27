@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import { simuliereAvd, type AvdEingabe } from './simulation';
 import { berechneTodesfallSzenarien, barwertRaten, restkapitalNachRaten } from './todesfall';
+import { RECHTS_FLAGS_DEFAULT } from './config';
 
 function eingabe(over: Partial<AvdEingabe> = {}): AvdEingabe {
   return {
@@ -65,10 +66,19 @@ describe('Todesfall in der Ansparphase', () => {
     const e = eingabe();
     const r = simuliereAvd(e);
     const [s] = szenarien(e, [50]);
-    // Gegenprobe aus der Jahrestabelle: Zulagenanspruch plus festgestellte
-    // Steuerermäßigung bis einschließlich des Todesjahres.
+    // Gegenprobe aus der Jahrestabelle: gutgeschriebene Zulagen plus
+    // festgestellte Steuerermäßigung bis einschließlich des Todesjahres.
+    // Beantragte, aber noch nicht zugeflossene Zulagen stecken nicht im
+    // ausgezahlten Vermögen und werden deshalb nicht zurückgefordert
+    // (§ 93 Abs. 1 S. 1 EStG).
     const bisDahin = r.jahre.filter((z) => z.alter <= 50);
-    const erwartet = bisDahin.reduce((n, z) => n + z.zulage + z.steuererstattung, 0);
+    const erwartet = bisDahin.reduce(
+      (n, z) => n + z.zulageZugeflossen + z.steuererstattung,
+      0
+    );
+    // Der Unterschied ist nicht null - sonst prüfte der Test nichts
+    const mitAnspruch = bisDahin.reduce((n, z) => n + z.zulage + z.steuererstattung, 0);
+    expect(mitAnspruch).toBeGreaterThan(erwartet);
     expect(bisDahin.length).toBeGreaterThan(0);
     expect(s.sonstige.rueckforderung).toBeCloseTo(erwartet, 6);
     expect(s.sonstige.steuer).toBeGreaterThan(0);
@@ -91,11 +101,17 @@ describe('Todesfall in der Ansparphase', () => {
   });
 
   it('weist aus, wenn Rückforderung und Steuer das Kapital übersteigen', () => {
-    // Kleiner Beitrag, drei Kinder: Die Zulagen übersteigen den Beitrag weit.
-    // Stirbt der Sparer nach dem ersten Jahr, ist mehr zurückzuzahlen, als im
-    // Vertrag steht - möglich, weil die Zulage erst im Folgejahr zufließt.
-    const e = eingabe({ eigenbeitragMonatlich: 25, kinder: 3, kinderKindergeldBisJahr: [] });
-    const [s] = szenarien(e, [38]);
+    // Ein Vertrag, dessen Fixkosten den Beitrag aufzehren: Das Kapital kommt
+    // nicht vom Boden, die erhaltene Förderung bleibt aber zurückzuzahlen.
+    // Das ist der Fall, in dem an sonstige Erben nichts geht und der Rest aus
+    // dem übrigen Nachlass zu tragen ist.
+    const e = eingabe({
+      eigenbeitragMonatlich: 150,
+      fixkostenProJahr: 2400,
+      kinder: 2,
+      kinderKindergeldBisJahr: [],
+    });
+    const [s] = szenarien(e, [45]);
     expect(s.sonstige.rueckforderung).toBeGreaterThan(s.sonstige.kapitalGesamt);
     expect(s.sonstige.verfuegbar).toBe(0);
     expect(s.hinweise.some((h) => h.text.includes('übersteigen'))).toBe(true);
@@ -299,5 +315,72 @@ describe('Gegenproben der Nachprüfung (E02, E03)', () => {
         `Alter ${alter}`
       ).toBeCloseTo(r.summeFoerderung * anteil, 0);
     }
+  });
+});
+
+describe('Grenzen des Modells, jetzt als Angabe (Nachpruefung)', () => {
+  it('versteuert die garantierte Restrente mit dem Satz der Hinterbliebenen', () => {
+    // Eine Hinterbliebenenrente versteuert der Empfaenger. Vorher trug der
+    // Barwert die Rente nach Steuersatz *und* Krankenversicherung des Sparers.
+    const sparer = eingabe({ auszahlform: 'leibrente', steuersatzImAlter: 0.4 });
+    const niedriger = eingabe({
+      auszahlform: 'leibrente',
+      steuersatzImAlter: 0.4,
+      steuersatzHinterbliebene: 0.15,
+    });
+    const a = szenarien(sparer, [70], 10)[0];
+    const b = szenarien(niedriger, [70], 10)[0];
+    expect(b.garantierteRestrente!).toBeGreaterThan(a.garantierteRestrente!);
+  });
+
+  it('benennt die Annahme, solange kein eigener Satz angegeben ist', () => {
+    const ohne = szenarien(eingabe({ auszahlform: 'leibrente' }), [70], 10)[0];
+    expect(
+      ohne.hinweise.some(
+        (h) => h.art === 'warnung' && h.text.includes('Steuersatz des Sparers')
+      )
+    ).toBe(true);
+    const mit = szenarien(
+      eingabe({ auszahlform: 'leibrente', steuersatzHinterbliebene: 0.2 }),
+      [70],
+      10
+    )[0];
+    expect(mit.hinweise.some((h) => h.text.includes('Steuersatz des Sparers'))).toBe(false);
+    expect(mit.hinweise.some((h) => h.text.includes('Kranken- und Pflegeversicherung der Hinterbliebenen'))).toBe(true);
+  });
+
+  it('fordert noch nicht gutgeschriebene Zulagen nicht zurueck', () => {
+    // Nur in der Ansparphase kann ein Anspruch offen sein; zum
+    // Auszahlungsbeginn sind die Nachzuegler gebucht.
+    const e = eingabe();
+    const r = simuliereAvd(e);
+    const [anspar] = szenarien(e, [50]);
+    const bis50 = r.jahre.filter((z) => z.alter <= 50);
+    const offen = bis50.reduce((n, z) => n + z.zulage - z.zulageZugeflossen, 0);
+    expect(offen).toBeGreaterThan(0);
+    expect(anspar.sonstige.rueckforderung).toBeCloseTo(
+      bis50.reduce((n, z) => n + z.zulageZugeflossen + z.steuererstattung, 0),
+      6
+    );
+    expect(anspar.hinweise.some((h) => h.text.includes('nicht zurückgefordert'))).toBe(true);
+
+    // In der Auszahlphase zaehlt die ganze Foerderung
+    const [auszahl] = szenarien(e, [67]);
+    expect(auszahl.sonstige.rueckforderung).toBeCloseTo(r.summeFoerderung, 0);
+  });
+
+  it('kennt auch die strengere Lesart (Rechtsflag)', () => {
+    const e = eingabe();
+    const streng = berechneTodesfallSzenarien({
+      basis: e,
+      ergebnis: simuliereAvd(e),
+      alter: [50],
+      flags: { ...RECHTS_FLAGS_DEFAULT, todesfallRueckforderungNurZugeflossen: false },
+    })[0];
+    const vorgabe = szenarien(e, [50])[0];
+    expect(streng.sonstige.rueckforderung).toBeGreaterThan(
+      vorgabe.sonstige.rueckforderung
+    );
+    expect(streng.hinweise.some((h) => h.text.includes('strengere Lesart'))).toBe(true);
   });
 });

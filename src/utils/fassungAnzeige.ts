@@ -114,6 +114,7 @@ const BESCHRIFTUNGEN: Record<string, string> = {
   fondsgebunden: 'fondsgebunden',
   current_product_tax_free: 'Bestandsvertrag steuerfrei',
   rentengarantiezeitJahre: 'Rentengarantiezeit',
+  steuersatzHinterbliebene: 'Steuersatz der Hinterbliebenen',
   // Alter Feldname derselben Groesse - alte Fassungen bleiben lesbar
   vergleich_monatsentnahme_netto: 'Freies Depot: Entnahme netto',
   vergleich_name: 'Vergleich mit',
@@ -446,6 +447,7 @@ const EINHEITEN: Record<string, Einheit> = {
   beitragsdynamikPaJahr: 'anteil',
   kirchensteuersatz: 'anteil',
   steuersatzImAlter: 'anteil',
+  steuersatzHinterbliebene: 'anteil',
   teilkapitalAnteil: 'anteil',
   terPaJahr: 'anteil',
 };

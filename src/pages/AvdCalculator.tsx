@@ -100,6 +100,7 @@ function makeDefaults(): FormData {
     auszahlplanEndalter: 85,
     rentenfaktorProZehntausend: ANNAHMEN.RENTENFAKTOR_PRO_10K,
     rentengarantiezeitJahre: 0,
+    steuersatzHinterbliebene: undefined,
     kvStatusImAlter: 'pflicht',
     vergleichspartner: 'depot',
     depotKostenPaJahr: d.depot_costs_annual / 100,
@@ -1868,6 +1869,33 @@ export default function AvdCalculator() {
                     </select>
                   </div>
                 )}
+                {formData.auszahlform === 'leibrente' &&
+                  (formData.rentengarantiezeitJahre ?? 0) > 0 && (
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="avd-steuersatz-hinterbliebene"
+                        className="text-sm font-medium text-slate-700"
+                      >
+                        Steuersatz der Hinterbliebenen (%)
+                      </Label>
+                      <NumericInput
+                        id="avd-steuersatz-hinterbliebene"
+                        value={(formData.steuersatzHinterbliebene ?? 0) * 100}
+                        onChange={(v) =>
+                          update(
+                            'steuersatzHinterbliebene',
+                            v > 0 ? Math.min(100, v) / 100 : undefined
+                          )
+                        }
+                        className={inputClass}
+                      />
+                      <p className="text-xs text-slate-500">
+                        0 = unbekannt; dann rechnet der Rechner mit dem Satz des
+                        Sparers und weist das als Annahme aus. Die Rente versteuert
+                        aber der Empfänger.
+                      </p>
+                    </div>
+                  )}
               </div>
 
               {/* Tabelle: Spalten sind die drei Zeitpunkte */}
@@ -2050,8 +2078,11 @@ export default function AvdCalculator() {
               Modellannahmen und offene Punkte: Die Kinderzulage wird je Kind unabhängig auf den
               Eigenbeitrag bemessen (Wortlaut § 85 Abs. 1 S. 1), die Kinderzulage erhöht das
               Sonderausgaben-Volumen (§ 10a Abs. 1 S. 1), der ungeförderte Vertragsteil wird mit dem
-              Ertragsanteil besteuert. Diese Punkte stehen unter dem Vorbehalt des
-              BMF-Anwendungsschreibens. Zulagen fließen mit einem Jahr Verzögerung zu.
+              Ertragsanteil besteuert. Im Todesfall wird die Förderung nur anteilig zum
+              noch nicht ausgezahlten Kapital zurückgefordert, und beantragte, aber noch
+              nicht gutgeschriebene Zulagen bleiben außen vor. Diese Punkte stehen unter
+              dem Vorbehalt des BMF-Anwendungsschreibens. Zulagen fließen mit einem Jahr
+              Verzögerung zu.
               Keine Rechts-, Steuer- oder Anlageberatung.
             </p>
             {hatFehler && (

@@ -9,9 +9,22 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-27" as const;
+export const MODELL_VERSION = "2026-10-27b" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-27b",
+    aenderung:
+      "Altersvorsorgedepot, Todesfall: Zwei Annahmen sind jetzt Angaben. " +
+      "Beantragte, aber noch nicht gutgeschriebene Zulagen werden nicht mehr " +
+      "zurueckgefordert - sie stecken nicht im ausgezahlten Vermoegen " +
+      "(§ 93 Abs. 1 S. 1 EStG); in der Auszahlphase aendert sich nichts, dort " +
+      "sind die Nachzuegler gebucht. Und die garantierte Restrente wird mit " +
+      "dem Steuersatz der Hinterbliebenen gerechnet, nicht mit dem des " +
+      "Verstorbenen; ohne Angabe bleibt es beim Satz des Sparers, dann aber " +
+      "als ausgewiesene Annahme. Der Krankenversicherungsabzug des Sparers " +
+      "faellt fuer die Hinterbliebenen weg, ihr eigener ist nicht abgebildet.",
+  },
   {
     version: "2026-10-27",
     aenderung:
