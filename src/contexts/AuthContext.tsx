@@ -2,6 +2,7 @@ import { werbungMelden } from '@/utils/werbung'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { messungAngemeldet } from '@/utils/messung'
 import { migrateLocalDataToSupabase } from '@/utils/migrateLocalData'
 import { lokaleDatenFuerNutzerPruefen, lokaleDatenLoeschen } from '@/utils/lokaleDaten'
 
@@ -64,6 +65,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
   }
+
+  // Die eine Stelle, an der die Reichweitenmessung von einer Anmeldung
+  // erfaehrt. Ab dann ist der Nutzer Auftraggeber im Sinne des AVV und es
+  // verlaesst nichts mehr das Haus (siehe utils/messung.ts).
+  useEffect(() => {
+    messungAngemeldet(!!session)
+  }, [session])
 
   const signUp = async (email: string, password: string): Promise<{ sessionCreated: boolean }> => {
     const { data, error } = await supabase.auth.signUp({ email, password })

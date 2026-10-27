@@ -73,9 +73,11 @@ export default function Pricing() {
   const [codeError, setCodeError] = useState("");
   const [codeSuccess, setCodeSuccess] = useState(false);
 
+  // Nur Gaeste: Fuer Angemeldete ist diese Seite Teil der Anwendung, und von
+  // dort geht nichts an einen Dritten (siehe utils/messung.ts).
   useEffect(() => {
-    ereignis("preise_gesehen");
-  }, []);
+    if (istGast) ereignis("preise_gesehen");
+  }, [istGast]);
 
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
@@ -90,7 +92,6 @@ export default function Pricing() {
     if (!session || !priceId) return;
     setLoadingCheckout(true);
     try {
-      ereignis("kasse_gestartet");
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: {
@@ -110,7 +111,6 @@ export default function Pricing() {
 
   const handleUpgradeClick = async () => {
     if (!session) return;
-    ereignis("upgrade_geklickt");
 
     if (consentChecked && consentOkCached) {
       await handleCheckout();

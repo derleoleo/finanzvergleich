@@ -131,7 +131,7 @@ export default function Landing() {
           {[
             { icon: Shield, text: "DSGVO-konform" },
             { icon: Lock, text: "Datenhaltung in der EU (Frankfurt)" },
-            { icon: Check, text: "Kein Drittanbieter-Tracking" },
+            { icon: Check, text: "Kein Werbe-Tracking" },
             { icon: Users, text: "Nur für zugelassene Berater" },
           ].map(({ icon: Icon, text }) => (
             <div key={text} className="flex items-center gap-2">
@@ -341,13 +341,13 @@ export default function Landing() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
-              "DSGVO-konform – keine Werbe-Tracker, keine Daten an Dritte",
+              "DSGVO-konform – keine Werbe-Tracker, keine Profilbildung",
               "AVV (Art. 28 DSGVO) ist Vertragsbestandteil",
               "Datenhaltung in der EU (Frankfurt, AWS eu-central-1)",
-              "Kein Drittanbieter-Tracking (kein Google Analytics, kein Facebook Pixel)",
-              "Reichweitenmessung auf eigenem Server, cookielos und ohne Personenbezug",
+              "Kein Google Analytics, kein Facebook Pixel, keine Werbenetzwerke",
+              "Reichweitenmessung cookielos und nur auf den öffentlichen Seiten – in der Anwendung wird nicht gemessen",
               "Technische und organisatorische Maßnahmen (TOM) dokumentiert",
-              "Subprozessoren transparent gelistet (Supabase, Vercel, Stripe, Resend)",
+              "Subprozessoren transparent gelistet (Supabase, Vercel, Stripe, Resend, Sentry)",
             ].map((item) => (
               <div key={item} className="flex items-start gap-3 bg-white/5 rounded-xl p-4 border border-white/10">
                 <Check className="w-4 h-4 text-brand-cyan mt-0.5 shrink-0" />

@@ -124,6 +124,42 @@ export default function Compliance() {
           </section>
 
           <section>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">
+              Weitere Empfänger außerhalb der Auftragsverarbeitung
+            </h2>
+            <p className="mb-4 text-slate-600">
+              Der folgende Dienst ist <span className="font-medium">kein</span> Subprozessor nach
+              Art. 28 DSGVO: Er verarbeitet keine Daten im Auftrag eines Beraters, sondern
+              ausschließlich Besuchsdaten unserer öffentlichen Seiten, für die wir selbst
+              Verantwortliche sind. Aus der angemeldeten Anwendung erhält er keine Daten.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-100">
+                    <th className="text-left p-3 font-semibold border border-slate-200">Dienst</th>
+                    <th className="text-left p-3 font-semibold border border-slate-200">Zweck</th>
+                    <th className="text-left p-3 font-semibold border border-slate-200">Server-Standort</th>
+                    <th className="text-left p-3 font-semibold border border-slate-200">Rechtsgrundlage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="p-3 border border-slate-200 font-medium">Umami Software, Inc.</td>
+                    <td className="p-3 border border-slate-200">
+                      Reichweitenmessung der öffentlichen Seiten (cookielos)
+                    </td>
+                    <td className="p-3 border border-slate-200">EU-Region</td>
+                    <td className="p-3 border border-slate-200">
+                      Art. 6 Abs. 1 lit. f DSGVO, SCC + DPA
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section>
             <h2 className="text-lg font-semibold text-slate-900 mb-3">Auftragsverarbeitungsvertrag (AVV)</h2>
             <p>
               Der AVV gemäß Art. 28 DSGVO ist Bestandteil jedes Nutzungsvertrags. Er wird bei
@@ -141,19 +177,27 @@ export default function Compliance() {
 
           <section>
             <h2 className="text-lg font-semibold text-slate-900 mb-3">
-              Keine Werbe-Tracker, keine Daten an Dritte
+              Keine Werbe-Tracker, keine Messung in der Anwendung
             </h2>
             <p>
-              Diese Plattform verwendet keine Analyse-Tools von Drittanbietern (kein Google Analytics,
-              kein Facebook Pixel, kein Hotjar) und gibt keine Nutzungsdaten an Dritte weiter.
-              Es werden ausschließlich technisch notwendige Cookies und Session-Daten verarbeitet.
+              Diese Plattform verwendet keine Werbe- oder Profiling-Werkzeuge (kein Google
+              Analytics, kein Facebook Pixel, kein Hotjar) und gibt keine Nutzungsdaten an
+              Werbenetzwerke weiter. Es werden ausschließlich technisch notwendige Cookies und
+              Session-Daten verarbeitet.
             </p>
             <p className="mt-2">
-              Die Reichweite unserer öffentlichen Seiten messen wir mit einer auf eigener
-              Infrastruktur betriebenen Software (Umami): ohne Cookies, ohne Kennungen auf Ihrem
-              Gerät und ohne Personenbezug. Einzelne Schritte im Anmeldevorgang werden gezählt,
-              ohne Nutzerkennung und ohne Inhalte Ihrer Berechnungen. Einzelheiten im
-              Datenschutzhinweis, Abschnitt 7a.
+              Die Reichweite der <span className="font-medium">öffentlichen</span> Seiten messen
+              wir mit Umami (EU-Region), cookielos und ohne Wiedererkennung über Sitzungen hinweg.
+              <span className="font-medium"> In der angemeldeten Anwendung wird nicht gemessen</span> –
+              sobald eine Anmeldung besteht, verlässt kein Seitenaufruf und kein Klick das System.
+              Das ist technisch durchgesetzt, nicht nur zugesagt: Jede Übermittlung läuft durch
+              eine Positivliste öffentlicher Seiten, und Adressen werden vor dem Senden um
+              Kennungen gespeicherter Berechnungen gekürzt. Einzelheiten im Datenschutzhinweis,
+              Abschnitt 7a.
+            </p>
+            <p className="mt-2">
+              Die Kennzahlen zur Nutzung der Anwendung gewinnen wir stattdessen aus unserer
+              eigenen Datenbank in Frankfurt – dort, wo Ihre Daten ohnehin liegen.
             </p>
           </section>
 

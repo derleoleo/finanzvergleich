@@ -1,6 +1,4 @@
-import { useEffect } from "react";
 import { FREI_BERECHNUNGEN_PRO_MONAT } from "@/utils/preise";
-import { ereignis } from "@/utils/messung";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Lock, X } from "lucide-react";
@@ -17,11 +15,6 @@ type Props = {
 export default function UpgradePrompt({ title, description, onClose }: Props) {
   const { monthlyCalculationCount } = useSubscription();
 
-  // Der Moment, in dem das Produkt an seine Grenze stoesst: der eigentliche
-  // Kaufanlass. Einmal je Anzeige, nicht bei jedem Rendern.
-  useEffect(() => {
-    ereignis("limit_erreicht", monthlyCalculationCount);
-  }, [monthlyCalculationCount]);
 
   const inner = (
     <Card className="border-0 shadow-xl bg-white max-w-sm w-full">

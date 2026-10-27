@@ -146,28 +146,37 @@ export default function Datenschutz() {
               7a. Reichweitenmessung
             </h2>
             <p>
-              Zur Messung der Reichweite unserer öffentlichen Seiten setzen wir die freie
-              Software <span className="font-medium">Umami</span> ein, die wir auf eigener
-              Infrastruktur betreiben. Es findet keine Übermittlung an Dritte statt.
+              Zur Messung der Reichweite setzen wir <span className="font-medium">Umami</span> der
+              Umami Software, Inc. (San Francisco, USA) ein. Die Verarbeitung erfolgt in der
+              EU-Region des Dienstes; mit dem Anbieter besteht ein Auftragsverarbeitungsvertrag
+              einschließlich EU-Standardvertragsklauseln. Die Speicherdauer beträgt sechs Monate.
+            </p>
+            <p className="mt-2">
+              <span className="font-medium">Gemessen wird ausschließlich der öffentliche Teil
+              dieser Seite</span> – Startseite, Beispielfall, Preise, Anmeldeseite und die
+              Rechtstexte. Sobald Sie angemeldet sind, findet keine Messung mehr statt: In der
+              Anwendung selbst wird kein Seitenaufruf und kein Klick an den Anbieter übermittelt.
             </p>
             <p className="mt-2">
               Die Messung arbeitet <span className="font-medium">ohne Cookies</span> und ohne
-              Kennungen, die auf Ihrem Gerät gespeichert werden. Eine Einwilligung nach
-              § 25 TDDDG ist deshalb nicht erforderlich. Erfasst werden die aufgerufene
-              Seite, die verweisende Adresse, Browser- und Betriebssystemfamilie, Land sowie
-              Zeitpunkt. Die IP-Adresse wird zur Ermittlung des Landes verarbeitet und nicht
-              gespeichert.
+              Kennungen, die auf Ihrem Gerät gespeichert werden; eine Wiedererkennung über
+              Sitzungen hinweg findet nicht statt. Erfasst werden die aufgerufene Seite, die
+              verweisende Adresse, Browser- und Betriebssystemfamilie, Bildschirmgröße, Sprache,
+              Land sowie Zeitpunkt. Die IP-Adresse wird zur Ermittlung des Landes verarbeitet und
+              nicht gespeichert. Sendet Ihr Browser ein aktiviertes
+              „Do Not Track"-Signal, wird nicht gemessen.
             </p>
             <p className="mt-2">
-              Zusätzlich zählen wir einzelne Schritte innerhalb des Anmeldevorgangs
-              (z. B. „Registrierung abgeschlossen", „Berechnung gespeichert"). Diese Zählung
-              enthält keine Nutzerkennung, keine E-Mail-Adresse und keine Inhalte Ihrer
-              Berechnungen – sie sagt nur, dass ein Schritt stattgefunden hat. Eine
-              Zuordnung zu Ihrer Person ist uns damit nicht möglich.
+              Adressen werden vor der Übermittlung gekürzt: Übertragen werden nur der Pfad und
+              Parameter zur Herkunft einer Kampagne (<code className="text-xs">utm_*</code>).
+              Kennungen gespeicherter Berechnungen (<code className="text-xs">?id=…</code>)
+              verlassen unser System nicht.
             </p>
             <p className="mt-2 text-slate-500">
               Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der
-              bedarfsgerechten Gestaltung unseres Angebots).
+              bedarfsgerechten Gestaltung unseres Angebots). Sie können der Messung jederzeit
+              widersprechen – es genügt, im Browser „Do Not Track" zu aktivieren oder uns eine
+              Nachricht zu senden.
             </p>
           </section>
 
