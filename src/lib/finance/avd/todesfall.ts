@@ -37,6 +37,7 @@ import {
   RECHTS_FLAGS_DEFAULT,
   type RechtsFlags,
 } from './config';
+import { alsProzentpunkte } from './fondslv';
 import { steuerAufRente } from './simulation';
 import type { AvdEingabe, AvdErgebnis, Hinweis, JahresZeile } from './simulation';
 
@@ -76,14 +77,49 @@ export type TodesfallSzenario = {
   teilkapitalBereitsAusgezahlt: number;
   /** Nur Leibrente: Barwert der restlichen garantierten Netto-Raten. */
   garantierteRestrente?: number;
-  /** Freies Depot nach Abgeltungsteuer – immer gerechnet, es läuft im Vergleich mit. */
-  freiesDepot?: number;
+  /**
+   * Kapital, das zum Rentenbeginn verrentet wurde.
+   *
+   * Ohne diese Zahl liest sich die Auszahlphase falsch: Beim Tod nach Ablauf
+   * der Rentengarantiezeit steht beim geförderten Vertrag eine Null – aber
+   * nicht, weil nichts da war, sondern weil es verrentet ist und mit dem Tod
+   * endet. Die Null bekommt erst hier ihren Sinn.
+   */
+  verrentetesKapital?: number;
+  /**
+   * Freies Depot – immer gerechnet, es läuft im Vergleich mit.
+   *
+   * Dieselbe Form wie die Vertragsvarianten, damit jede Spalte dasselbe
+   * zeigt: Gesamtkapital, Abzüge, was ankommt. Dass die Zeile
+   * „Rückforderung" hier null ist, ist keine Lücke – es ist die Aussage.
+   */
+  freiesDepot?: TodesfallVariante;
   /** Fondspolice: Todesfallleistung, einkommensteuerfrei. */
-  fondsLv?: number;
+  fondsLv?: TodesfallVariante;
   /** Riester-Altvertrag: dieselbe Rückforderungslogik nach § 93 EStG. */
   riesterAlt?: TodesfallVariante;
   hinweise: Hinweis[];
 };
+
+/**
+ * Variante ohne Förderrückforderung: Depot und Fondspolice.
+ *
+ * Eigene Hilfe statt `variante`, weil dort „gefördert/ungefördert" verlangt
+ * wird – eine Unterscheidung, die es außerhalb des Fördervermögens nicht
+ * gibt. Hier zählt nur: was liegt da, was geht an den Fiskus, was bleibt.
+ */
+function vergleichswert(kapitalGesamt: number, steuer: number): TodesfallVariante {
+  const brutto = Math.max(0, kapitalGesamt);
+  const abzug = Math.max(0, steuer);
+  return {
+    kapitalGesamt: brutto,
+    kapitalGefoerdert: 0,
+    kapitalUngefoerdert: brutto,
+    rueckforderung: 0,
+    steuer: abzug,
+    verfuegbar: Math.max(0, brutto - abzug),
+  };
+}
 
 const leereVariante = (): TodesfallVariante => ({
   kapitalGesamt: 0,
@@ -251,6 +287,15 @@ export function berechneTodesfallSzenarien(args: {
    * dem Tod, und für die Hinterbliebenen bleibt nichts.
    */
   rentengarantiezeitJahre?: number;
+  /**
+   * Bleibt das Kapital von Depot und Fondspolice nach dem Rentenbeginn
+   * liegen und wächst weiter (Vorgabe), oder läuft parallel zur
+   * Vertragsrente eine gleich hohe Entnahme?
+   *
+   * Eine Annahme über das Verhalten, nicht über das Produkt – und sie bewegt
+   * das Ergebnis stark. Sie gehört deshalb sichtbar in die Oberfläche.
+   */
+  kapitalBleibtLiegen?: boolean;
   flags?: RechtsFlags;
 }): TodesfallSzenario[] {
   const { basis: e, ergebnis: r } = args;
@@ -258,6 +303,8 @@ export function berechneTodesfallSzenarien(args: {
   const alterBeiStart = e.beitragsjahrStart - e.geburtsjahr;
   const sparerpauschbetrag = e.sparerpauschbetrag ?? ANNAHMEN.SPARERPAUSCHBETRAG;
   const garantieJahre = Math.max(0, Math.round(args.rentengarantiezeitJahre ?? 0));
+  const kapitalBleibtLiegen = args.kapitalBleibtLiegen ?? true;
+  const entnahmenLaufen = !kapitalBleibtLiegen;
   const steuersatz = Math.max(0, e.steuersatzImAlter || 0);
 
   const rMonatVertrag = calculateMonthlyReturn(
@@ -365,12 +412,12 @@ export function berechneTodesfallSzenarien(args: {
         Math.max(0, depotStpfl - sparerpauschbetrag) *
         DEPOT_STEUER.ABGELTUNGSTEUER *
         (1 + DEPOT_STEUER.SOLI_ZUSCHLAG + (e.kirchensteuersatz || 0));
-      const freiesDepot = Math.max(0, zeile.depotKapital - depotSteuer);
+      const freiesDepot = vergleichswert(zeile.depotKapital, depotSteuer);
 
       // Fondspolice: Die Todesfallleistung ist einkommensteuerfrei.
-      let fondsLv: number | undefined;
+      let fondsLv: TodesfallVariante | undefined;
       if (r.fondsLv) {
-        fondsLv = r.fondsLv.kapitalProJahr[index] ?? 0;
+        fondsLv = vergleichswert(r.fondsLv.kapitalProJahr[index] ?? 0, 0);
         hinweise.push({
           art: 'info',
           text: 'Die Todesfallleistung der Fondspolice ist einkommensteuerfrei und ohne Förderrückforderung – im Todesfall ist das ihr Vorteil gegenüber dem Altersvorsorgedepot. Welche Leistung ein Tarif zusagt (Vertragsguthaben oder Beitragssumme), steht in seinen Bedingungen.',
@@ -427,20 +474,22 @@ export function berechneTodesfallSzenarien(args: {
       });
     }
 
-    // Was der Rechner hier nicht kann, muss er sagen - sonst steht in der
-    // Spalte ein Strich, und der Leser haelt ihn fuer eine Null.
     if (r.fondsLv) {
       hinweise.push({
         art: 'info',
-        text: 'Für die Fondspolice ist die Auszahlphase in diesem Vergleich nicht abgebildet; sie reicht bis zum Rentenbeginn. Ein Todesfall danach lässt sich hier nur für das Altersvorsorgedepot und das freie Depot beziffern.',
+        text: 'Für die Fondspolice ist ein Tarif unterstellt, dessen Rentenphase das Fondsguthaben erhält – im Todesfall wird das Restguthaben ausgezahlt. Eine klassische Leibrente ohne Beitragsrückgewähr leistet nach Ablauf der Rentengarantiezeit nichts; dann gilt für sie dasselbe wie für den geförderten Vertrag. Maßgeblich sind die Bedingungen des Tarifs.',
       });
     }
-    if (r.riesterAlt) {
+    if (kapitalBleibtLiegen) {
       hinweise.push({
         art: 'info',
-        text: 'Für den Riester-Altvertrag endet dieser Vergleich mit dem Rentenbeginn. Nach Rentenbeginn gilt dort dieselbe Logik wie beim Altersvorsorgedepot: vererbbar ist nur, was noch nicht ausgezahlt wurde.',
+        text: 'Für Depot und Fondspolice ist angenommen, dass das Kapital nach dem Rentenbeginn liegen bleibt und weiter Rendite trägt. Wer daraus so viel entnimmt, wie der geförderte Vertrag an Rente zahlt, hat im Todesfall entsprechend weniger – dann aber auch dasselbe Einkommen gehabt.',
       });
     }
+
+    // Was nach der Teilentnahme tatsaechlich verrentet wurde - der Nenner
+    // fuer den Vergleich mit dem Riester-Vertrag.
+    const verrentetesKapital = Math.max(0, gesamtBeiBeginn - r.auszahlung.teilkapital);
 
     if (e.auszahlform === 'leibrente') {
       const endeGarantie = e.auszahlungsbeginnAlter + garantieJahre;
@@ -515,12 +564,28 @@ export function berechneTodesfallSzenarien(args: {
         sonstige: rente,
         teilkapitalBereitsAusgezahlt: teilkapitalNetto,
         garantierteRestrente: barwert,
+        verrentetesKapital,
         freiesDepot: depotRestNachSteuer({
           r,
           e,
           rMonatDepot,
           monateSeitBeginn,
           sparerpauschbetrag,
+          entnahmenLaufen,
+        }),
+        fondsLv: fondsLvNachBeginn({ r, e, monateSeitBeginn }),
+        /*
+         * Der Riester-Vertrag hat dieselbe Auszahlform und denselben
+         * Horizont. Massgeblich ist deshalb derselbe Anteil des
+         * verrenteten Kapitals, den die garantierte Restrente hier
+         * ausmacht - nach Ablauf der Garantiezeit ist er null, und genau
+         * das ist der Unterschied zu Police und Depot.
+         */
+        riesterAlt: riesterAltNachBeginn({
+          r,
+          anteilVerbleibend:
+            verrentetesKapital > 0 ? barwert / verrentetesKapital : 0,
+          steuersatz,
         }),
         hinweise,
       };
@@ -599,12 +664,20 @@ export function berechneTodesfallSzenarien(args: {
         steuer,
       }),
       teilkapitalBereitsAusgezahlt: teilkapitalNetto,
+      verrentetesKapital,
       freiesDepot: depotRestNachSteuer({
         r,
         e,
         rMonatDepot,
         monateSeitBeginn,
         sparerpauschbetrag,
+        entnahmenLaufen,
+      }),
+      fondsLv: fondsLvNachBeginn({ r, e, monateSeitBeginn }),
+      riesterAlt: riesterAltNachBeginn({
+        r,
+        anteilVerbleibend: verrentetesKapital > 0 ? rest / verrentetesKapital : 0,
+        steuersatz,
       }),
       hinweise,
     };
@@ -625,7 +698,17 @@ function depotRestNachSteuer(args: {
   rMonatDepot: number;
   monateSeitBeginn: number;
   sparerpauschbetrag: number;
-}): number {
+  /**
+   * Läuft parallel zur Vertragsrente eine Entnahme aus dem Depot?
+   *
+   * Ohne sie bleibt das Kapital liegen und wächst weiter. Das ist eine
+   * Annahme über das Verhalten des Anlegers, nicht über das Produkt – und
+   * sie muss in der Oberfläche stehen, weil sie das Ergebnis stark bewegt:
+   * Wer aus dem Depot so viel entnimmt, wie der Vertrag Rente zahlt, hat im
+   * Todesfall weniger liegen.
+   */
+  entnahmenLaufen: boolean;
+}): TodesfallVariante {
   const { r, e, rMonatDepot, monateSeitBeginn } = args;
   let kapital = r.depot.endkapitalVorSteuer;
   /*
@@ -642,7 +725,7 @@ function depotRestNachSteuer(args: {
     0,
     r.jahre[r.jahre.length - 1]?.depotEinstand ?? r.depot.eingezahlt
   );
-  const rate = r.depot.monatsentnahmeBrutto;
+  const rate = args.entnahmenLaufen ? r.depot.monatsentnahmeBrutto : 0;
 
   for (let m = 1; m <= monateSeitBeginn; m++) {
     kapital *= 1 + rMonatDepot;
@@ -652,7 +735,7 @@ function depotRestNachSteuer(args: {
       einstand -= einstand * anteil;
       kapital -= entnahme;
     }
-    if (kapital <= 0) return 0;
+    if (kapital <= 0) return vergleichswert(0, 0);
   }
 
   const gewinn = Math.max(0, kapital - einstand);
@@ -661,5 +744,75 @@ function depotRestNachSteuer(args: {
     Math.max(0, stpfl - args.sparerpauschbetrag) *
     DEPOT_STEUER.ABGELTUNGSTEUER *
     (1 + DEPOT_STEUER.SOLI_ZUSCHLAG + (e.kirchensteuersatz || 0));
-  return Math.max(0, kapital - steuer);
+  return vergleichswert(kapital, steuer);
+}
+
+/**
+ * Die Fondspolice nach dem Rentenbeginn.
+ *
+ * Bis hierher endete der Vergleich – in der Tabelle stand ein Strich, und
+ * damit fehlte ausgerechnet die Aussage, auf die es ankommt. Nach Ablauf der
+ * Rentengarantiezeit ist der geförderte Vertrag für die Hinterbliebenen
+ * wertlos; die Police hat ihr Kapital dann noch.
+ *
+ * Angenommen ist ein Tarif, dessen Rentenphase das Fondsguthaben erhält
+ * (Kapitalwahlrecht bzw. Auszahlung des Restguthabens im Todesfall). Eine
+ * klassische Leibrente ohne Beitragsrückgewähr leistet nach Ablauf der
+ * Garantiezeit **nichts** – dann gilt für sie dasselbe wie für den
+ * geförderten Vertrag. Welche Zusage gilt, steht in den Bedingungen des
+ * Tarifs; deshalb reist der Hinweis mit.
+ */
+function fondsLvNachBeginn(args: {
+  r: AvdErgebnis;
+  e: AvdEingabe;
+  monateSeitBeginn: number;
+}): TodesfallVariante | undefined {
+  const { r, e, monateSeitBeginn } = args;
+  if (!r.fondsLv || !e.fondsLv) return undefined;
+  const rMonat = calculateMonthlyReturn(
+    alsProzentpunkte(e.fondsLv.renditeBruttoPaJahr) - alsProzentpunkte(e.fondsLv.terPaJahr)
+  );
+  const kapital = r.fondsLv.endkapitalVorSteuer * Math.pow(1 + rMonat, monateSeitBeginn);
+  // Die Todesfallleistung ist einkommensteuerfrei - auch die Wertsteigerung
+  // nach dem Rentenbeginn.
+  return vergleichswert(kapital, 0);
+}
+
+/**
+ * Der Riester-Altvertrag nach dem Rentenbeginn.
+ *
+ * Für ihn gilt dieselbe Regel wie für das Altersvorsorgedepot: Das Kapital
+ * ist verrentet, vererbbar ist nur, was noch nicht ausgezahlt wurde, und
+ * selbst das nur förderunschädlich auf einen Vertrag des Ehegatten
+ * (§ 93 Abs. 1 S. 4 Buchst. c EStG) – sonst greift die Rückforderung.
+ *
+ * Gerechnet wird im Verhältnis zum geförderten Vertrag: Der Riester-Vertrag
+ * hat dieselbe Auszahlform und denselben Horizont, nur ein anderes Kapital.
+ * Ein eigener Auszahlplan mit eigenen Annahmen würde zwei Rechenwege für
+ * dieselbe Frage schaffen, und der Unterschied käme dann aus dem Rechenweg
+ * statt aus dem Produkt.
+ */
+function riesterAltNachBeginn(args: {
+  r: AvdErgebnis;
+  anteilVerbleibend: number;
+  steuersatz: number;
+}): TodesfallVariante | undefined {
+  const { r, anteilVerbleibend, steuersatz } = args;
+  if (!r.riesterAlt) return undefined;
+  const i = r.riesterAlt.kapitalProJahr.length - 1;
+  const kapitalBeiBeginn = r.riesterAlt.kapitalProJahr[i] ?? 0;
+  const foerderung = r.riesterAlt.foerderungKumuliertProJahr[i] ?? 0;
+  const eingezahlt = r.riesterAlt.eigenbeitraegeKumuliertProJahr[i] ?? 0;
+
+  const anteil = Math.max(0, Math.min(1, anteilVerbleibend));
+  const kapital = kapitalBeiBeginn * anteil;
+  // Anteilig wie beim Altersvorsorgedepot: § 93 Abs. 1 S. 1 EStG spricht von
+  // den „auf den Auszahlungsbetrag entfallenden" Zulagen.
+  const ertrag = Math.max(0, kapital - (foerderung + eingezahlt) * anteil);
+  return variante({
+    kapitalGefoerdert: kapital,
+    kapitalUngefoerdert: 0,
+    rueckforderung: foerderung * anteil,
+    steuer: ertrag * steuersatz,
+  });
 }

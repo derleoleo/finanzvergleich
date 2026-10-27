@@ -109,6 +109,8 @@ export default defineConfig(({ mode }) => ({
     environment: "node",
     // Auch die Serverfunktionen: Die Drosselung entscheidet ueber Kosten
     // und Zugang, ihre Regeln gehoeren nicht nur in einen Kommentar.
-    include: ["src/**/*.test.ts", "api/**/*.test.ts"],
+    // Auch .tsx: Bausteine, die eine Aussage tragen, werden gerendert
+    // geprueft - die Rechnerseiten liegen hinter der Bezahlschranke.
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "api/**/*.test.ts"],
   },
 }));

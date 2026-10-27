@@ -205,8 +205,14 @@ describe('Todesfall in der Auszahlphase', () => {
 describe('Vergleichspartner im Todesfall', () => {
   it('rechnet das freie Depot in beiden Phasen mit', () => {
     const [anspar, auszahl] = szenarien(eingabe(), [50, 70]);
-    expect(anspar.freiesDepot).toBeGreaterThan(0);
-    expect(auszahl.freiesDepot).toBeGreaterThan(0);
+    expect(anspar.freiesDepot!.verfuegbar).toBeGreaterThan(0);
+    expect(auszahl.freiesDepot!.verfuegbar).toBeGreaterThan(0);
+    // Das Gesamtkapital steht jetzt fuer jede Spalte zur Verfuegung, nicht
+    // nur fuer den gefoerderten Vertrag.
+    expect(anspar.freiesDepot!.kapitalGesamt).toBeGreaterThan(
+      anspar.freiesDepot!.verfuegbar
+    );
+    expect(anspar.freiesDepot!.rueckforderung).toBe(0);
   });
 
   it('zeigt die Fondspolice nur, wenn sie der gewählte Partner ist', () => {
@@ -225,10 +231,14 @@ describe('Vergleichspartner im Todesfall', () => {
       },
     });
     const mit = szenarien(e, [50])[0];
-    expect(mit.fondsLv).toBeGreaterThan(0);
+    expect(mit.fondsLv!.verfuegbar).toBeGreaterThan(0);
     // Todesfallleistung einkommensteuerfrei: kein Abzug, deshalb liegt sie
     // über dem, was aus dem AVD an sonstige Erben geht.
-    expect(mit.fondsLv!).toBeGreaterThan(mit.sonstige.verfuegbar);
+    expect(mit.fondsLv!.verfuegbar).toBeGreaterThan(mit.sonstige.verfuegbar);
+    // Keine Steuer, keine Rueckforderung - genau das ist die Aussage.
+    expect(mit.fondsLv!.steuer).toBe(0);
+    expect(mit.fondsLv!.rueckforderung).toBe(0);
+    expect(mit.fondsLv!.kapitalGesamt).toBe(mit.fondsLv!.verfuegbar);
     expect(mit.hinweise.some((h) => h.text.includes('einkommensteuerfrei'))).toBe(true);
   });
 
@@ -274,7 +284,7 @@ describe('Gegenproben der Nachprüfung (E02, E03)', () => {
     const e = eingabe();
     const r = simuliereAvd(e);
     const [beiBeginn] = szenarien(e, [67]);
-    expect(beiBeginn.freiesDepot).toBeCloseTo(r.depot.endkapitalNetto, 6);
+    expect(beiBeginn.freiesDepot!.verfuegbar).toBeCloseTo(r.depot.endkapitalNetto, 6);
   });
 
   it('verlangt einen Einstand über den Einzahlungen (E02)', () => {
@@ -382,5 +392,103 @@ describe('Grenzen des Modells, jetzt als Angabe (Nachpruefung)', () => {
       vorgabe.sonstige.rueckforderung
     );
     expect(streng.hinweise.some((h) => h.text.includes('strengere Lesart'))).toBe(true);
+  });
+});
+
+describe('Nach Ablauf der Rentengarantiezeit', () => {
+  // Der eigentliche Unterschied zwischen gefoerdertem Vertrag und freiem
+  // Kapital. Vorher endete der Vergleich am Rentenbeginn - in der Tabelle
+  // stand ein Strich, und damit fehlte ausgerechnet die Aussage, auf die es
+  // ankommt.
+  const mitPartnern = (partner: 'fonds_lv' | 'riester_alt') =>
+    eingabe({
+      auszahlform: 'leibrente',
+      vergleichspartner: partner,
+      fondsLv: {
+        renditeBruttoPaJahr: 0.07,
+        terPaJahr: 0.003,
+        kostenart: 'prozent',
+        abschlusskostenGesamt: 0,
+        verwaltungProMonat: 0,
+        effektivkostenPaJahr: 0.012,
+      },
+      riester: {
+        beitragspflEinnahmenVorjahr: 45000,
+        kinderGeborenVor2008: 0,
+        effektivkostenPaJahr: 0.02,
+        renditeBruttoPaJahr: 0.03,
+      },
+    });
+
+  it('lässt der Police das ganze Kapital, während der Vertrag auf null fällt', () => {
+    // Garantiezeit 10 Jahre, Tod mit 80 - also 3 Jahre danach.
+    const e = mitPartnern('fonds_lv');
+    const [s] = szenarien(e, [80], 10);
+
+    expect(s.phase).toBe('nach_plan_ende');
+    expect(s.garantierteRestrente).toBe(0);
+    expect(s.sonstige.verfuegbar).toBe(0);
+    expect(s.ehegatte.verfuegbar).toBe(0);
+
+    // Police und Depot haben ihr Kapital noch - vollständig.
+    expect(s.fondsLv!.verfuegbar).toBeGreaterThan(50_000);
+    expect(s.fondsLv!.rueckforderung).toBe(0);
+    expect(s.freiesDepot!.verfuegbar).toBeGreaterThan(50_000);
+    expect(s.freiesDepot!.rueckforderung).toBe(0);
+  });
+
+  it('zieht den Riester-Altvertrag mit auf null', () => {
+    // Fuer ihn gilt dieselbe Regel wie fuer das Altersvorsorgedepot - das ist
+    // sein struktureller Nachteil gegenueber Police und Depot.
+    const e = mitPartnern('riester_alt');
+    const innerhalb = szenarien(e, [70], 10)[0];
+    const danach = szenarien(e, [80], 10)[0];
+
+    expect(innerhalb.riesterAlt!.kapitalGesamt).toBeGreaterThan(0);
+    expect(innerhalb.riesterAlt!.rueckforderung).toBeGreaterThan(0);
+    expect(danach.riesterAlt!.kapitalGesamt).toBe(0);
+    expect(danach.riesterAlt!.verfuegbar).toBe(0);
+  });
+
+  it('nennt das verrentete Kapital - sonst ist die Null ohne Sinn', () => {
+    // Beim Tod nach Ablauf der Garantiezeit steht beim Vertrag eine Null.
+    // Nicht, weil nichts da war, sondern weil es verrentet ist. Ohne diese
+    // Zahl liest sich die Zeile falsch.
+    const e = mitPartnern('fonds_lv');
+    const [anspar, auszahl] = szenarien(e, [50, 80], 10);
+    expect(anspar.verrentetesKapital).toBeUndefined();
+    expect(auszahl.verrentetesKapital!).toBeGreaterThan(auszahl.sonstige.verfuegbar);
+    expect(auszahl.sonstige.verfuegbar).toBe(0);
+  });
+
+  it('lässt das Kapital nach dem Rentenbeginn weiter wachsen', () => {
+    const e = mitPartnern('fonds_lv');
+    const [beiBeginn, spaet] = szenarien(e, [67, 80], 10);
+    expect(spaet.fondsLv!.kapitalGesamt).toBeGreaterThan(beiBeginn.fondsLv!.kapitalGesamt);
+    expect(spaet.freiesDepot!.kapitalGesamt).toBeGreaterThan(
+      beiBeginn.freiesDepot!.kapitalGesamt,
+    );
+  });
+
+  it('rechnet auf Wunsch stattdessen mit laufenden Entnahmen', () => {
+    // Gegenprobe zur Annahme: Wer aus dem Depot entnimmt wie der Vertrag
+    // Rente zahlt, hat im Todesfall weniger liegen.
+    const e = mitPartnern('fonds_lv');
+    const gemeinsam = {
+      basis: e,
+      ergebnis: simuliereAvd(e),
+      alter: [80],
+      rentengarantiezeitJahre: 10,
+    };
+    const liegen = berechneTodesfallSzenarien({ ...gemeinsam, kapitalBleibtLiegen: true })[0];
+    const entnommen = berechneTodesfallSzenarien({
+      ...gemeinsam,
+      kapitalBleibtLiegen: false,
+    })[0];
+
+    expect(entnommen.freiesDepot!.kapitalGesamt).toBeLessThan(
+      liegen.freiesDepot!.kapitalGesamt,
+    );
+    expect(liegen.hinweise.some((h) => h.text.includes('liegen bleibt'))).toBe(true);
   });
 });

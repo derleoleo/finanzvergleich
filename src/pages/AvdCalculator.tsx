@@ -24,6 +24,7 @@ import {
 } from '@/lib/finance/avd/strategien';
 import { besteOption, zillmerungsverlust } from '@/lib/finance/avd/optionen';
 import { berechneTodesfallSzenarien } from '@/lib/finance/avd/todesfall';
+import HinterbliebeneVergleich from '@/components/results/HinterbliebeneVergleich';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -431,16 +432,23 @@ export default function AvdCalculator() {
       alter: sz.alter,
       an_ehegatten: Math.round(sz.ehegatte.verfuegbar),
       an_sonstige_erben: Math.round(sz.sonstige.verfuegbar),
-      freies_depot: Math.round(sz.freiesDepot ?? 0),
+      freies_depot: Math.round(sz.freiesDepot?.verfuegbar ?? 0),
+      ...(sz.fondsLv ? { fondspolice: Math.round(sz.fondsLv.verfuegbar) } : {}),
+      ...(sz.riesterAlt ? { riester_alt: Math.round(sz.riesterAlt.verfuegbar) } : {}),
     })),
     beschriftungen: {
       an_ehegatten: 'Übertragung auf einen Vertrag des Ehegatten',
       an_sonstige_erben: 'Auszahlung an sonstige Erben',
       freies_depot: 'Freies Depot nach Abgeltungsteuer',
+      fondspolice: 'Fondspolice, Todesfallleistung',
+      riester_alt: 'Riester-Altvertrag, an sonstige Erben',
     },
     hinweis:
       'Nach Rückforderung der Förderung (§ 93 Abs. 1 EStG) und Steuer auf die ' +
-      'Erträge. Ohne Erbschaftsteuer.',
+      'Erträge. Ohne Erbschaftsteuer. Der Knick nach dem Rentenbeginn ist das ' +
+      'Ende der Rentengarantiezeit: Danach geht aus dem geförderten Vertrag ' +
+      'nichts mehr an die Hinterbliebenen, während freies Kapital vollständig ' +
+      'vererbt wird.',
   };
 
   /**
@@ -589,7 +597,14 @@ export default function AvdCalculator() {
                 `szenario_tod_${i + 1}_rueckforderung`,
                 Math.round(sz.sonstige.rueckforderung),
               ],
-              [`szenario_tod_${i + 1}_vergleich`, Math.round(sz.freiesDepot ?? 0)],
+              [
+                `szenario_tod_${i + 1}_vergleich`,
+                Math.round(sz.freiesDepot?.verfuegbar ?? 0),
+              ],
+              [
+                `szenario_tod_${i + 1}_fondspolice`,
+                Math.round(sz.fondsLv?.verfuegbar ?? 0),
+              ],
             ])
           ),
           ...modellStempel(),
@@ -1992,47 +2007,24 @@ export default function AvdCalculator() {
                         ))}
                       </tr>
                     )}
-                    <tr className="border-t border-slate-200">
-                      <td className="py-2 pr-4 pt-4 text-slate-500">
-                        Freies Depot, nach Abgeltungsteuer
-                      </td>
-                      {szenarien.map((sz, i) => (
-                        <td key={i} className="py-2 px-3 pt-4 text-right">
-                          {sz.freiesDepot != null ? formatCurrency(sz.freiesDepot) : '–'}
-                        </td>
-                      ))}
-                    </tr>
-                    {szenarien.some((sz) => sz.fondsLv != null) && (
-                      <tr className="border-t border-slate-100">
-                        <td className="py-2 pr-4 text-slate-500">
-                          Fondspolice: Todesfallleistung
-                          <span className="block text-xs text-slate-400">
-                            einkommensteuerfrei, keine Rückforderung
-                          </span>
-                        </td>
-                        {szenarien.map((sz, i) => (
-                          <td key={i} className="py-2 px-3 text-right">
-                            {sz.fondsLv != null ? formatCurrency(sz.fondsLv) : '–'}
-                          </td>
-                        ))}
-                      </tr>
-                    )}
-                    {szenarien.some((sz) => sz.riesterAlt != null) && (
-                      <tr className="border-t border-slate-100">
-                        <td className="py-2 pr-4 text-slate-500">
-                          Riester-Altvertrag: an sonstige Erben
-                        </td>
-                        {szenarien.map((sz, i) => (
-                          <td key={i} className="py-2 px-3 text-right">
-                            {sz.riesterAlt != null
-                              ? formatCurrency(sz.riesterAlt.verfuegbar)
-                              : '–'}
-                          </td>
-                        ))}
-                      </tr>
-                    )}
                   </tbody>
                 </table>
+              </div>
+
+              {/*
+                Der eigentliche Vergleich. Er stand vorher als drei weitere
+                Zeilen in derselben Tabelle - und ging dort unter, obwohl er
+                die Entscheidung traegt.
+              */}
+              <div>
+                <h3 className="font-semibold text-slate-900 mb-1">
+                  Was bei den Hinterbliebenen ankommt
+                </h3>
+                <p className="text-sm text-slate-500 mb-4">
+                  Gefördertes Kapital ist ab dem Rentenbeginn verrentet. Freies Kapital
+                  nicht – das ist im Todesfall der Unterschied.
+                </p>
+                <HinterbliebeneVergleich szenarien={szenarien} />
               </div>
 
               {/* Hinweise, ohne Wiederholungen über die drei Spalten */}

@@ -9,9 +9,24 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-27b" as const;
+export const MODELL_VERSION = "2026-10-27c" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-27c",
+    aenderung:
+      "Altersvorsorgedepot, Todesfall: Der Vergleich endete bisher am " +
+      "Rentenbeginn - fuer Fondspolice und Riester-Altvertrag stand danach ein " +
+      "Strich. Damit fehlte der wichtigste Punkt: Nach Ablauf der " +
+      "Rentengarantiezeit geht aus dem gefoerderten Vertrag nichts mehr an die " +
+      "Hinterbliebenen, auch nicht an den Ehegatten, waehrend freies Kapital " +
+      "vollstaendig vererbt wird. Beide werden jetzt ueber die gesamte " +
+      "Auszahlphase gerechnet, und jede Spalte weist Gesamtkapital, Abzuege und " +
+      "Verfuegbares aus. Neue Annahme: Kapital in Depot und Police bleibt nach " +
+      "dem Rentenbeginn liegen und traegt weiter Rendite (abschaltbar ueber " +
+      "kapitalBleibtLiegen) - das verschiebt die Depotwerte in der Auszahlphase " +
+      "nach oben, weil vorher eine parallele Entnahme unterstellt war.",
+  },
   {
     version: "2026-10-27b",
     aenderung:
