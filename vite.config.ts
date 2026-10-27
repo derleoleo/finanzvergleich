@@ -98,8 +98,52 @@ function ratgeberPlugin(modus: string): PluginOption {
   };
 }
 
+/**
+ * Jede oeffentliche Adresse der Anwendung bekommt ihren eigenen Kopf.
+ *
+ * Ohne das liefert die Single-Page-App ueberall dieselbe index.html - mit
+ * demselben Title und einem Canonical auf die Startseite. Fuer einen Crawler
+ * sind das Dubletten, und genau die Seiten, die Besucher bringen sollen
+ * (Beispielfall, Preise), waeren nicht indexierbar.
+ *
+ * Laeuft in `closeBundle`, also nachdem Vite die index.html geschrieben hat:
+ * Die Kopien entstehen aus der fertigen Datei und tragen damit automatisch
+ * dieselben Buendelnamen.
+ */
+function seitenkoepfePlugin(): PluginOption {
+  let ausgabe = "dist";
+  return {
+    name: "vorsorgewaage-seitenkoepfe",
+    apply: "build",
+    configResolved(config) {
+      ausgabe = config.build.outDir;
+    },
+    async closeBundle() {
+      const { SEITENKOEPFE, kopfSetzen, dateinamen } = await import("./src/utils/seitenkoepfe");
+      const { readFileSync, writeFileSync, mkdirSync, existsSync } = await import("node:fs");
+      const quelle = path.resolve(ausgabe, "index.html");
+      if (!existsSync(quelle)) return;
+      const html = readFileSync(quelle, "utf8");
+      for (const kopf of SEITENKOEPFE) {
+        const inhalt = kopfSetzen(html, kopf);
+        for (const name of dateinamen(kopf.pfad)) {
+          const ziel = path.resolve(ausgabe, name);
+          mkdirSync(path.dirname(ziel), { recursive: true });
+          writeFileSync(ziel, inhalt, "utf8");
+        }
+      }
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => ({
-  plugins: [tailwindcss(), react(), strukturierteDatenPlugin(), ratgeberPlugin(mode)],
+  plugins: [
+    tailwindcss(),
+    react(),
+    strukturierteDatenPlugin(),
+    ratgeberPlugin(mode),
+    seitenkoepfePlugin(),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),

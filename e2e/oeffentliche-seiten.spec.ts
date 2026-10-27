@@ -32,8 +32,22 @@ test.describe("Öffentliche Seiten", () => {
     // Das Codefeld braucht eine Sitzung und darf Gaesten nicht erscheinen.
     await expect(page.getByText(/Zugangscode einlösen/)).toHaveCount(0);
 
+    // Eigener Kopf statt des Kopfes der Startseite. Faellt der Server auf
+    // die SPA-Umschreibung zurueck, steht hier wieder das Canonical der
+    // Startseite - und Google haelt die Seite fuer eine Dublette.
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      "https://www.vorsorgewaage.de/pricing",
+    );
+    await expect(page).toHaveTitle(/^Preise – Vorsorgewaage$/);
+
     await page.goto("/beispiel");
     await expect(page).toHaveURL(/\/beispiel$/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      "https://www.vorsorgewaage.de/beispiel",
+    );
+    await expect(page).toHaveTitle(/^Beispielfall/);
     await expect(page.getByRole("heading", { name: /Fondspolice oder Depot/ }))
       .toBeVisible();
     // Die Zahlen rechnet die Seite selbst; die Beitragssumme ist fest.
