@@ -10,6 +10,12 @@
 --    der RLS ohnehin umgeht.
 drop policy if exists users_own_consents on public.finanzvergleich_consents;
 
+-- Jede Regel vorher verwerfen, damit sich die Migration wiederholen laesst.
+-- Ohne das bricht ein zweiter Lauf ab ("policy already exists") - gefunden
+-- beim Neuaufbau gegen eine leere Datenbank (Audit D02).
+drop policy if exists consents_lesen on public.finanzvergleich_consents;
+drop policy if exists consents_anlegen on public.finanzvergleich_consents;
+
 create policy consents_lesen
   on public.finanzvergleich_consents
   for select
@@ -27,12 +33,41 @@ drop policy if exists "subscriptions: user sees own row" on public.subscriptions
 
 -- 3) Regeln auf angemeldete Nutzer eingrenzen statt auf public.
 --    Inhaltlich ändert sich nichts, es ist nur eine Ebene weniger Angriffsfläche.
-alter policy "Users can read own subscription" on public.subscriptions to authenticated;
-alter policy own_data on public.calculations to authenticated;
-alter policy own_data on public.single_payment_calculations to authenticated;
-alter policy own_data on public.best_advice_calculations to authenticated;
-alter policy own_data on public.pension_gap_calculations to authenticated;
-alter policy own_data on public.user_profiles to authenticated;
+--
+--    Nur, wenn die Regel schon da ist: Diese Regeln entstanden im Dashboard
+--    und stehen in keiner Migration. Auf einer leeren Datenbank gibt es
+--    nichts einzugrenzen, und `alter policy` bricht dann ab – genau daran
+--    scheiterte der Neuaufbau (Audit D02). Die Regeln entstehen dort später
+--    aus `zugriffsregeln-stand.sql`, bereits mit `to authenticated`.
+do $$
+declare
+  ziel record;
+begin
+  for ziel in
+    select * from (values
+      ('subscriptions', 'Users can read own subscription'),
+      ('calculations', 'own_data'),
+      ('single_payment_calculations', 'own_data'),
+      ('best_advice_calculations', 'own_data'),
+      ('pension_gap_calculations', 'own_data'),
+      ('user_profiles', 'own_data')
+    ) as t(tabelle, regel)
+  loop
+    if exists (
+      select 1 from pg_policies
+      where schemaname = 'public'
+        and tablename = ziel.tabelle
+        and policyname = ziel.regel
+    ) then
+      execute format(
+        'alter policy %I on public.%I to authenticated',
+        ziel.regel, ziel.tabelle
+      );
+    else
+      raise notice 'Regel % auf % fehlt - nichts einzugrenzen.', ziel.regel, ziel.tabelle;
+    end if;
+  end loop;
+end $$;
 
 -- Gegenprobe nach dem Ausführen:
 -- select tablename, policyname, cmd, roles from pg_policies

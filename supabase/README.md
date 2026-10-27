@@ -63,9 +63,32 @@ Indizes stimmen danach überein. Was sie nicht liefert: Daten, Rollen und
 Schlüsselmaterial – nur Struktur. Zugriffsregeln stehen in
 `zugriffsregeln-stand.sql`, Funktionen in ihren eigenen Migrationen.
 
-**Der Nachweis fehlt weiter, bis es einmal gelaufen ist.** Ein Ausgangsstand,
-der nie gegen eine leere Datenbank gespielt wurde, ist eine Behauptung. Dafür
-ein Wegwerf-Projekt oder ein lokales Supabase nehmen, nicht die Produktion.
+**Der Abzug ist eingespielt und der Neuaufbau geprüft (27.10.2026):**
+`migrations/00000000000001_ausgangsstand_tabellen.sql` trägt die 16 Tabellen
+mit Schlüsseln, CHECK-Bedingungen, Indizes und dem Schalter für die
+Zeilensicherheit.
+
+Der Probeaufbau lief gegen ein echtes Postgres (pglite, siehe
+`docs/neuaufbau-probe-2026-10-27.mjs`): leere Datenbank, nur die drei Rollen
+und `auth.users` vorgegeben, dann der Ordner in Zeitstempelreihenfolge und
+zuletzt `zugriffsregeln-stand.sql`. Ergebnis: 16 Tabellen, alle mit
+Zeilensicherheit, 16 Regeln, 6 Funktionen – ohne Fehler.
+
+Zwei Mängel hat erst dieser Lauf gezeigt, beide in
+`20260928120000_rls_haerten.sql`:
+
+- `alter policy ... to authenticated` auf Regeln, die im Dashboard entstanden
+  sind. Auf einer leeren Datenbank gibt es sie nicht, und die Anweisung bricht
+  ab. Jetzt wird je Regel geprüft, ob sie da ist, und sonst eine Notiz
+  ausgegeben.
+- Eine Regel wurde ohne vorheriges Verwerfen angelegt – ein zweiter Lauf
+  derselben Migration scheiterte daran. Jetzt wird vorher verworfen, wie im
+  übrigen Ordner auch.
+
+**Was der Probeaufbau nicht beweist:** pglite ist nicht Supabase. Erweiterungen,
+Auth-Trigger und die Realtime-Einrichtung fehlen dort, und `auth.users` ist nur
+nachgebaut. Für die Freigabe eines echten Wiederherstellungswegs gehört derselbe
+Lauf einmal gegen ein Wegwerf-Projekt – nicht gegen die Produktion.
 
 Für den vollständigen Abzug (mit Docker):
 
