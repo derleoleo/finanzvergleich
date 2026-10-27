@@ -462,8 +462,11 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     if (!(await nameFeld.isVisible().catch(() => false))) {
       await expect(nameFeld).toBeVisible({ timeout: 40_000 });
     }
-    // Die Hinweisleiste fängt sonst Klicks ab
-    await page.getByRole("button", { name: "OK, verstanden" }).click().catch(() => undefined);
+    // Die Hinweisleiste ist schon weg (siehe beforeEach). Hier stand ein
+    // `click().catch(…)` auf ihren Knopf - und genau das wurde zur Falle:
+    // Ohne gesetzte Handlungsfrist wartet Playwright auf ein Element, das es
+    // nicht mehr gibt, bis die Testfrist von 240 s ablaeuft. Das `catch`
+    // kommt dann nie zum Zug, weil der Test vorher stirbt.
     await nameFeld.fill(name);
 
     await page.getByRole("button", { name: "Fondspolice", exact: true }).click();
