@@ -1866,38 +1866,51 @@ export default function AvdCalculator() {
                     {ergebnis.auszahlung.kvBeitrag > 0 && ` · KV/PV ${formatCurrency(ergebnis.auszahlung.kvBeitrag)}`}
                   </div>
                 </div>
+                {/*
+                  Die Gegenseite folgt der Auswahl oben. Vorher stand hier
+                  immer das freie Depot - auch wenn Fondspolice oder
+                  Riester-Bestand gewaehlt war. Die Engine kannte fuer die
+                  beiden anderen Seiten gar keine Monatsleistung.
+                */}
                 <div className="rounded-xl border border-slate-200 p-4">
                   <div className="text-xs text-slate-500 mb-1">
                     {formData.teilkapitalAnteil > 0
                       ? 'Teilkapital zu Beginn'
-                      : 'Freies Depot: Entnahme netto'}
+                      : `${ergebnis.vergleichAuszahlung.name}: Entnahme netto`}
                   </div>
                   <div className="text-2xl font-bold text-slate-900">
                     {formatCurrency(
                       formData.teilkapitalAnteil > 0
                         ? ergebnis.auszahlung.teilkapital
-                        : ergebnis.depot.monatsentnahmeNetto
+                        : ergebnis.vergleichAuszahlung.monatlichNetto
                     )}
                   </div>
                   <div className="text-xs text-slate-500 mt-1">
                     {formData.teilkapitalAnteil > 0
                       ? `davon Steuer ${formatCurrency(ergebnis.auszahlung.teilkapitalSteuer)}`
-                      : `brutto ${formatCurrency(ergebnis.depot.monatsentnahmeBrutto)} · monatlich bis zum gleichen Endalter`}
+                      : ergebnis.vergleichAuszahlung.steuerAuszahlphase != null
+                        ? `brutto ${formatCurrency(ergebnis.vergleichAuszahlung.monatlichBrutto)} · monatlich bis zum gleichen Endalter`
+                        : 'monatlich bis zum gleichen Endalter'}
                   </div>
                 </div>
               </div>
 
-              {formData.teilkapitalAnteil === 0 && ergebnis.depot.monatsentnahmeNetto > 0 && (
-                <p className="text-xs text-slate-500 flex items-start gap-2">
-                  <Info className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
-                  Beide Entnahmen sind nach Steuern und laufen bis zum gleichen Endalter. Das
-                  Depot wird dafür nicht auf einmal verkauft, sondern entnommen: Jede Entnahme
-                  realisiert anteilig Gewinn, darauf fallen Abgeltungsteuer und 30 %
-                  Teilfreistellung an – über die gesamte Auszahlphase{' '}
-                  {formatCurrency(ergebnis.depot.steuerAuszahlphase)}. Das Endkapital nach Steuern
-                  oben unterstellt dagegen den vollständigen Verkauf zum Rentenbeginn.
-                </p>
-              )}
+              {formData.teilkapitalAnteil === 0 &&
+                ergebnis.vergleichAuszahlung.monatlichNetto > 0 && (
+                  <p className="text-xs text-slate-500 flex items-start gap-2">
+                    <Info className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
+                    Beide Leistungen sind nach Steuern und laufen bis zum gleichen Endalter.{' '}
+                    {ergebnis.vergleichAuszahlung.annahme}
+                    {ergebnis.vergleichAuszahlung.steuerAuszahlphase != null && (
+                      <>
+                        {' '}Über die gesamte Auszahlphase sind das{' '}
+                        {formatCurrency(ergebnis.vergleichAuszahlung.steuerAuszahlphase)}{' '}
+                        Abgeltungsteuer. Das Endkapital nach Steuern oben unterstellt dagegen den
+                        vollständigen Verkauf zum Rentenbeginn.
+                      </>
+                    )}
+                  </p>
+                )}
               {ergebnis.auszahlung.gesetzlicheMindestrate != null && (
                 <p className="text-xs text-slate-500 flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />

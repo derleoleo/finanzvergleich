@@ -219,6 +219,32 @@ export type DepotVergleich = {
   steuerAuszahlphase: number;
 };
 
+/**
+ * Monatsleistung des aktiven Vergleichspartners.
+ *
+ * Die Auszahlphase zeigte bis Oktober 2026 **immer** das freie Depot – auch
+ * wenn der Nutzer oben die Fondspolice oder den Riester-Bestand gewählt hatte.
+ * Der Grund lag nicht nur in der Oberfläche: Die Engine kannte für die beiden
+ * anderen Seiten überhaupt keine Monatsleistung.
+ *
+ * Gerechnet wird mit **derselben Auszahlform und demselben Horizont** wie beim
+ * Altersvorsorgedepot – nur mit dem jeweils eigenen Kapital und der eigenen
+ * Rendite. Ein eigener Rechenweg je Partner würde den Unterschied aus dem
+ * Rechenweg erzeugen statt aus dem Produkt. Dasselbe Vorgehen wie im Todesfall
+ * (`todesfall.ts`, `riesterAltNachBeginn`).
+ */
+export type VergleichAuszahlung = {
+  partner: 'depot' | 'riester_alt' | 'fonds_lv';
+  /** Beschriftung der Kachel, z. B. „Fondspolice: Entnahme netto". */
+  name: string;
+  monatlichBrutto: number;
+  monatlichNetto: number;
+  /** Nur beim freien Depot: Abgeltungsteuer über die gesamte Auszahlphase. */
+  steuerAuszahlphase?: number;
+  /** Was dabei unterstellt ist – gehört neben die Zahl, nicht in eine Fußnote. */
+  annahme: string;
+};
+
 export type AvdErgebnis = {
   jahre: JahresZeile[];
   jahreBisAuszahlung: number;
@@ -241,6 +267,8 @@ export type AvdErgebnis = {
   ungefoerderterKapitalanteil: number;
   auszahlung: AuszahlErgebnis;
   depot: DepotVergleich;
+  /** Monatsleistung der Gegenseite – folgt `vergleichspartner`. */
+  vergleichAuszahlung: VergleichAuszahlung;
   /** Nur gesetzt, wenn gegen einen Riester-Bestandsvertrag verglichen wird. */
   riesterAlt?: RiesterAltErgebnis;
   /** Nur gesetzt, wenn gegen eine Fondspolice verglichen wird. */
@@ -717,6 +745,7 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
     ungefoerderterKapitalanteil: kapitalUngef,
     auszahlung,
     depot,
+    vergleichAuszahlung: vergleichAuszahlungRechnen({ e, depot, riesterAlt, fondsLv }),
     riesterAlt,
     fondsLv,
     handlungsoptionen,
@@ -1002,6 +1031,90 @@ function berechneDepotVergleich(
     monatsentnahmeBrutto: auszahlphase.brutto,
     monatsentnahmeNetto: auszahlphase.nettoDurchschnitt,
     steuerAuszahlphase: auszahlphase.steuerGesamt,
+  };
+}
+
+/**
+ * Monatsleistung der Gegenseite, in derselben Auszahlform wie das AVD.
+ *
+ * Für das freie Depot stehen die Zahlen schon fest. Für die Fondspolice und
+ * den Riester-Altvertrag wird dieselbe Form gerechnet, die der Sparer für das
+ * Altersvorsorgedepot gewählt hat: Leibrente mit demselben Rentenfaktor oder
+ * Auszahlplan bis zum selben Endalter. Unterschiedlich sind nur Kapital und
+ * Rendite – also genau das, was der Vergleich zeigen soll.
+ *
+ * Beide Kapitalien sind an dieser Stelle bereits versteuert (die Police über
+ * das Halbeinkünfteverfahren, der Riester-Vertrag nachgelagert), deshalb fällt
+ * brutto mit netto zusammen. Beim Depot nicht: Dort entsteht die Steuer erst
+ * mit jeder Entnahme.
+ */
+function vergleichAuszahlungRechnen(args: {
+  e: AvdEingabe;
+  depot: DepotVergleich;
+  riesterAlt?: RiesterAltErgebnis;
+  fondsLv?: FondsLvErgebnis;
+}): VergleichAuszahlung {
+  const { e, depot, riesterAlt, fondsLv } = args;
+
+  /** Dieselbe Auszahlform wie beim AVD, angewandt auf ein fremdes Kapital. */
+  const wieDasAvd = (kapital: number, renditePaJahr: number, kostenPaJahr: number) => {
+    if (e.auszahlform === 'leibrente') {
+      return (Math.max(0, kapital) / 10000) * (e.rentenfaktorProZehntausend || 0);
+    }
+    const monate = Math.max(
+      12,
+      Math.round((e.auszahlplanEndalter - e.auszahlungsbeginnAlter) * 12)
+    );
+    const rMonat = calculateMonthlyReturn((renditePaJahr - kostenPaJahr) * 100);
+    return monatlicheEntnahme(Math.max(0, kapital), rMonat, monate);
+  };
+
+  const form = e.auszahlform === 'leibrente' ? 'Leibrente' : 'Auszahlplan';
+
+  if (riesterAlt) {
+    const betrag = wieDasAvd(
+      riesterAlt.endkapitalNachSteuer,
+      e.riester?.renditeBruttoPaJahr ?? 0,
+      e.riester?.effektivkostenPaJahr ?? 0
+    );
+    return {
+      partner: 'riester_alt',
+      name: 'Riester-Bestandsvertrag',
+      monatlichBrutto: betrag,
+      monatlichNetto: betrag,
+      annahme:
+        `Gerechnet als ${form} wie das Altersvorsorgedepot. Das Kapital ist ` +
+        'nachgelagert versteuert (§ 22 Nr. 5 EStG), die Leistung also netto.',
+    };
+  }
+
+  if (fondsLv) {
+    const betrag = wieDasAvd(
+      fondsLv.endkapitalNachSteuer,
+      e.fondsLv?.renditeBruttoPaJahr ?? 0,
+      e.fondsLv?.terPaJahr ?? 0
+    );
+    return {
+      partner: 'fonds_lv',
+      name: 'Fondspolice',
+      monatlichBrutto: betrag,
+      monatlichNetto: betrag,
+      annahme:
+        `Gerechnet als ${form} wie das Altersvorsorgedepot, aus dem zu ` +
+        'Rentenbeginn bereits versteuerten Kapital. Eine Verrentung über den ' +
+        'Ertragsanteil wäre milder.',
+    };
+  }
+
+  return {
+    partner: 'depot',
+    name: 'Freies Depot',
+    monatlichBrutto: depot.monatsentnahmeBrutto,
+    monatlichNetto: depot.monatsentnahmeNetto,
+    steuerAuszahlphase: depot.steuerAuszahlphase,
+    annahme:
+      'Entnahmeplan bis zum selben Endalter. Die Abgeltungsteuer fällt mit ' +
+      'jeder Entnahme an, nicht auf einmal – deshalb steht hier brutto neben netto.',
   };
 }
 

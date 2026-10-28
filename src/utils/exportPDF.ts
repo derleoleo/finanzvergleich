@@ -235,6 +235,28 @@ export async function exportSections(
   // Warten bis Browser neu layoutet und Recharts ResizeObserver gefeuert hat
   await new Promise<void>((r) => setTimeout(r, 150));
 
+  /*
+   * Zentrierung des Aufnahmebereichs aufheben.
+   *
+   * Die Rechner setzen auf `#pdf-content` die Klassen `max-w-5xl mx-auto` -
+   * also `margin-left: auto`. html-to-image klont den Knoten in ein
+   * `foreignObject` der Breite `captureW` und uebernimmt dabei seine
+   * Randangaben. Dort loest `auto` neu auf und schiebt den Inhalt nach
+   * rechts: links bleibt ein leerer Streifen, rechts faellt Text aus dem
+   * Bild. Betroffen sind genau die Seiten mit `mx-auto` (AVD, Nettopolice,
+   * Fassungsansicht), nicht die beiden Detailseiten ohne.
+   *
+   * Waehrend der Aufnahme steht der Bereich deshalb buendig links.
+   */
+  const randVorher = {
+    margin: source.style.margin,
+    marginLeft: source.style.marginLeft,
+    marginRight: source.style.marginRight,
+  };
+  source.style.margin = "0";
+  source.style.marginLeft = "0";
+  source.style.marginRight = "0";
+
   const captureW = Math.max(source.offsetWidth, source.scrollWidth);
   const captureH = source.scrollHeight;
 
@@ -329,6 +351,9 @@ export async function exportSections(
     // Alles wiederherstellen
     source.removeChild(header);
     source.removeChild(disclaimer);
+    source.style.margin = randVorher.margin;
+    source.style.marginLeft = randVorher.marginLeft;
+    source.style.marginRight = randVorher.marginRight;
     allSections.forEach((el, i) => (el.style.display = savedSectionDisplays[i]));
     hiddenEls.forEach((el) => (el.style.display = ""));
     for (const s of aufgeklappt) {
