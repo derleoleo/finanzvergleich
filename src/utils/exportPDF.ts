@@ -141,6 +141,25 @@ export async function exportSections(
   );
   hiddenEls.forEach((el) => (el.style.display = "none"));
 
+  /*
+   * Zusammengeklappte Abschnitte fuer den Export aufklappen.
+   *
+   * Oben wird nur `display` der Sektion selbst zurueckgesetzt - ein innen
+   * zusammengeklappter Inhalt bliebe auf Hoehe null und fehlte im Dokument,
+   * obwohl der Nutzer die Sektion im Export-Dialog angehakt hat. Was er
+   * anhakt, muss er auch bekommen; ob er den Abschnitt am Bildschirm gerade
+   * offen hat, ist eine andere Frage.
+   */
+  type AufklappStand = { el: HTMLElement; maxHeight: string; overflow: string };
+  const aufgeklappt: AufklappStand[] = Array.from(
+    source.querySelectorAll<HTMLElement>("[data-pdf-expand]")
+  ).map((el) => {
+    const stand = { el, maxHeight: el.style.maxHeight, overflow: el.style.overflow };
+    el.style.maxHeight = "none";
+    el.style.overflow = "visible";
+    return stand;
+  });
+
   // Grid-Layout des Elterncontainers korrigieren, wenn data-pdf-hide-Elemente ausgeblendet werden.
   // Ohne Fix: results-Div landet in Spalte 1 (z.B. 360px) statt in der vollen Breite.
   type GridFix = { el: HTMLElement; gridTemplateColumns: string };
@@ -312,6 +331,10 @@ export async function exportSections(
     source.removeChild(disclaimer);
     allSections.forEach((el, i) => (el.style.display = savedSectionDisplays[i]));
     hiddenEls.forEach((el) => (el.style.display = ""));
+    for (const s of aufgeklappt) {
+      s.el.style.maxHeight = s.maxHeight;
+      s.el.style.overflow = s.overflow;
+    }
     for (const s of fixedGridLayouts) {
       s.el.style.gridTemplateColumns = s.gridTemplateColumns;
     }

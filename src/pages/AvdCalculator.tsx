@@ -11,6 +11,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { UserDefaults } from '@/entities/UserDefaults';
+import AvdEinstieg from '@/components/calculator/AvdEinstieg';
+import Abschnitt from '@/components/ui/abschnitt';
+import { ergaenzeFehlendes } from '@/utils/avdEntwurf';
 import {
   simuliereAvd,
   foerderquotenKurve,
@@ -72,7 +75,35 @@ type FormData = Omit<AvdEingabe, 'flags'> & {
    * eingebbar - 50/67/75 ist die Vorgabe, nicht die Vorschrift.
    */
   todesfallAlter: number[];
+  /**
+   * Gibt es einen Riester-Bestandsvertrag?
+   *
+   * Eigene Achse neben `vergleichspartner`, obwohl sich beides überschneidet:
+   * `vergleichspartner === 'riester_alt'` heißt zwar faktisch „es gibt einen
+   * Bestand", aber wer einen hat, kann ihn trotzdem gegen ein freies Depot
+   * rechnen wollen. Und ohne diese Frage bleibt die Wechselanalyse
+   * unauffindbar – sie verlangt heute die Freischaltung in den
+   * Voreinstellungen *und* den passenden Vergleichspartner.
+   *
+   * Gehört bewusst nicht zu `AvdEingabe`: Die Engine kennt die Frage nicht,
+   * sie steuert nur, was die Oberfläche anbietet.
+   */
+  hatRiesterBestand: boolean;
 };
+
+/**
+ * Abschnitte, die beim ersten Öffnen offen stehen.
+ *
+ * Es sind die drei, die die Spezifikation als Kern nennt: Förderberechtigung,
+ * Beitrag mit Grenzförderquote, Vergleich. Alles Weitere ist zugeklappt – es
+ * bleibt an seinem Platz, nimmt aber keine Aufmerksamkeit mehr weg.
+ *
+ * Bewusst **kein** Teil von `FormData`: `update()` schreibt den ganzen Zustand
+ * in den Entwurf, und `speichern()` legt ihn als `form` in die Datenbank. Ob
+ * jemand einen Abschnitt aufgeklappt hat, gehört in keine gespeicherte
+ * Berechnung.
+ */
+const OFFEN_AM_ANFANG = ['berechtigung', 'foerderung', 'vergleich', 'optionen'];
 
 function makeDefaults(): FormData {
   const d = UserDefaults.load();
@@ -138,6 +169,7 @@ function makeDefaults(): FormData {
     inflationPaJahr: d.inflation_percent / 100,
     zulagenZuflussVerzoegerungJahre: 1,
     erstattungReinvestieren: false,
+    hatRiesterBestand: false,
   };
 }
 
@@ -146,7 +178,7 @@ function loadDraft(): FormData {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return defaults;
-    return { ...defaults, ...(JSON.parse(raw) as Partial<FormData>) };
+    return ergaenzeFehlendes(JSON.parse(raw) as Partial<FormData>, defaults);
   } catch {
     return defaults;
   }
@@ -182,12 +214,32 @@ export default function AvdCalculator() {
     if (!id) return;
     AvdCalculation.get(id).then((eintrag) => {
       if (!eintrag) return;
-      setFormData((prev) => ({ ...prev, ...(eintrag.form as Partial<FormData>) }));
+      // Vor der Einstiegsleiste gespeicherte Faelle kennen
+      // `hatRiesterBestand` nicht - ohne die Ableitung verloeren sie ihren
+      // Vergleichspartner.
+      setFormData((prev) => ergaenzeFehlendes(eintrag.form as Partial<FormData>, prev));
       setName(eintrag.name);
       setGespeicherteId(eintrag.id);
       setGespeicherteErgebnisse((eintrag.results ?? null) as Record<string, unknown> | null);
     });
   }, []);
+  /**
+   * Welche Abschnitte offen stehen. Oberflaechenzustand, deshalb neben
+   * `formData`: `update()` schreibt den gesamten Formularzustand in den
+   * Entwurf, und `speichern()` legt ihn als `form` in die Datenbank.
+   */
+  const [offeneAbschnitte, setOffeneAbschnitte] = useState<Set<string>>(
+    () => new Set(OFFEN_AM_ANFANG)
+  );
+  const istOffen = (id: string) => offeneAbschnitte.has(id);
+  const umschalten = (id: string) =>
+    setOffeneAbschnitte((vorher) => {
+      const naechste = new Set(vorher);
+      if (naechste.has(id)) naechste.delete(id);
+      else naechste.add(id);
+      return naechste;
+    });
+
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isExporting, dialogOpen, openDialog, closeDialog, doExport } = usePDFExport();
 
@@ -299,6 +351,14 @@ export default function AvdCalculator() {
 
   const jahresbeitrag = formData.eigenbeitragMonatlich * 12;
   const hatFehler = ergebnis.hinweise.some((h) => h.art === 'fehler');
+  /**
+   * Monatsbeitrag, bis zu dem die Förderung überhaupt noch wächst.
+   *
+   * Nicht der Zulagenknick: Der liegt tiefer und gehört zur Frage, wie ein
+   * gegebener Beitrag aufgeteilt wird. Hier geht es um den Gesamtbeitrag.
+   */
+  const foerdergrenzeMonat = strategien.aufteilungspunkt.foerdergrenzeJahresbeitrag / 12;
+
   const gegenRiester = formData.vergleichspartner === 'riester_alt';
   const bestand = formData.bestandsvertrag;
   const optionen = ergebnis.handlungsoptionen;
@@ -712,46 +772,37 @@ export default function AvdCalculator() {
         />
 
         {/* Vergleichspartner – bestimmt, wogegen das AVD gerechnet wird */}
-        <div data-pdf-section="vergleichspartner">
-          <Card className="border-0 shadow-lg bg-white">
-            <CardContent className="p-4 md:p-5">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Altersvorsorgedepot vergleichen mit
-                  </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {gegenRiester
-                      ? 'Beide Seiten sind gefördert und werden in der Auszahlphase identisch besteuert – es entscheiden Förderhöhe, Kosten und Rendite.'
-                      : gegenFondsLv
-                        ? 'Ungeförderter Versicherungsmantel: Ab zwölf Jahren Laufzeit und Auszahlung ab Alter 62 werden nur 42,5 % der Erträge zum persönlichen Satz besteuert.'
-                        : 'Ungefördertes Depot mit Abgeltungsteuer, Teilfreistellung und Vorabpauschale.'}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2 shrink-0" data-pdf-hide>
-                  {(
-                    [
-                      ['depot', 'Freies Depot'],
-                      ['fonds_lv', 'Fondspolice'],
-                      ['riester_alt', 'Alte Riester-Förderung'],
-                    ] as const
-                  ).map(([wert, beschriftung]) => {
-                    const aktiv = (formData.vergleichspartner ?? 'depot') === wert;
-                    return (
-                      <Button
-                        key={wert}
-                        variant={aktiv ? 'default' : 'outline'}
-                        className={aktiv ? 'bg-slate-800 hover:bg-slate-700' : ''}
-                        onClick={() => update('vergleichspartner', wert)}
-                      >
-                        {beschriftung}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/*
+          Die Weichenstellung steht oben und bleibt stehen. Vorher war sie eine
+          Knopfreihe zwischen Kopf und erstem Abschnitt - und 18 der 24
+          bedingten Felder hingen daran, ohne dass man das sah.
+        */}
+        <div data-pdf-section="vergleichspartner" className="sticky top-0 z-30">
+          <AvdEinstieg
+            hatRiesterBestand={formData.hatRiesterBestand}
+            onRiesterBestand={(wert) => {
+              setFormData((vorher) => ({
+                ...vorher,
+                hatRiesterBestand: wert,
+                // Ohne Bestand gibt es nichts, wogegen man ihn rechnen koennte.
+                vergleichspartner:
+                  !wert && vorher.vergleichspartner === 'riester_alt'
+                    ? 'depot'
+                    : vorher.vergleichspartner,
+              }));
+            }}
+            vergleichspartner={formData.vergleichspartner ?? 'depot'}
+            onVergleichspartner={(wert) => update('vergleichspartner', wert)}
+            auszahlform={formData.auszahlform}
+            onAuszahlform={(wert) => update('auszahlform', wert)}
+            erlaeuterung={
+              gegenRiester
+                ? 'Beide Seiten sind gefördert und werden in der Auszahlphase identisch besteuert – es entscheiden Förderhöhe, Kosten und Rendite.'
+                : gegenFondsLv
+                  ? 'Ungeförderter Versicherungsmantel: Ab zwölf Jahren Laufzeit und Auszahlung ab Alter 62 werden nur 42,5 % der Erträge zum persönlichen Satz besteuert.'
+                  : 'Ungefördertes Depot mit Abgeltungsteuer, Teilfreistellung und Vorabpauschale.'
+            }
+          />
         </div>
 
         {/* Schritt 1: Förderberechtigung */}
@@ -892,6 +943,46 @@ export default function AvdCalculator() {
                   <Label className="text-sm font-medium text-slate-700">Eigenbeitrag (€/Monat)</Label>
                   <NumericInput value={formData.eigenbeitragMonatlich} onChange={(v) => update('eigenbeitragMonatlich', v)} className={inputClass} />
                   <p className="text-xs text-slate-400">= {formatCurrency(jahresbeitrag)} pro Jahr</p>
+                  {/*
+                    Schritt 2 der Spezifikation: den foerderoptimalen Beitrag
+                    nennen, statt nur nach einer Wunschsparrate zu fragen. Die
+                    massgebliche Zahl ist die Foerdergrenze, nicht der
+                    Zulagenknick - oberhalb von 1.800 EUR im Jahr waechst weder
+                    Zulage noch Sonderausgaben-Volumen (§ 10a Abs. 1 S. 1).
+                    Der Knick darunter wird genannt, aber nicht als Ziel: Er
+                    gehoert zur Aufteilung, nicht zum Gesamtbeitrag.
+                  */}
+                  {formData.berechtigung === 'keine' ? (
+                    <p className="text-xs text-amber-700">
+                      Ohne Zulageberechtigung bringt kein Beitrag Förderung.
+                    </p>
+                  ) : (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-medium text-slate-700">
+                          Förderoptimal: {formatCurrency(foerdergrenzeMonat)} im Monat
+                        </span>
+                        {Math.round(formData.eigenbeitragMonatlich) !==
+                          Math.round(foerdergrenzeMonat) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              update('eigenbeitragMonatlich', Math.round(foerdergrenzeMonat))
+                            }
+                          >
+                            Übernehmen
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        Bis {formatCurrency(strategien.aufteilungspunkt.foerdergrenzeJahresbeitrag)} im
+                        Jahr wächst die Förderung mit jedem Euro, darüber nicht mehr. Ab{' '}
+                        {formatCurrency(strategien.aufteilungspunkt.monatsbeitrag)} im Monat sinkt die
+                        Zulagen-Grenzquote von 50 auf 25 Prozent.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">zu versteuerndes Einkommen (€)</Label>
@@ -1283,18 +1374,18 @@ export default function AvdCalculator() {
         </div>
 
         {/* Kombinationsstrategie: geförderter Teil ins AVD, Rest daneben */}
-        <div data-pdf-section="strategien">
-          <Card className="border-0 shadow-lg bg-white">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-bold text-slate-900">
-                Aufteilen statt alles auf eine Karte
-              </CardTitle>
-              <p className="text-xs text-slate-500 mt-1">
+        <Abschnitt
+          pdfSection="strategien"
+          titel="Aufteilen statt alles auf eine Karte"
+          untertitel={`Vorschlag: ${formatCurrency(strategien.aufteilungspunkt.monatsbeitrag)} im Monat in den geförderten Vertrag`}
+          offen={istOffen('strategien')}
+          onToggle={() => umschalten('strategien')}
+        >
+          <div className="space-y-5">
+              <p className="text-xs text-slate-500">
                 Die Förderung ist gestaffelt. Wer nur den hoch geförderten Teil in den
                 Altersvorsorgedepot-Vertrag legt, bleibt mit dem Rest frei verfügbar.
               </p>
-            </CardHeader>
-            <CardContent className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-pdf-hide>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
@@ -1486,24 +1577,23 @@ export default function AvdCalculator() {
                   {h.text}
                 </p>
               ))}
-            </CardContent>
-          </Card>
-        </div>
+          </div>
+        </Abschnitt>
 
         {/* Wechselanalyse: vier Handlungsoptionen (per Voreinstellung freigeschaltet) */}
         {optionenAktiv && gegenRiester && (
-          <div data-pdf-section="optionen">
-            <Card className="border-0 shadow-lg bg-white">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold text-slate-900">
-                  Wechselanalyse: vier Handlungsoptionen
-                </CardTitle>
-                <p className="text-xs text-slate-500 mt-1">
+          <Abschnitt
+            pdfSection="optionen"
+            titel="Wechselanalyse: vier Handlungsoptionen"
+            untertitel="Behalten, Förderung wechseln, ruhen lassen oder übertragen"
+            offen={istOffen('optionen')}
+            onToggle={() => umschalten('optionen')}
+          >
+            <div className="space-y-4">
+                <p className="text-xs text-slate-500">
                   Förderregime und Produktmantel sind unabhängig wählbar. Daraus ergeben
                   sich vier Wege – nicht nur „behalten oder wechseln".
                 </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">
@@ -1693,18 +1783,23 @@ export default function AvdCalculator() {
                   und damit kein Argument gegen einen Wechsel – was bei einer Übertragung
                   tatsächlich verloren geht, ist die Beitragsgarantie plus die Wechselgebühr.
                 </p>
-              </CardContent>
-            </Card>
-          </div>
+            </div>
+          </Abschnitt>
         )}
 
         {/* Schritt 4: Auszahlphase */}
-        <div data-pdf-section="auszahlung">
-          <Card className="border-0 shadow-lg bg-white">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-bold text-slate-900">4. Auszahlphase</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <Abschnitt
+          pdfSection="auszahlung"
+          titel="4. Auszahlphase"
+          untertitel={
+            formData.auszahlform === 'leibrente'
+              ? `Leibrente ab ${formData.auszahlungsbeginnAlter}`
+              : `Auszahlplan von ${formData.auszahlungsbeginnAlter} bis ${formData.auszahlplanEndalter}`
+          }
+          offen={istOffen('auszahlung')}
+          onToggle={() => umschalten('auszahlung')}
+        >
+          <div className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">Auszahlform</Label>
@@ -1819,24 +1914,23 @@ export default function AvdCalculator() {
                   eine Abfindung wäre förderunschädlich, aber voll steuerpflichtig im Zuflussjahr.
                 </p>
               )}
-            </CardContent>
-          </Card>
-        </div>
+          </div>
+        </Abschnitt>
 
         {/* 5. Todesfall-Szenarien */}
-        <div data-pdf-section="szenarien">
-          <Card className="border-0 shadow-lg bg-white">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold text-slate-900">
-                5. Wenn der Kunde stirbt
-              </CardTitle>
+        <Abschnitt
+          pdfSection="szenarien"
+          titel="5. Wenn der Kunde stirbt"
+          untertitel={`Gerechnet für Tod mit ${formData.todesfallAlter.join(', ')}`}
+          offen={istOffen('szenarien')}
+          onToggle={() => umschalten('szenarien')}
+        >
+          <div className="space-y-4">
               <p className="text-sm text-slate-500">
                 Bis hierher rechnet alles mit einem langen Leben. Stirbt der Kunde, ist die
                 Förderung grundsätzlich zurückzuzahlen (§ 93 Abs. 1 EStG) – außer das
                 Vermögen geht auf einen Altersvorsorgevertrag des Ehegatten über.
               </p>
-            </CardHeader>
-            <CardContent className="space-y-6">
               {/* Eingaben */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4" data-pdf-hide>
                 {formData.todesfallAlter.map((alter, i) => (
@@ -2054,13 +2148,17 @@ export default function AvdCalculator() {
                   );
                 })}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+          </div>
+        </Abschnitt>
 
         {/* Rechtsstand */}
-        <Card className="border-0 shadow-lg bg-white">
-          <CardContent className="p-6 space-y-2">
+        <Abschnitt
+          titel="Rechtsstand und Annahmen"
+          untertitel="Fundstellen, Modellfassung und offene Punkte"
+          offen={istOffen('rechtsstand')}
+          onToggle={() => umschalten('rechtsstand')}
+        >
+          <div className="space-y-2">
             <p className="text-xs text-slate-500">
               Rechtsstand: Altersvorsorgereformgesetz, BGBl. 2026 I Nr. 156 v. 29.05.2026;
               Förderregeln anwendbar ab Beitragsjahr {GESETZ.ERSTES_BEITRAGSJAHR}. Einkommensteuertarif
@@ -2077,14 +2175,19 @@ export default function AvdCalculator() {
               Verzögerung zu.
               Keine Rechts-, Steuer- oder Anlageberatung.
             </p>
-            {hatFehler && (
-              <p className="text-xs text-red-700 font-medium">
-                Die Eingaben verletzen mindestens eine gesetzliche Grenze – die Ergebnisse sind
-                insoweit nicht belastbar.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+          </div>
+        </Abschnitt>
+
+        {/*
+          Die Fehlerzeile bleibt ausserhalb jedes zusammenklappbaren
+          Abschnitts: Eine Warnung, die man zuklappen kann, ist keine.
+        */}
+        {hatFehler && (
+          <p className="text-xs text-red-700 font-medium px-1">
+            Die Eingaben verletzen mindestens eine gesetzliche Grenze – die Ergebnisse sind
+            insoweit nicht belastbar.
+          </p>
+        )}
       </div>
 
       {dialogOpen && (

@@ -469,7 +469,8 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     // kommt dann nie zum Zug, weil der Test vorher stirbt.
     await nameFeld.fill(name);
 
-    await page.getByRole("button", { name: "Fondspolice", exact: true }).click();
+    // Seit der Einstiegsleiste ist das eine Optionsgruppe, kein Knopf mehr.
+    await page.getByRole("radio", { name: "Fondspolice", exact: true }).click();
     // Genau der Fall aus A05: gespeichert wird im Real-Modus
     await page.getByRole("button", { name: "Real", exact: true }).click();
     await page.getByRole("button", { name: /^Speichern/ }).click();
