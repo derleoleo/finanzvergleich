@@ -674,6 +674,54 @@ describe('Vergleich gegen Riester-Bestandsvertrag', () => {
     expect(r.riesterAlt!.gekuerztJahr1).toBe(true);
   });
 
+  it("Fördersystematik gewechselt: der Altvertrag rechnet mit der neuen Staffel", () => {
+    // § 52 Abs. 50a S. 4 EStG: Produkt bleibt, Systematik wechselt. Also
+    // dieselbe Zulage wie das AVD (540 €), aber weiter Kosten und Rendite
+    // des Altvertrags.
+    const alt = mitRiester();
+    const neu = mitRiester({}, { foerderregime: 'neu' });
+    expect(alt.riesterAlt!.foerderregime).toBe('alt');
+    expect(neu.riesterAlt!.foerderregime).toBe('neu');
+    expect(neu.riesterAlt!.zulageJahr1).toBe(540);
+    expect(neu.riesterAlt!.zulageJahr1).toBe(neu.jahre[0].zulage);
+    // Das Produkt ist dasselbe geblieben, die Förderung ist höher:
+    expect(neu.riesterAlt!.summeZulagen).toBeGreaterThan(alt.riesterAlt!.summeZulagen);
+    expect(neu.riesterAlt!.endkapitalNominal).toBeGreaterThan(
+      alt.riesterAlt!.endkapitalNominal
+    );
+    // Aber nicht so gut wie das AVD - dort sind Kosten und Rendite besser:
+    expect(neu.riesterAlt!.endkapitalNachSteuer).toBeLessThan(neu.endkapitalNachSteuer);
+  });
+
+  it("unter 'neu' tragen die Jahr-1-Felder keine Werte des alten Rechts", () => {
+    // Derselbe Fall, der unter 'alt' eine anteilige Kürzung auslöst
+    // (Mindesteigenbeitrag 1.925 €, Zulage 164 €). Beides gibt es im neuen
+    // Recht nicht - also darf hier auch nichts davon stehen.
+    const alt = mitRiester({}, { beitragspflEinnahmenVorjahr: 70000 });
+    const neu = mitRiester({}, { beitragspflEinnahmenVorjahr: 70000, foerderregime: 'neu' });
+    expect(alt.riesterAlt!.gekuerztJahr1).toBe(true);
+    expect(neu.riesterAlt!.mindesteigenbeitragJahr1).toBe(0);
+    expect(neu.riesterAlt!.gekuerztJahr1).toBe(false);
+    expect(neu.riesterAlt!.zulagenanspruchJahr1).toBe(540);
+    expect(neu.riesterAlt!.zulageJahr1).toBe(540);
+  });
+
+  it("der Wechsel der Systematik kann auch schaden", () => {
+    // 12.000 € Einkommen, 2 Kinder, 120 €/Jahr: der Sockelbetrag von 60 €
+    // löst alt die volle Zulage von 775 € aus, die neue Staffel gibt 300 €.
+    const alt = mitRiester(
+      { kinder: 2, eigenbeitragMonatlich: 10 },
+      { beitragspflEinnahmenVorjahr: 12000 }
+    );
+    const neu = mitRiester(
+      { kinder: 2, eigenbeitragMonatlich: 10 },
+      { beitragspflEinnahmenVorjahr: 12000, foerderregime: 'neu' }
+    );
+    expect(alt.riesterAlt!.zulageJahr1).toBe(775);
+    expect(neu.riesterAlt!.zulageJahr1).toBe(300);
+    expect(neu.riesterAlt!.endkapitalNominal).toBeLessThan(alt.riesterAlt!.endkapitalNominal);
+  });
+
   it('niedriges Einkommen + Kinder + Sockelbeitrag: alt schlägt neu, mit Warnung', () => {
     // 12.000 € Einkommen, 2 Kinder, 120 €/Jahr → alt 775 €, neu 300 €
     const r = mitRiester(

@@ -10,8 +10,16 @@
 // und (3) dem Renditepotenzial (Beitragsgarantie begrenzt die Aktienquote).
 
 import { calculateMonthlyReturn } from '@/components/shared/TaxCalculations';
-import { berechneZulagenRiesterAlt, kinderKohortenImJahr, RIESTER_ALT } from './zulagen';
+import {
+  berechneZulagen,
+  berechneZulagenRiesterAlt,
+  guenstigerpruefung,
+  kinderKohortenImJahr,
+  RIESTER_ALT,
+  type Berechtigung,
+} from './zulagen';
 import { steuerentlastung, type SteuerZuschlaege } from './tarif';
+import type { RechtsFlags } from './config';
 
 export type RiesterAltEingabeVergleich = {
   /** Beitragspflichtige Einnahmen des Vorjahres – Basis des Mindesteigenbeitrags (§ 86 a.F.). */
@@ -22,9 +30,24 @@ export type RiesterAltEingabeVergleich = {
   effektivkostenPaJahr: number;
   /** Rendite des Altvertrags p.a. – garantiebedingt meist niedriger als im Depot. */
   renditeBruttoPaJahr: number;
+  /**
+   * Nach welcher Fördersystematik der Bestandsvertrag rechnet.
+   *
+   * Ein Bestandsvertrag kann die Systematik wechseln, ohne das Produkt zu
+   * wechseln (§ 52 Abs. 50a S. 4 EStG) – das ist Option B der Wechselanalyse
+   * und die am häufigsten übersehene Möglichkeit: Sie kostet nichts, lässt
+   * Garantien unangetastet und hebt trotzdem die Förderung.
+   *
+   * Vorgabe `'alt'`: Ohne ausdrückliche Erklärung bleibt es beim
+   * Bestandsschutz (§ 52 Abs. 50a S. 1). Damit rechnen auch alle vor dieser
+   * Erweiterung gespeicherten Fälle unverändert weiter.
+   */
+  foerderregime?: 'alt' | 'neu';
 };
 
 export type RiesterAltErgebnis = {
+  /** Nach welcher Systematik gerechnet wurde – gehört in jede Anzeige. */
+  foerderregime: 'alt' | 'neu';
   summeEigenbeitraege: number;
   summeZulagen: number;
   summeSteuererstattung: number;
@@ -32,9 +55,19 @@ export type RiesterAltErgebnis = {
   foerderquoteGesamt: number;
   /** Zulagenanspruch und Mindesteigenbeitrag des ersten Jahres (für die Anzeige). */
   zulagenanspruchJahr1: number;
+  /**
+   * Mindesteigenbeitrag des ersten Jahres.
+   *
+   * Nur im alten Recht eine Größe (§ 86 Abs. 1 a.F.). Unter `'neu'` steht
+   * hier 0 – nicht der alte Wert, der dort nichts bedeuten würde.
+   */
   mindesteigenbeitragJahr1: number;
   zulageJahr1: number;
-  /** true, wenn der Eigenbeitrag den Mindesteigenbeitrag unterschreitet → anteilige Kürzung. */
+  /**
+   * true, wenn der Eigenbeitrag den Mindesteigenbeitrag unterschreitet →
+   * anteilige Kürzung. Unter `'neu'` immer false: Die neue Staffel kennt
+   * keine Kürzung, nur einen harten Mindestbeitrag.
+   */
   gekuerztJahr1: boolean;
   endkapitalNominal: number;
   endkapitalNachSteuer: number;
@@ -76,9 +109,22 @@ export function simuliereRiesterAlt(args: {
   fixkostenProJahr: number;
   zulagenZuflussVerzoegerungJahre: 0 | 1 | 2;
   erstattungReinvestieren: boolean;
+  /**
+   * Förderberechtigung, Ehegattenbeitrag und Rechtsannahmen.
+   *
+   * Der alte Zweig braucht sie nicht, der neue sehr wohl. In `optionen.ts`
+   * fehlen sie im Neu-Zweig – dort rechnet die Fördersystematik immer
+   * „unmittelbar" mit Standardannahmen. Dieser Fehler wird hier nicht
+   * mitkopiert.
+   */
+  berechtigung?: Berechtigung;
+  eigenbeitragEhegatteUnmittelbar?: number;
+  ehegatteMittelbarBerechtigt?: boolean;
+  flags?: RechtsFlags;
   riester: RiesterAltEingabeVergleich;
 }): RiesterAltErgebnis {
   const r = args.riester;
+  const regime = r.foerderregime ?? 'alt';
   const jahre = Math.max(1, Math.round(args.jahre));
 
   const rMonat = calculateMonthlyReturn(
@@ -112,34 +158,79 @@ export function simuliereRiesterAlt(args: {
       args.beitragsjahrStart + t
     );
 
-    const z = berechneZulagenRiesterAlt({
-      eigenbeitrag,
-      beitragspflEinnahmenVorjahr: r.beitragspflEinnahmenVorjahr,
-      kinderGeborenAb2008: kinder.ab2008,
-      kinderGeborenVor2008: kinder.vor2008,
-      alterZuBeitragsjahresbeginn: args.alterBeiStart + t,
-      bebBereitsGenutzt: t > 0,
-    });
+    let zulage: number;
+    let erstattung: number;
 
-    // Günstigerprüfung wie im neuen Recht (§ 10a Abs. 2), nur mit dem
-    // alten Höchstbetrag von 2.100 € inklusive Zulagen
-    const entlastung = steuerentlastung(
-      args.zvEJahr,
-      z.sonderausgabenVolumen,
-      args.splitting,
-      args.zuschlaege
-    );
-    const erstattung = Math.max(0, entlastung - z.zulage);
+    if (regime === 'alt') {
+      const z = berechneZulagenRiesterAlt({
+        eigenbeitrag,
+        beitragspflEinnahmenVorjahr: r.beitragspflEinnahmenVorjahr,
+        kinderGeborenAb2008: kinder.ab2008,
+        kinderGeborenVor2008: kinder.vor2008,
+        alterZuBeitragsjahresbeginn: args.alterBeiStart + t,
+        bebBereitsGenutzt: t > 0,
+      });
 
-    if (t === 0) {
-      zulagenanspruchJahr1 = z.zulagenanspruch;
-      mindesteigenbeitragJahr1 = z.mindesteigenbeitrag;
-      zulageJahr1 = z.zulage;
-      gekuerztJahr1 = z.zulage < z.zulagenanspruch - 0.005;
+      // Günstigerprüfung wie im neuen Recht (§ 10a Abs. 2), nur mit dem
+      // alten Höchstbetrag von 2.100 € inklusive Zulagen
+      const entlastung = steuerentlastung(
+        args.zvEJahr,
+        z.sonderausgabenVolumen,
+        args.splitting,
+        args.zuschlaege
+      );
+      zulage = z.zulage;
+      erstattung = Math.max(0, entlastung - z.zulage);
+
+      if (t === 0) {
+        zulagenanspruchJahr1 = z.zulagenanspruch;
+        mindesteigenbeitragJahr1 = z.mindesteigenbeitrag;
+        zulageJahr1 = z.zulage;
+        gekuerztJahr1 = z.zulage < z.zulagenanspruch - 0.005;
+      }
+    } else {
+      /*
+       * Fördersystematik gewechselt, Vertrag behalten (§ 52 Abs. 50a S. 4).
+       * Gerechnet wird wie beim Altersvorsorgedepot - gestaffelte
+       * Grundzulage, Kinderzulage ohne Jahrgangsunterschied, Höchstbetrag
+       * 1.800 € zuzüglich Zulage. Nur Kosten und Rendite bleiben die des
+       * Altvertrags; genau das ist der Witz dieser Option.
+       */
+      const z = berechneZulagen({
+        eigenbeitrag,
+        kinder: kinder.ab2008 + kinder.vor2008,
+        alterZuBeitragsjahresbeginn: args.alterBeiStart + t,
+        bebBereitsGenutzt: t > 0,
+        berechtigung: args.berechtigung,
+        eigenbeitragEhegatteUnmittelbar: args.eigenbeitragEhegatteUnmittelbar,
+        flags: args.flags,
+      });
+      const g = guenstigerpruefung({
+        eigenbeitrag,
+        zulageGesamt: z.zulageGesamt,
+        berechtigung: args.berechtigung,
+        zvE: args.zvEJahr,
+        splitting: args.splitting,
+        ehegatteMittelbarBerechtigt: args.ehegatteMittelbarBerechtigt,
+        zuschlaege: args.zuschlaege,
+        flags: args.flags,
+      });
+      zulage = z.zulageGesamt;
+      erstattung = g.zusaetzlicheErstattung;
+
+      if (t === 0) {
+        zulagenanspruchJahr1 = z.zulageGesamt;
+        // Es gibt im neuen Recht keinen Mindesteigenbeitrag in diesem Sinn
+        // und keine anteilige Kuerzung - hier stehen deshalb keine Werte
+        // aus dem alten Recht.
+        mindesteigenbeitragJahr1 = 0;
+        zulageJahr1 = z.zulageGesamt;
+        gekuerztJahr1 = false;
+      }
     }
 
     const zielJahr = t + (args.zulagenZuflussVerzoegerungJahre ?? 1);
-    if (zielJahr < zulagenEingang.length) zulagenEingang[zielJahr] += z.zulage;
+    if (zielJahr < zulagenEingang.length) zulagenEingang[zielJahr] += zulage;
 
     kapital += zulagenEingang[t];
     if (args.erstattungReinvestieren) kapital += erstattung;
@@ -152,7 +243,7 @@ export function simuliereRiesterAlt(args: {
     }
 
     summeEigen += eigenbeitrag;
-    summeZulagen += z.zulage;
+    summeZulagen += zulage;
     summeErstattung += erstattung;
     kapitalProJahr.push(kapital);
     foerderungKumuliertProJahr.push(summeZulagen + summeErstattung);
@@ -169,6 +260,7 @@ export function simuliereRiesterAlt(args: {
   const s = Math.max(0, args.steuersatzImAlter || 0);
 
   return {
+    foerderregime: regime,
     summeEigenbeitraege: summeEigen,
     summeZulagen,
     summeSteuererstattung: summeErstattung,

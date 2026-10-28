@@ -492,6 +492,57 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
   });
 
   /**
+   * § 52 Abs. 50a S. 4 EStG: Ein Riester-Bestandsvertrag darf die
+   * Fördersystematik wechseln, ohne das Produkt zu wechseln. Der Schalter
+   * muss diesen Wechsel bis in die angezeigte Förderung durchreichen — die
+   * Rechenkette dafür geht über drei Dateien, und genau dort war sie vorher
+   * fest verdrahtet.
+   */
+  test("Der Riester-Bestand rechnet nach alter oder neuer Fördersystematik", async ({
+    page,
+  }) => {
+    const absturz: string[] = [];
+    page.on("pageerror", (e) => absturz.push(e.message));
+
+    await anmelden(page);
+    await page.goto("/altersvorsorgedepot");
+    await expect(page.locator("#avd-name")).toBeVisible({ timeout: 40_000 });
+
+    await page.getByRole("radio", { name: "Riester-Bestand", exact: true }).click();
+
+    const kachel = page.getByText("Förderung im ersten Jahr").locator("..");
+
+    // Vorgabe: Bestandsschutz, also starre Grundzulage 175 €
+    await expect(kachel).toContainText("Alte Riester-Zulage");
+    await expect(kachel).toContainText("175");
+
+    // Umgeschaltet: dieselbe Staffel wie das AVD, hier 540 €
+    await page
+      .getByRole("radio", { name: "neue Förderung (ab 2027)", exact: true })
+      .click();
+    await expect(kachel).toContainText("Altvertrag, neu gefördert");
+    await expect(kachel).toContainText("540");
+
+    // Die Felder des alten Rechts verschwinden, die Angabe bleibt erhalten.
+    // Nicht über `getByLabel`: Die Beschriftungen des Rechners sind nicht
+    // mit `for` an ihr Feld gebunden, und ein nicht gefundenes Element gilt
+    // Playwright als verborgen - die Prüfung wäre wertlos.
+    const einnahmenFeld = page
+      .locator("div.space-y-2")
+      .filter({ hasText: "Basis des Mindesteigenbeitrags" })
+      .locator("input");
+    await expect(einnahmenFeld).toHaveCount(0);
+    await expect(
+      page.getByText("keinen Mindesteigenbeitrag nach", { exact: false })
+    ).toBeVisible();
+
+    await page.getByRole("radio", { name: "alte Förderung", exact: true }).click();
+    await expect(einnahmenFeld).toHaveValue(/45[.\s]?000/);
+
+    expect(absturz, `Abstürze: ${absturz.join(" | ")}`).toHaveLength(0);
+  });
+
+  /**
    * Prüfung 3 der Analyse: Ein Archiv-Schreibfehler darf nicht als Erfolg
    * erscheinen.
    *

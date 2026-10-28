@@ -612,6 +612,13 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
           fixkostenProJahr: e.fixkostenProJahr,
           zulagenZuflussVerzoegerungJahre: e.zulagenZuflussVerzoegerungJahre,
           erstattungReinvestieren: e.erstattungReinvestieren,
+          // Nur unter dem neuen Foerderregime gebraucht - dort rechnet der
+          // Altvertrag mit derselben Systematik wie das AVD und braucht
+          // deshalb auch dieselben Angaben.
+          berechtigung: e.berechtigung,
+          eigenbeitragEhegatteUnmittelbar: e.eigenbeitragEhegatteUnmittelbar,
+          ehegatteMittelbarBerechtigt: e.ehegatteMittelbarBerechtigt,
+          flags,
           riester: e.riester,
         })
       : undefined;
@@ -658,7 +665,13 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
   }
 
   if (riesterAlt) {
-    if (riesterAlt.summeFoerderung > summeFoerderung) {
+    // Der Vergleich der Foerderhoehen traegt nur, solange der Altvertrag noch
+    // nach altem Recht rechnet. Steht er schon auf der neuen Systematik, waere
+    // der Satz schlicht falsch.
+    if (
+      riesterAlt.foerderregime === 'alt' &&
+      riesterAlt.summeFoerderung > summeFoerderung
+    ) {
       const schwelle = sockelbetragsSchwelle(
         Math.max(0, e.kinder - (e.riester?.kinderGeborenVor2008 ?? 0)),
         e.riester?.kinderGeborenVor2008 ?? 0

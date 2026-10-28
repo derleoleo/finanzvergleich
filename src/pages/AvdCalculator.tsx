@@ -13,7 +13,6 @@ import { createPageUrl } from '@/utils';
 import { UserDefaults } from '@/entities/UserDefaults';
 import AvdEinstieg from '@/components/calculator/AvdEinstieg';
 import Abschnitt from '@/components/ui/abschnitt';
-import { ergaenzeFehlendes } from '@/utils/avdEntwurf';
 import {
   simuliereAvd,
   foerderquotenKurve,
@@ -75,20 +74,6 @@ type FormData = Omit<AvdEingabe, 'flags'> & {
    * eingebbar - 50/67/75 ist die Vorgabe, nicht die Vorschrift.
    */
   todesfallAlter: number[];
-  /**
-   * Gibt es einen Riester-Bestandsvertrag?
-   *
-   * Eigene Achse neben `vergleichspartner`, obwohl sich beides überschneidet:
-   * `vergleichspartner === 'riester_alt'` heißt zwar faktisch „es gibt einen
-   * Bestand", aber wer einen hat, kann ihn trotzdem gegen ein freies Depot
-   * rechnen wollen. Und ohne diese Frage bleibt die Wechselanalyse
-   * unauffindbar – sie verlangt heute die Freischaltung in den
-   * Voreinstellungen *und* den passenden Vergleichspartner.
-   *
-   * Gehört bewusst nicht zu `AvdEingabe`: Die Engine kennt die Frage nicht,
-   * sie steuert nur, was die Oberfläche anbietet.
-   */
-  hatRiesterBestand: boolean;
 };
 
 /**
@@ -104,6 +89,15 @@ type FormData = Omit<AvdEingabe, 'flags'> & {
  * Berechnung.
  */
 const OFFEN_AM_ANFANG = ['berechtigung', 'foerderung', 'vergleich', 'optionen'];
+
+/**
+ * Die beiden Fördersystematiken, nach denen ein Riester-Bestandsvertrag
+ * rechnen kann (§ 52 Abs. 50a S. 1 bzw. S. 4 EStG).
+ */
+const FOERDERREGIME = [
+  { value: 'alt', label: 'alte Förderung' },
+  { value: 'neu', label: 'neue Förderung (ab 2027)' },
+] as const;
 
 function makeDefaults(): FormData {
   const d = UserDefaults.load();
@@ -169,7 +163,6 @@ function makeDefaults(): FormData {
     inflationPaJahr: d.inflation_percent / 100,
     zulagenZuflussVerzoegerungJahre: 1,
     erstattungReinvestieren: false,
-    hatRiesterBestand: false,
   };
 }
 
@@ -178,7 +171,7 @@ function loadDraft(): FormData {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return defaults;
-    return ergaenzeFehlendes(JSON.parse(raw) as Partial<FormData>, defaults);
+    return { ...defaults, ...(JSON.parse(raw) as Partial<FormData>) };
   } catch {
     return defaults;
   }
@@ -214,10 +207,7 @@ export default function AvdCalculator() {
     if (!id) return;
     AvdCalculation.get(id).then((eintrag) => {
       if (!eintrag) return;
-      // Vor der Einstiegsleiste gespeicherte Faelle kennen
-      // `hatRiesterBestand` nicht - ohne die Ableitung verloeren sie ihren
-      // Vergleichspartner.
-      setFormData((prev) => ergaenzeFehlendes(eintrag.form as Partial<FormData>, prev));
+      setFormData((prev) => ({ ...prev, ...(eintrag.form as Partial<FormData>) }));
       setName(eintrag.name);
       setGespeicherteId(eintrag.id);
       setGespeicherteErgebnisse((eintrag.results ?? null) as Record<string, unknown> | null);
@@ -360,6 +350,8 @@ export default function AvdCalculator() {
   const foerdergrenzeMonat = strategien.aufteilungspunkt.foerdergrenzeJahresbeitrag / 12;
 
   const gegenRiester = formData.vergleichspartner === 'riester_alt';
+  /** Vorgabe 'alt': Ohne ausdrückliche Erklärung gilt der Bestandsschutz. */
+  const riesterRegime = formData.riester?.foerderregime ?? 'alt';
   const bestand = formData.bestandsvertrag;
   const optionen = ergebnis.handlungsoptionen;
   const updateBestand = <K extends keyof NonNullable<FormData['bestandsvertrag']>>(
@@ -779,18 +771,6 @@ export default function AvdCalculator() {
         */}
         <div data-pdf-section="vergleichspartner" className="sticky top-0 z-30">
           <AvdEinstieg
-            hatRiesterBestand={formData.hatRiesterBestand}
-            onRiesterBestand={(wert) => {
-              setFormData((vorher) => ({
-                ...vorher,
-                hatRiesterBestand: wert,
-                // Ohne Bestand gibt es nichts, wogegen man ihn rechnen koennte.
-                vergleichspartner:
-                  !wert && vorher.vergleichspartner === 'riester_alt'
-                    ? 'depot'
-                    : vorher.vergleichspartner,
-              }));
-            }}
             vergleichspartner={formData.vergleichspartner ?? 'depot'}
             onVergleichspartner={(wert) => update('vergleichspartner', wert)}
             auszahlform={formData.auszahlform}
@@ -1268,36 +1248,70 @@ export default function AvdCalculator() {
               )}
 
               {gegenRiester && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Fördersystematik des Altvertrags
+                  </Label>
+                  <SegmentedToggle
+                    value={riesterRegime}
+                    onChange={(w) => updateRiester('foerderregime', w)}
+                    options={FOERDERREGIME}
+                    ariaLabel="Fördersystematik des Altvertrags"
+                  />
+                  <p className="text-xs text-slate-500">
+                    Ein Bestandsvertrag kann die Systematik wechseln, ohne das Produkt zu
+                    wechseln: Kosten, Rendite und Garantien bleiben, nur die Förderung
+                    rechnet neu. Die Erklärung ist unwiderruflich und gilt für alle
+                    Altersvorsorgeverträge des Berechtigten (§ 52 Abs. 50a S. 4 EStG).
+                  </p>
+                </div>
+              )}
+
+              {gegenRiester && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">Beitragspfl. Einnahmen Vorjahr (€)</Label>
-                      <NumericInput
-                        value={riester?.beitragspflEinnahmenVorjahr ?? 0}
-                        onChange={(v) => updateRiester('beitragspflEinnahmenVorjahr', v)}
-                        className={inputClass}
-                      />
-                      <p className="text-xs text-slate-400">Basis des Mindesteigenbeitrags (4 %, § 86 a.F.)</p>
+                  {riesterRegime === 'alt' ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">Beitragspfl. Einnahmen Vorjahr (€)</Label>
+                        <NumericInput
+                          value={riester?.beitragspflEinnahmenVorjahr ?? 0}
+                          onChange={(v) => updateRiester('beitragspflEinnahmenVorjahr', v)}
+                          className={inputClass}
+                        />
+                        <p className="text-xs text-slate-400">Basis des Mindesteigenbeitrags (4 %, § 86 a.F.)</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">davon Kinder vor 2008</Label>
+                        <NumericInput
+                          value={riester?.kinderGeborenVor2008 ?? 0}
+                          onChange={(v) =>
+                            updateRiester(
+                              'kinderGeborenVor2008',
+                              Math.max(0, Math.min(Math.round(v), formData.kinder))
+                            )
+                          }
+                          className={inputClass}
+                        />
+                        <p className="text-xs text-slate-400">Nur 185 € statt 300 € Zulage</p>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">davon Kinder vor 2008</Label>
-                      <NumericInput
-                        value={riester?.kinderGeborenVor2008 ?? 0}
-                        onChange={(v) =>
-                          updateRiester(
-                            'kinderGeborenVor2008',
-                            Math.max(0, Math.min(Math.round(v), formData.kinder))
-                          )
-                        }
-                        className={inputClass}
-                      />
-                      <p className="text-xs text-slate-400">Nur 185 € statt 300 € Zulage</p>
+                  ) : (
+                    /*
+                      Beide Felder wirken nur im alten Recht. Sie hier stehen zu
+                      lassen, hieße Eingaben anzubieten, die nichts ändern - die
+                      Angabe bleibt gespeichert und kommt beim Zurückschalten wieder.
+                    */
+                    <div className="rounded-xl border border-dashed border-slate-200 p-4 text-xs text-slate-500">
+                      In der neuen Systematik gibt es keinen Mindesteigenbeitrag nach
+                      Vorjahreseinnahmen und keinen Jahrgangsunterschied bei der
+                      Kinderzulage. Die beiden Angaben des alten Rechts bleiben
+                      gespeichert und wirken wieder, sobald Sie zurückschalten.
                     </div>
-                  </div>
+                  )}
                   <div className="rounded-xl border border-slate-200 p-4">
                     <div className="text-xs text-slate-500">Förderung im ersten Jahr</div>
                     <div className="text-sm text-slate-900 mt-1">
-                      Alte Riester-Zulage{' '}
+                      {riesterRegime === 'alt' ? 'Alte Riester-Zulage' : 'Altvertrag, neu gefördert'}{' '}
                       <span className="font-semibold">
                         {formatCurrency(ergebnis.riesterAlt?.zulageJahr1 ?? 0)}
                       </span>
