@@ -81,7 +81,7 @@ export function SegmentedToggle<T extends string>({
               knoepfe?.[ziel]?.focus();
             }}
             onClick={() => onChange(option.value)}
-            className={`relative z-10 whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+            className={`relative z-10 whitespace-nowrap rounded-full px-2 py-1.5 text-xs sm:px-3 sm:text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
               aktiv ? "font-semibold text-slate-900" : "text-slate-500 hover:text-slate-700"
             }`}
           >

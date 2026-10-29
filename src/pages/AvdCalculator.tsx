@@ -805,6 +805,8 @@ export default function AvdCalculator() {
             onVergleichspartner={(wert) => update('vergleichspartner', wert)}
             auszahlform={formData.auszahlform}
             onAuszahlform={(wert) => update('auszahlform', wert)}
+            beitragsbasis={formData.vergleichsmodus}
+            onBeitragsbasis={(wert) => update('vergleichsmodus', wert)}
             erlaeuterung={
               gegenRiester
                 ? 'Beide Seiten sind gefördert und werden in der Auszahlphase identisch besteuert – es entscheiden Förderhöhe, Kosten und Rendite.'
@@ -1213,46 +1215,37 @@ export default function AvdCalculator() {
               </div>
 
               {/*
-                Die Vergleichsbasis stand bis jetzt im vierten Feld der
-                Zeile darueber - und damit nur beim freien Depot, weil
-                Fondspolice und Riester-Bestand diesen Platz fuer ihre
-                eigenen Felder brauchen. Solange die Police ohnehin immer
-                den vollen Bruttobeitrag bekam, war das folgenlos. Seit sie
-                der Basis folgt, waere es das Gegenteil: Die Stellschraube
-                waere unsichtbar, genau wo sie wirkt.
+                Die Umschaltung selbst steht oben in der Leiste, bei den
+                anderen beiden Weichenstellungen. Hier steht, was sie fuer
+                diesen Abschnitt bedeutet - die Erklaerung gehoert zu den
+                Zahlen, der Schalter zu den Fragen.
+
+                Vorher war es umgekehrt und schlimmer: Das Auswahlfeld sass
+                im vierten Feld einer Wenn-Dann-Kette und war damit nur beim
+                freien Depot zu sehen, weil Fondspolice und Riester-Bestand
+                den Platz fuer eigene Felder brauchen.
               */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">Vergleichsbasis</Label>
-                  <select
-                    value={formData.vergleichsmodus}
-                    onChange={(e) => update('vergleichsmodus', e.target.value as FormData['vergleichsmodus'])}
-                    className={selectClass}
-                  >
-                    <option value="gleicher_nettoaufwand">gleicher Netto-Aufwand</option>
-                    <option value="gleicher_bruttobeitrag">gleicher Bruttobeitrag</option>
-                  </select>
-                </div>
-                <p className="text-xs text-slate-500 self-end pb-2">
-                  {gegenRiester ? (
-                    <>
-                      Der Riester-Bestandsvertrag bekommt immer den vollen Beitrag: Er ist
-                      selbst gefördert und bringt eine eigene Erstattung mit. Die
-                      Vergleichsbasis wirkt hier nur auf den Zweitvertrag der Aufteilung.
-                    </>
-                  ) : formData.vergleichsmodus === 'gleicher_nettoaufwand' ? (
-                    <>
-                      {vergleichName} bekommt den um die Steuererstattung verminderten
-                      Betrag – beide Seiten kosten dann dasselbe aus eigener Tasche.
-                    </>
-                  ) : (
-                    <>
-                      Beide Seiten bekommen denselben Beitrag. Der geförderte Vertrag
-                      kostet dann weniger, weil die Steuererstattung zurückfließt.
-                    </>
-                  )}
-                </p>
-              </div>
+              <p className="text-xs text-slate-500">
+                {gegenRiester ? (
+                  <>
+                    Der Riester-Bestandsvertrag bekommt immer den vollen Beitrag: Er ist
+                    selbst gefördert und bringt eine eigene Erstattung mit. Die Auswahl
+                    oben wirkt hier nur auf den Zweitvertrag der Aufteilung.
+                  </>
+                ) : formData.vergleichsmodus === 'gleicher_nettoaufwand' ? (
+                  <>
+                    <strong>Nettobeiträge:</strong> {vergleichName} bekommt den um die
+                    Steuererstattung verminderten Betrag – beide Seiten kosten dann
+                    dasselbe aus eigener Tasche. Umstellbar oben in der Leiste.
+                  </>
+                ) : (
+                  <>
+                    <strong>Bruttobeiträge:</strong> Beide Seiten bekommen denselben
+                    Beitrag. Der geförderte Vertrag kostet dann weniger, weil die
+                    Steuererstattung zurückfließt. Umstellbar oben in der Leiste.
+                  </>
+                )}
+              </p>
 
               {gegenFondsLv && (
                 <div className="rounded-xl border border-slate-200 p-4 space-y-4">
