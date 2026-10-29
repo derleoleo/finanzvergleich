@@ -58,7 +58,16 @@ export function escape(text: string): string {
  * schlimmer als eine, die es noch nicht gibt – und ein Steuerbeitrag ohne
  * Rechtsstand ist für die Begründungspflicht nach § 61 VVG wertlos.
  */
-export function beitragLesen(dateiname: string, roh: string): Beitrag {
+export function beitragLesen(dateiname: string, rohEingang: string): Beitrag {
+  /*
+   * Zeilenenden einmal vereinheitlichen, danach kennt der Parser nur "\n".
+   *
+   * Unter Windows checkt Git die Markdown-Quellen mit CRLF aus
+   * (core.autocrlf), im Linux-Lauf der CI bleiben sie bei LF. Der Kopf kam
+   * damit zurecht, der Rumpf nicht ueberall - ein uebrig gebliebenes \r
+   * landete sonst in den erzeugten Seiten, je nachdem, wo gebaut wird.
+   */
+  const roh = rohEingang.replace(/\r\n?/g, "\n");
   const slug = dateiname.replace(/\.md$/, "");
   const treffer = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(roh);
   if (!treffer) {

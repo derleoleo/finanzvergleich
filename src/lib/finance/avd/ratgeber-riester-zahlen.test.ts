@@ -8,7 +8,11 @@
 
 import { describe, expect, it } from 'vitest';
 import { berechneZulagen, berechneZulagenRiesterAlt, RIESTER_ALT } from './zulagen';
-import TEXT from '../../../../ratgeber/riester-bestand-wechseln-oder-behalten.md?raw';
+import ROH from '../../../../ratgeber/riester-bestand-wechseln-oder-behalten.md?raw';
+
+// Unter Windows kommen die Quellen mit CRLF aus Git; geprueft wird der
+// Text, den auch `beitragLesen` sieht.
+const TEXT = ROH.replace(/\r\n?/g, '\n');
 
 const ALTER = 40;
 

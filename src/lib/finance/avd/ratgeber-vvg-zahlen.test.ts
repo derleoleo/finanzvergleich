@@ -15,7 +15,11 @@ import { berechneTodesfallSzenarien } from './todesfall';
 import { RECHTS_FLAGS_DEFAULT, type RechtsFlags } from './config';
 import { guenstigerpruefung } from './zulagen';
 import { RECHTSSTAND } from '../modell';
-import TEXT from '../../../../ratgeber/begruendungspflicht-paragraf-61-vvg.md?raw';
+import ROH from '../../../../ratgeber/begruendungspflicht-paragraf-61-vvg.md?raw';
+
+// Unter Windows kommen die Quellen mit CRLF aus Git; geprueft wird der
+// Text, den auch `beitragLesen` sieht.
+const TEXT = ROH.replace(/\r\n?/g, '\n');
 
 const GRUND = {
   geburtsjahr: 1990,

@@ -9,7 +9,11 @@
 import { describe, expect, it } from 'vitest';
 import { simuliereAvd, type AvdEingabe } from './simulation';
 import { berechneTodesfallSzenarien, type TodesfallSzenario } from './todesfall';
-import TEXT from '../../../../ratgeber/was-im-todesfall-bleibt-altersvorsorgedepot.md?raw';
+import ROH from '../../../../ratgeber/was-im-todesfall-bleibt-altersvorsorgedepot.md?raw';
+
+// Unter Windows kommen die Quellen mit CRLF aus Git; geprueft wird der
+// Text, den auch `beitragLesen` sieht.
+const TEXT = ROH.replace(/\r\n?/g, '\n');
 
 const GARANTIE = 10;
 
