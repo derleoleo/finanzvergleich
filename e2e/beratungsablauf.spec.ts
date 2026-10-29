@@ -492,6 +492,53 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
   });
 
   /**
+   * Die Kombination „30 + x" war nur in einem zugeklappten Abschnitt zu
+   * finden, obwohl die Engine sie immer mitrechnet. Jetzt steht sie als
+   * dritte Spalte im Vergleich, und der Hinweis am Beitragsfeld fuehrt
+   * dorthin.
+   */
+  test("Die Aufteilung steht im Vergleich und ist von dort erreichbar", async ({
+    page,
+  }) => {
+    const absturz: string[] = [];
+    page.on("pageerror", (e) => absturz.push(e.message));
+
+    await anmelden(page);
+    await page.goto("/altersvorsorgedepot");
+    await expect(page.locator("#avd-name")).toBeVisible({ timeout: 40_000 });
+
+    // Dritte Spalte im Vergleichsabschnitt, ohne vorher irgendwo zu klicken
+    // Genau die neue Zeile, nicht irgendein Vorfahre: Der
+    // Aufteilungsabschnitt steht auch zugeklappt im DOM (so ist der
+    // Baustein gebaut), und `filter` auf allen <div> wuerde einen
+    // gemeinsamen Vorfahren beider treffen.
+    const dritteSpalte = page
+      .getByText("Es muss nicht alles auf eine Karte")
+      .locator('xpath=ancestor::div[contains(@class,"bg-slate-50/70")][1]');
+    await expect(dritteSpalte).toBeVisible();
+    // Geprueft wird der Text der Zeile, nicht je ein eigener Treffer: Die
+    // Beschriftung der besten Variante traegt einen Stern im selben Element,
+    // und "Aufteilung" steht auch auf dem Knopf daneben.
+    await expect(dritteSpalte).toContainText("Alles ins Altersvorsorgedepot");
+    await expect(dritteSpalte).toContainText("Alles in freies Depot");
+    await expect(dritteSpalte).toContainText("Aufteilung");
+    // Drei Kacheln, drei Betraege - und jede sagt, worauf sie sich bezieht.
+    await expect(dritteSpalte.getByText("nach Steuern", { exact: true })).toHaveCount(3);
+
+    // Der Aufteilungsabschnitt ist anfangs zu
+    const aufteilungsFeld = page.getByText("Monatlich ins Altersvorsorgedepot (€)");
+    const kopf = page.getByRole("button", { name: /Aufteilen statt alles auf eine Karte/ });
+    await expect(kopf).toHaveAttribute("aria-expanded", "false");
+
+    // Der Verweis am Beitragsfeld oeffnet ihn
+    await page.getByRole("button", { name: "Was das für die Aufteilung heißt" }).click();
+    await expect(kopf).toHaveAttribute("aria-expanded", "true");
+    await expect(aufteilungsFeld).toBeVisible();
+
+    expect(absturz, `Abstürze: ${absturz.join(" | ")}`).toHaveLength(0);
+  });
+
+  /**
    * § 52 Abs. 50a S. 4 EStG: Ein Riester-Bestandsvertrag darf die
    * Fördersystematik wechseln, ohne das Produkt zu wechseln. Der Schalter
    * muss diesen Wechsel bis in die angezeigte Förderung durchreichen — die

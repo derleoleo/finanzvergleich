@@ -230,6 +230,24 @@ export default function AvdCalculator() {
       return naechste;
     });
 
+  /**
+   * Oeffnet einen Abschnitt und springt hin.
+   *
+   * Zugeklappte Abschnitte verbergen Stellschrauben, auf die andere Stellen
+   * verweisen - der Zulagenknick am Beitragsfeld etwa nennt eine Zahl, deren
+   * Stellschraube zwei Abschnitte tiefer liegt. Ein Verweis, der nur den Namen
+   * nennt, laesst den Leser suchen.
+   */
+  const abschnittOeffnen = (id: string) => {
+    setOffeneAbschnitte((vorher) => new Set(vorher).add(id));
+    // Erst nach dem Aufklappen steht die Zielhoehe fest.
+    requestAnimationFrame(() => {
+      document
+        .querySelector(`[data-pdf-section="${id}"]`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isExporting, dialogOpen, openDialog, closeDialog, doExport } = usePDFExport();
 
@@ -409,6 +427,17 @@ export default function AvdCalculator() {
   } as const;
   const meta = VERGLEICH_META[formData.vergleichspartner ?? 'depot'];
   const vergleichName = meta.name;
+
+  /** Die Kombination „30 + x" – dritte Moeglichkeit neben den beiden reinen Wegen. */
+  const kombination = strategien.strategien[2];
+  /**
+   * true, wenn die Strategierechnung auf einer anderen Annahme steht als die
+   * Kacheln oben. `berechneStrategien` rechnet immer ohne Dynamik und mit
+   * gleichem Bruttobeitrag; die Hauptrechnung folgt der Eingabe.
+   */
+  const andereAnnahmeAlsOben =
+    formData.beitragsdynamikPaJahr > 0 ||
+    formData.vergleichsmodus !== 'gleicher_bruttobeitrag';
 
   const verlaufsdaten = ergebnis.jahre.map((j, i) => ({
     jahr: j.jahr,
@@ -959,7 +988,22 @@ export default function AvdCalculator() {
                         Bis {formatCurrency(strategien.aufteilungspunkt.foerdergrenzeJahresbeitrag)} im
                         Jahr wächst die Förderung mit jedem Euro, darüber nicht mehr. Ab{' '}
                         {formatCurrency(strategien.aufteilungspunkt.monatsbeitrag)} im Monat sinkt die
-                        Zulagen-Grenzquote von 50 auf 25 Prozent.
+                        Zulagen-Grenzquote von 50 auf 25 Prozent.{' '}
+                        {/*
+                          Der Knick nennt eine Zahl, deren Stellschraube zwei
+                          Abschnitte tiefer liegt. Dass der Weg dorthin benannt
+                          wird, ist kein Komfort - sonst bleibt die Aufteilung
+                          eine Zahl im Text statt eine Moeglichkeit.
+                        */}
+                        {!strategien.kombinationEntfaellt && (
+                          <button
+                            type="button"
+                            onClick={() => abschnittOeffnen('strategien')}
+                            className="underline underline-offset-2 text-blue-700 hover:text-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+                          >
+                            Was das für die Aufteilung heißt
+                          </button>
+                        )}
                       </p>
                     </div>
                   )}
@@ -1352,6 +1396,83 @@ export default function AvdCalculator() {
                     : `inkl. Vorabpauschale ${formatCurrency(ergebnis.depot.summeVorabpauschaleSteuer)}`,
                 }}
               />
+
+              {/*
+                Die dritte Moeglichkeit. Die Waage hat zwei Seiten - das ist ihr
+                Wesen, nicht ihre Grenze -, deshalb steht die Kombination als
+                Zeile darunter und nicht als drittes Waagschalen-Ende.
+
+                Alle drei Zahlen hier stammen aus `berechneStrategien` und
+                stehen damit auf einer Annahme: gleicher Bruttobeitrag, keine
+                Beitragsdynamik. Weicht die Eingabe davon ab, steht es dabei -
+                sonst wuerden die Zahlen stillschweigend mit den Kacheln oben
+                gemischt, die der Eingabe folgen.
+              */}
+              {!strategien.kombinationEntfaellt && !kombination.unzulaessig && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-slate-900">
+                        Es muss nicht alles auf eine Karte
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {kombination.aufteilungText} – der hoch geförderte Teil in den
+                        geförderten Vertrag, der Rest frei verfügbar daneben.
+                      </p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => abschnittOeffnen('strategien')}>
+                      Aufteilung anpassen
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" data-pdf-single-col>
+                    {strategien.strategien.map((st) => {
+                      const beste = st.id === strategien.beste;
+                      return (
+                        <div
+                          key={st.id}
+                          className={`rounded-lg border p-3 ${
+                            beste
+                              ? 'border-green-200 bg-green-50'
+                              : st.unzulaessig
+                                ? 'border-amber-200 bg-amber-50/40'
+                                : 'border-slate-200 bg-white'
+                          }`}
+                        >
+                          <div className="text-xs font-semibold text-slate-500">
+                            {st.bezeichnung}
+                            {beste && <span className="text-green-700 ml-1">★</span>}
+                          </div>
+                          <div className="text-lg font-bold text-slate-900 mt-0.5">
+                            {formatCurrency(
+                              showReal ? st.endkapitalNachSteuerReal : st.endkapitalNachSteuer
+                            )}
+                          </div>
+                          {st.unzulaessig ? (
+                            <p className="text-xs text-amber-700 mt-1">{st.unzulaessig}</p>
+                          ) : (
+                            <div className="text-xs text-slate-500 mt-0.5">
+                              nach Steuern{showReal ? ' · real' : ''}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {andereAnnahmeAlsOben && (
+                    <p className="text-xs text-slate-500">
+                      Diese drei Zahlen rechnen mit gleichem Bruttobeitrag und ohne
+                      Beitragsdynamik – anders als die Kacheln und die Waage oben
+                      {formData.beitragsdynamikPaJahr > 0 && ' (dort mit Dynamik)'}
+                      {formData.vergleichsmodus !== 'gleicher_bruttobeitrag' &&
+                        ' (dort nach gleichem Netto-Aufwand)'}
+                      . Innerhalb der Dreiergruppe sind sie vergleichbar, zwischen den
+                      Gruppen nicht.
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="h-80 w-full">
                 <ResponsiveContainer width="100%" height="100%">
