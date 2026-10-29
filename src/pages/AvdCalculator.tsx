@@ -567,17 +567,12 @@ export default function AvdCalculator() {
   /**
    * Steht die Dreierzeile auf einer anderen Annahme als die Waage darueber?
    *
-   * `berechneStrategien` rechnet immer ohne Beitragsdynamik und mit gleichem
-   * Bruttobeitrag, die Hauptrechnung folgt der Eingabe. Oft fuehrt das zu
-   * denselben Zahlen - dann waere ein Hinweis auf einen Unterschied eine
-   * Warnung vor nichts. Deshalb wird nicht die Einstellung verglichen,
-   * sondern das Ergebnis, und zwar nominal: Der Real-Schalter wirkt auf
-   * beide Gruppen gleich.
+   * Seit die Vergleichsbasis auch fuer den Strategievergleich gilt, bleibt
+   * genau ein Unterschied: Die drei Wege rechnen ohne Beitragsdynamik, weil
+   * der foerderoptimale Betrag eine feste Grenze im Gesetz ist und nicht
+   * mitwaechst.
    */
-  const andereAnnahmeAlsOben =
-    Math.abs(strategien.strategien[0].endkapitalNachSteuer - ergebnis.endkapitalNachSteuer) >
-      0.5 ||
-    Math.abs(strategien.strategien[1].endkapitalNachSteuer - endVergleichNominal) > 0.5;
+  const andereAnnahmeAlsOben = formData.beitragsdynamikPaJahr > 0;
 
   // Audit N03: gespeicherte Kennzahlen gegen die heutige Rechnung stellen.
   // Verglichen wird nominal, damit der Real-Schalter keinen Unterschied
@@ -1468,15 +1463,20 @@ export default function AvdCalculator() {
                     })}
                   </div>
 
+                  {/*
+                    Was noch abweicht, steht ueber den Kacheln statt darunter.
+                    Darunter war es eine Fussnote zu einem Widerspruch, den der
+                    Leser da laengst gezogen hatte.
+                  */}
                   {andereAnnahmeAlsOben && (
-                    <p className="text-xs text-slate-500">
-                      Diese drei Zahlen rechnen mit gleichem Bruttobeitrag und ohne
-                      Beitragsdynamik – anders als die Kacheln und die Waage oben
-                      {formData.beitragsdynamikPaJahr > 0 && ' (dort mit Dynamik)'}
-                      {formData.vergleichsmodus !== 'gleicher_bruttobeitrag' &&
-                        ' (dort nach gleichem Netto-Aufwand)'}
-                      . Innerhalb der Dreiergruppe sind sie vergleichbar, zwischen den
-                      Gruppen nicht.
+                    <p className="text-xs text-slate-600 border-l-2 border-slate-300 pl-3">
+                      Ohne Beitragsdynamik gerechnet – anders als die Waage oben. Der
+                      förderoptimale Betrag ist eine feste Grenze im Gesetz und wächst
+                      nicht mit dem Beitrag. Die Vergleichsbasis „
+                      {formData.vergleichsmodus === 'gleicher_nettoaufwand'
+                        ? 'gleicher Netto-Aufwand'
+                        : 'gleicher Bruttobeitrag'}
+                      “ gilt hier wie oben.
                     </p>
                   )}
                 </div>

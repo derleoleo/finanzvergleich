@@ -525,15 +525,28 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     // Drei Kacheln, drei Betraege - und jede sagt, worauf sie sich bezieht.
     await expect(dritteSpalte.getByText("nach Steuern", { exact: true })).toHaveCount(3);
 
-    // Der Hinweis auf die abweichende Annahme haengt am Ergebnis, nicht an
-    // der Einstellung: Gegen das freie Depot rechnen oben und unten wirklich
-    // verschieden (Netto-Aufwand gegen Bruttobeitrag), gegen den
-    // Riester-Bestand kommen dieselben Zahlen heraus - dann waere der Hinweis
-    // eine Warnung vor nichts.
-    await expect(dritteSpalte.getByText(/^Diese drei Zahlen/)).toBeVisible();
-    await page.getByRole("radio", { name: "Riester-Bestand", exact: true }).click();
-    await expect(dritteSpalte.getByText(/^Diese drei Zahlen/)).toHaveCount(0);
-    await page.getByRole("radio", { name: "Freies Depot", exact: true }).click();
+    /*
+     * Der gemeldete Widerspruch: Die Waage wies das Altersvorsorgedepot vorn
+     * aus, die Kachel darunter setzte den Stern auf das freie Depot. Seit die
+     * Vergleichsbasis fuer beide gilt, muss derselbe Weg dieselbe Zahl
+     * tragen - unter beiden Basen.
+     */
+    const basisWahl = page
+      .getByRole("combobox")
+      .filter({ hasText: /Netto-Aufwand|Bruttobeitrag/ });
+    const waagensatz = page.getByText("Auf Basis der gemachten Angaben").first();
+    for (const basis of ["gleicher Netto-Aufwand", "gleicher Bruttobeitrag"]) {
+      await basisWahl.selectOption({ label: basis });
+      const zeilentext = await dritteSpalte.innerText();
+      const yWert = zeilentext
+        .split("Alles in freies Depot")[1]
+        .split(String.fromCharCode(10))
+        .find((z) => z.includes("€")) as string;
+      // Dieselbe Zahl muss in der Waage darueber stehen
+      const waage = waagensatz.locator("xpath=ancestor::div[2]");
+      await expect(waage, basis).toContainText(yWert.trim());
+    }
+    await basisWahl.selectOption({ label: "gleicher Netto-Aufwand" });
 
     // Der Aufteilungsabschnitt ist anfangs zu
     const aufteilungsFeld = page.getByText("Monatlich ins Altersvorsorgedepot (€)");

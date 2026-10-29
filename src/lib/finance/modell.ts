@@ -9,9 +9,29 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-27c" as const;
+export const MODELL_VERSION = "2026-10-29" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-29",
+    aenderung:
+      "Altersvorsorgedepot, Strategievergleich: Die Vergleichsbasis aus " +
+      "Abschnitt 3 gilt jetzt auch fuer die drei Wege \"alles ins AVD\", " +
+      "\"alles in den Vergleichspartner\" und \"aufteilen\". Vorher erzwang der " +
+      "Strategievergleich immer gleichen Bruttobeitrag. Dadurch konnte die " +
+      "Waage das Altersvorsorgedepot vorn ausweisen und die Kachel darunter " +
+      "gleichzeitig den reinen Vergleichspartner - zwei richtige Rechnungen " +
+      "auf zwei Annahmen, nebeneinander unbrauchbar. Bei \"gleicher " +
+      "Netto-Aufwand\" traegt jeder Weg jetzt dieselben Kosten aus eigener " +
+      "Tasche: Der Restbeitrag der Aufteilung ist das, was nach dem AVD-Teil " +
+      "vom Eigenaufwand uebrig bleibt, und faellt damit kleiner aus als der " +
+      "bisherige Bruttorest. Das verschiebt Aufteilungsbetrag, Optimum und " +
+      "Endkapital der Kombination. Ausserdem weisen die Kacheln jetzt die " +
+      "Einzahlungen jedes Weges einzeln aus statt durchgehend die des " +
+      "AVD-Wegs. Unveraendert ohne Beitragsdynamik gerechnet, und " +
+      "unveraendert bekommen Fondspolice und Riester-Altvertrag den vollen " +
+      "Bruttobeitrag (simulation.ts mindert nur den Depot-Zweig).",
+  },
   {
     version: "2026-10-27c",
     aenderung:
