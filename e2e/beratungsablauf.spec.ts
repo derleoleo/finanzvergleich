@@ -525,6 +525,16 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     // Drei Kacheln, drei Betraege - und jede sagt, worauf sie sich bezieht.
     await expect(dritteSpalte.getByText("nach Steuern", { exact: true })).toHaveCount(3);
 
+    // Der Hinweis auf die abweichende Annahme haengt am Ergebnis, nicht an
+    // der Einstellung: Gegen das freie Depot rechnen oben und unten wirklich
+    // verschieden (Netto-Aufwand gegen Bruttobeitrag), gegen den
+    // Riester-Bestand kommen dieselben Zahlen heraus - dann waere der Hinweis
+    // eine Warnung vor nichts.
+    await expect(dritteSpalte.getByText(/^Diese drei Zahlen/)).toBeVisible();
+    await page.getByRole("radio", { name: "Riester-Bestand", exact: true }).click();
+    await expect(dritteSpalte.getByText(/^Diese drei Zahlen/)).toHaveCount(0);
+    await page.getByRole("radio", { name: "Freies Depot", exact: true }).click();
+
     // Der Aufteilungsabschnitt ist anfangs zu
     const aufteilungsFeld = page.getByText("Monatlich ins Altersvorsorgedepot (€)");
     const kopf = page.getByRole("button", { name: /Aufteilen statt alles auf eine Karte/ });
@@ -560,14 +570,14 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     const kachel = page.getByText("Förderung im ersten Jahr").locator("..");
 
     // Vorgabe: Bestandsschutz, also starre Grundzulage 175 €
-    await expect(kachel).toContainText("Alte Riester-Zulage");
+    await expect(kachel).toContainText("Altvertrag (alte Förderung)");
     await expect(kachel).toContainText("175");
 
     // Umgeschaltet: dieselbe Staffel wie das AVD, hier 540 €
     await page
       .getByRole("radio", { name: "neue Förderung (ab 2027)", exact: true })
       .click();
-    await expect(kachel).toContainText("Altvertrag, neu gefördert");
+    await expect(kachel).toContainText("Altvertrag (neue Förderung)");
     await expect(kachel).toContainText("540");
 
     // Die Felder des alten Rechts verschwinden, die Angabe bleibt erhalten.

@@ -430,15 +430,6 @@ export default function AvdCalculator() {
 
   /** Die Kombination „30 + x" – dritte Moeglichkeit neben den beiden reinen Wegen. */
   const kombination = strategien.strategien[2];
-  /**
-   * true, wenn die Strategierechnung auf einer anderen Annahme steht als die
-   * Kacheln oben. `berechneStrategien` rechnet immer ohne Dynamik und mit
-   * gleichem Bruttobeitrag; die Hauptrechnung folgt der Eingabe.
-   */
-  const andereAnnahmeAlsOben =
-    formData.beitragsdynamikPaJahr > 0 ||
-    formData.vergleichsmodus !== 'gleicher_bruttobeitrag';
-
   const verlaufsdaten = ergebnis.jahre.map((j, i) => ({
     jahr: j.jahr,
     alter: j.alter,
@@ -572,6 +563,21 @@ export default function AvdCalculator() {
     ? endVergleichNominal /
       deflatorFuer(formData.inflationPaJahr, ergebnis.jahreBisAuszahlung)
     : endVergleichNominal;
+
+  /**
+   * Steht die Dreierzeile auf einer anderen Annahme als die Waage darueber?
+   *
+   * `berechneStrategien` rechnet immer ohne Beitragsdynamik und mit gleichem
+   * Bruttobeitrag, die Hauptrechnung folgt der Eingabe. Oft fuehrt das zu
+   * denselben Zahlen - dann waere ein Hinweis auf einen Unterschied eine
+   * Warnung vor nichts. Deshalb wird nicht die Einstellung verglichen,
+   * sondern das Ergebnis, und zwar nominal: Der Real-Schalter wirkt auf
+   * beide Gruppen gleich.
+   */
+  const andereAnnahmeAlsOben =
+    Math.abs(strategien.strategien[0].endkapitalNachSteuer - ergebnis.endkapitalNachSteuer) >
+      0.5 ||
+    Math.abs(strategien.strategien[1].endkapitalNachSteuer - endVergleichNominal) > 0.5;
 
   // Audit N03: gespeicherte Kennzahlen gegen die heutige Rechnung stellen.
   // Verglichen wird nominal, damit der Real-Schalter keinen Unterschied
@@ -1293,7 +1299,7 @@ export default function AvdCalculator() {
 
               {gegenRiester && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
+                  <Label className="block text-sm font-medium text-slate-700">
                     Fördersystematik des Altvertrags
                   </Label>
                   <SegmentedToggle
@@ -1355,7 +1361,9 @@ export default function AvdCalculator() {
                   <div className="rounded-xl border border-slate-200 p-4">
                     <div className="text-xs text-slate-500">Förderung im ersten Jahr</div>
                     <div className="text-sm text-slate-900 mt-1">
-                      {riesterRegime === 'alt' ? 'Alte Riester-Zulage' : 'Altvertrag, neu gefördert'}{' '}
+                      {riesterRegime === 'alt'
+                        ? 'Altvertrag (alte Förderung)'
+                        : 'Altvertrag (neue Förderung)'}{' '}
                       <span className="font-semibold">
                         {formatCurrency(ergebnis.riesterAlt?.zulageJahr1 ?? 0)}
                       </span>
@@ -1367,7 +1375,7 @@ export default function AvdCalculator() {
                       )}
                     </div>
                     <div className="text-sm text-slate-900 mt-1">
-                      Neue Förderung{' '}
+                      Altersvorsorgedepot{' '}
                       <span className="font-semibold">
                         {formatCurrency(ergebnis.jahre[0]?.zulage ?? 0)}
                       </span>{' '}
@@ -1411,7 +1419,7 @@ export default function AvdCalculator() {
               {!strategien.kombinationEntfaellt && !kombination.unzulaessig && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="text-sm font-semibold text-slate-900">
                         Es muss nicht alles auf eine Karte
                       </div>
