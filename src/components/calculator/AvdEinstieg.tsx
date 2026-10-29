@@ -11,18 +11,16 @@ import { SegmentedToggle } from '@/components/ui/segmented-toggle';
  * bleibt dabei sichtbar: Im Beratungsgespräch wird die Weichenstellung
  * umgestellt, nicht einmal gesetzt und vergessen.
  *
- * Warum die Riester-Frage trotz Überschneidung getrennt steht: Sie ist eine
- * Tatsache über den Kunden, der Vergleichspartner eine Modellentscheidung.
- * Und ohne sie bleibt die Wechselanalyse unauffindbar — sie verlangt heute
- * eine Freischaltung in den Voreinstellungen, von der niemand weiß.
+ * Eine eigene Frage „Riester-Bestand: ja/nein" stand hier kurzzeitig daneben.
+ * Sie war überflüssig: Wer „Riester-Bestand" als Vergleichspartner wählt, sagt
+ * damit bereits, dass es einen gibt. Zwei Fragen für dieselbe Tatsache sind
+ * eine zu viel.
  */
 
 export type Vergleichspartner = 'depot' | 'fonds_lv' | 'riester_alt';
 export type Auszahlform = 'auszahlplan' | 'leibrente';
 
 export type AvdEinstiegProps = {
-  hatRiesterBestand: boolean;
-  onRiesterBestand: (wert: boolean) => void;
   vergleichspartner: Vergleichspartner;
   onVergleichspartner: (wert: Vergleichspartner) => void;
   auszahlform: Auszahlform;
@@ -31,9 +29,10 @@ export type AvdEinstiegProps = {
   erlaeuterung: string;
 };
 
-const JA_NEIN = [
-  { value: 'nein', label: 'Nein' },
-  { value: 'ja', label: 'Ja' },
+const PARTNER = [
+  { value: 'depot', label: 'Freies Depot' },
+  { value: 'fonds_lv', label: 'Fondspolice' },
+  { value: 'riester_alt', label: 'Riester-Bestand' },
 ] as const;
 
 const AUSZAHLUNG = [
@@ -51,40 +50,21 @@ function Frage({ titel, children }: { titel: string; children: React.ReactNode }
 }
 
 export function AvdEinstieg({
-  hatRiesterBestand,
-  onRiesterBestand,
   vergleichspartner,
   onVergleichspartner,
   auszahlform,
   onAuszahlform,
   erlaeuterung,
 }: AvdEinstiegProps) {
-  // „Riester-Bestand" erscheint nur, wenn es einen gibt. Wer keinen hat,
-  // wählt zwischen zwei Möglichkeiten statt zwischen drei.
-  const partner = [
-    { value: 'depot' as const, label: 'Freies Depot' },
-    { value: 'fonds_lv' as const, label: 'Fondspolice' },
-    ...(hatRiesterBestand ? [{ value: 'riester_alt' as const, label: 'Riester-Bestand' }] : []),
-  ];
-
   return (
     <Card className="border-0 shadow-lg bg-white">
       <CardContent className="p-4 md:p-5 space-y-3">
         <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-8" data-pdf-hide>
-          <Frage titel="Riester-Bestandsvertrag vorhanden?">
-            <SegmentedToggle
-              value={hatRiesterBestand ? 'ja' : 'nein'}
-              onChange={(v) => onRiesterBestand(v === 'ja')}
-              options={JA_NEIN}
-              ariaLabel="Riester-Bestandsvertrag vorhanden?"
-            />
-          </Frage>
-
           <Frage titel="Altersvorsorgedepot vergleichen mit">
             <SegmentedToggle
               value={vergleichspartner}
               onChange={onVergleichspartner}
-              options={partner}
+              options={PARTNER}
               ariaLabel="Vergleichspartner"
             />
           </Frage>

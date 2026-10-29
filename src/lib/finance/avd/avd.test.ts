@@ -674,6 +674,54 @@ describe('Vergleich gegen Riester-Bestandsvertrag', () => {
     expect(r.riesterAlt!.gekuerztJahr1).toBe(true);
   });
 
+  it("Fördersystematik gewechselt: der Altvertrag rechnet mit der neuen Staffel", () => {
+    // § 52 Abs. 50a S. 4 EStG: Produkt bleibt, Systematik wechselt. Also
+    // dieselbe Zulage wie das AVD (540 €), aber weiter Kosten und Rendite
+    // des Altvertrags.
+    const alt = mitRiester();
+    const neu = mitRiester({}, { foerderregime: 'neu' });
+    expect(alt.riesterAlt!.foerderregime).toBe('alt');
+    expect(neu.riesterAlt!.foerderregime).toBe('neu');
+    expect(neu.riesterAlt!.zulageJahr1).toBe(540);
+    expect(neu.riesterAlt!.zulageJahr1).toBe(neu.jahre[0].zulage);
+    // Das Produkt ist dasselbe geblieben, die Förderung ist höher:
+    expect(neu.riesterAlt!.summeZulagen).toBeGreaterThan(alt.riesterAlt!.summeZulagen);
+    expect(neu.riesterAlt!.endkapitalNominal).toBeGreaterThan(
+      alt.riesterAlt!.endkapitalNominal
+    );
+    // Aber nicht so gut wie das AVD - dort sind Kosten und Rendite besser:
+    expect(neu.riesterAlt!.endkapitalNachSteuer).toBeLessThan(neu.endkapitalNachSteuer);
+  });
+
+  it("unter 'neu' tragen die Jahr-1-Felder keine Werte des alten Rechts", () => {
+    // Derselbe Fall, der unter 'alt' eine anteilige Kürzung auslöst
+    // (Mindesteigenbeitrag 1.925 €, Zulage 164 €). Beides gibt es im neuen
+    // Recht nicht - also darf hier auch nichts davon stehen.
+    const alt = mitRiester({}, { beitragspflEinnahmenVorjahr: 70000 });
+    const neu = mitRiester({}, { beitragspflEinnahmenVorjahr: 70000, foerderregime: 'neu' });
+    expect(alt.riesterAlt!.gekuerztJahr1).toBe(true);
+    expect(neu.riesterAlt!.mindesteigenbeitragJahr1).toBe(0);
+    expect(neu.riesterAlt!.gekuerztJahr1).toBe(false);
+    expect(neu.riesterAlt!.zulagenanspruchJahr1).toBe(540);
+    expect(neu.riesterAlt!.zulageJahr1).toBe(540);
+  });
+
+  it("der Wechsel der Systematik kann auch schaden", () => {
+    // 12.000 € Einkommen, 2 Kinder, 120 €/Jahr: der Sockelbetrag von 60 €
+    // löst alt die volle Zulage von 775 € aus, die neue Staffel gibt 300 €.
+    const alt = mitRiester(
+      { kinder: 2, eigenbeitragMonatlich: 10 },
+      { beitragspflEinnahmenVorjahr: 12000 }
+    );
+    const neu = mitRiester(
+      { kinder: 2, eigenbeitragMonatlich: 10 },
+      { beitragspflEinnahmenVorjahr: 12000, foerderregime: 'neu' }
+    );
+    expect(alt.riesterAlt!.zulageJahr1).toBe(775);
+    expect(neu.riesterAlt!.zulageJahr1).toBe(300);
+    expect(neu.riesterAlt!.endkapitalNominal).toBeLessThan(alt.riesterAlt!.endkapitalNominal);
+  });
+
   it('niedriges Einkommen + Kinder + Sockelbeitrag: alt schlägt neu, mit Warnung', () => {
     // 12.000 € Einkommen, 2 Kinder, 120 €/Jahr → alt 775 €, neu 300 €
     const r = mitRiester(
@@ -1152,11 +1200,29 @@ describe('Drei Strategien (30 + 1)', () => {
     }
   });
 
-  it('teilt den Beitrag vollständig auf und folgt dem Vorschlag', () => {
-    const r = berechneStrategien({ basis: basis(), zweitvertrag: 'depot' });
+  it('teilt das Budget vollständig auf und folgt dem Vorschlag', () => {
+    // Bei „gleicher Bruttobeitrag“ ist das Budget der Beitrag selbst.
+    const r = berechneStrategien({
+      basis: eingabe({ ...basis(), vergleichsmodus: 'gleicher_bruttobeitrag' }),
+      zweitvertrag: 'depot',
+    });
     expect(r.aufteilungMonatlich).toBe(30);
     const z = r.strategien[2];
     expect(z.beitragAvdMonatlich + z.beitragZweitMonatlich).toBe(80);
+  });
+
+  it('bei „gleicher Netto-Aufwand“ ist das Budget der Eigenaufwand, nicht der Beitrag', () => {
+    // Der AVD-Teil bringt eine Steuererstattung; sie steht nicht noch einmal
+    // fuer den Zweitvertrag zur Verfuegung. Deshalb liegt die Summe der
+    // Beitraege unter dem Bruttobeitrag - und genau darum geht es bei dieser
+    // Vergleichsbasis.
+    const r = berechneStrategien({
+      basis: eingabe({ ...basis(), vergleichsmodus: 'gleicher_nettoaufwand' }),
+      zweitvertrag: 'depot',
+    });
+    const z = r.strategien[2];
+    expect(z.beitragAvdMonatlich + z.beitragZweitMonatlich).toBeLessThan(80);
+    expect(z.beitragZweitMonatlich).toBeGreaterThan(0);
   });
 
   it('findet das Optimum und misst es am Zulagenknick', () => {
@@ -1232,7 +1298,13 @@ describe('Drei Strategien (30 + 1)', () => {
     // wurde ein Vorschlag von 30 EUR, der Zweitvertrag bekam -0,20 EUR.
     for (const budget of [29.8, 0.4, 149.99, 570.55]) {
       const r = berechneStrategien({
-        basis: eingabe({ ...basis(), eigenbeitragMonatlich: budget }),
+        basis: eingabe({
+          ...basis(),
+          eigenbeitragMonatlich: budget,
+          // Der Fall ist ein Rundungsfall am Rand; die Vergleichsbasis
+          // waere hier nur Rauschen.
+          vergleichsmodus: 'gleicher_bruttobeitrag',
+        }),
         zweitvertrag: 'depot',
       });
       const o = r.optimum!;
@@ -1279,7 +1351,16 @@ describe('Drei Strategien (30 + 1)', () => {
     // Genau der Fall, fuer den "30 + 1" gedacht ist: Ist die Rente hoch
     // besteuert, lohnt sich der gefoerderte Vertrag nur bis zum Knick.
     const r = berechneStrategien({
-      basis: eingabe({ ...basis(), eigenbeitragMonatlich: 150, steuersatzImAlter: 0.35 }),
+      basis: eingabe({
+        ...basis(),
+        eigenbeitragMonatlich: 150,
+        steuersatzImAlter: 0.35,
+        // Bei gleichem Bruttobeitrag. Unter „gleicher Netto-Aufwand“
+        // bekommt der gefoerderte Weg fuer dieselben eigenen Kosten mehr
+        // Geld ins Depot - dort gewinnt „alles ins AVD“ auch bei hohem
+        // Steuersatz, und zwar zu Recht.
+        vergleichsmodus: 'gleicher_bruttobeitrag',
+      }),
       zweitvertrag: 'depot',
     });
     expect(r.optimum!.monatsbeitrag).toBeLessThan(150);
@@ -1342,11 +1423,54 @@ describe('Drei Strategien (30 + 1)', () => {
     expect(y.summeNettoaufwand).toBeLessThanOrEqual(y.summeEigenbeitraege);
   });
 
-  it('vergleicht gleichen Eigenaufwand – sonst wäre der Vergleich wertlos', () => {
-    const r = berechneStrategien({ basis: basis(), zweitvertrag: 'depot' });
-    const [x, y, z] = r.strategien;
-    expect(y.summeEigenbeitraege).toBeCloseTo(x.summeEigenbeitraege, 6);
-    expect(z.summeEigenbeitraege).toBeCloseTo(x.summeEigenbeitraege, 6);
+  it('der reine Vergleichsweg zeigt dieselbe Zahl wie die Hauptrechnung', () => {
+    /*
+     * Der Widerspruch, der diese Aenderung ausgeloest hat: Die Waage wies das
+     * Altersvorsorgedepot mit Abstand vorn aus, die Kachel darunter setzte
+     * den Stern auf das freie Depot. Beide Seiten rechneten richtig - nur
+     * nicht dieselbe Aufgabe. Strategie Y und der Vergleichspartner der
+     * Hauptrechnung muessen dieselbe Zahl liefern, sonst steht derselbe Weg
+     * zweimal mit verschiedenen Ergebnissen auf einer Seite.
+     */
+    for (const modus of ['gleicher_nettoaufwand', 'gleicher_bruttobeitrag'] as const) {
+      const e = eingabe({ ...basis(), vergleichsmodus: modus });
+      const haupt = simuliereAvd(e);
+      const r = berechneStrategien({ basis: e, zweitvertrag: 'depot' });
+      expect(r.strategien[1].endkapitalNachSteuer, modus).toBeCloseTo(
+        haupt.depot.endkapitalNetto,
+        6
+      );
+      expect(r.strategien[0].endkapitalNachSteuer, modus).toBeCloseTo(
+        haupt.endkapitalNachSteuer,
+        6
+      );
+    }
+  });
+
+  it('alle drei Wege tragen dasselbe Budget – je nach Vergleichsbasis', () => {
+    // Bruttobeitrag: gleiche Einzahlungen, unterschiedliche eigene Kosten.
+    const brutto = berechneStrategien({
+      basis: eingabe({ ...basis(), vergleichsmodus: 'gleicher_bruttobeitrag' }),
+      zweitvertrag: 'depot',
+    });
+    for (const s of brutto.strategien.slice(1)) {
+      expect(s.summeEigenbeitraege).toBeCloseTo(brutto.strategien[0].summeEigenbeitraege, 6);
+    }
+
+    // Netto-Aufwand: gleiche eigene Kosten, unterschiedliche Einzahlungen.
+    // Das ist die Zusage dieser Vergleichsbasis, und seit sie auch fuer den
+    // Strategievergleich gilt, muss sie hier eingehalten werden - sonst sagt
+    // die Waage das eine und die Kachel darunter das andere.
+    const netto = berechneStrategien({
+      basis: eingabe({ ...basis(), vergleichsmodus: 'gleicher_nettoaufwand' }),
+      zweitvertrag: 'depot',
+    });
+    for (const s of netto.strategien.slice(1)) {
+      expect(s.summeNettoaufwand).toBeCloseTo(netto.strategien[0].summeNettoaufwand, 4);
+    }
+    expect(netto.strategien[1].summeEigenbeitraege).toBeLessThan(
+      netto.strategien[0].summeEigenbeitraege
+    );
   });
 
   it('rechnet die Förderung des AVD-Teils über denselben Weg wie die Hauptsimulation', () => {
@@ -1519,7 +1643,11 @@ describe('Fondspolice folgt dem Beitragsstrom (Audit O01)', () => {
 describe('Eigenaufwand je Strategie (Audit O03)', () => {
   it('weist aus, dass die Bruttobeitraege gleich sind, der Nettoaufwand aber nicht', () => {
     const r = berechneStrategien({
-      basis: eingabe({ eigenbeitragMonatlich: 150, beitragsdynamikPaJahr: 0 }),
+      basis: eingabe({
+        eigenbeitragMonatlich: 150,
+        beitragsdynamikPaJahr: 0,
+        vergleichsmodus: 'gleicher_bruttobeitrag',
+      }),
       zweitvertrag: 'depot',
     });
     const [x, y, z] = r.strategien;

@@ -141,29 +141,64 @@ export function berechneStrategien(args: {
   aufteilungMonatlich?: number;
   zweitvertrag: ZweitvertragArt;
 }): StrategienErgebnis {
-  // Alle drei Wege bekommen denselben Bruttobeitrag. Im Modus „gleicher
-  // Netto-Aufwand" erhielte der Vergleichspartner nur den um die Erstattung
-  // verminderten Betrag, der Zweitvertrag der Kombination aber den vollen
-  // Restbeitrag – dann verglichen die Kacheln unterschiedlich große Budgets.
+  /*
+   * Die Vergleichsbasis aus Abschnitt 3 gilt auch hier.
+   *
+   * Vorher erzwang diese Funktion „gleicher Bruttobeitrag“, mit der
+   * Begruendung, sonst verglichen die Kacheln unterschiedlich grosse Budgets.
+   * Die Begruendung stimmt nur fuer die naive Umsetzung: Wenn der
+   * Zweitvertrag der Kombination den vollen Restbeitrag bekommt, der reine
+   * Vergleichspartner aber den um die Erstattung verminderten, dann ja.
+   *
+   * Der Preis war ein Widerspruch im selben Bild: Die Waage wies das
+   * Altersvorsorgedepot mit 34 % vorn aus, die Kachel darunter setzte den
+   * Stern auf das freie Depot - weil dort beide Seiten gleich viel Geld
+   * bekamen und hier nicht. Beide Rechnungen stimmten, nebeneinander waren
+   * sie unbrauchbar.
+   *
+   * Jetzt traegt jeder Weg dasselbe Budget im Sinne der gewaehlten Basis:
+   * bei „gleicher Bruttobeitrag“ denselben Beitrag, bei „gleicher
+   * Netto-Aufwand“ dieselben Kosten aus eigener Tasche. Der Restbeitrag der
+   * Kombination ergibt sich dann aus dem, was nach dem AVD-Teil vom
+   * Eigenaufwand uebrig ist (siehe `restBeitrag`).
+   *
+   * Die Beitragsdynamik bleibt aussen vor: Der foerderoptimale Betrag ist
+   * eine feste Grenze im Gesetz und waechst nicht mit.
+   */
   const ohneDynamik: AvdEingabe = {
     ...args.basis,
     beitragsdynamikPaJahr: 0,
-    vergleichsmodus: 'gleicher_bruttobeitrag',
   };
+  const nachNettoaufwand = ohneDynamik.vergleichsmodus === 'gleicher_nettoaufwand';
   const voll = Math.max(0, ohneDynamik.eigenbeitragMonatlich);
   const hinweise: Hinweis[] = [];
 
-  if (args.basis.vergleichsmodus === 'gleicher_nettoaufwand') {
-    hinweise.push({
-      art: 'info',
-      text:
-        'Der Strategievergleich rechnet alle drei Wege mit demselben Bruttobeitrag; '  +
-        'die Vergleichsbasis „gleicher Netto-Aufwand“ aus Abschnitt 3 gilt hier nicht. ' +
-        'Gleicher Bruttobeitrag ist dabei nicht gleicher Eigenaufwand: Wege mit ' +
-        'AVD-Anteil bringen eine Steuererstattung, die der Zweitvertrag nicht hat. ' +
-        'Was jede Variante wirklich kostet, steht in ihrer Kachel.',
-    });
-  }
+  /**
+   * Was ein AVD-Beitrag im Monat wirklich aus eigener Tasche kostet.
+   *
+   * `jahre[].nettoAufwand` ist Beitrag minus Erstattung und kennt nicht, ob
+   * die Erstattung wieder eingezahlt wird. Wird sie es, ist der eigene
+   * Aufwand der volle Beitrag - dieselbe Unterscheidung wie in
+   * `simulation.ts` (`eigenerAufwand`).
+   */
+  const eigenerAufwandMonat = (lauf: ReturnType<typeof simuliereAvd>, beitragMonat: number) =>
+    ohneDynamik.erstattungReinvestieren
+      ? beitragMonat
+      : (lauf.jahre[0]?.nettoAufwand ?? beitragMonat * 12) / 12;
+
+  // --- X: alles in den AVD -------------------------------------------------
+  const avdVoll = simuliereAvd(ohneDynamik);
+  const jahre = avdVoll.jahreBisAuszahlung;
+  const deflator = deflatorFuer(ohneDynamik.inflationPaJahr, jahre);
+  const real = (wert: number) => wert / deflator;
+
+  /**
+   * Das Budget, das jeder der drei Wege zur Verfuegung hat - im Sinne der
+   * gewaehlten Vergleichsbasis. Bei „gleicher Bruttobeitrag“ ist es der
+   * Beitrag selbst, bei „gleicher Netto-Aufwand“ das, was „alles ins AVD“
+   * aus eigener Tasche kostet.
+   */
+  const budgetMonat = nachNettoaufwand ? eigenerAufwandMonat(avdVoll, voll) : voll;
 
   const aufteilungspunkt = foerderoptimalerAvdBeitrag({
     kinder: ohneDynamik.kinder,
@@ -176,8 +211,33 @@ export function berechneStrategien(args: {
   const gewuenscht = args.aufteilungMonatlich ?? vorschlag;
   // Nie mehr in den AVD stecken, als überhaupt gespart wird
   const aufteilung = Math.max(0, Math.min(voll, gewuenscht));
-  const rest = Math.max(0, voll - aufteilung);
+
+  // --- Z: Aufteilung -------------------------------------------------------
+  // Steht hier oben, weil der Restbeitrag erst aus der Rechnung faellt: Bei
+  // „gleicher Netto-Aufwand“ haengt er davon ab, wie viel Erstattung der
+  // AVD-Teil bringt.
+  const { avdTeil, zweit, rest } = kombinationRechnen(
+    ohneDynamik,
+    aufteilung,
+    budgetMonat,
+    nachNettoaufwand,
+    args.zweitvertrag,
+    jahre
+  );
   const kombinationEntfaellt = rest <= 0;
+
+  if (nachNettoaufwand) {
+    hinweise.push({
+      art: 'info',
+      text:
+        'Vergleichsbasis „gleicher Netto-Aufwand“: Alle drei Wege kosten dasselbe ' +
+        'aus eigener Tasche. Weil der Altersvorsorgedepot-Teil eine Steuererstattung ' +
+        'bringt, sind die eingezahlten Beträge dabei nicht gleich groß – was jede ' +
+        'Variante einzahlt und was sie kostet, steht in ihrer Kachel. Mit der ' +
+        'Vergleichsbasis „gleicher Bruttobeitrag“ bekommen stattdessen alle ' +
+        'denselben Beitrag.',
+    });
+  }
 
   if (args.basis.beitragsdynamikPaJahr > 0) {
     hinweise.push({
@@ -188,12 +248,6 @@ export function berechneStrategien(args: {
         'mit Dynamik wären die drei Wege nicht mehr vergleichbar.',
     });
   }
-
-  // --- X: alles in den AVD -------------------------------------------------
-  const avdVoll = simuliereAvd(ohneDynamik);
-  const jahre = avdVoll.jahreBisAuszahlung;
-  const deflator = deflatorFuer(ohneDynamik.inflationPaJahr, jahre);
-  const real = (wert: number) => wert / deflator;
 
   // Der geförderte Vertrag nimmt nur begrenzt Geld auf (§ 1 Abs. 1 Nr. 5
   // AltZertG). Darüber ist „alles ins AVD" keine Option mehr, sondern die
@@ -264,34 +318,49 @@ export function berechneStrategien(args: {
   // Zulagen in die Endkapitalrechnung eingehen, widerspricht der eigenen
   // Rechnung. Depot und Fondspolice sind dagegen tatsaechlich ungefoerdert.
   const alt = avdVoll.riesterAlt;
+  /*
+   * Einzahlungen des reinen Vergleichswegs. Beim freien Depot weiss die
+   * Simulation sie genau; die beiden anderen Mäntel bekommen dort den vollen
+   * Bruttobeitrag.
+   */
+  const beitraegeY =
+    !avdVoll.riesterAlt && !avdVoll.fondsLv
+      ? avdVoll.depot.eingezahlt
+      : avdVoll.summeEigenbeitraege;
+  const beitragY = jahre > 0 ? beitraegeY / jahre / 12 : 0;
+
   const strategieY: Strategie = {
     id: 'vergleich_voll',
     bezeichnung: `Alles in ${nameVergleichspartner(ohneDynamik)}`,
     aufteilungText: `${eur(voll)}/Monat ${nameVergleichspartner(ohneDynamik)}`,
     beitragAvdMonatlich: 0,
-    beitragZweitMonatlich: voll,
-    summeEigenbeitraege: avdVoll.summeEigenbeitraege,
+    beitragZweitMonatlich: beitragY,
+    /*
+     * Was der Vergleichspartner tatsaechlich bekommt. Bei „gleicher
+     * Netto-Aufwand“ ist das weniger als der Bruttobeitrag - genau das sagt
+     * diese Vergleichsbasis. Vorher stand hier immer der volle AVD-Beitrag,
+     * und die Kachel behauptete eine Einzahlung, die es nicht gab.
+     *
+     * Nur der Depot-Zweig wird gemindert: `simulation.ts` rechnet Fondspolice
+     * und Riester-Altvertrag mit dem vollen Bruttobeitrag und sagt das auch
+     * (Warnhinweis dort). Diese Grenze wird hier nicht stillschweigend
+     * ueberschrieben.
+     */
+    summeEigenbeitraege: beitraegeY,
     summeNettoaufwand: alt
       ? nettoaufwand(
-          avdVoll.summeEigenbeitraege,
+          beitraegeY,
           alt.summeSteuererstattung,
           ohneDynamik.erstattungReinvestieren
         )
-      : avdVoll.summeEigenbeitraege,
+      : beitraegeY,
     summeFoerderung: alt ? alt.summeFoerderung : 0,
     endkapitalNachSteuer: endkapitalY,
     endkapitalNachSteuerReal: real(endkapitalY),
     kapitalProJahr: kapitalProJahrY,
   };
 
-  // --- Z: Aufteilung -------------------------------------------------------
-  const { avdTeil, zweit } = kombinationRechnen(
-    ohneDynamik,
-    aufteilung,
-    rest,
-    args.zweitvertrag,
-    jahre
-  );
+  const beitraegeZ = avdTeil.summeEigenbeitraege + rest * 12 * jahre;
 
   const strategieZ: Strategie = {
     id: 'kombination',
@@ -304,11 +373,15 @@ export function berechneStrategien(args: {
       : `${eur(aufteilung)}/Monat Altersvorsorgedepot + ${eur(rest)}/Monat ${nameZweitvertrag(args.zweitvertrag)}`,
     beitragAvdMonatlich: aufteilung,
     beitragZweitMonatlich: rest,
-    // Der Zweitvertrag ist ungefördert: Die Fördersumme stammt allein aus dem
-    // AVD-Teil, und der Eigenaufwand ist derselbe wie in X und Y.
-    summeEigenbeitraege: avdVoll.summeEigenbeitraege,
+    /*
+     * Der Zweitvertrag ist ungefoerdert: Die Foerdersumme stammt allein aus
+     * dem AVD-Teil. Die Einzahlungen sind die beider Teile zusammen - vorher
+     * stand hier der Beitrag von X, was bei „gleicher Netto-Aufwand“ nicht
+     * mehr derselbe Betrag ist.
+     */
+    summeEigenbeitraege: beitraegeZ,
     summeNettoaufwand: nettoaufwand(
-      avdVoll.summeEigenbeitraege,
+      beitraegeZ,
       avdTeil.summeSteuererstattung,
       ohneDynamik.erstattungReinvestieren
     ),
@@ -334,13 +407,15 @@ export function berechneStrategien(args: {
     const endkapitalVorschlag = kombinationRechnen(
       ohneDynamik,
       amVorschlag,
-      voll - amVorschlag,
+      budgetMonat,
+      nachNettoaufwand,
       args.zweitvertrag,
       jahre
     ).endkapital;
     optimum = sucheOptimum({
       ohneDynamik,
-      voll,
+      budgetMonat,
+      nachNettoaufwand,
       obergrenze: obergrenzeAufteilung,
       zweitvertrag: args.zweitvertrag,
       jahre,
@@ -451,16 +526,35 @@ function zweitvertragRechnen(
  * Optimum garantiert denselben Rechenweg nimmt wie die angezeigte Kachel -
  * sonst stuende im Vorschlag eine Zahl, die die Kachel nicht bestaetigt.
  */
+/**
+ * Ein AVD-Teil plus Zweitvertrag, beides zusammen genau ein Budget gross.
+ *
+ * Der Restbeitrag wird hier berechnet und nicht uebergeben: Bei „gleicher
+ * Netto-Aufwand“ ist er das, was vom Eigenaufwand uebrig bleibt, nachdem der
+ * AVD-Teil bezahlt ist - und wie viel das ist, weiss man erst, wenn dessen
+ * Steuererstattung feststeht. Bei „gleicher Bruttobeitrag“ bleibt es beim
+ * schlichten Rest des Beitrags.
+ */
 function kombinationRechnen(
   ohneDynamik: AvdEingabe,
   aufteilung: number,
-  rest: number,
+  budgetMonat: number,
+  nachNettoaufwand: boolean,
   zweitvertrag: ZweitvertragArt,
   jahre: number
 ) {
   const avdTeil = simuliereAvd({ ...ohneDynamik, eigenbeitragMonatlich: aufteilung });
+  const aufwandTeil = ohneDynamik.erstattungReinvestieren
+    ? aufteilung
+    : (avdTeil.jahre[0]?.nettoAufwand ?? aufteilung * 12) / 12;
+  const rest = Math.max(0, budgetMonat - (nachNettoaufwand ? aufwandTeil : aufteilung));
   const zweit = zweitvertragRechnen(ohneDynamik, rest, zweitvertrag, jahre);
-  return { avdTeil, zweit, endkapital: avdTeil.endkapitalNachSteuer + zweit.endkapitalNachSteuer };
+  return {
+    avdTeil,
+    zweit,
+    rest,
+    endkapital: avdTeil.endkapitalNachSteuer + zweit.endkapitalNachSteuer,
+  };
 }
 
 /** Anteil des Endkapitals, innerhalb dessen zwei Aufteilungen als gleichwertig gelten. */
@@ -482,7 +576,9 @@ const PLATEAU_ANTEIL = 0.005;
  */
 function sucheOptimum(args: {
   ohneDynamik: AvdEingabe;
-  voll: number;
+  /** Budget je Monat im Sinne der gewaehlten Vergleichsbasis. */
+  budgetMonat: number;
+  nachNettoaufwand: boolean;
   obergrenze: number;
   zweitvertrag: ZweitvertragArt;
   jahre: number;
@@ -491,7 +587,7 @@ function sucheOptimum(args: {
   /** Stellen, an denen die Foerderung springt - sie gehoeren immer geprueft. */
   knicke: number[];
 }): AufteilungsOptimum {
-  const { ohneDynamik, voll, obergrenze, zweitvertrag, jahre } = args;
+  const { ohneDynamik, budgetMonat, nachNettoaufwand, obergrenze, zweitvertrag, jahre } = args;
   const bewertet = new Map<number, number>();
   const bewerte = (a: number): number => {
     // Erst runden, dann begrenzen. Die umgekehrte Reihenfolge hob den Rand
@@ -501,8 +597,14 @@ function sucheOptimum(args: {
     const punkt = Math.min(obergrenze, Math.max(0, Math.round(a)));
     const vorhanden = bewertet.get(punkt);
     if (vorhanden !== undefined) return vorhanden;
-    const k = kombinationRechnen(ohneDynamik, punkt, voll - punkt, zweitvertrag, jahre)
-      .endkapital;
+    const k = kombinationRechnen(
+      ohneDynamik,
+      punkt,
+      budgetMonat,
+      nachNettoaufwand,
+      zweitvertrag,
+      jahre
+    ).endkapital;
     bewertet.set(punkt, k);
     return k;
   };

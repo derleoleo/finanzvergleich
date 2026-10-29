@@ -492,6 +492,127 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
   });
 
   /**
+   * Die Kombination „30 + x" war nur in einem zugeklappten Abschnitt zu
+   * finden, obwohl die Engine sie immer mitrechnet. Jetzt steht sie als
+   * dritte Spalte im Vergleich, und der Hinweis am Beitragsfeld fuehrt
+   * dorthin.
+   */
+  test("Die Aufteilung steht im Vergleich und ist von dort erreichbar", async ({
+    page,
+  }) => {
+    const absturz: string[] = [];
+    page.on("pageerror", (e) => absturz.push(e.message));
+
+    await anmelden(page);
+    await page.goto("/altersvorsorgedepot");
+    await expect(page.locator("#avd-name")).toBeVisible({ timeout: 40_000 });
+
+    // Dritte Spalte im Vergleichsabschnitt, ohne vorher irgendwo zu klicken
+    // Genau die neue Zeile, nicht irgendein Vorfahre: Der
+    // Aufteilungsabschnitt steht auch zugeklappt im DOM (so ist der
+    // Baustein gebaut), und `filter` auf allen <div> wuerde einen
+    // gemeinsamen Vorfahren beider treffen.
+    const dritteSpalte = page
+      .getByText("Es muss nicht alles auf eine Karte")
+      .locator('xpath=ancestor::div[contains(@class,"bg-slate-50/70")][1]');
+    await expect(dritteSpalte).toBeVisible();
+    // Geprueft wird der Text der Zeile, nicht je ein eigener Treffer: Die
+    // Beschriftung der besten Variante traegt einen Stern im selben Element,
+    // und "Aufteilung" steht auch auf dem Knopf daneben.
+    await expect(dritteSpalte).toContainText("Alles ins Altersvorsorgedepot");
+    await expect(dritteSpalte).toContainText("Alles in freies Depot");
+    await expect(dritteSpalte).toContainText("Aufteilung");
+    // Drei Kacheln, drei Betraege - und jede sagt, worauf sie sich bezieht.
+    await expect(dritteSpalte.getByText("nach Steuern", { exact: true })).toHaveCount(3);
+
+    /*
+     * Der gemeldete Widerspruch: Die Waage wies das Altersvorsorgedepot vorn
+     * aus, die Kachel darunter setzte den Stern auf das freie Depot. Seit die
+     * Vergleichsbasis fuer beide gilt, muss derselbe Weg dieselbe Zahl
+     * tragen - unter beiden Basen.
+     */
+    const basisWahl = page
+      .getByRole("combobox")
+      .filter({ hasText: /Netto-Aufwand|Bruttobeitrag/ });
+    const waagensatz = page.getByText("Auf Basis der gemachten Angaben").first();
+    for (const basis of ["gleicher Netto-Aufwand", "gleicher Bruttobeitrag"]) {
+      await basisWahl.selectOption({ label: basis });
+      const zeilentext = await dritteSpalte.innerText();
+      const yWert = zeilentext
+        .split("Alles in freies Depot")[1]
+        .split(String.fromCharCode(10))
+        .find((z) => z.includes("€")) as string;
+      // Dieselbe Zahl muss in der Waage darueber stehen
+      const waage = waagensatz.locator("xpath=ancestor::div[2]");
+      await expect(waage, basis).toContainText(yWert.trim());
+    }
+    await basisWahl.selectOption({ label: "gleicher Netto-Aufwand" });
+
+    // Der Aufteilungsabschnitt ist anfangs zu
+    const aufteilungsFeld = page.getByText("Monatlich ins Altersvorsorgedepot (€)");
+    const kopf = page.getByRole("button", { name: /Aufteilen statt alles auf eine Karte/ });
+    await expect(kopf).toHaveAttribute("aria-expanded", "false");
+
+    // Der Verweis am Beitragsfeld oeffnet ihn
+    await page.getByRole("button", { name: "Was das für die Aufteilung heißt" }).click();
+    await expect(kopf).toHaveAttribute("aria-expanded", "true");
+    await expect(aufteilungsFeld).toBeVisible();
+
+    expect(absturz, `Abstürze: ${absturz.join(" | ")}`).toHaveLength(0);
+  });
+
+  /**
+   * § 52 Abs. 50a S. 4 EStG: Ein Riester-Bestandsvertrag darf die
+   * Fördersystematik wechseln, ohne das Produkt zu wechseln. Der Schalter
+   * muss diesen Wechsel bis in die angezeigte Förderung durchreichen — die
+   * Rechenkette dafür geht über drei Dateien, und genau dort war sie vorher
+   * fest verdrahtet.
+   */
+  test("Der Riester-Bestand rechnet nach alter oder neuer Fördersystematik", async ({
+    page,
+  }) => {
+    const absturz: string[] = [];
+    page.on("pageerror", (e) => absturz.push(e.message));
+
+    await anmelden(page);
+    await page.goto("/altersvorsorgedepot");
+    await expect(page.locator("#avd-name")).toBeVisible({ timeout: 40_000 });
+
+    await page.getByRole("radio", { name: "Riester-Bestand", exact: true }).click();
+
+    const kachel = page.getByText("Förderung im ersten Jahr").locator("..");
+
+    // Vorgabe: Bestandsschutz, also starre Grundzulage 175 €
+    await expect(kachel).toContainText("Altvertrag (alte Förderung)");
+    await expect(kachel).toContainText("175");
+
+    // Umgeschaltet: dieselbe Staffel wie das AVD, hier 540 €
+    await page
+      .getByRole("radio", { name: "neue Förderung (ab 2027)", exact: true })
+      .click();
+    await expect(kachel).toContainText("Altvertrag (neue Förderung)");
+    await expect(kachel).toContainText("540");
+
+    // Die Felder des alten Rechts verschwinden, die Angabe bleibt erhalten.
+    // Nicht über `getByLabel`: Die Beschriftungen des Rechners sind nicht
+    // mit `for` an ihr Feld gebunden, und ein nicht gefundenes Element gilt
+    // Playwright als verborgen - die Prüfung wäre wertlos.
+    const einnahmenFeld = page
+      .locator("div.space-y-2")
+      .filter({ hasText: "Basis des Mindesteigenbeitrags" })
+      .locator("input");
+    await expect(einnahmenFeld).toHaveCount(0);
+    await expect(
+      page.getByText("keinen Mindesteigenbeitrag nach", { exact: false })
+    ).toBeVisible();
+
+    await page.getByRole("radio", { name: "alte Förderung", exact: true }).click();
+    await expect(einnahmenFeld).toHaveValue(/45[.\s]?000/);
+
+    expect(absturz, `Abstürze: ${absturz.join(" | ")}`).toHaveLength(0);
+  });
+
+  /**
    * Prüfung 3 der Analyse: Ein Archiv-Schreibfehler darf nicht als Erfolg
    * erscheinen.
    *

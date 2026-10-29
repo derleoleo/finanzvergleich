@@ -13,7 +13,6 @@ import { createPageUrl } from '@/utils';
 import { UserDefaults } from '@/entities/UserDefaults';
 import AvdEinstieg from '@/components/calculator/AvdEinstieg';
 import Abschnitt from '@/components/ui/abschnitt';
-import { ergaenzeFehlendes } from '@/utils/avdEntwurf';
 import {
   simuliereAvd,
   foerderquotenKurve,
@@ -75,20 +74,6 @@ type FormData = Omit<AvdEingabe, 'flags'> & {
    * eingebbar - 50/67/75 ist die Vorgabe, nicht die Vorschrift.
    */
   todesfallAlter: number[];
-  /**
-   * Gibt es einen Riester-Bestandsvertrag?
-   *
-   * Eigene Achse neben `vergleichspartner`, obwohl sich beides überschneidet:
-   * `vergleichspartner === 'riester_alt'` heißt zwar faktisch „es gibt einen
-   * Bestand", aber wer einen hat, kann ihn trotzdem gegen ein freies Depot
-   * rechnen wollen. Und ohne diese Frage bleibt die Wechselanalyse
-   * unauffindbar – sie verlangt heute die Freischaltung in den
-   * Voreinstellungen *und* den passenden Vergleichspartner.
-   *
-   * Gehört bewusst nicht zu `AvdEingabe`: Die Engine kennt die Frage nicht,
-   * sie steuert nur, was die Oberfläche anbietet.
-   */
-  hatRiesterBestand: boolean;
 };
 
 /**
@@ -104,6 +89,15 @@ type FormData = Omit<AvdEingabe, 'flags'> & {
  * Berechnung.
  */
 const OFFEN_AM_ANFANG = ['berechtigung', 'foerderung', 'vergleich', 'optionen'];
+
+/**
+ * Die beiden Fördersystematiken, nach denen ein Riester-Bestandsvertrag
+ * rechnen kann (§ 52 Abs. 50a S. 1 bzw. S. 4 EStG).
+ */
+const FOERDERREGIME = [
+  { value: 'alt', label: 'alte Förderung' },
+  { value: 'neu', label: 'neue Förderung (ab 2027)' },
+] as const;
 
 function makeDefaults(): FormData {
   const d = UserDefaults.load();
@@ -169,7 +163,6 @@ function makeDefaults(): FormData {
     inflationPaJahr: d.inflation_percent / 100,
     zulagenZuflussVerzoegerungJahre: 1,
     erstattungReinvestieren: false,
-    hatRiesterBestand: false,
   };
 }
 
@@ -178,7 +171,7 @@ function loadDraft(): FormData {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return defaults;
-    return ergaenzeFehlendes(JSON.parse(raw) as Partial<FormData>, defaults);
+    return { ...defaults, ...(JSON.parse(raw) as Partial<FormData>) };
   } catch {
     return defaults;
   }
@@ -214,10 +207,7 @@ export default function AvdCalculator() {
     if (!id) return;
     AvdCalculation.get(id).then((eintrag) => {
       if (!eintrag) return;
-      // Vor der Einstiegsleiste gespeicherte Faelle kennen
-      // `hatRiesterBestand` nicht - ohne die Ableitung verloeren sie ihren
-      // Vergleichspartner.
-      setFormData((prev) => ergaenzeFehlendes(eintrag.form as Partial<FormData>, prev));
+      setFormData((prev) => ({ ...prev, ...(eintrag.form as Partial<FormData>) }));
       setName(eintrag.name);
       setGespeicherteId(eintrag.id);
       setGespeicherteErgebnisse((eintrag.results ?? null) as Record<string, unknown> | null);
@@ -239,6 +229,24 @@ export default function AvdCalculator() {
       else naechste.add(id);
       return naechste;
     });
+
+  /**
+   * Oeffnet einen Abschnitt und springt hin.
+   *
+   * Zugeklappte Abschnitte verbergen Stellschrauben, auf die andere Stellen
+   * verweisen - der Zulagenknick am Beitragsfeld etwa nennt eine Zahl, deren
+   * Stellschraube zwei Abschnitte tiefer liegt. Ein Verweis, der nur den Namen
+   * nennt, laesst den Leser suchen.
+   */
+  const abschnittOeffnen = (id: string) => {
+    setOffeneAbschnitte((vorher) => new Set(vorher).add(id));
+    // Erst nach dem Aufklappen steht die Zielhoehe fest.
+    requestAnimationFrame(() => {
+      document
+        .querySelector(`[data-pdf-section="${id}"]`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isExporting, dialogOpen, openDialog, closeDialog, doExport } = usePDFExport();
@@ -360,6 +368,8 @@ export default function AvdCalculator() {
   const foerdergrenzeMonat = strategien.aufteilungspunkt.foerdergrenzeJahresbeitrag / 12;
 
   const gegenRiester = formData.vergleichspartner === 'riester_alt';
+  /** Vorgabe 'alt': Ohne ausdrückliche Erklärung gilt der Bestandsschutz. */
+  const riesterRegime = formData.riester?.foerderregime ?? 'alt';
   const bestand = formData.bestandsvertrag;
   const optionen = ergebnis.handlungsoptionen;
   const updateBestand = <K extends keyof NonNullable<FormData['bestandsvertrag']>>(
@@ -418,6 +428,8 @@ export default function AvdCalculator() {
   const meta = VERGLEICH_META[formData.vergleichspartner ?? 'depot'];
   const vergleichName = meta.name;
 
+  /** Die Kombination „30 + x" – dritte Moeglichkeit neben den beiden reinen Wegen. */
+  const kombination = strategien.strategien[2];
   const verlaufsdaten = ergebnis.jahre.map((j, i) => ({
     jahr: j.jahr,
     alter: j.alter,
@@ -551,6 +563,16 @@ export default function AvdCalculator() {
     ? endVergleichNominal /
       deflatorFuer(formData.inflationPaJahr, ergebnis.jahreBisAuszahlung)
     : endVergleichNominal;
+
+  /**
+   * Steht die Dreierzeile auf einer anderen Annahme als die Waage darueber?
+   *
+   * Seit die Vergleichsbasis auch fuer den Strategievergleich gilt, bleibt
+   * genau ein Unterschied: Die drei Wege rechnen ohne Beitragsdynamik, weil
+   * der foerderoptimale Betrag eine feste Grenze im Gesetz ist und nicht
+   * mitwaechst.
+   */
+  const andereAnnahmeAlsOben = formData.beitragsdynamikPaJahr > 0;
 
   // Audit N03: gespeicherte Kennzahlen gegen die heutige Rechnung stellen.
   // Verglichen wird nominal, damit der Real-Schalter keinen Unterschied
@@ -779,18 +801,6 @@ export default function AvdCalculator() {
         */}
         <div data-pdf-section="vergleichspartner" className="sticky top-0 z-30">
           <AvdEinstieg
-            hatRiesterBestand={formData.hatRiesterBestand}
-            onRiesterBestand={(wert) => {
-              setFormData((vorher) => ({
-                ...vorher,
-                hatRiesterBestand: wert,
-                // Ohne Bestand gibt es nichts, wogegen man ihn rechnen koennte.
-                vergleichspartner:
-                  !wert && vorher.vergleichspartner === 'riester_alt'
-                    ? 'depot'
-                    : vorher.vergleichspartner,
-              }));
-            }}
             vergleichspartner={formData.vergleichspartner ?? 'depot'}
             onVergleichspartner={(wert) => update('vergleichspartner', wert)}
             auszahlform={formData.auszahlform}
@@ -979,7 +989,22 @@ export default function AvdCalculator() {
                         Bis {formatCurrency(strategien.aufteilungspunkt.foerdergrenzeJahresbeitrag)} im
                         Jahr wächst die Förderung mit jedem Euro, darüber nicht mehr. Ab{' '}
                         {formatCurrency(strategien.aufteilungspunkt.monatsbeitrag)} im Monat sinkt die
-                        Zulagen-Grenzquote von 50 auf 25 Prozent.
+                        Zulagen-Grenzquote von 50 auf 25 Prozent.{' '}
+                        {/*
+                          Der Knick nennt eine Zahl, deren Stellschraube zwei
+                          Abschnitte tiefer liegt. Dass der Weg dorthin benannt
+                          wird, ist kein Komfort - sonst bleibt die Aufteilung
+                          eine Zahl im Text statt eine Moeglichkeit.
+                        */}
+                        {!strategien.kombinationEntfaellt && (
+                          <button
+                            type="button"
+                            onClick={() => abschnittOeffnen('strategien')}
+                            className="underline underline-offset-2 text-blue-700 hover:text-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+                          >
+                            Was das für die Aufteilung heißt
+                          </button>
+                        )}
                       </p>
                     </div>
                   )}
@@ -1268,36 +1293,72 @@ export default function AvdCalculator() {
               )}
 
               {gegenRiester && (
+                <div className="space-y-2">
+                  <Label className="block text-sm font-medium text-slate-700">
+                    Fördersystematik des Altvertrags
+                  </Label>
+                  <SegmentedToggle
+                    value={riesterRegime}
+                    onChange={(w) => updateRiester('foerderregime', w)}
+                    options={FOERDERREGIME}
+                    ariaLabel="Fördersystematik des Altvertrags"
+                  />
+                  <p className="text-xs text-slate-500">
+                    Ein Bestandsvertrag kann die Systematik wechseln, ohne das Produkt zu
+                    wechseln: Kosten, Rendite und Garantien bleiben, nur die Förderung
+                    rechnet neu. Die Erklärung ist unwiderruflich und gilt für alle
+                    Altersvorsorgeverträge des Berechtigten (§ 52 Abs. 50a S. 4 EStG).
+                  </p>
+                </div>
+              )}
+
+              {gegenRiester && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">Beitragspfl. Einnahmen Vorjahr (€)</Label>
-                      <NumericInput
-                        value={riester?.beitragspflEinnahmenVorjahr ?? 0}
-                        onChange={(v) => updateRiester('beitragspflEinnahmenVorjahr', v)}
-                        className={inputClass}
-                      />
-                      <p className="text-xs text-slate-400">Basis des Mindesteigenbeitrags (4 %, § 86 a.F.)</p>
+                  {riesterRegime === 'alt' ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">Beitragspfl. Einnahmen Vorjahr (€)</Label>
+                        <NumericInput
+                          value={riester?.beitragspflEinnahmenVorjahr ?? 0}
+                          onChange={(v) => updateRiester('beitragspflEinnahmenVorjahr', v)}
+                          className={inputClass}
+                        />
+                        <p className="text-xs text-slate-400">Basis des Mindesteigenbeitrags (4 %, § 86 a.F.)</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">davon Kinder vor 2008</Label>
+                        <NumericInput
+                          value={riester?.kinderGeborenVor2008 ?? 0}
+                          onChange={(v) =>
+                            updateRiester(
+                              'kinderGeborenVor2008',
+                              Math.max(0, Math.min(Math.round(v), formData.kinder))
+                            )
+                          }
+                          className={inputClass}
+                        />
+                        <p className="text-xs text-slate-400">Nur 185 € statt 300 € Zulage</p>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-slate-700">davon Kinder vor 2008</Label>
-                      <NumericInput
-                        value={riester?.kinderGeborenVor2008 ?? 0}
-                        onChange={(v) =>
-                          updateRiester(
-                            'kinderGeborenVor2008',
-                            Math.max(0, Math.min(Math.round(v), formData.kinder))
-                          )
-                        }
-                        className={inputClass}
-                      />
-                      <p className="text-xs text-slate-400">Nur 185 € statt 300 € Zulage</p>
+                  ) : (
+                    /*
+                      Beide Felder wirken nur im alten Recht. Sie hier stehen zu
+                      lassen, hieße Eingaben anzubieten, die nichts ändern - die
+                      Angabe bleibt gespeichert und kommt beim Zurückschalten wieder.
+                    */
+                    <div className="rounded-xl border border-dashed border-slate-200 p-4 text-xs text-slate-500">
+                      In der neuen Systematik gibt es keinen Mindesteigenbeitrag nach
+                      Vorjahreseinnahmen und keinen Jahrgangsunterschied bei der
+                      Kinderzulage. Die beiden Angaben des alten Rechts bleiben
+                      gespeichert und wirken wieder, sobald Sie zurückschalten.
                     </div>
-                  </div>
+                  )}
                   <div className="rounded-xl border border-slate-200 p-4">
                     <div className="text-xs text-slate-500">Förderung im ersten Jahr</div>
                     <div className="text-sm text-slate-900 mt-1">
-                      Alte Riester-Zulage{' '}
+                      {riesterRegime === 'alt'
+                        ? 'Altvertrag (alte Förderung)'
+                        : 'Altvertrag (neue Förderung)'}{' '}
                       <span className="font-semibold">
                         {formatCurrency(ergebnis.riesterAlt?.zulageJahr1 ?? 0)}
                       </span>
@@ -1309,7 +1370,7 @@ export default function AvdCalculator() {
                       )}
                     </div>
                     <div className="text-sm text-slate-900 mt-1">
-                      Neue Förderung{' '}
+                      Altersvorsorgedepot{' '}
                       <span className="font-semibold">
                         {formatCurrency(ergebnis.jahre[0]?.zulage ?? 0)}
                       </span>{' '}
@@ -1338,6 +1399,88 @@ export default function AvdCalculator() {
                     : `inkl. Vorabpauschale ${formatCurrency(ergebnis.depot.summeVorabpauschaleSteuer)}`,
                 }}
               />
+
+              {/*
+                Die dritte Moeglichkeit. Die Waage hat zwei Seiten - das ist ihr
+                Wesen, nicht ihre Grenze -, deshalb steht die Kombination als
+                Zeile darunter und nicht als drittes Waagschalen-Ende.
+
+                Alle drei Zahlen hier stammen aus `berechneStrategien` und
+                stehen damit auf einer Annahme: gleicher Bruttobeitrag, keine
+                Beitragsdynamik. Weicht die Eingabe davon ab, steht es dabei -
+                sonst wuerden die Zahlen stillschweigend mit den Kacheln oben
+                gemischt, die der Eingabe folgen.
+              */}
+              {!strategien.kombinationEntfaellt && !kombination.unzulaessig && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold text-slate-900">
+                        Es muss nicht alles auf eine Karte
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {kombination.aufteilungText} – der hoch geförderte Teil in den
+                        geförderten Vertrag, der Rest frei verfügbar daneben.
+                      </p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => abschnittOeffnen('strategien')}>
+                      Aufteilung anpassen
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" data-pdf-single-col>
+                    {strategien.strategien.map((st) => {
+                      const beste = st.id === strategien.beste;
+                      return (
+                        <div
+                          key={st.id}
+                          className={`rounded-lg border p-3 ${
+                            beste
+                              ? 'border-green-200 bg-green-50'
+                              : st.unzulaessig
+                                ? 'border-amber-200 bg-amber-50/40'
+                                : 'border-slate-200 bg-white'
+                          }`}
+                        >
+                          <div className="text-xs font-semibold text-slate-500">
+                            {st.bezeichnung}
+                            {beste && <span className="text-green-700 ml-1">★</span>}
+                          </div>
+                          <div className="text-lg font-bold text-slate-900 mt-0.5">
+                            {formatCurrency(
+                              showReal ? st.endkapitalNachSteuerReal : st.endkapitalNachSteuer
+                            )}
+                          </div>
+                          {st.unzulaessig ? (
+                            <p className="text-xs text-amber-700 mt-1">{st.unzulaessig}</p>
+                          ) : (
+                            <div className="text-xs text-slate-500 mt-0.5">
+                              nach Steuern{showReal ? ' · real' : ''}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/*
+                    Was noch abweicht, steht ueber den Kacheln statt darunter.
+                    Darunter war es eine Fussnote zu einem Widerspruch, den der
+                    Leser da laengst gezogen hatte.
+                  */}
+                  {andereAnnahmeAlsOben && (
+                    <p className="text-xs text-slate-600 border-l-2 border-slate-300 pl-3">
+                      Ohne Beitragsdynamik gerechnet – anders als die Waage oben. Der
+                      förderoptimale Betrag ist eine feste Grenze im Gesetz und wächst
+                      nicht mit dem Beitrag. Die Vergleichsbasis „
+                      {formData.vergleichsmodus === 'gleicher_nettoaufwand'
+                        ? 'gleicher Netto-Aufwand'
+                        : 'gleicher Bruttobeitrag'}
+                      “ gilt hier wie oben.
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="h-80 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1866,38 +2009,51 @@ export default function AvdCalculator() {
                     {ergebnis.auszahlung.kvBeitrag > 0 && ` · KV/PV ${formatCurrency(ergebnis.auszahlung.kvBeitrag)}`}
                   </div>
                 </div>
+                {/*
+                  Die Gegenseite folgt der Auswahl oben. Vorher stand hier
+                  immer das freie Depot - auch wenn Fondspolice oder
+                  Riester-Bestand gewaehlt war. Die Engine kannte fuer die
+                  beiden anderen Seiten gar keine Monatsleistung.
+                */}
                 <div className="rounded-xl border border-slate-200 p-4">
                   <div className="text-xs text-slate-500 mb-1">
                     {formData.teilkapitalAnteil > 0
                       ? 'Teilkapital zu Beginn'
-                      : 'Freies Depot: Entnahme netto'}
+                      : `${ergebnis.vergleichAuszahlung.name}: Entnahme netto`}
                   </div>
                   <div className="text-2xl font-bold text-slate-900">
                     {formatCurrency(
                       formData.teilkapitalAnteil > 0
                         ? ergebnis.auszahlung.teilkapital
-                        : ergebnis.depot.monatsentnahmeNetto
+                        : ergebnis.vergleichAuszahlung.monatlichNetto
                     )}
                   </div>
                   <div className="text-xs text-slate-500 mt-1">
                     {formData.teilkapitalAnteil > 0
                       ? `davon Steuer ${formatCurrency(ergebnis.auszahlung.teilkapitalSteuer)}`
-                      : `brutto ${formatCurrency(ergebnis.depot.monatsentnahmeBrutto)} · monatlich bis zum gleichen Endalter`}
+                      : ergebnis.vergleichAuszahlung.steuerAuszahlphase != null
+                        ? `brutto ${formatCurrency(ergebnis.vergleichAuszahlung.monatlichBrutto)} · monatlich bis zum gleichen Endalter`
+                        : 'monatlich bis zum gleichen Endalter'}
                   </div>
                 </div>
               </div>
 
-              {formData.teilkapitalAnteil === 0 && ergebnis.depot.monatsentnahmeNetto > 0 && (
-                <p className="text-xs text-slate-500 flex items-start gap-2">
-                  <Info className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
-                  Beide Entnahmen sind nach Steuern und laufen bis zum gleichen Endalter. Das
-                  Depot wird dafür nicht auf einmal verkauft, sondern entnommen: Jede Entnahme
-                  realisiert anteilig Gewinn, darauf fallen Abgeltungsteuer und 30 %
-                  Teilfreistellung an – über die gesamte Auszahlphase{' '}
-                  {formatCurrency(ergebnis.depot.steuerAuszahlphase)}. Das Endkapital nach Steuern
-                  oben unterstellt dagegen den vollständigen Verkauf zum Rentenbeginn.
-                </p>
-              )}
+              {formData.teilkapitalAnteil === 0 &&
+                ergebnis.vergleichAuszahlung.monatlichNetto > 0 && (
+                  <p className="text-xs text-slate-500 flex items-start gap-2">
+                    <Info className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
+                    Beide Leistungen sind nach Steuern und laufen bis zum gleichen Endalter.{' '}
+                    {ergebnis.vergleichAuszahlung.annahme}
+                    {ergebnis.vergleichAuszahlung.steuerAuszahlphase != null && (
+                      <>
+                        {' '}Über die gesamte Auszahlphase sind das{' '}
+                        {formatCurrency(ergebnis.vergleichAuszahlung.steuerAuszahlphase)}{' '}
+                        Abgeltungsteuer. Das Endkapital nach Steuern oben unterstellt dagegen den
+                        vollständigen Verkauf zum Rentenbeginn.
+                      </>
+                    )}
+                  </p>
+                )}
               {ergebnis.auszahlung.gesetzlicheMindestrate != null && (
                 <p className="text-xs text-slate-500 flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
