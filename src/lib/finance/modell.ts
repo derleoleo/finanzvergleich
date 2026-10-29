@@ -9,9 +9,27 @@
 // Regel: Bei jeder Änderung, die Ergebnisse verschiebt, MODELL_VERSION erhöhen
 // und eine Zeile in MODELL_HISTORIE ergänzen.
 
-export const MODELL_VERSION = "2026-10-29" as const;
+export const MODELL_VERSION = "2026-10-29b" as const;
 
 export const MODELL_HISTORIE: { version: string; aenderung: string }[] = [
+  {
+    version: "2026-10-29b",
+    aenderung:
+      "Altersvorsorgedepot, Fondspolice: Bei der Vergleichsbasis \"gleicher " +
+      "Netto-Aufwand\" bekommt die Police jetzt denselben Eigenaufwand wie " +
+      "das Vergleichsdepot, also den um die Steuererstattung verminderten " +
+      "Betrag. Vorher lief sie immer mit dem vollen Bruttobeitrag; ein " +
+      "Warnhinweis sagte das zwar, der Vergleich stellte aber zwei " +
+      "Vertraege mit verschieden grossen Einzahlungen nebeneinander. Die " +
+      "Police faellt damit in dieser Basis niedriger aus - in der Basis " +
+      "\"gleicher Bruttobeitrag\" aendert sich nichts. Moeglich wurde das " +
+      "durch contributions_per_year in simulateLv: Die Erstattung waechst " +
+      "anders als der Beitrag, eine Dynamik in Prozent haette den " +
+      "Beitragsstrom nicht getroffen. Betroffen sind auch die " +
+      "Todesfall-Szenarien und die Strategie \"alles in die Fondspolice\". " +
+      "Der Riester-Altvertrag laeuft unveraendert mit dem vollen Beitrag: " +
+      "Er ist selbst gefoerdert und bringt eine eigene Erstattung mit.",
+  },
   {
     version: "2026-10-29",
     aenderung:

@@ -492,6 +492,52 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
   });
 
   /**
+   * Die Vergleichsbasis stand bis Oktober 2026 im vierten Feld einer
+   * Wenn-Dann-Kette und war damit nur beim freien Depot zu sehen. Solange
+   * die Fondspolice ohnehin immer den vollen Bruttobeitrag bekam, war das
+   * folgenlos. Seit sie der Basis folgt, waere die Stellschraube unsichtbar
+   * genau dort, wo sie wirkt.
+   */
+  test("Die Vergleichsbasis ist bei jedem Partner erreichbar und wirkt", async ({
+    page,
+  }) => {
+    const absturz: string[] = [];
+    page.on("pageerror", (e) => absturz.push(e.message));
+
+    await anmelden(page);
+    await page.goto("/altersvorsorgedepot");
+    await expect(page.locator("#avd-name")).toBeVisible({ timeout: 40_000 });
+
+    const wahl = page
+      .getByRole("combobox")
+      .filter({ hasText: /Netto-Aufwand|Bruttobeitrag/ });
+    const satz = page.getByText("Auf Basis der gemachten Angaben").first();
+
+    for (const partner of ["Freies Depot", "Fondspolice", "Riester-Bestand"]) {
+      await page.getByRole("radio", { name: partner, exact: true }).click();
+      await expect(wahl, partner).toHaveCount(1);
+    }
+
+    // Der Satz muss den gewaehlten Partner benennen. Bei der Police stand
+    // dort "als mit dem freien Depot" - die Waage kannte sie nicht.
+    await page.getByRole("radio", { name: "Fondspolice", exact: true }).click();
+    await expect(satz).toContainText("als mit der Fondspolice");
+
+    // Und die Basis wirkt auf die Police: Bei gleichem Eigenaufwand bekommt
+    // sie den um die Steuererstattung verminderten Betrag.
+    await wahl.selectOption({ label: "gleicher Netto-Aufwand" });
+    const beiNetto = await satz.innerText();
+    await wahl.selectOption({ label: "gleicher Bruttobeitrag" });
+    const beiBrutto = await satz.innerText();
+    expect(beiNetto).not.toBe(beiBrutto);
+
+    // Der Warnhinweis, der das frueher entschuldigte, ist weg
+    await expect(page.getByText("vollen Bruttobeitrag")).toHaveCount(0);
+
+    expect(absturz, `Abstuerze: ${absturz.join(" | ")}`).toHaveLength(0);
+  });
+
+  /**
    * Die Kombination „30 + x" war nur in einem zugeklappten Abschnitt zu
    * finden, obwohl die Engine sie immer mitrechnet. Jetzt steht sie als
    * dritte Spalte im Vergleich, und der Hinweis am Beitragsfeld fuehrt

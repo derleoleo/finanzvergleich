@@ -1628,15 +1628,58 @@ describe('Fondspolice folgt dem Beitragsstrom (Audit O01)', () => {
     );
   });
 
-  it('sagt es, wenn der Budgetmodus fuer die Police nicht gilt', () => {
-    const r = simuliereAvd(
+  it('die Police bekommt denselben Eigenaufwand wie das Depot', () => {
+    /*
+     * Frueher stand hier ein Warnhinweis: Die Police bekomme den vollen
+     * Bruttobeitrag, weil die Engine nur einen gleichmaessigen Strom kannte.
+     * Der Hinweis war ehrlich, der Vergleich trotzdem schief - zwei
+     * Vertraege mit verschieden grossen Einzahlungen beantworten keine
+     * Frage, die jemand gestellt hat.
+     */
+    const netto = simuliereAvd(
       eingabe({
         vergleichspartner: 'fonds_lv',
         vergleichsmodus: 'gleicher_nettoaufwand',
         fondsLv: lvVorgabe,
       })
     );
-    expect(r.hinweise.some((h) => h.text.includes('Bruttobeitrag'))).toBe(true);
+    const brutto = simuliereAvd(
+      eingabe({
+        vergleichspartner: 'fonds_lv',
+        vergleichsmodus: 'gleicher_bruttobeitrag',
+        fondsLv: lvVorgabe,
+      })
+    );
+
+    // Dieselbe Groesse, mit der auch das Vergleichsdepot gespeist wird
+    const eigenerAufwand = netto.jahre.reduce((s, j) => s + j.nettoAufwand, 0);
+    expect(netto.fondsLv!.eingezahlt).toBeCloseTo(eigenerAufwand, 4);
+    expect(netto.fondsLv!.eingezahlt).toBeCloseTo(netto.depot.eingezahlt, 4);
+
+    // Bei gleichem Bruttobeitrag bekommt sie wie bisher den vollen Beitrag
+    expect(brutto.fondsLv!.eingezahlt).toBeCloseTo(brutto.summeEigenbeitraege, 4);
+    expect(netto.fondsLv!.eingezahlt).toBeLessThan(brutto.fondsLv!.eingezahlt);
+
+    // Und die Warnung, die das frueher entschuldigte, ist weg
+    expect(netto.hinweise.some((h) => h.text.includes('vollen Bruttobeitrag'))).toBe(false);
+  });
+
+  it('die Beitragsreihe greift auch mit Dynamik', () => {
+    // Der eigentliche Grund fuer `contributions_per_year`: Die Erstattung
+    // waechst anders als der Beitrag, eine Dynamik in Prozent haette den
+    // Strom nicht getroffen.
+    const r = simuliereAvd(
+      eingabe({
+        vergleichspartner: 'fonds_lv',
+        vergleichsmodus: 'gleicher_nettoaufwand',
+        beitragsdynamikPaJahr: 0.03,
+        fondsLv: lvVorgabe,
+      })
+    );
+    expect(r.fondsLv!.eingezahlt).toBeCloseTo(
+      r.jahre.reduce((s, j) => s + j.nettoAufwand, 0),
+      4
+    );
   });
 });
 

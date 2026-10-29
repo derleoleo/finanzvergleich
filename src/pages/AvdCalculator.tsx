@@ -1209,19 +1209,49 @@ export default function AvdCalculator() {
                     />
                     <p className="text-xs text-slate-400">Beitragsgarantie begrenzt die Aktienquote</p>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-700">Vergleichsbasis</Label>
-                    <select
-                      value={formData.vergleichsmodus}
-                      onChange={(e) => update('vergleichsmodus', e.target.value as FormData['vergleichsmodus'])}
-                      className={selectClass}
-                    >
-                      <option value="gleicher_nettoaufwand">gleicher Netto-Aufwand</option>
-                      <option value="gleicher_bruttobeitrag">gleicher Bruttobeitrag</option>
-                    </select>
-                  </div>
-                )}
+                ) : null}
+              </div>
+
+              {/*
+                Die Vergleichsbasis stand bis jetzt im vierten Feld der
+                Zeile darueber - und damit nur beim freien Depot, weil
+                Fondspolice und Riester-Bestand diesen Platz fuer ihre
+                eigenen Felder brauchen. Solange die Police ohnehin immer
+                den vollen Bruttobeitrag bekam, war das folgenlos. Seit sie
+                der Basis folgt, waere es das Gegenteil: Die Stellschraube
+                waere unsichtbar, genau wo sie wirkt.
+              */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">Vergleichsbasis</Label>
+                  <select
+                    value={formData.vergleichsmodus}
+                    onChange={(e) => update('vergleichsmodus', e.target.value as FormData['vergleichsmodus'])}
+                    className={selectClass}
+                  >
+                    <option value="gleicher_nettoaufwand">gleicher Netto-Aufwand</option>
+                    <option value="gleicher_bruttobeitrag">gleicher Bruttobeitrag</option>
+                  </select>
+                </div>
+                <p className="text-xs text-slate-500 self-end pb-2">
+                  {gegenRiester ? (
+                    <>
+                      Der Riester-Bestandsvertrag bekommt immer den vollen Beitrag: Er ist
+                      selbst gefördert und bringt eine eigene Erstattung mit. Die
+                      Vergleichsbasis wirkt hier nur auf den Zweitvertrag der Aufteilung.
+                    </>
+                  ) : formData.vergleichsmodus === 'gleicher_nettoaufwand' ? (
+                    <>
+                      {vergleichName} bekommt den um die Steuererstattung verminderten
+                      Betrag – beide Seiten kosten dann dasselbe aus eigener Tasche.
+                    </>
+                  ) : (
+                    <>
+                      Beide Seiten bekommen denselben Beitrag. Der geförderte Vertrag
+                      kostet dann weniger, weil die Steuererstattung zurückfließt.
+                    </>
+                  )}
+                </p>
               </div>
 
               {gegenFondsLv && (
@@ -1392,11 +1422,28 @@ export default function AvdCalculator() {
                 }}
                 rechts={{
                   name: vergleichName,
-                  imSatz: gegenRiester ? 'dem Riester-Bestandsvertrag' : 'dem freien Depot',
+                  /*
+                   * Beide Zeilen kannten die Fondspolice nicht: Der Satz
+                   * sagte bei gewaehlter Police „als mit dem freien Depot“,
+                   * und darunter stand eine Vorabpauschale, die es im
+                   * Versicherungsmantel gar nicht gibt (§ 16 Abs. 1 InvStG
+                   * trifft das Depot, nicht die Police).
+                   */
+                  imSatz: gegenRiester
+                    ? 'dem Riester-Bestandsvertrag'
+                    : gegenFondsLv
+                      ? 'der Fondspolice'
+                      : 'dem freien Depot',
                   wert: endDepot,
                   detail: ergebnis.riesterAlt
                     ? `Förderung gesamt ${formatCurrency(ergebnis.riesterAlt.summeFoerderung)}`
-                    : `inkl. Vorabpauschale ${formatCurrency(ergebnis.depot.summeVorabpauschaleSteuer)}`,
+                    : ergebnis.fondsLv
+                      ? `eingezahlt ${formatCurrency(ergebnis.fondsLv.eingezahlt)} · ${
+                          ergebnis.fondsLv.halbeinkuenfte
+                            ? 'Halbeinkünfteverfahren'
+                            : 'Abgeltungsteuer'
+                        }`
+                      : `inkl. Vorabpauschale ${formatCurrency(ergebnis.depot.summeVorabpauschaleSteuer)}`,
                 }}
               />
 

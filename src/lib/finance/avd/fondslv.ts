@@ -38,6 +38,16 @@ export type FondsLvEingabe = {
   /** Jährliche Beitragssteigerung als Dezimal. Ohne sie zahlt die Police
    *  weniger ein als der verglichene Vertrag. */
   beitragsdynamikPaJahr?: number;
+  /**
+   * Monatsbeitrag je Laufzeitjahr, wenn der Strom keiner Formel folgt.
+   *
+   * Gebraucht beim Vergleich „gleicher Netto-Aufwand": Die Police bekommt
+   * dann nur, was nach der Steuererstattung des geförderten Vertrags übrig
+   * bleibt – und diese Erstattung wächst anders als der Beitrag. Ist die
+   * Reihe gesetzt, gilt sie; `beitragMonatlich` und `beitragsdynamikPaJahr`
+   * bleiben dann außen vor.
+   */
+  beitragProJahrMonatlich?: number[];
   /** Alle Raten als Dezimal, wie im übrigen AVD-Modul. */
   renditeBruttoPaJahr: number;
   terPaJahr: number;
@@ -70,6 +80,9 @@ const HALBEINKUENFTE_ALTER = 62;
 export function simuliereFondsLv(e: FondsLvEingabe): FondsLvErgebnis {
   const jahre = Math.max(1, Math.round(e.jahre));
   const months = jahre * 12;
+  const reihe = e.beitragProJahrMonatlich?.length
+    ? e.beitragProJahrMonatlich.map((b) => Math.max(0, Number(b) || 0))
+    : undefined;
 
   const cost: LvCostConfig =
     e.kosten.art === 'eur'
@@ -88,6 +101,7 @@ export function simuliereFondsLv(e: FondsLvEingabe): FondsLvErgebnis {
     annual_return_percent: alsProzentpunkte(e.renditeBruttoPaJahr),
     monthly_contribution: Math.max(0, e.beitragMonatlich),
     dynamik_percent: alsProzentpunkte(e.beitragsdynamikPaJahr ?? 0),
+    contributions_per_year: reihe,
     // Ein einzelner Fonds: `weightedFundCosts` zählt ihn unabhängig von der
     // Allokation voll, der Betrag ist deshalb beliebig.
     funds: [{ allocation_eur: 1, ongoing_costs_percent: alsProzentpunkte(e.terPaJahr) }],
