@@ -492,13 +492,12 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
   });
 
   /**
-   * Die Vergleichsbasis stand bis Oktober 2026 im vierten Feld einer
-   * Wenn-Dann-Kette und war damit nur beim freien Depot zu sehen. Solange
-   * die Fondspolice ohnehin immer den vollen Bruttobeitrag bekam, war das
-   * folgenlos. Seit sie der Basis folgt, waere die Stellschraube unsichtbar
-   * genau dort, wo sie wirkt.
+   * Netto- oder Bruttobeitraege: Bis Oktober 2026 war das ein Auswahlfeld
+   * im vierten Feld einer Wenn-Dann-Kette - und damit nur beim freien Depot
+   * zu sehen. Jetzt steht es als dritte Frage in der Leiste, bei den anderen
+   * beiden Weichenstellungen, und gilt fuer jeden Vergleichspartner.
    */
-  test("Die Vergleichsbasis ist bei jedem Partner erreichbar und wirkt", async ({
+  test("Netto- oder Bruttobeitraege steht in der Leiste und wirkt", async ({
     page,
   }) => {
     const absturz: string[] = [];
@@ -508,14 +507,15 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     await page.goto("/altersvorsorgedepot");
     await expect(page.locator("#avd-name")).toBeVisible({ timeout: 40_000 });
 
-    const wahl = page
-      .getByRole("combobox")
-      .filter({ hasText: /Netto-Aufwand|Bruttobeitrag/ });
+    const netto = page.getByRole("radio", { name: "Nettobeiträge", exact: true });
+    const brutto = page.getByRole("radio", { name: "Bruttobeiträge", exact: true });
     const satz = page.getByText("Auf Basis der gemachten Angaben").first();
 
+    // Unabhaengig vom Partner sichtbar - das war der Fehler davor
     for (const partner of ["Freies Depot", "Fondspolice", "Riester-Bestand"]) {
       await page.getByRole("radio", { name: partner, exact: true }).click();
-      await expect(wahl, partner).toHaveCount(1);
+      await expect(netto, partner).toBeVisible();
+      await expect(brutto, partner).toBeVisible();
     }
 
     // Der Satz muss den gewaehlten Partner benennen. Bei der Police stand
@@ -523,11 +523,11 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
     await page.getByRole("radio", { name: "Fondspolice", exact: true }).click();
     await expect(satz).toContainText("als mit der Fondspolice");
 
-    // Und die Basis wirkt auf die Police: Bei gleichem Eigenaufwand bekommt
-    // sie den um die Steuererstattung verminderten Betrag.
-    await wahl.selectOption({ label: "gleicher Netto-Aufwand" });
+    // Und die Wahl wirkt auf die Police: Bei Nettobeitraegen bekommt sie den
+    // um die Steuererstattung verminderten Betrag.
+    await netto.click();
     const beiNetto = await satz.innerText();
-    await wahl.selectOption({ label: "gleicher Bruttobeitrag" });
+    await brutto.click();
     const beiBrutto = await satz.innerText();
     expect(beiNetto).not.toBe(beiBrutto);
 
@@ -577,12 +577,9 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
      * Vergleichsbasis fuer beide gilt, muss derselbe Weg dieselbe Zahl
      * tragen - unter beiden Basen.
      */
-    const basisWahl = page
-      .getByRole("combobox")
-      .filter({ hasText: /Netto-Aufwand|Bruttobeitrag/ });
     const waagensatz = page.getByText("Auf Basis der gemachten Angaben").first();
-    for (const basis of ["gleicher Netto-Aufwand", "gleicher Bruttobeitrag"]) {
-      await basisWahl.selectOption({ label: basis });
+    for (const basis of ["Nettobeiträge", "Bruttobeiträge"]) {
+      await page.getByRole("radio", { name: basis, exact: true }).click();
       const zeilentext = await dritteSpalte.innerText();
       const yWert = zeilentext
         .split("Alles in freies Depot")[1]
@@ -592,7 +589,7 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
       const waage = waagensatz.locator("xpath=ancestor::div[2]");
       await expect(waage, basis).toContainText(yWert.trim());
     }
-    await basisWahl.selectOption({ label: "gleicher Netto-Aufwand" });
+    await page.getByRole("radio", { name: "Nettobeiträge", exact: true }).click();
 
     // Der Aufteilungsabschnitt ist anfangs zu
     const aufteilungsFeld = page.getByText("Monatlich ins Altersvorsorgedepot (€)");

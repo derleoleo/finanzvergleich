@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 
 /**
- * Die drei Fragen, die über fast alles andere entscheiden.
+ * Die Fragen, die über fast alles andere entscheiden.
  *
  * Der Altersvorsorgedepot-Rechner zeigte 43 Bedienelemente auf einem
  * durchgehenden Scroll-Flow — darunter die Felder aller drei
@@ -19,12 +19,24 @@ import { SegmentedToggle } from '@/components/ui/segmented-toggle';
 
 export type Vergleichspartner = 'depot' | 'fonds_lv' | 'riester_alt';
 export type Auszahlform = 'auszahlplan' | 'leibrente';
+export type Beitragsbasis = 'gleicher_nettoaufwand' | 'gleicher_bruttobeitrag';
 
 export type AvdEinstiegProps = {
   vergleichspartner: Vergleichspartner;
   onVergleichspartner: (wert: Vergleichspartner) => void;
   auszahlform: Auszahlform;
   onAuszahlform: (wert: Auszahlform) => void;
+  /**
+   * Womit beide Seiten gespeist werden: mit demselben Beitrag oder mit
+   * denselben Kosten aus eigener Tasche.
+   *
+   * Stand vorher als Auswahlfeld „Vergleichsbasis" im vierten Feld einer
+   * Wenn-Dann-Kette in Abschnitt 3 - und damit nur beim freien Depot.
+   * Die Frage gehört hierher: Sie entscheidet über jede Zahl darunter,
+   * und sie wird im Gespräch umgestellt, nicht einmal gesetzt.
+   */
+  beitragsbasis: Beitragsbasis;
+  onBeitragsbasis: (wert: Beitragsbasis) => void;
   /** Erklärt den gewählten Vergleich in einem Satz. */
   erlaeuterung: string;
 };
@@ -38,6 +50,11 @@ const PARTNER = [
 const AUSZAHLUNG = [
   { value: 'auszahlplan', label: 'Auszahlplan' },
   { value: 'leibrente', label: 'Leibrente' },
+] as const;
+
+const BASIS = [
+  { value: 'gleicher_nettoaufwand', label: 'Nettobeiträge' },
+  { value: 'gleicher_bruttobeitrag', label: 'Bruttobeiträge' },
 ] as const;
 
 function Frage({ titel, children }: { titel: string; children: React.ReactNode }) {
@@ -54,6 +71,8 @@ export function AvdEinstieg({
   onVergleichspartner,
   auszahlform,
   onAuszahlform,
+  beitragsbasis,
+  onBeitragsbasis,
   erlaeuterung,
 }: AvdEinstiegProps) {
   return (
@@ -75,6 +94,15 @@ export function AvdEinstieg({
               onChange={onAuszahlform}
               options={AUSZAHLUNG}
               ariaLabel="Auszahlform"
+            />
+          </Frage>
+
+          <Frage titel="Beide Seiten bekommen">
+            <SegmentedToggle
+              value={beitragsbasis}
+              onChange={onBeitragsbasis}
+              options={BASIS}
+              ariaLabel="Beitragsbasis"
             />
           </Frage>
         </div>
