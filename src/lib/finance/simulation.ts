@@ -42,6 +42,20 @@ export type LvSimulationInput = {
   funds: FundAllocation[]; // gewichtete TER via weightedFundCosts()
   cost: LvCostConfig;
   dynamik_percent?: number; // jährliche Beitragssteigerung, 0 = konstant
+  /**
+   * Monatsbeitrag je Laufzeitjahr, wenn der Strom nicht gleichmäßig wächst.
+   *
+   * `dynamik_percent` deckt den Normalfall ab: ein Beitrag, der jedes Jahr um
+   * denselben Satz steigt. Es gibt aber Beitragsströme, die keiner Formel
+   * folgen – etwa eine Police, die beim Vergleich „gleicher Netto-Aufwand"
+   * nur das bekommt, was nach der Steuererstattung des geförderten Vertrags
+   * übrig bleibt. Diese Erstattung wächst anders als der Beitrag.
+   *
+   * Ist die Reihe gesetzt, gilt sie; `dynamik_percent` bleibt dann außen vor,
+   * weil die Steigerung bereits in den Werten steckt. Fehlende Jahre am Ende
+   * behalten den letzten Wert.
+   */
+  contributions_per_year?: number[];
 };
 
 export type DepotSimulationInput = {
@@ -147,7 +161,20 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
 
   const series: MonthlyPoint[] = [];
   const initialContribution = Number(input.initial_capital) || 0;
-  let contribution = monthlyContribution;
+  /**
+   * Der Beitrag des Monats `m`. Ohne Reihe die alte Rechnung: Startbeitrag,
+   * einmal im Jahr mit der Dynamik vervielfacht.
+   */
+  const reihe = input.contributions_per_year;
+  const beitragImMonat = (m: number, bisher: number): number => {
+    if (reihe && reihe.length > 0) {
+      const jahr = Math.floor((m - 1) / 12);
+      return Number(reihe[Math.min(jahr, reihe.length - 1)]) || 0;
+    }
+    return m > 1 && (m - 1) % 12 === 0 ? bisher * dynamikFactor : bisher;
+  };
+
+  let contribution = reihe && reihe.length > 0 ? 0 : monthlyContribution;
   let contributionsCum = initialContribution;
 
   if (input.cost.type === "eur") {
@@ -156,13 +183,14 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
     acquisitionCosts = acq;
 
     // Zillmerung nur bei Beitragsstrom; bei reiner Einmalanlage Abschluss upfront
-    const useZillmer = monthlyContribution > 0;
+    const useZillmer =
+      monthlyContribution > 0 || (reihe?.some((b) => (Number(b) || 0) > 0) ?? false);
     const zillmerMonths = useZillmer ? calculateZillmerMonths(months) : 0;
     const monthlyZillmer = useZillmer ? acq / Math.max(1, zillmerMonths) : 0;
     if (!useZillmer) capital -= acq;
 
     for (let m = 1; m <= months; m++) {
-      if (m > 1 && (m - 1) % 12 === 0) contribution *= dynamikFactor;
+      contribution = beitragImMonat(m, contribution);
       contributionsCum += contribution;
 
       const contribAfter =
@@ -195,7 +223,7 @@ export function simulateLv(input: LvSimulationInput): LvSimulationResult {
     let totalContractCosts = 0;
 
     for (let m = 1; m <= months; m++) {
-      if (m > 1 && (m - 1) % 12 === 0) contribution *= dynamikFactor;
+      contribution = beitragImMonat(m, contribution);
       contributionsCum += contribution;
 
       // Kosten nur auf positives Kapital – sonst entstünde eine Gutschrift

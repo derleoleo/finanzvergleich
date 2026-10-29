@@ -323,10 +323,9 @@ export function berechneStrategien(args: {
    * Simulation sie genau; die beiden anderen Mäntel bekommen dort den vollen
    * Bruttobeitrag.
    */
-  const beitraegeY =
-    !avdVoll.riesterAlt && !avdVoll.fondsLv
-      ? avdVoll.depot.eingezahlt
-      : avdVoll.summeEigenbeitraege;
+  const beitraegeY = avdVoll.riesterAlt
+    ? avdVoll.summeEigenbeitraege
+    : (avdVoll.fondsLv?.eingezahlt ?? avdVoll.depot.eingezahlt);
   const beitragY = jahre > 0 ? beitraegeY / jahre / 12 : 0;
 
   const strategieY: Strategie = {
@@ -341,10 +340,10 @@ export function berechneStrategien(args: {
      * diese Vergleichsbasis. Vorher stand hier immer der volle AVD-Beitrag,
      * und die Kachel behauptete eine Einzahlung, die es nicht gab.
      *
-     * Nur der Depot-Zweig wird gemindert: `simulation.ts` rechnet Fondspolice
-     * und Riester-Altvertrag mit dem vollen Bruttobeitrag und sagt das auch
-     * (Warnhinweis dort). Diese Grenze wird hier nicht stillschweigend
-     * ueberschrieben.
+     * Depot und Fondspolice bekommen beide den Eigenaufwand. Nur der
+     * Riester-Altvertrag laeuft weiter mit dem vollen Beitrag: Er ist selbst
+     * gefoerdert und bringt eine eigene Erstattung mit, der Begriff
+     * „Eigenaufwand des AVD-Wegs“ trifft ihn nicht.
      */
     summeEigenbeitraege: beitraegeY,
     summeNettoaufwand: alt

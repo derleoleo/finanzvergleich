@@ -691,6 +691,29 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
     });
   }
 
+  /*
+   * Was die Police im Monat bekommt, Jahr fuer Jahr.
+   *
+   * Bei „gleicher Bruttobeitrag“ ist das schlicht der Beitrag. Bei
+   * „gleicher Netto-Aufwand“ sind es die eigenen Kosten des gefoerderten
+   * Vertrags - dieselbe Groesse, mit der auch das Vergleichsdepot gespeist
+   * wird (`eigenerAufwand` oben in der Jahresschleife).
+   *
+   * Vorher bekam die Police immer den vollen Bruttobeitrag, und ein
+   * Warnhinweis sagte das auch. Der Hinweis war ehrlich, der Vergleich
+   * trotzdem schief: Zwei Vertraege mit verschieden grossen Einzahlungen
+   * nebeneinander zu stellen und das Ergebnis zu vergleichen, beantwortet
+   * keine Frage, die jemand gestellt hat. Moeglich wurde die Aenderung
+   * durch `contributions_per_year` in der allgemeinen Engine - die
+   * Erstattung waechst anders als der Beitrag, eine Dynamik in Prozent
+   * haette den Strom nicht getroffen.
+   */
+  const policeBeitragProJahr = jahre.map((j) =>
+    e.vergleichsmodus === 'gleicher_nettoaufwand'
+      ? (e.erstattungReinvestieren ? j.eigenbeitrag : j.nettoAufwand) / 12
+      : j.eigenbeitrag / 12
+  );
+
   // Fondspolice als Vergleichspartner: derselbe Beitragsstrom, aber ein
   // Versicherungsmantel mit Halbeinkuenfteverfahren statt nachgelagerter
   // Besteuerung.
@@ -700,6 +723,7 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
           jahre: jahreBisAuszahlung,
           beitragMonatlich: e.eigenbeitragMonatlich,
           beitragsdynamikPaJahr: e.beitragsdynamikPaJahr,
+          beitragProJahrMonatlich: policeBeitragProJahr,
           renditeBruttoPaJahr: e.fondsLv.renditeBruttoPaJahr,
           terPaJahr: e.fondsLv.terPaJahr,
           kosten:
@@ -719,19 +743,10 @@ export function simuliereAvd(e: AvdEingabe): AvdErgebnis {
       : undefined;
   if (fondsLv) {
     hinweise.push(...fondsLv.hinweise);
-    // Der Depotzweig kann den Beitrag um die Steuererstattung mindern, die
-    // Police nicht: `simulateLv` nimmt einen gleichmäßigen Beitragsstrom und
-    // keine jahresweise schwankende Reihe. Das muss dastehen, sonst vergleicht
-    // die Seite unbemerkt unterschiedlich große Einzahlungen.
-    if (e.vergleichsmodus === 'gleicher_nettoaufwand') {
-      hinweise.push({
-        art: 'warnung',
-        text:
-          'Die Fondspolice wird mit dem vollen Bruttobeitrag gerechnet, nicht mit dem ' +
-          'um die Steuererstattung verminderten Nettoaufwand. Für einen Vergleich bei ' +
-          'gleichem Eigenaufwand die Vergleichsbasis auf „gleicher Bruttobeitrag" stellen.',
-      });
-    }
+    // Frueher stand hier eine Warnung, dass die Police den vollen
+    // Bruttobeitrag bekommt, weil `simulateLv` nur einen gleichmaessigen
+    // Strom kannte. Seit die Engine eine Beitragsreihe annimmt, bekommt sie
+    // denselben Eigenaufwand wie das Depot - die Warnung ist erledigt.
   }
 
   // Der aktive Vergleichspartner – die Kennzahl darf nicht still aufs Depot

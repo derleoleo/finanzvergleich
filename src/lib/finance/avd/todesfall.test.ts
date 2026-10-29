@@ -232,9 +232,23 @@ describe('Vergleichspartner im Todesfall', () => {
     });
     const mit = szenarien(e, [50])[0];
     expect(mit.fondsLv!.verfuegbar).toBeGreaterThan(0);
-    // Todesfallleistung einkommensteuerfrei: kein Abzug, deshalb liegt sie
-    // über dem, was aus dem AVD an sonstige Erben geht.
-    expect(mit.fondsLv!.verfuegbar).toBeGreaterThan(mit.sonstige.verfuegbar);
+    /*
+     * Die Aussage ist die Abzugsfreiheit, nicht der groessere Betrag: Von
+     * der Police kommt alles an, aus dem AVD geht Steuer und Rueckforderung
+     * ab. Wie die absoluten Zahlen stehen, haengt daran, wie viel Geld jede
+     * Seite ueberhaupt bekommen hat - bei „gleicher Netto-Aufwand“ ist das
+     * seit der Beitragsreihe nicht mehr derselbe Betrag.
+     */
+    expect(mit.fondsLv!.verfuegbar).toBe(mit.fondsLv!.kapitalGesamt);
+    expect(mit.sonstige.verfuegbar).toBeLessThan(mit.sonstige.kapitalGesamt);
+
+    // Bei gleichem Bruttobeitrag, also gleicher Einzahlung, liegt die
+    // abzugsfreie Police dann auch vorn.
+    const gleich = szenarien(
+      eingabe({ ...e, vergleichsmodus: 'gleicher_bruttobeitrag' }),
+      [50]
+    )[0];
+    expect(gleich.fondsLv!.verfuegbar).toBeGreaterThan(gleich.sonstige.verfuegbar);
     // Keine Steuer, keine Rueckforderung - genau das ist die Aussage.
     expect(mit.fondsLv!.steuer).toBe(0);
     expect(mit.fondsLv!.rueckforderung).toBe(0);
