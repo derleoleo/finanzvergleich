@@ -323,10 +323,33 @@ ${inhalt}
   </footer>`;
 }
 
+/**
+ * Das Vorschaubild, mit dem die Anwendung ohnehin schon geteilt wird.
+ *
+ * Die Ratgeberseiten hatten gar keins: `og:image` fehlte, und
+ * `twitter:card` stand auf `summary`. Geteilt in einem Beratungsnetzwerk oder
+ * einer Nachricht erschien also ein Textschnipsel ohne Bild — und das für die
+ * vier Seiten, die überhaupt Besucher bringen sollen.
+ *
+ * Bewusst dasselbe Markenbild für alle Beiträge statt eines eigenen pro
+ * Beitrag: Ein eigenes Bild ist besser, verlangt aber vier gestaltete Dateien.
+ * Dasselbe Bild ins `Article`-JSON-LD zu schreiben, wäre dagegen falsch —
+ * Google verlangt dort ausdrücklich ein Bild, das den Beitrag zeigt, „rather
+ * than logos". Dort steht deshalb weiterhin keins.
+ */
+const VORSCHAUBILD = {
+  adresse: `${DOMAIN}/og-image.png`,
+  breite: "1200",
+  hoehe: "630",
+  text: "Vorsorgewaage – LV oder Depot? Transparent abgewogen.",
+};
+
 function huelle(o: {
   titel: string;
   beschreibung: string;
   adresse: string;
+  /** `article` für einen Beitrag, `website` für die Übersicht. */
+  art: "article" | "website";
   kopfExtra?: string;
   inhalt: string;
   mess: Messstelle | undefined;
@@ -340,11 +363,20 @@ function huelle(o: {
   <meta name="description" content="${escape(o.beschreibung)}">
   <link rel="canonical" href="${escape(o.adresse)}">
   <link rel="icon" type="image/svg+xml" href="${DOMAIN}/favicon.svg">
-  <meta property="og:type" content="article">
+  <meta property="og:type" content="${o.art}">
   <meta property="og:title" content="${escape(o.titel)}">
   <meta property="og:description" content="${escape(o.beschreibung)}">
   <meta property="og:url" content="${escape(o.adresse)}">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:site_name" content="Vorsorgewaage">
+  <meta property="og:locale" content="de_DE">
+  <meta property="og:image" content="${VORSCHAUBILD.adresse}">
+  <meta property="og:image:width" content="${VORSCHAUBILD.breite}">
+  <meta property="og:image:height" content="${VORSCHAUBILD.hoehe}">
+  <meta property="og:image:alt" content="${escape(VORSCHAUBILD.text)}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escape(o.titel)}">
+  <meta name="twitter:description" content="${escape(o.beschreibung)}">
+  <meta name="twitter:image" content="${VORSCHAUBILD.adresse}">
 ${o.kopfExtra ?? ""}${messskript(o.mess)}  <style>${STIL}  </style>
 </head>
 <body>
@@ -362,6 +394,39 @@ const DATUM_DE = new Intl.DateTimeFormat("de-DE", {
 
 function datumLesbar(iso: string): string {
   return DATUM_DE.format(new Date(`${iso}T12:00:00Z`));
+}
+
+/**
+ * Der Weg von der Startseite hierher, maschinenlesbar.
+ *
+ * Google zeigt daraus in der Trefferliste „vorsorgewaage.de › Ratgeber ›
+ * Beitrag" statt der nackten Adresse. Ohne das Markup baut Google den Pfad
+ * aus der Adresse selbst zusammen, und bei Slugs wie
+ * `was-im-todesfall-bleibt-altersvorsorgedepot` wird das unleserlich.
+ *
+ * Das letzte Glied bekommt kein `item`: Googles Seite zum Brotkrumen-Markup
+ * lässt es für den letzten Eintrag weg und nimmt dann die Adresse der Seite
+ * selbst. Zwei Angaben derselben Adresse wären nur eine Gelegenheit, dass sie
+ * auseinanderlaufen.
+ */
+function brotkrumen(glieder: { name: string; adresse?: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: glieder.map((g, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: g.name,
+      ...(g.adresse ? { item: g.adresse } : {}),
+    })),
+  };
+}
+
+/** JSON-LD-Blöcke als fertige Script-Elemente für den Kopf. */
+function datenBloecke(...bloecke: object[]): string {
+  return bloecke
+    .map((b) => `  <script type="application/ld+json">${JSON.stringify(b)}</script>\n`)
+    .join("");
 }
 
 /** Eine Beitragsseite. */
@@ -405,7 +470,18 @@ ${b.html}
     titel: `${b.titel} – Vorsorgewaage`,
     beschreibung: b.beschreibung,
     adresse,
-    kopfExtra: `  <script type="application/ld+json">${JSON.stringify(artikel)}</script>\n`,
+    art: "article",
+    kopfExtra:
+      `  <meta property="article:published_time" content="${b.datum}">\n` +
+      `  <meta property="article:modified_time" content="${b.datum}">\n` +
+      datenBloecke(
+        artikel,
+        brotkrumen([
+          { name: "Startseite", adresse: `${DOMAIN}/` },
+          { name: "Ratgeber", adresse: `${DOMAIN}${RATGEBER_PFAD}/` },
+          { name: b.titel },
+        ]),
+      ),
     inhalt,
     mess,
   });
@@ -440,6 +516,12 @@ ${eintraege}
       "Fachbeiträge zur Altersvorsorgeberatung: Altersvorsorgedepot, Riester-Bestand, " +
       "Hinterbliebenenleistungen und Begründungspflicht – mit nachgerechneten Beispielen.",
     adresse: `${DOMAIN}${RATGEBER_PFAD}/`,
+    // Eine Liste von Beiträgen ist kein Artikel. Vorher stand hier
+    // `og:type: article` – dieselbe Angabe wie auf den Beiträgen selbst.
+    art: "website",
+    kopfExtra: datenBloecke(
+      brotkrumen([{ name: "Startseite", adresse: `${DOMAIN}/` }, { name: "Ratgeber" }]),
+    ),
     inhalt,
     mess,
   });

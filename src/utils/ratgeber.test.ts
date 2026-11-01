@@ -84,6 +84,45 @@ describe("Die erzeugte Seite", () => {
     expect(html).toContain('"datePublished":"2026-10-27"');
   });
 
+  it("bringt ein Vorschaubild mit - vorher wurde der Beitrag ohne geteilt", () => {
+    const html = beitragSeite(b);
+    expect(html).toContain('<meta property="og:image" content="https://www.vorsorgewaage.de/og-image.png">');
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
+    // Eigener Titel in der Vorschau, nicht der der Startseite.
+    expect(html).toContain('<meta name="twitter:title" content="Ein Titel – Vorsorgewaage">');
+    expect(html).toContain('<meta property="og:site_name" content="Vorsorgewaage">');
+    expect(html).toContain('<meta property="og:locale" content="de_DE">');
+  });
+
+  it("unterscheidet Beitrag und Uebersicht im og:type", () => {
+    // Eine Liste von Beitraegen ist kein Artikel; vorher stand auf beiden
+    // Seiten dasselbe.
+    expect(beitragSeite(b)).toContain('<meta property="og:type" content="article">');
+    expect(uebersichtSeite([b])).toContain('<meta property="og:type" content="website">');
+  });
+
+  it("nennt den Weg von der Startseite hierher", () => {
+    const html = beitragSeite(b);
+    expect(html).toContain('"@type":"BreadcrumbList"');
+    const daten = JSON.parse(
+      /<script type="application\/ld\+json">(\{"@context":"https:\/\/schema\.org","@type":"BreadcrumbList".*?\})<\/script>/.exec(
+        html,
+      )![1],
+    );
+    expect(daten.itemListElement.map((g: { name: string }) => g.name)).toEqual([
+      "Startseite",
+      "Ratgeber",
+      "Ein Titel",
+    ]);
+    expect(daten.itemListElement.map((g: { position: number }) => g.position)).toEqual([1, 2, 3]);
+    // Das letzte Glied ohne eigene Adresse: Google nimmt dann die der Seite.
+    expect(daten.itemListElement[2].item).toBeUndefined();
+    expect(daten.itemListElement[1].item).toBe("https://www.vorsorgewaage.de/ratgeber/");
+
+    // Die Uebersicht hat zwei Glieder, nicht drei.
+    expect(uebersichtSeite([b])).toContain('"@type":"BreadcrumbList"');
+  });
+
   it("ist nach § 5 DDG vom Impressum aus erreichbar - und umgekehrt", () => {
     expect(beitragSeite(b)).toContain('href="https://www.vorsorgewaage.de/impressum"');
     expect(uebersichtSeite([b])).toContain('href="https://www.vorsorgewaage.de/impressum"');
@@ -109,7 +148,12 @@ describe("Die erzeugte Seite", () => {
   it("sortiert die Uebersicht neueste zuerst", () => {
     const alt = beitragLesen("alt.md", KOPF.replace("2026-10-27", "2026-01-01"));
     const html = uebersichtSeite([alt, b]);
-    expect(html.indexOf("mein-beitrag")).toBeLessThan(html.indexOf("alt"));
+    // Auf die Verweise prueuefen, nicht auf die nackten Schnipsel: "alt" steht
+    // inzwischen auch in `og:image:alt` und stand dann vor beiden Beitraegen.
+    expect(html.indexOf('href="/ratgeber/mein-beitrag/"')).toBeGreaterThan(0);
+    expect(html.indexOf('href="/ratgeber/mein-beitrag/"')).toBeLessThan(
+      html.indexOf('href="/ratgeber/alt/"'),
+    );
   });
 });
 

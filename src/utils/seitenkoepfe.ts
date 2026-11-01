@@ -93,8 +93,14 @@ function sicher(text: string): string {
  * Setzt in einer gebauten `index.html` den Kopf einer Adresse.
  *
  * Ersetzt wird, was eine Dublette ausmacht: Title, Description, Canonical und
- * die Open-Graph-Angaben. Alles andere — Schriftvorladen, Symbole, das
- * Anwendungsbündel — bleibt Zeichen für Zeichen stehen.
+ * die Angaben für Open Graph und Twitter. Alles andere — Schriftvorladen,
+ * Symbole, das Anwendungsbündel — bleibt Zeichen für Zeichen stehen.
+ *
+ * Die Twitter-Angaben standen hier anfangs nicht drin. Gemessen am gebauten
+ * `dist/` trug damit jede der sieben Seiten im `twitter:title` „Vorsorgewaage"
+ * und in der `twitter:description` den Satz der Startseite — wer /pricing
+ * verlinkte, bekam eine Vorschau über die Rechner zu sehen. Dieselbe Quelle
+ * wie für Open Graph setzt beides mit.
  *
  * Die strukturierten Daten fliegen heraus: Sie beschreiben das Produkt und die
  * häufigen Fragen, und das ist die Aufgabe der Startseite. Dieselbe `FAQPage`
@@ -126,6 +132,14 @@ export function kopfSetzen(html: string, kopf: Seitenkopf): string {
     .replace(
       /<meta property="og:description" content="[^"]*"\s*\/?>/,
       `<meta property="og:description" content="${beschreibung}" />`,
+    )
+    .replace(
+      /<meta name="twitter:title" content="[^"]*"\s*\/?>/,
+      `<meta name="twitter:title" content="${titel}" />`,
+    )
+    .replace(
+      /<meta name="twitter:description" content="[^"]*"\s*\/?>/,
+      `<meta name="twitter:description" content="${beschreibung}" />`,
     )
     .replace(/\s*<script type="application\/ld\+json">[\s\S]*?<\/script>/g, "");
 }

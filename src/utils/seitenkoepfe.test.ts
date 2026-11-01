@@ -75,6 +75,8 @@ describe("Köpfe der öffentlichen Seiten", () => {
 <meta property="og:url" content="https://www.vorsorgewaage.de/" />
 <meta property="og:title" content="Vorsorgewaage" />
 <meta property="og:description" content="Alte Beschreibung." />
+<meta name="twitter:title" content="Vorsorgewaage" />
+<meta name="twitter:description" content="Alte Beschreibung." />
 <script type="application/ld+json">{"@type":"FAQPage"}</script>
 </head><body><div id="root"></div><script src="/assets/index-abc.js"></script></body></html>`;
 
@@ -88,6 +90,14 @@ describe("Köpfe der öffentlichen Seiten", () => {
     expect(neu).toContain(`content="${kopf!.beschreibung}"`);
     expect(neu).not.toContain("Alte Beschreibung");
     expect(neu).not.toContain("Professionelle Analysen für Finanzberater");
+
+    // Die Twitter-Angaben blieben anfangs stehen: Jede der sieben Seiten
+    // trug den Titel und den Satz der Startseite in der Vorschau.
+    expect(neu).toContain(`<meta name="twitter:title" content="${kopf!.titel}" />`);
+    expect(neu).toContain(
+      `<meta name="twitter:description" content="${kopf!.beschreibung}" />`,
+    );
+    expect(neu).not.toMatch(/twitter:title" content="Vorsorgewaage"/);
 
     // Strukturierte Daten gehoeren der Startseite, nicht acht Kopien.
     expect(neu).not.toContain("ld+json");
