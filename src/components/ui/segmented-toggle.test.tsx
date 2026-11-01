@@ -47,14 +47,14 @@ describe('Umschalter mit mehr als zwei Feldern', () => {
   });
 
   // Auf breiten Schirmen war an der alten Darstellung nichts auszusetzen, und
-  // sie bleibt deshalb unveraendert: ab `xl` wieder ein Raster aus gleich
+  // sie bleibt deshalb unveraendert: ab `lg` wieder ein Raster aus gleich
   // breiten Spalten in einer Reihe. Dieselbe Auszeichnung traegt beides - was
   // im Raster gilt, ist im Flex-Fluss wirkungslos und umgekehrt.
-  it('nutzt ab xl wieder das Raster aus gleich breiten Spalten', () => {
+  it('nutzt ab lg wieder das Raster aus gleich breiten Spalten', () => {
     const html = renderToStaticMarkup(
       <SegmentedToggle value="depot" onChange={() => {}} options={DREI} />,
     );
-    expect(html).toContain('xl:inline-grid');
+    expect(html).toContain('lg:inline-grid');
     expect(html).toContain('repeat(3, minmax(0, 1fr))');
 
     const zwei = renderToStaticMarkup(

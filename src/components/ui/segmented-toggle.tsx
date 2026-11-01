@@ -131,16 +131,24 @@ export function SegmentedToggle<T extends string>({
       ref={leiste}
       role="radiogroup"
       aria-label={ariaLabel}
-      // Ab `xl` wieder das alte Raster aus gleich breiten Spalten, in genau
+      // Ab `lg` wieder das alte Raster aus gleich breiten Spalten, in genau
       // einer Reihe. Auf breiten Schirmen war daran nichts auszusetzen: Auf
       // 1536 px waren die Felder 130 px breit und damit so breit wie ihre
       // Beschriftung, auf 1280 px 116 px und „Riester-Bestand" 2 px zu eng –
-      // unsichtbar. Erst darunter wurde es schlimm (auf 1024 px nur noch
-      // 77 px je Feld, also 56 px abgeschnitten), und genau dort greift jetzt
-      // das Umbrechen. `flexBasis`, `grow` und `shrink-0` an den Feldern sind
-      // im Raster wirkungslos, `gridTemplateColumns` im Flex-Fluss ebenso –
-      // dieselbe Auszeichnung trägt beide Darstellungen, und der Schieber
-      // misst ohnehin nach, statt zu rechnen.
+      // unsichtbar.
+      //
+      // Dass die Grenze bei `lg` liegt und nicht bei `xl`, ist eine bewusste
+      // Entscheidung gegen die Messung: Auf 1024 px, wo `lg` gerade greift,
+      // blieben jedem Feld nur 77 px, und „Riester-Bestand" stand dort 56 px
+      // über sein Feld hinaus. Das bleibt so. Die Vorgabe war, die gewohnte
+      // Ansicht auf dem Rechner unangetastet zu lassen; wer das ändern will,
+      // setzt hier und in `AvdEinstieg` `xl` statt `lg`, dann bricht die
+      // Leiste schon ab 1024 px um.
+      //
+      // `flexBasis`, `grow` und `shrink-0` an den Feldern sind im Raster
+      // wirkungslos, `gridTemplateColumns` im Flex-Fluss ebenso – dieselbe
+      // Auszeichnung trägt beide Darstellungen, und der Schieber misst
+      // ohnehin nach, statt zu rechnen.
       //
       // `max-w-full`: Steht die Leiste in einer Flex-Zeile neben einem Label,
       // ist ihr Platz schmaler als sie selbst – dann bricht sie um, statt über
@@ -156,7 +164,7 @@ export function SegmentedToggle<T extends string>({
       // Die Rundung folgt der Feldhöhe (28 px, ab `sm` 32 px, plus 4 px
       // Polsterung ringsum) statt `rounded-full`: In einer Reihe sieht sie
       // genauso aus, über zwei Reihen wird daraus keine Ellipse.
-      className={`relative inline-flex max-w-full flex-wrap gap-1 rounded-[1.125rem] bg-slate-100 p-1 sm:rounded-[1.25rem] xl:inline-grid ${className}`}
+      className={`relative inline-flex max-w-full flex-wrap gap-1 rounded-[1.125rem] bg-slate-100 p-1 sm:rounded-[1.25rem] lg:inline-grid ${className}`}
       style={{ gridTemplateColumns: `repeat(${anzahl}, minmax(0, 1fr))` }}
     >
       {/* Schieber: liegt hinter den Beschriftungen und wandert zur aktiven
@@ -220,10 +228,10 @@ export function SegmentedToggle<T extends string>({
                   Umschalten – gemessen auf 420 px: Die Dreiergruppe stand bei
                   „Freies Depot" in einer Reihe und bei „Riester-Bestand" in
                   zwei, weil die fette Beschriftung 4 px mehr braucht. */}
-              {/* Ab `xl` weg: Dort bestimmt das Raster die Spaltenbreiten, der
+              {/* Ab `lg` weg: Dort bestimmt das Raster die Spaltenbreiten, der
                   Platzhalter würde nur noch die Gesamtbreite der Leiste um
                   2 bis 10 px aufblähen - und die soll bleiben, wie sie war. */}
-              <span aria-hidden="true" className="invisible block h-0 font-semibold xl:hidden">
+              <span aria-hidden="true" className="invisible block h-0 font-semibold lg:hidden">
                 {option.label}
               </span>
               <span className="block">{option.label}</span>
