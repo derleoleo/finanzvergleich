@@ -659,7 +659,7 @@ export default function BestAdviceCalculator() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 pt-1">
+                <div className="flex flex-wrap items-center gap-3 pt-1">
                   <Label className="text-sm font-medium text-slate-700">Besteuerung</Label>
                   <SegmentedToggle
                     ariaLabel="Besteuerung des Bestandsvertrags"
@@ -678,7 +678,7 @@ export default function BestAdviceCalculator() {
                 */}
                 {!formData.current_product_tax_free && (
                   <div className="space-y-2 pt-1">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                       <Label className="text-sm font-medium text-slate-700">Vertragsart</Label>
                       <SegmentedToggle
                         ariaLabel="Vertragsart des Bestandsvertrags"
@@ -698,7 +698,7 @@ export default function BestAdviceCalculator() {
                         formData.current_contract_start_year
                       )}
                     </p>
-                    <div className="flex items-center gap-3 pt-1">
+                    <div className="flex flex-wrap items-center gap-3 pt-1">
                       <Label className="text-sm font-medium text-slate-700">
                         Heutiger Wert ist
                       </Label>
@@ -808,7 +808,7 @@ export default function BestAdviceCalculator() {
                         className="bg-white border-slate-300 focus:border-blue-500" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 pt-1">
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
                     <Label className="text-sm font-medium text-slate-700">Besteuerung</Label>
                     <SegmentedToggle
                       ariaLabel="Besteuerung dieses Bestandsvertrags"
@@ -827,7 +827,7 @@ export default function BestAdviceCalculator() {
                   </div>
                   {!lv.current_product_tax_free && (
                     <div className="space-y-2">
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
                         <Label className="text-sm font-medium text-slate-700">Vertragsart</Label>
                         <SegmentedToggle
                           ariaLabel="Vertragsart dieses Bestandsvertrags"
@@ -847,7 +847,7 @@ export default function BestAdviceCalculator() {
                       <p className="text-xs text-slate-500">
                         {steuerHinweis(lv.fondsgebunden, lv.contract_start_year)}
                       </p>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
                         <Label className="text-sm font-medium text-slate-700">
                           Heutiger Wert ist
                         </Label>
@@ -1042,7 +1042,7 @@ export default function BestAdviceCalculator() {
               )}
 
               <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                   <Label className="text-sm font-medium text-slate-700">Kostentyp</Label>
                   <SegmentedToggle
                     ariaLabel="Kostentyp"

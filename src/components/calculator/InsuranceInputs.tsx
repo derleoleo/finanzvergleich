@@ -61,7 +61,7 @@ export default function InsuranceInputs({ formData, updateFormData }: Props) {
       <CardContent className="space-y-6">
         {/* Kostentyp */}
         <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <Label className="text-sm font-medium text-slate-700">
               Kostentyp
             </Label>

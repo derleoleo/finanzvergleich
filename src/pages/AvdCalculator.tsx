@@ -732,8 +732,10 @@ export default function AvdCalculator() {
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
       <div id="pdf-content" className="max-w-5xl mx-auto space-y-6" data-pdf-root>
-        {/* Kopf */}
-        <div className="flex items-center justify-between" data-pdf-hide>
+        {/* Kopf. `flex-wrap`: Überschrift links, „Speichern" und „PDF"
+            rechts - auf einem schmalen Telefon passt das nicht in eine
+            Zeile, und die beiden Knöpfe standen aus dem Bild. */}
+        <div className="flex flex-wrap items-center justify-between gap-3" data-pdf-hide>
           <div className="flex items-center gap-4">
             <Button variant="outline" onClick={() => navigate(createPageUrl('Home'))}>
               <ArrowLeft className="w-4 h-4" />

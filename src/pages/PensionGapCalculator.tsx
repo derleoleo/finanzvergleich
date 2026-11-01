@@ -405,15 +405,22 @@ export default function PensionGapCalculator() {
                   </p>
                 )}
 
-              {/* Live-Vorschau */}
+              {/*
+                Live-Vorschau. `flex-wrap`: Beschriftung und Betrag stehen
+                nebeneinander, solange die Zeile reicht - und keines von
+                beiden kann umbrechen, ein Geldbetrag schon gar nicht. Auf
+                320 px brauchten „Versorgungslücke:" und „–1.500,00 €/Monat"
+                zusammen 97 px mehr, als die Karte hatte, und drückten sie
+                auf. Jetzt rutscht der Betrag unter die Beschriftung.
+              */}
               <div className={`rounded-xl p-4 border ${monthlyGapPreview > 0 ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-wrap justify-between items-center gap-x-3">
                   <span className="text-sm font-medium text-slate-700">Gesamteinnahmen:</span>
                   <span className="font-bold text-slate-900">
                     {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(totalMonthlyIncome)}/Monat
                   </span>
                 </div>
-                <div className="flex justify-between items-center mt-2">
+                <div className="flex flex-wrap justify-between items-center gap-x-3 mt-2">
                   <span className={`text-sm font-semibold ${monthlyGapPreview > 0 ? "text-red-700" : "text-green-700"}`}>
                     {monthlyGapPreview > 0 ? "Versorgungslücke:" : "Überschuss:"}
                   </span>
