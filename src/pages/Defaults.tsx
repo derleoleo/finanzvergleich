@@ -43,7 +43,14 @@ export default function Defaults() {
           </div>
         </div>
 
-        <div className="grid gap-6">
+        {/*
+          `grid-cols-1` statt nur `grid`: Eine Rasterspalte ohne Angabe ist
+          `auto` und richtet sich nach ihrem Inhalt - auf 320 px wurde sie
+          350 px breit und schob jede Karte darin aus dem Bild. `grid-cols-1`
+          schreibt `minmax(0, 1fr)`, also: so breit wie der Platz, nicht so
+          breit wie der Inhalt.
+        */}
+        <div className="grid grid-cols-1 gap-6">
 
           {/* Allgemein */}
           <Card className="border-0 shadow-lg bg-white">
@@ -196,7 +203,7 @@ export default function Defaults() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3">
                 <div>
                   <p className="text-sm font-medium text-slate-700">Kostentyp</p>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -205,7 +212,14 @@ export default function Defaults() {
                       : "Effektivkosten in Prozent"}
                   </p>
                 </div>
+                {/*
+                  `shrink-0`: „EUR" und „%" brauchen zusammen 92 px, die Zeile
+                  hat auch auf dem Telefon mehr. Ohne das gibt die kurze Leiste
+                  gegenüber dem langen Erklärtext nach und schiebt ihre zwei
+                  Felder untereinander, obwohl Platz da ist.
+                */}
                 <SegmentedToggle
+                  className="shrink-0"
                   ariaLabel="Kostentyp"
                   value={data.lv_cost_type === "percent" ? "percent" : "eur"}
                   onChange={(wert) => set("lv_cost_type", wert)}
@@ -217,7 +231,7 @@ export default function Defaults() {
               </div>
 
               {data.lv_cost_type === "eur" ? (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-700">Abschlusskosten (€)</Label>
                     <NumericInput value={data.life_insurance_acquisition_costs_eur}
@@ -267,7 +281,7 @@ export default function Defaults() {
                     placeholder="z.B. MSCI World ETF" className={inputClass} />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">Ausgabeaufschlag (%)</Label>
                   <NumericInput step={0.1} value={data.depot_fund_initial_charge_percent}
@@ -300,7 +314,7 @@ export default function Defaults() {
                 Sparvertrag & Einmalanlage
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Monatliche Sparrate (€)</Label>
                 <NumericInput value={data.monthly_contribution}
@@ -405,7 +419,7 @@ export default function Defaults() {
                 Entnahmeplan
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-3 gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Jährliche Entnahme (€)</Label>
                 <NumericInput value={data.withdrawal_amount}
@@ -427,8 +441,10 @@ export default function Defaults() {
             </CardContent>
           </Card>
 
-          {/* Actions */}
-          <div className="flex items-center justify-between">
+          {/* Actions. `flex-wrap`: „Zurücksetzen" und „Voreinstellungen
+              speichern" brauchen nebeneinander mehr Platz, als ein 320 px
+              breites Telefon hat - der zweite Knopf stand sonst aus dem Bild. */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <Button variant="outline" onClick={handleReset}
               className="flex items-center gap-2 text-slate-500">
               <RotateCcw className="w-4 h-4" />

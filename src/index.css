@@ -87,3 +87,35 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/*
+  Überschriften dürfen deutsche Zusammensetzungen trennen.
+
+  Ein Wort, das nicht brechen darf, ist die Mindestbreite seines Behälters.
+  „Lebens-/Rentenversicherung" misst in der Kartenüberschrift 254 px, und weil
+  daneben noch das Symbol steht, brauchte die Karte 374 px – auf einem 320 px
+  breiten Telefon stand sie damit 86 px aus ihrer Rasterzelle heraus, und
+  alles in ihr wurde mit abgeschnitten, auch die Umschalter. Dasselbe gilt für
+  „Altersvorsorgedepot" in der Seitenüberschrift.
+
+  `hyphens: auto` trennt nach den Regeln der Sprache – `<html lang="de">` sagt
+  dem Browser, welche das sind.
+
+  `overflow-wrap: anywhere` und nicht `break-word`: Nur `anywhere` senkt auch
+  die Mindestbreite. `break-word` bricht ein Wort erst, wenn die Zeile zu eng
+  ist – aber eng wird sie nie, weil das Wort selbst die Breite vorgibt. Genau
+  das war hier der Fall: Die Überschriften stehen als `flex items-center gap-3`
+  neben ihrem Symbol, der Text ist darin ein namenloses Flex-Feld, das man
+  nicht einzeln ansprechen kann, und dessen Mindestbreite ist sein Inhalt.
+  Mit `break-word` blieb die Überschrift deshalb unverändert breit und wurde
+  schlicht abgeschnitten („Lebens-/Rentenversic").
+
+  Der Preis von `anywhere`: Eine Überschrift kann auf ein Zeichen je Zeile
+  zusammengedrückt werden, wenn jemand sie in eine sehr enge Spalte setzt.
+  Nachgemessen auf 320, 360, 420, 768 und 1280 px kommt das nirgends vor, und
+  eine umbrechende Überschrift ist allemal besser als eine abgeschnittene.
+*/
+h1, h2, h3, h4 {
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}

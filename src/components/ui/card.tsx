@@ -5,8 +5,13 @@ export function Card({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
+    // `min-w-0`: Eine Karte ist fast immer ein Raster- oder Flex-Feld, und
+    // deren Mindestbreite ist von Haus aus ihr Inhalt. Ein einziges langes
+    // Wort darin schob die Karte dadurch aus ihrer Zelle heraus - auf 320 px
+    // gemessen 374 statt 288 px, mitsamt allem, was in ihr steht. Jetzt gibt
+    // die Zelle das Maß vor, und der Inhalt richtet sich danach.
     <div
-      className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}
+      className={`min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}
       {...props}
     />
   );

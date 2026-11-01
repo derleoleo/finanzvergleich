@@ -78,7 +78,27 @@ export function AvdEinstieg({
   return (
     <Card className="border-0 shadow-lg bg-white">
       <CardContent className="p-4 md:p-5 space-y-3">
-        <div className="flex flex-col md:flex-row md:items-start gap-4 md:gap-8" data-pdf-hide>
+        {/*
+          `md:flex-wrap`: Drei Leisten nebeneinander brauchen mehr Platz, als
+          die Karte auf einem Tablet hat. Auf 768 px - dort greift `md`
+          gerade - blieben jeder Leiste rund 130 px, jedem Feld davon 38, und
+          „Riester-Bestand" stand 80 px weit über sein Feld hinaus. Das war
+          die engste Stelle überhaupt, enger als auf dem schmalsten Telefon,
+          und keine Messung hatte je dort hingesehen. Mit Umbruch rutscht
+          lieber eine ganze Frage in die zweite Zeile, als dass alle drei zu
+          eng werden.
+
+          `lg:flex-nowrap`: Ab 1024 px bleibt es bei einer Zeile, so wie es
+          war. Dort geht der Umschalter wieder ins Raster, nimmt also mit dem
+          Platz vorlieb, den die Zeile ihm lässt. Auf 1280 px sind das 116 px
+          je Feld, und das reicht; auf 1024 px nur 77 px, und dort bleibt
+          „Riester-Bestand" abgeschnitten. Das ist so gewollt: Die gewohnte
+          Ansicht auf dem Rechner soll unangetastet bleiben.
+        */}
+        <div
+          className="flex flex-col md:flex-row md:flex-wrap md:items-start lg:flex-nowrap gap-4 md:gap-8"
+          data-pdf-hide
+        >
           <Frage titel="Altersvorsorgedepot vergleichen mit">
             <SegmentedToggle
               value={vergleichspartner}
