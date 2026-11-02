@@ -3,11 +3,43 @@
 Stand 02.11.2026. Alle Zahlen aus `npm run build` und dem erzeugten `dist/`,
 nicht geschätzt.
 
-> **Ergebnis: der kritische Pfad der Startseite ist von 566,0 kB auf 321,1 kB
-> gefallen, gzip von 159,9 kB auf 97,0 kB — 39 % weniger.** Weg B ist
-> umgesetzt (siehe unten), die Aufteilung in eigene Stücke ebenfalls.
-> Festgehalten durch einen E2E-Test: „Supabase liegt nicht im kritischen Pfad
-> der Startseite".
+> **Ergebnis: der kritische Pfad der Startseite ist von 200,3 kB auf 137,0 kB
+> gzip gefallen — 32 % weniger.** Weg B ist umgesetzt (siehe unten), die
+> Aufteilung in eigene Stücke ebenfalls. Festgehalten durch einen E2E-Test:
+> „Supabase liegt nicht im kritischen Pfad der Startseite".
+
+## Korrektur: wie hier gemessen werden muss
+
+Die erste Fassung dieses Dokuments nannte 566,0 → 321,1 kB roh und
+159,9 → 97,0 kB gzip. **Beide Seiten waren zu niedrig**, weil ohne
+`VITE_SENTRY_DSN` gebaut wurde. Die Variable steht in `main.tsx` in einer
+Bedingung:
+
+```ts
+if (import.meta.env.VITE_SENTRY_DSN) { Sentry.init({ … }) }
+```
+
+Fehlt sie, setzt Vite `undefined` ein, der Zweig ist statisch falsch, und
+Rollup wirft `Sentry.init` samt Integrationen weg. Das Sentry-Stück ist dann
+5,3 kB gzip statt 45,1 kB — ein Unterschied von 40 kB, der in einem lokalen
+Bau unsichtbar bleibt.
+
+**Wer das Bündel messen will, muss die Variable setzen:**
+
+```bash
+VITE_SENTRY_DSN="https://beispiel@o0.ingest.sentry.io/0" npx vite build
+```
+
+Gegengeprüft an der Produktionsseite: Dort überträgt der kritische Pfad
+138,6 kB, und das Sentry-Stück trägt denselben Hash wie der lokale Bau mit
+Variable (`sentry-DjYlbBx1.js`). Der lokale Bau ohne Variable beschreibt die
+Produktion also nicht.
+
+| gemessen mit DSN | roh | gzip |
+|---|---|---|
+| vorher (`f4e9109`) | 683,0 kB | 200,3 kB |
+| nachher | — | **137,0 kB** |
+| live auf www.vorsorgewaage.de | — | 138,6 kB |
 
 ## Wie gemessen wurde
 
@@ -32,8 +64,13 @@ Sie enthalten Kommentare und Typen und überschätzen große Pakete.
 | ~40 kB | eigener Code (`src/*`) |
 
 **`@supabase/*` zusammen: 212,7 kB, also 41,9 %** — mehr als `react-dom`.
-`@sentry/*` sind dagegen nur 16,0 kB; Sentry zu verlagern würde fast nichts
-bringen und früh auftretende Fehler unsichtbar machen. Das ist damit erledigt.
+
+Zur Zeile `@sentry/core`: Die 12,9 kB stammen aus einem Bau **ohne**
+`VITE_SENTRY_DSN` und sind für die Produktion zu niedrig (siehe Korrektur
+oben). Mit Variable sind es 45,1 kB gzip — nach `react` der zweitgrößte Posten
+im kritischen Pfad. Die Schlussfolgerung der ersten Fassung, Sentry sei zu
+klein, um sich damit zu befassen, war damit falsch; der Punkt steht jetzt
+unter „Was als Nächstes möglich wäre".
 
 ## Der eigentliche Fund: 82,6 kB werden nie benutzt
 
@@ -133,12 +170,9 @@ Der letzte war der unauffälligste und fiel erst beim Nachmessen auf:
 ganzen 212,7 kB im kritischen Pfad, obwohl es nur direkt nach einer Anmeldung
 läuft.
 
-Gemessen:
-
-| | roh | gzip |
-|---|---|---|
-| vorher | 566,0 kB | 159,9 kB |
-| nachher | **321,1 kB** | **97,0 kB** |
+Gemessen mit `VITE_SENTRY_DSN` wie in der Produktion: **200,3 → 137,0 kB
+gzip.** (Ohne die Variable, wie die erste Fassung dieses Dokuments:
+159,9 → 97,0 kB gzip — dieselbe Richtung, aber beide Seiten zu niedrig.)
 
 **Was das ausdrücklich nicht heißt:** dass ein Gast Supabase nie lädt. Der
 Effekt in `AuthContext` holt es weiterhin kurz nach dem Mounten — nur
@@ -160,9 +194,22 @@ stiller Fehler am teuersten ist.
 82,6 kB liegen jetzt in einem Stück, das Gäste nebenläufig und Angemeldete
 ohnehin laden.
 
+**Sentry nachladen — der jetzt größte Posten nach `react`.** Mit DSN sind es
+45,1 kB gzip von 137,0 kB, also ein Drittel des kritischen Pfades. `Sentry.init`
+in `main.tsx` läuft heute vor dem ersten Rendern. Nachgeladen nach dem ersten
+Bild wäre der Pfad bei rund 92 kB gzip.
+
+**Der Preis ist unangenehm und der Grund, warum das hier nur steht:** In dem
+Fenster zwischen erstem Bild und geladenem Sentry werden Fehler nicht
+gemeldet — und das ist genau das Fenster, in dem Startfehler auftreten, also
+die, die man am dringendsten sehen will. Eine Zwischenlösung wäre, nur
+`browserTracingIntegration` nachzuladen (die Leistungsmessung) und die
+Fehlererfassung sofort zu starten; dann ist der Gewinn kleiner, aber kein
+Fehler geht verloren. Beides verlangt eine Entscheidung darüber, wie viel
+Blindflug beim Start hinnehmbar ist.
+
 ## Was nicht hilft
 
-- **Sentry verlagern:** 16,0 kB, und der Preis wären unsichtbare Fehler beim Start.
 - **`chunkSizeWarningLimit` hochsetzen:** macht die Warnung still, nicht das Bündel klein.
 - **`react-dom` austauschen:** 176,6 kB sind der Preis von React 19. Preact als
   Ersatz wäre ein Umbau der ganzen Anwendung mit Risiko in jedem Rechner.

@@ -154,7 +154,12 @@ export default defineConfig(({ mode }) => ({
    *
    * Gemessen (Sourcemap des Eintritts auf minifizierte Bytes umgerechnet, von
    * 512 kB): react-dom 176,6 kB, @supabase/* zusammen 212,7 kB, react-router
-   * 38,2 kB, @sentry/* 16,0 kB. Eigener Code sind rund 40 kB.
+   * 38,2 kB. Eigener Code sind rund 40 kB.
+   *
+   * Beim Messen VITE_SENTRY_DSN setzen, sonst taeuscht das Ergebnis: Ohne die
+   * Variable ist der Zweig um Sentry.init in main.tsx statisch falsch und
+   * Rollup wirft die Integrationen weg - das Sentry-Stueck ist dann 5,3 statt
+   * 45,1 kB gzip. Siehe docs/startseite-buendel.md.
    *
    * Was das bringt - und was nicht. Beim allerersten Besuch laedt der Browser
    * dieselbe Menge, nur in vier Dateien statt einer. Der Gewinn liegt beim
