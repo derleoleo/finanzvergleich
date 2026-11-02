@@ -3,6 +3,12 @@
 Stand 02.11.2026. Alle Zahlen aus `npm run build` und dem erzeugten `dist/`,
 nicht geschätzt.
 
+> **Ergebnis: der kritische Pfad der Startseite ist von 566,0 kB auf 321,1 kB
+> gefallen, gzip von 159,9 kB auf 97,0 kB — 39 % weniger.** Weg B ist
+> umgesetzt (siehe unten), die Aufteilung in eigene Stücke ebenfalls.
+> Festgehalten durch einen E2E-Test: „Supabase liegt nicht im kritischen Pfad
+> der Startseite".
+
 ## Wie gemessen wurde
 
 `vite build --sourcemap`, dann die Sourcemap des Eintrittsbündels auf
@@ -99,27 +105,60 @@ die Token-Verdrahtung nicht an — hängt aber davon ab, dass `supabase-js` den
 Realtime-Client nur anlegt und nie benutzt. Das ist heute so und kann sich mit
 jeder Nebenfassung ändern, ohne dass es auffällt.
 
-### B — Öffentliche Seiten rendern, ohne auf die Anmeldung zu warten
+### B — Öffentliche Seiten rendern, ohne auf die Anmeldung zu warten ← **umgesetzt**
 
-`SmartRoot` und `SmartPricing` geben heute `null` zurück, solange
-`loading` wahr ist (`src/App.tsx`). Für einen Besucher aus der Suche heißt
-das: Erst müssen 212 kB Supabase geladen **und ausgeführt** sein, bevor
-überhaupt etwas erscheint. Würden die öffentlichen Seiten sofort rendern,
-könnte Supabase als eigener, später geladener Teil nachkommen — der kritische
-Pfad fiele von 565 kB auf rund 350 kB.
+`SmartRoot` und `SmartPricing` gaben `null` zurück, solange `loading` wahr war.
+Für einen Besucher aus der Suche hieß das: Erst mussten 212 kB Supabase geladen
+**und ausgeführt** sein, bevor überhaupt etwas erschien.
 
-**Das ist eine gestalterische Entscheidung, keine technische.** Ein
-angemeldeter Nutzer würde auf `/` kurz die Landingpage sehen, bevor die
-Übersicht erscheint. Dieses Flackern ist genau der Grund, warum dort heute
-`null` steht. Man kann es abfedern (Skelett statt Umschalten, oder die
-Anmeldung nur für die Kopfleiste abwarten), aber nicht wegzaubern.
+Das Flackern, wegen dem dort `null` stand, musste dabei nicht in Kauf genommen
+werden. `src/utils/vielleichtAngemeldet.ts` beantwortet synchron und ohne eine
+Zeile Supabase-Code, ob im Browser überhaupt eine Sitzung liegen *kann* —
+Supabase legt sie unter `sb-<kennung>-auth-token` in `localStorage` ab. Ist
+keiner da, erscheint die öffentliche Seite sofort; ist einer da, wird wie
+bisher gewartet. **Für Angemeldete ändert sich nichts.**
 
-## Empfehlung
+Damit Supabase wirklich aus dem Eintritt verschwindet, musste jeder statische
+Weg dorthin weg (`src/lib/supabaseLaden.ts` holt den Client per `import()`):
 
-B vor A. B holt mehr (−215 kB statt −82,6 kB), rührt den Zugriffsschutz nicht
-an und ist jederzeit zurückzunehmen — der Preis ist sichtbar und
-gestalterisch, nicht verborgen und sicherheitsrelevant. A wäre danach noch
-möglich, aber mit kleinerem Gegenwert.
+| Modul | vorher | jetzt |
+|---|---|---|
+| `contexts/AuthContext` | statisch | nachgeladen im Effekt |
+| `contexts/SubscriptionContext` | statisch | nachgeladen beim Laden der Daten |
+| `Layout`, `components/ConsentGate` | statisch in `App.tsx` | `lazy()` |
+| `utils/migrateLocalData` | statisch in `AuthContext` | `import()` an der Aufrufstelle |
+
+Der letzte war der unauffälligste und fiel erst beim Nachmessen auf:
+`migrateLocalData` hängt über fünf Entitäten am Client und hielt allein die
+ganzen 212,7 kB im kritischen Pfad, obwohl es nur direkt nach einer Anmeldung
+läuft.
+
+Gemessen:
+
+| | roh | gzip |
+|---|---|---|
+| vorher | 566,0 kB | 159,9 kB |
+| nachher | **321,1 kB** | **97,0 kB** |
+
+**Was das ausdrücklich nicht heißt:** dass ein Gast Supabase nie lädt. Der
+Effekt in `AuthContext` holt es weiterhin kurz nach dem Mounten — nur
+nebenläufig, nach dem ersten Bild. Es ganz zu unterlassen wäre der nächste
+Schritt und steht unten.
+
+## Was als Nächstes möglich wäre
+
+**Supabase für Gäste gar nicht erst holen.** Wenn `vielleichtAngemeldet()`
+false ist, könnte der Effekt in `AuthContext` die Sitzungsabfrage ganz
+überspringen — der Gast lädt die 218 kB dann nie. **Haken, der es zu einer
+Entscheidung macht:** Dann ist auch `onAuthStateChange` nicht angemeldet. Meldet
+sich dieser Gast anschließend an, erfährt die Anwendung nichts davon, und er
+bleibt nach außen abgemeldet. Reparierbar (den Lauscher beim Anmelden
+nachziehen), aber das ist Chirurgie am Anmeldepfad — der Stelle, an der ein
+stiller Fehler am teuersten ist.
+
+**A nach B.** Weg A oben ist weiterhin möglich, holt nach B aber weniger: Die
+82,6 kB liegen jetzt in einem Stück, das Gäste nebenläufig und Angemeldete
+ohnehin laden.
 
 ## Was nicht hilft
 

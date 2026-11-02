@@ -20,6 +20,33 @@ test.describe("Öffentliche Seiten", () => {
     expect(fehler, `Konsolenfehler: ${fehler.join(" | ")}`).toHaveLength(0);
   });
 
+  test("Supabase liegt nicht im kritischen Pfad der Startseite", async ({ page }) => {
+    // Genau die Sorte Zusage, die unbemerkt zurueckfaellt: Ein einziger
+    // statischer Import in irgendeinem Modul des Eintrittsbuendels zieht die
+    // 212,7 kB wieder herein. So war es vor dieser Aenderung ueber
+    // AuthContext, SubscriptionContext, Layout und ConsentGate - und zuletzt
+    // ueber migrateLocalData, das ueber fuenf Entitaeten am Client haengt und
+    // erst beim Messen auffiel.
+    //
+    // Geprueft wird die ausgelieferte index.html, nicht die Konfiguration:
+    // Nennt sie das Supabase-Stueck, laedt der Browser es vor dem ersten Bild.
+    // Nennt sie es nicht, kommt es spaeter und blockiert nichts.
+    //
+    // Was dieser Test ausdruecklich NICHT behauptet: dass ein Gast Supabase
+    // nie laedt. Der Effekt in AuthContext holt es kurz nach dem Mounten -
+    // nur eben nebenlaeufig. Siehe docs/startseite-buendel.md.
+    const html = await (await page.request.get("/")).text();
+    const treffer = html.match(/assets\/supabase-[^"']*\.js/g) ?? [];
+    expect(
+      treffer,
+      `index.html laedt Supabase wieder vorab: ${treffer.join(" | ")}`,
+    ).toHaveLength(0);
+
+    // Und die Seite steht auch wirklich ohne es.
+    await page.goto("/");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  });
+
   test("Preise und Beispielfall sind ohne Anmeldung erreichbar", async ({ page }) => {
     // Beide Seiten lagen hinter der Anmeldung bzw. gab es nicht. Sie sind die
     // Zielseiten fuer Suche und Anzeigen; eine Umleitung zum Login waere der
