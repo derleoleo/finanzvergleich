@@ -1,0 +1,110 @@
+{
+  "hinweis": "Erzeugt von scripts/generate-beitragsbilder.mjs. pruefsumme = sha256 des SVG, aus dem das PNG entstand. beitragsbilder.test.ts rechnet sie nach.",
+  "bilder": {
+    "grenzfoerderquote-altersvorsorgedepot-16x9.png": {
+      "pruefsumme": "868a96f0dbd4655d",
+      "breite": 1200,
+      "hoehe": 675
+    },
+    "grenzfoerderquote-altersvorsorgedepot-4x3.png": {
+      "pruefsumme": "dbef19f6d64189a9",
+      "breite": 1200,
+      "hoehe": 900
+    },
+    "grenzfoerderquote-altersvorsorgedepot-1x1.png": {
+      "pruefsumme": "94db0d55fe5853f6",
+      "breite": 1200,
+      "hoehe": 1200
+    },
+    "mittelbare-berechtigung-ehegatte-16x9.png": {
+      "pruefsumme": "9aedb6bd2f13db69",
+      "breite": 1200,
+      "hoehe": 675
+    },
+    "mittelbare-berechtigung-ehegatte-4x3.png": {
+      "pruefsumme": "63d73a2a372af223",
+      "breite": 1200,
+      "hoehe": 900
+    },
+    "mittelbare-berechtigung-ehegatte-1x1.png": {
+      "pruefsumme": "3b8400635e3eb64d",
+      "breite": 1200,
+      "hoehe": 1200
+    },
+    "zulage-oder-sonderausgabenabzug-16x9.png": {
+      "pruefsumme": "b0e1bf88cbc0bc46",
+      "breite": 1200,
+      "hoehe": 675
+    },
+    "zulage-oder-sonderausgabenabzug-4x3.png": {
+      "pruefsumme": "9ac8996b23a7383c",
+      "breite": 1200,
+      "hoehe": 900
+    },
+    "zulage-oder-sonderausgabenabzug-1x1.png": {
+      "pruefsumme": "e75cb74f25d145e5",
+      "breite": 1200,
+      "hoehe": 1200
+    },
+    "vorabpauschale-was-sie-wirklich-kostet-16x9.png": {
+      "pruefsumme": "ce06c69bf35594d5",
+      "breite": 1200,
+      "hoehe": 675
+    },
+    "vorabpauschale-was-sie-wirklich-kostet-4x3.png": {
+      "pruefsumme": "4529012bfab2a765",
+      "breite": 1200,
+      "hoehe": 900
+    },
+    "vorabpauschale-was-sie-wirklich-kostet-1x1.png": {
+      "pruefsumme": "2c7a0664154975ef",
+      "breite": 1200,
+      "hoehe": 1200
+    },
+    "was-im-todesfall-bleibt-altersvorsorgedepot-16x9.png": {
+      "pruefsumme": "adac8533235b8867",
+      "breite": 1200,
+      "hoehe": 675
+    },
+    "was-im-todesfall-bleibt-altersvorsorgedepot-4x3.png": {
+      "pruefsumme": "0ceb3e6ec09f7d09",
+      "breite": 1200,
+      "hoehe": 900
+    },
+    "was-im-todesfall-bleibt-altersvorsorgedepot-1x1.png": {
+      "pruefsumme": "d06c9c3eaffcf59d",
+      "breite": 1200,
+      "hoehe": 1200
+    },
+    "riester-bestand-wechseln-oder-behalten-16x9.png": {
+      "pruefsumme": "04ffec53bd776196",
+      "breite": 1200,
+      "hoehe": 675
+    },
+    "riester-bestand-wechseln-oder-behalten-4x3.png": {
+      "pruefsumme": "f801b1d4b1928365",
+      "breite": 1200,
+      "hoehe": 900
+    },
+    "riester-bestand-wechseln-oder-behalten-1x1.png": {
+      "pruefsumme": "ba25f4a0426ca2b3",
+      "breite": 1200,
+      "hoehe": 1200
+    },
+    "begruendungspflicht-paragraf-61-vvg-16x9.png": {
+      "pruefsumme": "3553bee35bc202c8",
+      "breite": 1200,
+      "hoehe": 675
+    },
+    "begruendungspflicht-paragraf-61-vvg-4x3.png": {
+      "pruefsumme": "c5150886d1c4aca2",
+      "breite": 1200,
+      "hoehe": 900
+    },
+    "begruendungspflicht-paragraf-61-vvg-1x1.png": {
+      "pruefsumme": "8e9456bb97c394a3",
+      "breite": 1200,
+      "hoehe": 1200
+    }
+  }
+}
