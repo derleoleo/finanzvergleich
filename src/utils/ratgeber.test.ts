@@ -191,6 +191,16 @@ describe("Die wirklichen Beitraege", () => {
       expect(b.stand).toBeTruthy();
       expect(beitragSeite(b)).toContain("</html>");
     });
+
+    it(`${datei} legt seine Rechengrundlage offen`, () => {
+      // Der Abschnitt ist nicht Schmuck: Er nennt Geburtsjahr, Beitrag,
+      // Rendite, Kosten und Rechtsstand, mit denen die Zahlen im Text
+      // entstanden sind - und nur damit ist der Beitrag nachrechenbar.
+      // Einer der vier hiess "Annahmen und Rechengrundlage", drei nur
+      // "Rechengrundlage". Vereinheitlicht und hier festgehalten, damit es
+      // nicht wieder auseinanderlaeuft.
+      expect(text.replace(/\r\n/g, "\n")).toContain("\n## Rechengrundlage\n");
+    });
   }
 
   /*
