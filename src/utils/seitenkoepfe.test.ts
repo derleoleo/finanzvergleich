@@ -112,7 +112,7 @@ describe("Köpfe der öffentlichen Seiten", () => {
   it("schreibt Kopfzeilen in die gebaute Seite", () => {
     const vorlage = `<!doctype html><html lang="de"><head>
 <link rel="preload" href="/fonts/inter-latin.woff2" as="font" />
-<title>Vorsorgewaage – Software für Ruhestandsplanung</title>
+<title>Vorsorgewaage – Beratungssoftware für Altersvorsorge</title>
 <meta name="description" content="Alte Beschreibung." />
 <link rel="canonical" href="https://www.vorsorgewaage.de/" />
 <meta property="og:url" content="https://www.vorsorgewaage.de/" />
@@ -132,7 +132,7 @@ describe("Köpfe der öffentlichen Seiten", () => {
     expect(neu).toContain('<meta property="og:url" content="https://www.vorsorgewaage.de/beispiel" />');
     expect(neu).toContain(`content="${kopf!.beschreibung}"`);
     expect(neu).not.toContain("Alte Beschreibung");
-    expect(neu).not.toContain("Software für Ruhestandsplanung");
+    expect(neu).not.toContain("Beratungssoftware für Altersvorsorge");
 
     // Die Twitter-Angaben blieben anfangs stehen: Jede der sieben Seiten
     // trug den Titel und den Satz der Startseite in der Vorschau.

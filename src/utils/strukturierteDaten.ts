@@ -123,7 +123,7 @@ function anwendung() {
     inLanguage: "de-DE",
     publisher: { "@id": ID_ORGANISATION },
     description:
-      "Software für Altersvorsorge und Ruhestandsplanung, für Finanz- und " +
+      "Beratungssoftware für Altersvorsorge, für Finanz- und " +
       "Versicherungsberater: Fondspolice gegen Depot, Altersvorsorgedepot, " +
       "Rentenlücke und Entnahmeplan – mit sichtbaren Annahmen und dauerhaft " +
       "nachlesbaren Fassungen.",
