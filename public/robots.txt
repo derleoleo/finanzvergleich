@@ -1,3 +1,55 @@
+# Vorsorgewaage - robots.txt
+#
+# Hier steckt eine geschaeftliche Entscheidung, nicht nur Technik: Variante B
+# aus docs/ki-crawler-entscheidung.md - sichtbar in KI-Assistenten sein, ohne
+# die eigenen Texte fuer das Training fremder Modelle herzugeben.
+#
+# Vorher stand hier nur "User-agent: *" mit "Allow: /". Das war kein Fehler,
+# aber eine Vorentscheidung, die nie bewusst getroffen wurde: alles erlaubt,
+# Training eingeschlossen.
+#
+# Warum das zusammengeht, sagen die Anbieter selbst. OpenAI nennt die Trennung
+# ausdruecklich als Zweck: ein Betreiber koenne "allow OAI-SearchBot in order
+# to appear in search results while disallowing GPTBot". Google zu
+# Google-Extended: "does not impact a site's inclusion in Google Search nor is
+# it used as a ranking signal in Google Search."
+#
+# Preis dieser Entscheidung, damit er nicht vergessen wird: Was ein Modell
+# nicht gelernt hat, kann es nicht aus dem Gedaechtnis nennen - es findet die
+# Seite nur, wenn es im Antwortmoment sucht.
+#
+# Umstellen: Variante A ist diese Datei ohne die drei Gruppen unten,
+# Variante C sperrt zusaetzlich die Suchindex-Crawler. Beide Varianten stehen
+# samt Gegenwert in docs/ki-crawler-entscheidung.md. Ein Test haelt die
+# getroffene Wahl fest: src/utils/robots.test.ts.
+
+# --- Training: nein ---
+# Diese Gruppen stehen VOR "User-agent: *" mit Absicht. Nach dem Standard
+# gewinnt die genaueste Gruppe, egal wo sie steht; ein einfacher Parser, der
+# bei der ersten passenden Gruppe stehen bleibt, wuerde bei "*" zuerst aber
+# alles erlauben. Diese Reihenfolge ist in beiden Faellen richtig.
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+# Kein Crawler, sondern ein Steuerungswort: betrifft Training und "grounding"
+# fuer Gemini und Vertex AI, nicht die normale Google-Suche.
+User-agent: Google-Extended
+Disallow: /
+
+# --- Suchindex und alles Uebrige: ja ---
+# Bewusst ohne eigene Gruppen fuer OAI-SearchBot, Claude-SearchBot und
+# PerplexityBot. Sie sollen hier herunterfallen, denn eine eigene Gruppe wuerde
+# "Disallow: /api/" fuer sie ausser Kraft setzen - ein Bot liest nur die
+# genaueste Gruppe, die auf ihn passt, nicht beide.
+#
+# Ebenso ohne Gruppe: ChatGPT-User, Claude-User und Perplexity-User, die eine
+# Seite abrufen, weil ein Mensch gerade danach gefragt hat. Perplexity dazu:
+# "Since a user requested the fetch, this fetcher generally ignores robots.txt
+# rules." Eine Sperre waere dort eine Bitte, keine Tuer - und sie wuerde genau
+# die Abrufe treffen, die einen echten Leser mitbringen.
 User-agent: *
 Allow: /
 Disallow: /api/

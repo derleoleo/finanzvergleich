@@ -18,6 +18,7 @@
 // zwei widersprüchliche Angaben. Was im Dokument steht, soll stimmen.
 
 import { DOMAIN } from "./ratgeber";
+import { FREI_BERECHNUNGEN_PRO_MONAT, PREIS_JAHR, PREIS_MONAT, eur } from "./preise";
 
 export type Seitenkopf = {
   /** Adresse wie in der Sitemap — ohne abschließenden Schrägstrich. */
@@ -43,11 +44,28 @@ export const SEITENKOEPFE: Seitenkopf[] = [
   },
   {
     pfad: "/pricing",
-    titel: "Preise – Vorsorgewaage",
+    /*
+     * Der Preis gehört in den Title.
+     *
+     * „Preise – Vorsorgewaage" waren 22 Zeichen von rund 60, die Google
+     * anzeigt — zwei Drittel der Fläche verschenkt, und kein Grund zum
+     * Klicken. Wer den Betrag schon in der Trefferliste liest, klickt
+     * entweder bewusst oder gar nicht; beides ist besser als ein Besuch, der
+     * auf der Seite sofort wieder abbricht.
+     *
+     * Die Beträge kommen aus `preise.ts`, der einzigen Quelle für angezeigte
+     * Preise. Vorher standen „59 €" und „590 €" hier als Text — eine zweite
+     * Fassung, die bei der nächsten Preisänderung stehen geblieben wäre, und
+     * das an der Stelle, die Google zitiert.
+     *
+     * Endpreise ohne Umsatzsteuer (Kleinunternehmer, § 19 UStG) — deshalb
+     * steht der Hinweis in der Description und keine Steuerangabe daneben.
+     */
+    titel: `Preise: ${eur(PREIS_MONAT)} im Monat oder ${eur(PREIS_JAHR)} im Jahr – Vorsorgewaage`,
     beschreibung:
-      "Vorsorgewaage für Finanzberater: 59 € im Monat oder 590 € im Jahr, " +
-      "Endpreise ohne Umsatzsteuer (§ 19 UStG). Kostenlos starten mit drei " +
-      "Berechnungen pro Monat.",
+      `Vorsorgewaage für Finanzberater: ${eur(PREIS_MONAT)} im Monat oder ` +
+      `${eur(PREIS_JAHR)} im Jahr, Endpreise ohne Umsatzsteuer (§ 19 UStG). ` +
+      `Kostenlos starten mit ${FREI_BERECHNUNGEN_PRO_MONAT} Berechnungen pro Monat.`,
   },
   {
     pfad: "/impressum",
@@ -93,8 +111,14 @@ function sicher(text: string): string {
  * Setzt in einer gebauten `index.html` den Kopf einer Adresse.
  *
  * Ersetzt wird, was eine Dublette ausmacht: Title, Description, Canonical und
- * die Open-Graph-Angaben. Alles andere — Schriftvorladen, Symbole, das
- * Anwendungsbündel — bleibt Zeichen für Zeichen stehen.
+ * die Angaben für Open Graph und Twitter. Alles andere — Schriftvorladen,
+ * Symbole, das Anwendungsbündel — bleibt Zeichen für Zeichen stehen.
+ *
+ * Die Twitter-Angaben standen hier anfangs nicht drin. Gemessen am gebauten
+ * `dist/` trug damit jede der sieben Seiten im `twitter:title` „Vorsorgewaage"
+ * und in der `twitter:description` den Satz der Startseite — wer /pricing
+ * verlinkte, bekam eine Vorschau über die Rechner zu sehen. Dieselbe Quelle
+ * wie für Open Graph setzt beides mit.
  *
  * Die strukturierten Daten fliegen heraus: Sie beschreiben das Produkt und die
  * häufigen Fragen, und das ist die Aufgabe der Startseite. Dieselbe `FAQPage`
@@ -126,6 +150,14 @@ export function kopfSetzen(html: string, kopf: Seitenkopf): string {
     .replace(
       /<meta property="og:description" content="[^"]*"\s*\/?>/,
       `<meta property="og:description" content="${beschreibung}" />`,
+    )
+    .replace(
+      /<meta name="twitter:title" content="[^"]*"\s*\/?>/,
+      `<meta name="twitter:title" content="${titel}" />`,
+    )
+    .replace(
+      /<meta name="twitter:description" content="[^"]*"\s*\/?>/,
+      `<meta name="twitter:description" content="${beschreibung}" />`,
     )
     .replace(/\s*<script type="application\/ld\+json">[\s\S]*?<\/script>/g, "");
 }

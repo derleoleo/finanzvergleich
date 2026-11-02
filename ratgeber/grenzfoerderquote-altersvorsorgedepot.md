@@ -1,6 +1,7 @@
 ---
 titel: Grenzförderquote beim Altersvorsorgedepot: Warum der nächste Euro weniger bringt
-beschreibung: Ab 360 € Jahresbeitrag halbiert sich die Grundzulage im Altersvorsorgedepot. Was das für die Beitragsempfehlung bedeutet – mit nachgerechneten Zahlen für Beitragsjahr 2027.
+kurztitel: Grenzförderquote im Altersvorsorgedepot
+beschreibung: Ab 360 € Jahresbeitrag halbiert sich die Grundzulage im Altersvorsorgedepot. Was das für die Beitragsempfehlung bedeutet, nachgerechnet für 2027.
 datum: 2026-10-27
 stand: Altersvorsorgereformgesetz, BGBl. 2026 I Nr. 156; Förderregeln ab Beitragsjahr 2027
 ---

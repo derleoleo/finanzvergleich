@@ -84,6 +84,64 @@ describe("Die erzeugte Seite", () => {
     expect(html).toContain('"datePublished":"2026-10-27"');
   });
 
+  it("nimmt den Kurztitel nur fuer die Trefferliste, nicht fuer die Seite", () => {
+    const lang = beitragLesen(
+      "x.md",
+      KOPF.replace("titel: Ein Titel", "titel: Ein sehr langer ausformulierter Titel\nkurztitel: Kurz"),
+    );
+    const html = beitragSeite(lang);
+    // Der Title traegt die Kurzform ...
+    expect(html).toContain("<title>Kurz – Vorsorgewaage</title>");
+    // ... die sichtbare Ueberschrift und die Brotkrumen die lange Fassung.
+    expect(html).toContain("<h1>Ein sehr langer ausformulierter Titel</h1>");
+    expect(html).toContain('"name":"Ein sehr langer ausformulierter Titel"');
+    // In der Uebersicht steht der ausformulierte Titel.
+    expect(uebersichtSeite([lang])).toContain("Ein sehr langer ausformulierter Titel");
+  });
+
+  it("faellt ohne Kurztitel auf den Titel zurueck", () => {
+    expect(beitragSeite(b)).toContain("<title>Ein Titel – Vorsorgewaage</title>");
+  });
+
+  it("bringt ein Vorschaubild mit - vorher wurde der Beitrag ohne geteilt", () => {
+    const html = beitragSeite(b);
+    expect(html).toContain('<meta property="og:image" content="https://www.vorsorgewaage.de/og-image.png">');
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
+    // Eigener Titel in der Vorschau, nicht der der Startseite.
+    expect(html).toContain('<meta name="twitter:title" content="Ein Titel – Vorsorgewaage">');
+    expect(html).toContain('<meta property="og:site_name" content="Vorsorgewaage">');
+    expect(html).toContain('<meta property="og:locale" content="de_DE">');
+  });
+
+  it("unterscheidet Beitrag und Uebersicht im og:type", () => {
+    // Eine Liste von Beitraegen ist kein Artikel; vorher stand auf beiden
+    // Seiten dasselbe.
+    expect(beitragSeite(b)).toContain('<meta property="og:type" content="article">');
+    expect(uebersichtSeite([b])).toContain('<meta property="og:type" content="website">');
+  });
+
+  it("nennt den Weg von der Startseite hierher", () => {
+    const html = beitragSeite(b);
+    expect(html).toContain('"@type":"BreadcrumbList"');
+    const daten = JSON.parse(
+      /<script type="application\/ld\+json">(\{"@context":"https:\/\/schema\.org","@type":"BreadcrumbList".*?\})<\/script>/.exec(
+        html,
+      )![1],
+    );
+    expect(daten.itemListElement.map((g: { name: string }) => g.name)).toEqual([
+      "Startseite",
+      "Ratgeber",
+      "Ein Titel",
+    ]);
+    expect(daten.itemListElement.map((g: { position: number }) => g.position)).toEqual([1, 2, 3]);
+    // Das letzte Glied ohne eigene Adresse: Google nimmt dann die der Seite.
+    expect(daten.itemListElement[2].item).toBeUndefined();
+    expect(daten.itemListElement[1].item).toBe("https://www.vorsorgewaage.de/ratgeber/");
+
+    // Die Uebersicht hat zwei Glieder, nicht drei.
+    expect(uebersichtSeite([b])).toContain('"@type":"BreadcrumbList"');
+  });
+
   it("ist nach § 5 DDG vom Impressum aus erreichbar - und umgekehrt", () => {
     expect(beitragSeite(b)).toContain('href="https://www.vorsorgewaage.de/impressum"');
     expect(uebersichtSeite([b])).toContain('href="https://www.vorsorgewaage.de/impressum"');
@@ -109,7 +167,12 @@ describe("Die erzeugte Seite", () => {
   it("sortiert die Uebersicht neueste zuerst", () => {
     const alt = beitragLesen("alt.md", KOPF.replace("2026-10-27", "2026-01-01"));
     const html = uebersichtSeite([alt, b]);
-    expect(html.indexOf("mein-beitrag")).toBeLessThan(html.indexOf("alt"));
+    // Auf die Verweise prueuefen, nicht auf die nackten Schnipsel: "alt" steht
+    // inzwischen auch in `og:image:alt` und stand dann vor beiden Beitraegen.
+    expect(html.indexOf('href="/ratgeber/mein-beitrag/"')).toBeGreaterThan(0);
+    expect(html.indexOf('href="/ratgeber/mein-beitrag/"')).toBeLessThan(
+      html.indexOf('href="/ratgeber/alt/"'),
+    );
   });
 });
 
@@ -127,6 +190,28 @@ describe("Die wirklichen Beitraege", () => {
       // nach § 61 VVG wertlos.
       expect(b.stand).toBeTruthy();
       expect(beitragSeite(b)).toContain("</html>");
+    });
+  }
+
+  /*
+   * Laengen, die in der Trefferliste tragen.
+   *
+   * Die Grenzen sind Erfahrungswerte, keine Vorschrift von Google - es kuerzt
+   * nach Pixelbreite. Erzwungen werden sie trotzdem, weil `kurztitel` und
+   * `beschreibung` genau diese eine Aufgabe haben: Die Beitraege trugen 77 bis
+   * 100 Zeichen im Title und bis 206 in der Description und wurden
+   * abgeschnitten dargestellt - gemessen, nicht vermutet, und niemandem
+   * aufgefallen. `npm run seo:kopfzeilen` zeigt dieselben Zahlen am
+   * gebauten dist/.
+   */
+  for (const { datei, text } of BEITRAEGE) {
+    it(`${datei} passt in die Trefferliste`, () => {
+      const b = beitragLesen(datei, text);
+      const titel = `${b.kurztitel ?? b.titel} – Vorsorgewaage`;
+      expect(titel.length, `Title zu lang: "${titel}"`).toBeLessThanOrEqual(60);
+      expect(b.beschreibung.length, `Description zu lang in ${datei}`).toBeLessThanOrEqual(155);
+      // Zu kurz ist auch verschenkt: Die Description ist der Anriss.
+      expect(b.beschreibung.length, `Description zu kurz in ${datei}`).toBeGreaterThan(80);
     });
   }
 

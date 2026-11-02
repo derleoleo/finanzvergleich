@@ -39,7 +39,10 @@ test.describe("Öffentliche Seiten", () => {
       "href",
       "https://www.vorsorgewaage.de/pricing",
     );
-    await expect(page).toHaveTitle(/^Preise – Vorsorgewaage$/);
+    // Der Preis steht im Title: "Preise – Vorsorgewaage" waren 22 von rund 60
+    // Zeichen, die Google zeigt, und nannten keinen Grund zum Klicken.
+    await expect(page).toHaveTitle(/^Preise: .+ im Monat oder .+ im Jahr – Vorsorgewaage$/);
+    await expect(page).toHaveTitle(/59 €/);
 
     await page.goto("/beispiel");
     await expect(page).toHaveURL(/\/beispiel$/);
@@ -66,7 +69,13 @@ test.describe("Öffentliche Seiten", () => {
     await beitrag.click();
 
     await expect(page).toHaveURL(/\/ratgeber\/grenzfoerderquote-altersvorsorgedepot\/$/);
-    await expect(page).toHaveTitle(/^Grenzförderquote beim Altersvorsorgedepot/);
+    // Der Title traegt die Kurzform (sonst kuerzt Google ihn), die sichtbare
+    // Ueberschrift die ausformulierte These. Zwei Felder, zwei Aufgaben -
+    // siehe `kurztitel` in src/utils/ratgeber.ts.
+    await expect(page).toHaveTitle(/^Grenzförderquote im Altersvorsorgedepot – Vorsorgewaage$/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: /Warum der nächste Euro weniger bringt/ }),
+    ).toBeVisible();
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       "href",
       "https://www.vorsorgewaage.de/ratgeber/grenzfoerderquote-altersvorsorgedepot/",
