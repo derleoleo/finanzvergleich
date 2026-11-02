@@ -149,6 +149,41 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "src"),
     },
   },
+  /*
+   * Die Fremdpakete aus dem Eintrittsbuendel herausziehen.
+   *
+   * Gemessen (Sourcemap des Eintritts auf minifizierte Bytes umgerechnet, von
+   * 512 kB): react-dom 176,6 kB, @supabase/* zusammen 212,7 kB, react-router
+   * 38,2 kB, @sentry/* 16,0 kB. Eigener Code sind rund 40 kB.
+   *
+   * Was das bringt - und was nicht. Beim allerersten Besuch laedt der Browser
+   * dieselbe Menge, nur in vier Dateien statt einer. Der Gewinn liegt beim
+   * naechsten Deployment: Eigener Code aendert sich oft, diese Pakete fast
+   * nie. Bisher machte jede Aenderung an einer Zeile Anwendungscode die ganzen
+   * 512 kB im Zwischenspeicher ungueltig; jetzt nur noch die rund 40 kB, in
+   * denen die Aenderung steckt.
+   *
+   * Was es ausdruecklich nicht ist: eine Verkleinerung des ersten Ladens. Die
+   * beiden Wege dorthin stehen in docs/startseite-buendel.md - sie verlangen
+   * beide eine Entscheidung und sind deshalb nicht hier gemacht.
+   *
+   * react und react-dom bleiben zusammen in einem Stueck: Getrennt muesste der
+   * Browser die Ladereihenfolge einhalten, und dafuer gibt es hier keinen
+   * Gegenwert.
+   */
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (/[\\/]node_modules[\\/]@supabase[\\/]/.test(id)) return "supabase";
+          if (/[\\/]node_modules[\\/]@sentry(-internal)?[\\/]/.test(id)) return "sentry";
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "react";
+          if (/[\\/]node_modules[\\/]react-router(-dom)?[\\/]/.test(id)) return "router";
+        },
+      },
+    },
+  },
   test: {
     environment: "node",
     // Auch die Serverfunktionen: Die Drosselung entscheidet ueber Kosten
