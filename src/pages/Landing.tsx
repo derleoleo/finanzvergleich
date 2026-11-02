@@ -80,12 +80,24 @@ export default function Landing() {
               Nur für Finanz- und Versicherungsberater
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-slate-900 leading-tight mb-6">
+              {/* Hervorgehoben stand hier „Vergleichssoftware" — ausgerechnet
+                  das Wort, das niemand sucht (Search Console: gesucht wird
+                  „software", „rechner", „ruhestandsplanung").
+
+                  „Ruhestandsplanung" in die Überschrift zu setzen ging nicht:
+                  Das Wort hat 17 Zeichen ohne Trennstelle und brach gemessen
+                  bei 375 px mitten durch („Ruhestandsplanu / ng") — und bei
+                  1009 px ebenso, weil die Hero-Spalte dort nur 449 px breit
+                  ist und 48 px Schrift rund 523 px bräuchten. Statt die
+                  Schriftgröße gegen ein einzelnes Wort zu verteidigen, steht
+                  es jetzt im Title, in der Description und im Vorspann. Die
+                  Überschrift bleibt bei kurzen Wörtern. */}
               Die professionelle<br />
-              <span className="text-brand-cyan">Vergleichssoftware</span><br />
-              für Finanzberater
+              <span className="text-brand-cyan">Software</span><br />
+              für Altersvorsorge
             </h1>
             <p className="text-lg text-slate-500 mb-8 leading-relaxed">
-              Vergleichen Sie Lebensversicherung mit Fondsdepot — transparent, nachvollziehbar und mandantensicher. 6 Simulationsrechner in einem Tool.
+              Sechs Rechner für Altersvorsorge und Ruhestandsplanung: Fondspolice gegen Depot, Rentenlücke, Entnahmeplan, Altersvorsorgedepot — transparent, nachvollziehbar und mandantensicher.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 mb-10">
               <Link
@@ -255,7 +267,7 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-xs font-bold text-brand-cyan uppercase tracking-widest mb-3">Module</p>
-            <h2 className="text-3xl font-bold text-slate-900 mb-3">6 Simulationsrechner</h2>
+            <h2 className="text-3xl font-bold text-slate-900 mb-3">Sechs Rechner für die Beratung</h2>
             <p className="text-sm text-slate-500">Von der Erstberatung bis zur Bestandsanalyse — alle Szenarien abgedeckt.</p>
             <p className="text-xs text-slate-400 mt-3">
               <span className="font-semibold text-green-600">Free</span> heißt: dauerhaft

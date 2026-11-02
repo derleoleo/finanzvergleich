@@ -123,9 +123,10 @@ function anwendung() {
     inLanguage: "de-DE",
     publisher: { "@id": ID_ORGANISATION },
     description:
-      "Vergleichssoftware für Finanz- und Versicherungsberater: Fondspolice " +
-      "gegen Depot, Altersvorsorgedepot, Rentenlücke und Entnahmeplan – mit " +
-      "sichtbaren Annahmen und dauerhaft nachlesbaren Fassungen.",
+      "Software für Altersvorsorge und Ruhestandsplanung, für Finanz- und " +
+      "Versicherungsberater: Fondspolice gegen Depot, Altersvorsorgedepot, " +
+      "Rentenlücke und Entnahmeplan – mit sichtbaren Annahmen und dauerhaft " +
+      "nachlesbaren Fassungen.",
     audience: {
       "@type": "BusinessAudience",
       audienceType: "Finanz- und Versicherungsberater",
