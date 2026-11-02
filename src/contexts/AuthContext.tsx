@@ -1,9 +1,8 @@
 import { werbungMelden } from '@/utils/werbung'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { supabaseLaden } from '@/lib/supabaseLaden'
 import { messungAngemeldet } from '@/utils/messung'
-import { migrateLocalDataToSupabase } from '@/utils/migrateLocalData'
 import { lokaleDatenFuerNutzerPruefen, lokaleDatenLoeschen } from '@/utils/lokaleDaten'
 
 type AuthContextType = {
@@ -23,20 +22,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+    /*
+     * Supabase wird hier nachgeladen statt statisch importiert.
+     *
+     * Vorher hingen damit 212,7 kB im Eintrittsbuendel, und ein Besucher aus
+     * der Suche sah nichts, bis sie geladen und ausgefuehrt waren (gemessen,
+     * docs/startseite-buendel.md). Die oeffentlichen Seiten warten jetzt nicht
+     * mehr darauf - siehe utils/vielleichtAngemeldet.ts.
+     *
+     * `abgemeldet` ist noetig, weil das Nachladen asynchron ist: Raeumt React
+     * den Effekt vorher auf - im StrictMode laeuft er zweimal -, darf die dann
+     * eintreffende Antwort keinen Zustand mehr setzen, und das Abo auf den
+     * Zustandswechsel muss sofort wieder weg.
+     */
+    let abgemeldet = false
+    let subscription: { unsubscribe: () => void } | null = null
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    void supabaseLaden().then((supabase) => {
+      if (abgemeldet) return
+
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (abgemeldet) return
+        setSession(session)
+        setUser(session?.user ?? null)
+        setLoading(false)
+      })
+
+      const angemeldet = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
         // Entwürfe des vorigen Kontos in diesem Browser nicht weiterreichen
         lokaleDatenFuerNutzerPruefen(session.user.id)
+        // Auch nachgeladen: Das Modul zieht ueber fuenf Entitaeten den
+        // Supabase-Client und war damit der letzte statische Weg, der die
+        // 212,7 kB im Eintrittsbuendel hielt (docs/startseite-buendel.md).
+        // Gebraucht wird es nur hier, direkt nach einer Anmeldung.
+        const { migrateLocalDataToSupabase } = await import('@/utils/migrateLocalData')
         await migrateLocalDataToSupabase()
 
         // Empfehlungscode aus dem Link zuordnen, falls einer gemerkt wurde
@@ -58,10 +80,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    return () => subscription.unsubscribe()
+      subscription = angemeldet.data.subscription
+      if (abgemeldet) subscription.unsubscribe()
+    })
+
+    return () => {
+      abgemeldet = true
+      subscription?.unsubscribe()
+    }
   }, [])
 
   const signIn = async (email: string, password: string) => {
+    const supabase = await supabaseLaden()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
   }
@@ -74,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session])
 
   const signUp = async (email: string, password: string): Promise<{ sessionCreated: boolean }> => {
+    const supabase = await supabaseLaden()
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
     if (data.session) {
@@ -85,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
+    const supabase = await supabaseLaden()
     await supabase.auth.signOut()
     // Entwürfe und Voreinstellungen enthalten Mandantenangaben – sie bleiben
     // nicht für die nächste Person am selben Gerät liegen.

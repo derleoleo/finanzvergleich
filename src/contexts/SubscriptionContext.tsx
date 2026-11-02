@@ -6,7 +6,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabaseLaden } from "@/lib/supabaseLaden";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Plan = "free" | "professional" | "business";
@@ -45,6 +45,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
     setSubscriptionLoading(true);
     try {
+      // Nachgeladen statt statisch importiert: Sonst haengt Supabase im
+      // Eintrittsbuendel, und die oeffentlichen Seiten warten darauf
+      // (docs/startseite-buendel.md). Hier laeuft es ohnehin erst, wenn ein
+      // Nutzer angemeldet ist.
+      const supabase = await supabaseLaden();
+
       // Plan laden
       const { data: sub } = await supabase
         .from("subscriptions")

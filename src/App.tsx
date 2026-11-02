@@ -7,11 +7,22 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import PaidRoute from "@/components/PaidRoute";
-import Layout from "@/Layout";
 import { useAuth } from "@/contexts/AuthContext";
-import ConsentGate from "@/components/ConsentGate";
+import { vielleichtAngemeldet } from "@/utils/vielleichtAngemeldet";
 import CookieBanner from "@/components/CookieBanner";
 import { werbecodeAusAdresseMerken } from "@/utils/werbung";
+
+/*
+ * Auch der Rahmen der geschuetzten Seiten wird nachgeladen.
+ *
+ * `Layout` und `ConsentGate` greifen beide auf Supabase zu. Statisch
+ * importiert hielten sie damit 212,7 kB im Eintrittsbuendel - fuer Seiten, die
+ * ohnehin nur hinter der Anmeldung erscheinen (gemessen, siehe
+ * docs/startseite-buendel.md). Sie liegen innerhalb des `Suspense` weiter
+ * unten, der Ladeindikator gilt also auch fuer sie.
+ */
+const Layout      = lazy(() => import("@/Layout"));
+const ConsentGate = lazy(() => import("@/components/ConsentGate"));
 
 // Seiten lazy laden → jede Route wird ein eigener Chunk,
 // das Initial-Bundle bleibt klein (v.a. Recharts-lastige Detail-Seiten)
@@ -104,16 +115,30 @@ function PageShell({ children }: { children: ReactNode }) {
  * landete im Login. Gaeste bekommen sie jetzt ohne Seitenleiste, Angemeldete
  * unveraendert im gewohnten Rahmen - dasselbe Muster wie `SmartRoot`.
  */
+/*
+ * Warten nur, wenn eine Anmeldung ueberhaupt in Frage kommt.
+ *
+ * Beide Seiten gaben waehrend `loading` `null` zurueck. Geladen wurde dafuer
+ * Supabase - und damit sah ein Besucher aus der Suche nichts, bis 212,7 kB
+ * geladen und ausgefuehrt waren, obwohl Landingpage und Preisseite von der
+ * Anmeldung nichts brauchen.
+ *
+ * `vielleichtAngemeldet()` beantwortet synchron und ohne eine Zeile
+ * Supabase-Code, ob im Browser ueberhaupt eine Sitzung liegen kann. Ist keine
+ * da, erscheint die oeffentliche Seite sofort. Liegt eine da, wird wie bisher
+ * gewartet - fuer Angemeldete aendert sich also nichts, und das Flackern,
+ * wegen dem hier `null` stand, entsteht nicht.
+ */
 function SmartPricing() {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return vielleichtAngemeldet() ? null : <Pricing />;
   if (!user) return <Pricing />;
   return <PageShell><Pricing /></PageShell>;
 }
 
 function SmartRoot() {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return vielleichtAngemeldet() ? null : <Landing />;
   if (!user) return <Landing />;
   return <PageShell><Home /></PageShell>;
 }
