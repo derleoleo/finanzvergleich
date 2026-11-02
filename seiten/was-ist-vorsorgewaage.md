@@ -100,6 +100,11 @@ Bedarf mit der Inflation steigt; die Lücke wächst also im Ruhestand weiter. De
 Entnahmeplan rechnet die Gegenrichtung: wie lange ein vorhandenes Kapital bei
 welcher monatlichen Entnahme trägt.
 
+Als **Altersvorsorgeplaner** ist das der erste Schritt und nicht der letzte:
+zuerst die Lücke beziffern, dann den Sparbedarf, und erst danach die Frage, mit
+welchem Weg er gedeckt wird. In der umgekehrten Reihenfolge steht das Ergebnis
+schon fest, bevor gerechnet wurde.
+
 ## Welche Rechner gibt es?
 
 | Rechner | Was er rechnet |
@@ -114,6 +119,22 @@ welcher monatlichen Entnahme trägt.
 Dazu kommt ein Vergleich von Netto- und Bruttopolice für die Honorarberatung.
 Wie ein fertiges Ergebnis aussieht, zeigt der
 [Beispielfall](/beispiel) — durchgerechnet, ohne Anmeldung.
+
+## Beratungstool im Termin oder Rechner zur Vorbereitung?
+
+Beides kommt vor, und die beiden Wege stellen unterschiedliche Ansprüche. Als
+**Beratungstool** im Termin zählt, dass eine geänderte Annahme schnell zu einem
+neuen Ergebnis führt: Alle Rechnungen laufen im Browser, es geht also kein
+Aufruf an einen Server hinaus, und zwischen Frage und Antwort liegt keine
+Wartezeit.
+Zur Vorbereitung ist es der umgekehrte Weg — ein Angebot liegt vor, und die
+Frage ist, was dessen Effektivkosten über dreißig Jahre bedeuten.
+
+Die einzelnen **Beratungsrechner** sind deshalb getrennt gehalten und nicht in
+eine Maske gepackt. Wer eine Versorgungslücke beziffern will, braucht keine
+Angaben zur Zillmerung; wer zwei Angebote vergleicht, keine Haushaltsrechnung.
+Jede Berechnung lässt sich speichern und später wieder öffnen — mit dem
+Modellstempel, auf dem sie beruht.
 
 ## Warum sind die Annahmen sichtbar?
 
