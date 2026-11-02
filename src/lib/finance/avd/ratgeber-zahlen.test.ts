@@ -42,7 +42,7 @@ function tabelle(nachTitel: string, spalten: number): string[][] {
 
 describe("Ratgeber: Zahlen zur Grenzfoerderquote", () => {
   it("Tabelle mit zwei Kindern stimmt mit der Engine ueberein", () => {
-    const zeilen = tabelle("## Was die Kinderzulage daraus macht", 4);
+    const zeilen = tabelle("## Wie viel bringt die Kinderzulage?", 4);
     for (const [beitragZelle, zulageZelle, gesamtZelle, quoteZelle] of zeilen) {
       const beitrag = euro(beitragZelle);
       const z = berechneZulagen({
@@ -63,7 +63,7 @@ describe("Ratgeber: Zahlen zur Grenzfoerderquote", () => {
   });
 
   it("Tabelle ohne Kinder stimmt mit der Engine ueberein", () => {
-    const zeilen = tabelle("## Der Denkfehler", 5);
+    const zeilen = tabelle("## Warum reicht es nicht, nur die Zulage zu rechnen?", 5);
     for (const [beitragZelle, zulageZelle, erstattungZelle, gesamtZelle, quoteZelle] of zeilen) {
       const beitrag = euro(beitragZelle);
       const z = berechneZulagen({ eigenbeitrag: beitrag, alterZuBeitragsjahresbeginn: ALTER });

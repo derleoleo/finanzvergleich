@@ -99,7 +99,7 @@ function tabelle(nachTitel: string, spalten: number): string[][] {
 
 describe('Ratgeber: Was im Todesfall bleibt', () => {
   it('die Ansparphase stimmt bis auf den Euro', () => {
-    const zeilen = tabelle('## In der Ansparphase liegt der geförderte Vertrag vorn', 7);
+    const zeilen = tabelle('## Was bleibt bei Tod in der Ansparphase?', 7);
     expect(zeilen).toHaveLength(2);
     for (const [alterZ, kapZ, rueckZ, steuerZ, erbenZ, policeZ, depotZ] of zeilen) {
       const s = RENTE.get(Number(alterZ))!;
@@ -125,7 +125,10 @@ describe('Ratgeber: Was im Todesfall bleibt', () => {
         s.freiesDepot!.verfuegbar,
       );
     }
-    expect(TEXT).toContain('liegt der geförderte Vertrag vorn');
+    // Die Aussage stand frueher in der Ueberschrift. Seit die Ueberschriften
+    // Fragen sind, steht sie im Fliesstext - und dort gehoert sie auch hin:
+    // Eine Ueberschrift kann umformuliert werden, die Behauptung nicht.
+    expect(TEXT).toContain('Er liegt dort trotz Rückforderung vorn');
   });
 
   it('die Übertragung auf den Ehegatten bleibt in der Ansparphase ungeschmälert', () => {
@@ -139,7 +142,7 @@ describe('Ratgeber: Was im Todesfall bleibt', () => {
   });
 
   it('die Leibrenten-Tabelle stimmt, einschließlich der Null', () => {
-    const zeilen = tabelle('## Mit dem Rentenbeginn kippt es', 4);
+    const zeilen = tabelle('## Was bleibt nach dem Rentenbeginn?', 4);
     expect(zeilen).toHaveLength(3);
     for (const [alterZ, erbenZ, policeZ, depotZ] of zeilen) {
       const s = RENTE.get(Number(alterZ))!;
@@ -166,7 +169,7 @@ describe('Ratgeber: Was im Todesfall bleibt', () => {
   it('die Gegenüberstellung von Leibrente und Auszahlplan stimmt', () => {
     // Der eigentliche Befund des Beitrags: Die Auszahlform bewegt mehr als
     // die Produktwahl.
-    const zeilen = tabelle('## Die Stellschraube, die niemand nennt', 4);
+    const zeilen = tabelle('## Wie wirkt ein Auszahlplan statt der Leibrente?', 4);
     expect(zeilen).toHaveLength(3);
     for (const [alterZ, renteZ, planZ, ehegatteZ] of zeilen) {
       const alter = Number(alterZ);
