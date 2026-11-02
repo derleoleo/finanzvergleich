@@ -1,6 +1,7 @@
 ---
 titel: Die Begründung nach § 61 VVG muss in zehn Jahren noch stimmen
-beschreibung: Beraten und dokumentieren genügt nicht – das Gesetz verlangt die Gründe für jeden Rat. Warum das beim Altersvorsorgedepot schwierig ist und was sechs offene Rechtsfragen im selben Fall ausmachen.
+kurztitel: § 61 VVG: Begründung, die zehn Jahre hält
+beschreibung: Das Gesetz verlangt die Gründe für jeden Rat, nicht nur Dokumentation. Warum das beim Altersvorsorgedepot schwierig ist – mit sechs offenen Rechtsfragen.
 datum: 2026-10-27
 stand: §§ 61, 62, 63 VVG; §§ 16, 18 FinVermV; Altersvorsorgereformgesetz, BGBl. 2026 I Nr. 156
 ---

@@ -30,7 +30,21 @@ export type Messstelle = { basis: string; seite: string };
 export type Beitrag = {
   /** Adressteil, aus dem Dateinamen. */
   slug: string;
+  /** Die sichtbare Überschrift. Darf eine ausformulierte These sein. */
   titel: string;
+  /**
+   * Kurzform nur für den `<title>` und damit für die Trefferliste.
+   *
+   * Zwei Felder, weil die beiden Texte verschiedene Aufgaben haben. Gemessen
+   * am gebauten `dist/` waren die vier `<title>` 77 bis 100 Zeichen lang;
+   * Google zeigt rund 60 und schneidet den Rest ab — bei „Was im Todesfall
+   * bleibt – und warum die Auszahlform mehr entscheidet als das Produkt" fiel
+   * also genau die Aussage weg. Den `h1` dafür zu stutzen wäre der falsche
+   * Tausch: Auf der Seite selbst trägt der lange Satz.
+   *
+   * Fehlt die Angabe, gilt `titel` — dann ist der Beitrag kurz genug betitelt.
+   */
+  kurztitel?: string;
   /** Meta-Description und Anrisstext in der Übersicht. In einem Satz. */
   beschreibung: string;
   /** ISO-Datum der Veröffentlichung. */
@@ -97,6 +111,7 @@ export function beitragLesen(dateiname: string, rohEingang: string): Beitrag {
   return {
     slug,
     titel: pflicht("titel"),
+    kurztitel: kopf.get("kurztitel"),
     beschreibung: pflicht("beschreibung"),
     datum,
     stand: kopf.get("stand"),
@@ -467,7 +482,8 @@ ${b.html}
     <p style="margin-top:2rem"><a href="${RATGEBER_PFAD}/">← Alle Beiträge</a></p>`;
 
   return huelle({
-    titel: `${b.titel} – Vorsorgewaage`,
+    // Nur hier die Kurzform: Der `h1` und die Übersicht tragen weiter `titel`.
+    titel: `${b.kurztitel ?? b.titel} – Vorsorgewaage`,
     beschreibung: b.beschreibung,
     adresse,
     art: "article",
@@ -512,9 +528,10 @@ ${eintraege}
 
   return huelle({
     titel: "Ratgeber – Vorsorgewaage",
+    // 161 Zeichen waren es vorher, also eine gekürzte Darstellung.
     beschreibung:
       "Fachbeiträge zur Altersvorsorgeberatung: Altersvorsorgedepot, Riester-Bestand, " +
-      "Hinterbliebenenleistungen und Begründungspflicht – mit nachgerechneten Beispielen.",
+      "Hinterbliebene und Begründungspflicht – mit nachgerechneten Zahlen.",
     adresse: `${DOMAIN}${RATGEBER_PFAD}/`,
     // Eine Liste von Beiträgen ist kein Artikel. Vorher stand hier
     // `og:type: article` – dieselbe Angabe wie auf den Beiträgen selbst.

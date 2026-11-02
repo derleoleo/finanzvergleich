@@ -11,6 +11,7 @@
 import { describe, expect, it } from "vitest";
 import { DOMAIN, RATGEBER_PFAD } from "./ratgeber";
 import { SEITENKOEPFE, dateinamen, kopfSetzen } from "./seitenkoepfe";
+import { PREIS_JAHR, PREIS_MONAT, eur } from "./preise";
 import SITEMAP from "../../public/sitemap.xml?raw";
 
 const ROH = import.meta.glob("../../ratgeber/*.md", {
@@ -60,10 +61,32 @@ describe("Köpfe der öffentlichen Seiten", () => {
       expect(k.titel.length, k.pfad).toBeGreaterThan(15);
       expect(k.titel.length, `${k.pfad}: Titel zu lang für die Trefferliste`).toBeLessThan(75);
       expect(k.beschreibung.length, k.pfad).toBeGreaterThan(60);
+      // Erfahrungswert, kein Gesetz: Darüber kürzt Google die Darstellung.
+      // /pricing lag mit 158 Zeichen darüber.
+      expect(
+        k.beschreibung.length,
+        `${k.pfad}: Beschreibung wird in der Trefferliste gekürzt`,
+      ).toBeLessThanOrEqual(155);
       titel.add(k.titel);
     }
     // Identische Titel waren genau das Problem.
     expect(titel.size).toBe(SEITENKOEPFE.length);
+  });
+
+  it("die Preisseite nennt den Preis und holt ihn aus preise.ts", () => {
+    // Der Title war "Preise – Vorsorgewaage": 22 von rund 60 Zeichen, die
+    // Google zeigt, und kein Grund zum Klicken. Die Beträge standen daneben
+    // als Text in der Beschreibung - eine zweite Fassung, die bei der
+    // nächsten Preisänderung stehen geblieben wäre.
+    const kopf = SEITENKOEPFE.find((k) => k.pfad === "/pricing");
+    expect(kopf).toBeDefined();
+    for (const text of [kopf!.titel, kopf!.beschreibung]) {
+      expect(text).toContain(eur(PREIS_MONAT));
+      expect(text).toContain(eur(PREIS_JAHR));
+    }
+    // Endpreise, Kleinunternehmer nach § 19 UStG.
+    expect(kopf!.beschreibung).toContain("§ 19 UStG");
+    expect(kopf!.beschreibung).not.toMatch(/zzgl|netto|MwSt/i);
   });
 
   it("schreibt Kopfzeilen in die gebaute Seite", () => {

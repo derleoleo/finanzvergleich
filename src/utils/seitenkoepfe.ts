@@ -18,6 +18,7 @@
 // zwei widersprüchliche Angaben. Was im Dokument steht, soll stimmen.
 
 import { DOMAIN } from "./ratgeber";
+import { FREI_BERECHNUNGEN_PRO_MONAT, PREIS_JAHR, PREIS_MONAT, eur } from "./preise";
 
 export type Seitenkopf = {
   /** Adresse wie in der Sitemap — ohne abschließenden Schrägstrich. */
@@ -43,11 +44,28 @@ export const SEITENKOEPFE: Seitenkopf[] = [
   },
   {
     pfad: "/pricing",
-    titel: "Preise – Vorsorgewaage",
+    /*
+     * Der Preis gehört in den Title.
+     *
+     * „Preise – Vorsorgewaage" waren 22 Zeichen von rund 60, die Google
+     * anzeigt — zwei Drittel der Fläche verschenkt, und kein Grund zum
+     * Klicken. Wer den Betrag schon in der Trefferliste liest, klickt
+     * entweder bewusst oder gar nicht; beides ist besser als ein Besuch, der
+     * auf der Seite sofort wieder abbricht.
+     *
+     * Die Beträge kommen aus `preise.ts`, der einzigen Quelle für angezeigte
+     * Preise. Vorher standen „59 €" und „590 €" hier als Text — eine zweite
+     * Fassung, die bei der nächsten Preisänderung stehen geblieben wäre, und
+     * das an der Stelle, die Google zitiert.
+     *
+     * Endpreise ohne Umsatzsteuer (Kleinunternehmer, § 19 UStG) — deshalb
+     * steht der Hinweis in der Description und keine Steuerangabe daneben.
+     */
+    titel: `Preise: ${eur(PREIS_MONAT)} im Monat oder ${eur(PREIS_JAHR)} im Jahr – Vorsorgewaage`,
     beschreibung:
-      "Vorsorgewaage für Finanzberater: 59 € im Monat oder 590 € im Jahr, " +
-      "Endpreise ohne Umsatzsteuer (§ 19 UStG). Kostenlos starten mit drei " +
-      "Berechnungen pro Monat.",
+      `Vorsorgewaage für Finanzberater: ${eur(PREIS_MONAT)} im Monat oder ` +
+      `${eur(PREIS_JAHR)} im Jahr, Endpreise ohne Umsatzsteuer (§ 19 UStG). ` +
+      `Kostenlos starten mit ${FREI_BERECHNUNGEN_PRO_MONAT} Berechnungen pro Monat.`,
   },
   {
     pfad: "/impressum",

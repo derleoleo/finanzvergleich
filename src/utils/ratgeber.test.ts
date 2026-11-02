@@ -84,6 +84,25 @@ describe("Die erzeugte Seite", () => {
     expect(html).toContain('"datePublished":"2026-10-27"');
   });
 
+  it("nimmt den Kurztitel nur fuer die Trefferliste, nicht fuer die Seite", () => {
+    const lang = beitragLesen(
+      "x.md",
+      KOPF.replace("titel: Ein Titel", "titel: Ein sehr langer ausformulierter Titel\nkurztitel: Kurz"),
+    );
+    const html = beitragSeite(lang);
+    // Der Title traegt die Kurzform ...
+    expect(html).toContain("<title>Kurz – Vorsorgewaage</title>");
+    // ... die sichtbare Ueberschrift und die Brotkrumen die lange Fassung.
+    expect(html).toContain("<h1>Ein sehr langer ausformulierter Titel</h1>");
+    expect(html).toContain('"name":"Ein sehr langer ausformulierter Titel"');
+    // In der Uebersicht steht der ausformulierte Titel.
+    expect(uebersichtSeite([lang])).toContain("Ein sehr langer ausformulierter Titel");
+  });
+
+  it("faellt ohne Kurztitel auf den Titel zurueck", () => {
+    expect(beitragSeite(b)).toContain("<title>Ein Titel – Vorsorgewaage</title>");
+  });
+
   it("bringt ein Vorschaubild mit - vorher wurde der Beitrag ohne geteilt", () => {
     const html = beitragSeite(b);
     expect(html).toContain('<meta property="og:image" content="https://www.vorsorgewaage.de/og-image.png">');
@@ -171,6 +190,28 @@ describe("Die wirklichen Beitraege", () => {
       // nach § 61 VVG wertlos.
       expect(b.stand).toBeTruthy();
       expect(beitragSeite(b)).toContain("</html>");
+    });
+  }
+
+  /*
+   * Laengen, die in der Trefferliste tragen.
+   *
+   * Die Grenzen sind Erfahrungswerte, keine Vorschrift von Google - es kuerzt
+   * nach Pixelbreite. Erzwungen werden sie trotzdem, weil `kurztitel` und
+   * `beschreibung` genau diese eine Aufgabe haben: Die Beitraege trugen 77 bis
+   * 100 Zeichen im Title und bis 206 in der Description und wurden
+   * abgeschnitten dargestellt - gemessen, nicht vermutet, und niemandem
+   * aufgefallen. `npm run seo:kopfzeilen` zeigt dieselben Zahlen am
+   * gebauten dist/.
+   */
+  for (const { datei, text } of BEITRAEGE) {
+    it(`${datei} passt in die Trefferliste`, () => {
+      const b = beitragLesen(datei, text);
+      const titel = `${b.kurztitel ?? b.titel} – Vorsorgewaage`;
+      expect(titel.length, `Title zu lang: "${titel}"`).toBeLessThanOrEqual(60);
+      expect(b.beschreibung.length, `Description zu lang in ${datei}`).toBeLessThanOrEqual(155);
+      // Zu kurz ist auch verschenkt: Die Description ist der Anriss.
+      expect(b.beschreibung.length, `Description zu kurz in ${datei}`).toBeGreaterThan(80);
     });
   }
 

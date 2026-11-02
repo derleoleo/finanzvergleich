@@ -1,6 +1,7 @@
 ---
 titel: Was im Todesfall bleibt – und warum die Auszahlform mehr entscheidet als das Produkt
-beschreibung: Im Altersvorsorgedepot ist die Förderung zurückzuzahlen (§ 93 EStG). Trotzdem liegt der Vertrag in der Ansparphase vorn. Der Bruch kommt mit der Verrentung – nachgerechnet für Tod mit 50, 60, 67, 75 und 80.
+kurztitel: Altersvorsorgedepot: was im Todesfall bleibt
+beschreibung: Die Förderung ist zurückzuzahlen (§ 93 EStG), trotzdem liegt der Vertrag in der Ansparphase vorn. Der Bruch kommt mit der Verrentung – fünf Fälle.
 datum: 2026-10-27
 stand: Altersvorsorgereformgesetz, BGBl. 2026 I Nr. 156; §§ 93, 22 Nr. 5 EStG
 ---
