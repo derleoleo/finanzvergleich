@@ -1,9 +1,15 @@
-# KI-Crawler: Was heute gilt und was zu entscheiden ist
+# KI-Crawler: Was gilt und warum
 
-Stand 01.11.2026. Alle Angaben aus der Dokumentation der Anbieter selbst,
-nicht aus Fachartikeln. Die Entscheidung am Ende gehört dem Betreiber.
+Stand 02.11.2026. Alle Angaben aus der Dokumentation der Anbieter selbst,
+nicht aus Fachartikeln.
 
-## Was heute in `public/robots.txt` steht
+> **Entschieden am 02.11.2026: Variante B.** `public/robots.txt` sperrt die
+> Trainings-Crawler und lässt die Suchindex-Crawler herein. Festgehalten durch
+> `src/utils/robots.test.ts`. Die Begründung und der Preis stehen unten; die
+> Varianten A und C sind weiterhin beschrieben, damit die Wahl umkehrbar
+> bleibt.
+
+## Was vorher in `public/robots.txt` stand
 
 ```
 User-agent: *
@@ -13,11 +19,11 @@ Disallow: /api/
 Sitemap: https://www.vorsorgewaage.de/sitemap.xml
 ```
 
-Drei Zeilen Regel, eine Angabe zur Sitemap. **Kein einziger KI-Crawler ist
+Drei Zeilen Regel, eine Angabe zur Sitemap. **Kein einziger KI-Crawler war
 gesperrt.** Die Gruppe `User-agent: *` gilt für alle, die keine eigene Gruppe
-haben — und keiner hat eine. Damit ist der heutige Zustand: alles erlaubt,
-Training eingeschlossen. Das ist kein Versehen und kein Fehler, aber es ist
-eine Vorentscheidung, die nie bewusst getroffen wurde.
+haben — und keiner hatte eine. Damit war der Zustand: alles erlaubt,
+Training eingeschlossen. Das war kein Versehen und kein Fehler, aber eine
+Vorentscheidung, die nie bewusst getroffen wurde.
 
 `Disallow: /api/` bleibt in jeder Variante richtig: Dort liegen die
 Serverfunktionen für Stripe und Resend, nicht Inhalte.
@@ -66,12 +72,13 @@ halten wollen.
 
 ## Die drei Varianten
 
-### A — Alles offen (heutiger Zustand, nichts tun)
+### A — Alles offen (der frühere Zustand)
 
 Maximale Sichtbarkeit in allen Assistenten. Die eigenen Texte dürfen auch in
-Trainingsdaten fremder Modelle landen.
+Trainingsdaten fremder Modelle landen. Zurück zu A kommt man, indem man die
+drei Gruppen aus `robots.txt` entfernt — dann fällt alles wieder auf `*`.
 
-### B — Sichtbarkeit ja, Training nein
+### B — Sichtbarkeit ja, Training nein ← **in Kraft seit 02.11.2026**
 
 Die mittlere Variante. Die Suchindex-Crawler bleiben erlaubt, die
 Trainings-Crawler werden gesperrt:
@@ -164,8 +171,21 @@ Hinterbliebenenregelung" trifft nicht. Das umzuschreiben ist redaktionelle
 Arbeit am Text und keine technische Änderung, deshalb steht es hier und nicht
 im Code.
 
-## Zu entscheiden
+## Noch zu entscheiden
 
-1. Variante A, B oder C für `robots.txt`? (Empfehlung: B — Sichtbarkeit ohne
-   Training, weil die Anbieter selbst bestätigen, dass das zusammen geht.)
+1. ~~Variante A, B oder C für `robots.txt`?~~ **Erledigt am 02.11.2026: B.**
 2. Sollen Abschnittsüberschriften im Ratgeber zu Fragen umformuliert werden?
+
+## Was zu beobachten ist
+
+Die Wirkung dieser Entscheidung lässt sich nicht aus `robots.txt` ablesen,
+sondern nur an den Zugriffen. Zwei Dinge lohnen einen Blick in einigen Wochen:
+
+- **Serverprotokoll (Vercel):** Kommen `OAI-SearchBot`, `Claude-SearchBot` und
+  `PerplexityBot` noch? Wenn einer von ihnen verschwindet, ist in der Datei
+  etwas falsch — ein Tippfehler im Namen wirkt wie eine Sperre, und niemand
+  bekommt eine Fehlermeldung.
+- **Umami:** Verweise mit `chatgpt.com`, `perplexity.ai` oder `claude.ai` als
+  Herkunft. Das ist der einzige Beleg, dass dieser Kanal überhaupt Leser
+  bringt. Bleibt er über Monate bei null, war die Abwägung zwischen
+  Sichtbarkeit und Training akademisch.
