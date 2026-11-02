@@ -45,13 +45,22 @@ function strukturierteDatenPlugin(): PluginOption {
  */
 function ratgeberPlugin(modus: string): PluginOption {
   const ordner = path.resolve(__dirname, "ratgeber");
+  /*
+   * Einzelne Textseiten direkt unter `/`, aus `seiten/*.md`.
+   *
+   * „Was ist Vorsorgewaage?" lag zuerst als React-Seite vor. Gemessen am
+   * ausgelieferten HTML standen darin null Woerter - der Text erschien erst
+   * nach dem Ausfuehren von JavaScript, waehrend eine Ratgeberseite ueber
+   * 1.100 Woerter sofort liefert. Fuer eine Seite, die gefunden und zitiert
+   * werden soll, ist das der Unterschied. Siehe `einzelseite` in
+   * src/utils/ratgeber.ts.
+   */
+  const seitenOrdner = path.resolve(__dirname, "seiten");
 
   async function seiten(): Promise<Map<string, string>> {
-    const { beitragLesen, beitragSeite, uebersichtSeite, RATGEBER_PFAD } = await import(
-      "./src/utils/ratgeber"
-    );
+    const { beitragLesen, beitragSeite, uebersichtSeite, einzelseite, RATGEBER_PFAD } =
+      await import("./src/utils/ratgeber");
     const { readdirSync, readFileSync, existsSync } = await import("node:fs");
-    if (!existsSync(ordner)) return new Map();
 
     // Die Messung kommt aus derselben Umgebung wie in der Anwendung. Ohne sie
     // entsteht kein Skript - genau wie dort.
@@ -61,17 +70,37 @@ function ratgeberPlugin(modus: string): PluginOption {
         ? { basis: env.VITE_UMAMI_URL, seite: env.VITE_UMAMI_WEBSITE_ID }
         : undefined;
 
-    const dateien = readdirSync(ordner).filter((d) => d.endsWith(".md")).sort();
-    const beitraege = dateien.map((d) =>
-      beitragLesen(d, readFileSync(path.join(ordner, d), "utf8")),
-    );
-
     const aus = new Map<string, string>();
-    if (beitraege.length === 0) return aus;
-    aus.set(`${RATGEBER_PFAD.slice(1)}/index.html`, uebersichtSeite(beitraege, mess));
-    for (const b of beitraege) {
-      aus.set(`${RATGEBER_PFAD.slice(1)}/${b.slug}/index.html`, beitragSeite(b, mess));
+
+    if (existsSync(ordner)) {
+      const dateien = readdirSync(ordner).filter((d) => d.endsWith(".md")).sort();
+      const beitraege = dateien.map((d) =>
+        beitragLesen(d, readFileSync(path.join(ordner, d), "utf8")),
+      );
+      if (beitraege.length > 0) {
+        aus.set(`${RATGEBER_PFAD.slice(1)}/index.html`, uebersichtSeite(beitraege, mess));
+        for (const b of beitraege) {
+          aus.set(`${RATGEBER_PFAD.slice(1)}/${b.slug}/index.html`, beitragSeite(b, mess));
+        }
+      }
     }
+
+    if (existsSync(seitenOrdner)) {
+      for (const d of readdirSync(seitenOrdner).filter((f) => f.endsWith(".md")).sort()) {
+        const b = beitragLesen(d, readFileSync(path.join(seitenOrdner, d), "utf8"));
+        const html = einzelseite(b, mess);
+        /*
+         * Zwei Formen, aus demselben Grund wie in seitenkoepfe.ts: Vercel
+         * liefert die Verzeichnisdatei auch ohne Schraegstrich am Ende, der
+         * Vorschauserver (sirv) sucht dagegen zuerst `<slug>.html`. Ohne die
+         * zweite Form fiele die Seite in der Vorschau - und damit in den
+         * E2E-Tests - in die SPA-Umschreibung.
+         */
+        aus.set(`${b.slug}/index.html`, html);
+        aus.set(`${b.slug}.html`, html);
+      }
+    }
+
     return aus;
   }
 
@@ -85,11 +114,12 @@ function ratgeberPlugin(modus: string): PluginOption {
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const pfad = (req.url ?? "").split("?")[0];
-        if (!pfad.startsWith("/ratgeber")) return next();
+        // Nur Pfade ohne Punkt: Sonst faengt die Mitte Anfragen nach
+        // /assets/... und den Modulen des Entwicklungsservers ab.
+        if (pfad === "/" || /\.[a-z0-9]+$/i.test(pfad)) return next();
         const schluessel = pfad.replace(/^\//, "").replace(/\/$/, "");
         const karte = await seiten();
-        const html =
-          karte.get(`${schluessel}/index.html`) ?? karte.get(schluessel.replace(/$/, "/index.html"));
+        const html = karte.get(`${schluessel}/index.html`) ?? karte.get(`${schluessel}.html`);
         if (!html) return next();
         res.setHeader("Content-Type", "text/html; charset=utf-8");
         res.end(html);

@@ -31,6 +31,25 @@ const RATGEBER_ADRESSEN = [
   ),
 ];
 
+/**
+ * Einzelne Textseiten direkt unter `/`, ebenfalls beim Bauen erzeugt.
+ *
+ * Die dritte Quelle neben Ratgeber und `SEITENKOEPFE`. Sie darf hier nicht
+ * fehlen: Steht eine solche Adresse zusätzlich in `SEITENKOEPFE`, überschreibt
+ * `seitenkoepfePlugin` die statische Seite mit der SPA-Hülle — es läuft in
+ * `closeBundle`, also nach dem Erzeugen. Der Test unten schlägt dann mit
+ * „mehrfache Quelle" an, und genau dafür ist er da.
+ */
+const SEITEN_ROH = import.meta.glob("../../seiten/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+const EINZELSEITEN_ADRESSEN = Object.keys(SEITEN_ROH).map(
+  (p) => `${DOMAIN}/${(p.split("/").pop() as string).replace(/\.md$/, "")}`,
+);
+
 describe("Köpfe der öffentlichen Seiten", () => {
   it("die Sitemap ist nicht leer", () => {
     expect(ADRESSEN.length).toBeGreaterThan(10);
@@ -43,6 +62,7 @@ describe("Köpfe der öffentlichen Seiten", () => {
       if (adresse === `${DOMAIN}/`) continue;
       const quellen = [
         RATGEBER_ADRESSEN.includes(adresse) ? "ratgeber" : null,
+        EINZELSEITEN_ADRESSEN.includes(adresse) ? "einzelseite" : null,
         ausKoepfen.includes(adresse) ? "seitenkoepfe" : null,
       ].filter(Boolean);
       expect(quellen, `keine oder mehrfache Quelle für ${adresse}`).toHaveLength(1);

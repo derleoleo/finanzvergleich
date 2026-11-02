@@ -541,7 +541,7 @@ export default function Landing() {
                 Auf allen uebrigen Gastseiten steht der Verweis oben
                 (GastRahmen), und die Fusszeile reicht, damit ein Crawler die
                 Seite findet. */}
-            <Link to="/was-ist-vorsorgewaage" className="hover:text-white transition-colors">Überblick</Link>
+            <a href="/was-ist-vorsorgewaage" className="hover:text-white transition-colors">Überblick</a>
             <a href="/ratgeber/" className="hover:text-white transition-colors">Ratgeber</a>
             <Link to="/impressum" className="hover:text-white transition-colors">Impressum</Link>
             <Link to="/datenschutz" className="hover:text-white transition-colors">Datenschutz</Link>

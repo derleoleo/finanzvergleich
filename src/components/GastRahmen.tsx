@@ -44,7 +44,9 @@ export default function GastRahmen({
             anders aus als die der Startseite.
           */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
-            <Link to="/was-ist-vorsorgewaage" className="hover:text-slate-900 transition-colors">Überblick</Link>
+            {/* Statische Seite neben der Anwendung, deshalb ein echter
+                Verweis statt eines Router-Links - wie beim Ratgeber. */}
+            <a href="/was-ist-vorsorgewaage" className="hover:text-slate-900 transition-colors">Überblick</a>
             <a href="/ratgeber/" className="hover:text-slate-900 transition-colors">Ratgeber</a>
             <Link to="/beispiel" className="hover:text-slate-900 transition-colors">Beispielfall</Link>
             <Link to="/pricing" className="hover:text-slate-900 transition-colors">Preise</Link>
