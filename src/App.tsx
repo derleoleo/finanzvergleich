@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ReactNode, Suspense, lazy } from "react";
-import * as Sentry from "@sentry/react";
+import { Component, ReactNode, Suspense, lazy } from "react";
 import { Button } from "@/components/ui/button";
 
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -11,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { vielleichtAngemeldet } from "@/utils/vielleichtAngemeldet";
 import CookieBanner from "@/components/CookieBanner";
 import { werbecodeAusAdresseMerken } from "@/utils/werbung";
+import { fehlerMelden } from "@/utils/fehlermelder";
 
 /*
  * Auch der Rahmen der geschuetzten Seiten wird nachgeladen.
@@ -66,7 +66,7 @@ function PageLoader() {
 }
 
 /**
- * Fallback-Seite bei unerwarteten Render-Fehlern (Sentry ErrorBoundary)
+ * Fallback-Seite bei unerwarteten Render-Fehlern
  */
 function ErrorFallback() {
   return (
@@ -89,6 +89,38 @@ function ErrorFallback() {
       </div>
     </div>
   );
+}
+
+/**
+ * Fehlergrenze für Render-Fehler.
+ *
+ * Vorher war das `Sentry.ErrorBoundary`. Die zog `@sentry/react` statisch in
+ * das Eintrittsbuendel - 45,1 kB gzip von 137,0 kB, vor dem ersten Bild (siehe
+ * docs/startseite-buendel.md). Sentry wird jetzt nachgeladen, und diese Grenze
+ * meldet ueber `fehlerMelden`: Tritt der Fehler auf, bevor Sentry da ist,
+ * wartet die Meldung in der Warteschlange und geht danach raus.
+ *
+ * React bietet fuer Render-Fehler nur Klassenkomponenten an - deshalb hier
+ * eine, obwohl das Projekt sonst keine hat.
+ */
+class Fehlergrenze extends Component<{ children: ReactNode }, { gefallen: boolean }> {
+  state = { gefallen: false };
+
+  static getDerivedStateFromError() {
+    return { gefallen: true };
+  }
+
+  componentDidCatch(fehler: Error, info: { componentStack?: string | null }) {
+    fehlerMelden(fehler, {
+      quelle: "react.render",
+      // Dieselbe Angabe, die Sentrys eigene Grenze mitgeschickt hat.
+      componentStack: info.componentStack ?? undefined,
+    });
+  }
+
+  render() {
+    return this.state.gefallen ? <ErrorFallback /> : this.props.children;
+  }
 }
 
 /**
@@ -152,7 +184,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <SubscriptionProvider>
-        <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
+        <Fehlergrenze>
         <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Login (nicht geschützt, kein Layout) */}
@@ -361,7 +393,7 @@ export default function App() {
           />
         </Routes>
         </Suspense>
-        </Sentry.ErrorBoundary>
+        </Fehlergrenze>
         </SubscriptionProvider>
         <CookieBanner />
       </AuthProvider>

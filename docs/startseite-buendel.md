@@ -3,8 +3,9 @@
 Stand 02.11.2026. Alle Zahlen aus `npm run build` und dem erzeugten `dist/`,
 nicht geschätzt.
 
-> **Ergebnis: der kritische Pfad der Startseite ist von 200,3 kB auf 137,0 kB
-> gzip gefallen — 32 % weniger.** Weg B ist umgesetzt (siehe unten), die
+> **Ergebnis: der kritische Pfad der Startseite ist von 200,3 kB auf 92,4 kB
+> gzip gefallen — 54 % weniger.** (200,3 → 137,0 durch Supabase, 137,0 → 92,4
+> durch Sentry.) Weg B ist umgesetzt (siehe unten), die
 > Aufteilung in eigene Stücke ebenfalls. Festgehalten durch einen E2E-Test:
 > „Supabase liegt nicht im kritischen Pfad der Startseite".
 
@@ -194,19 +195,31 @@ stiller Fehler am teuersten ist.
 82,6 kB liegen jetzt in einem Stück, das Gäste nebenläufig und Angemeldete
 ohnehin laden.
 
-**Sentry nachladen — der jetzt größte Posten nach `react`.** Mit DSN sind es
-45,1 kB gzip von 137,0 kB, also ein Drittel des kritischen Pfades. `Sentry.init`
-in `main.tsx` läuft heute vor dem ersten Rendern. Nachgeladen nach dem ersten
-Bild wäre der Pfad bei rund 92 kB gzip.
+**Sentry nachladen — erledigt. 137,0 → 92,4 kB gzip (−33 %).**
 
-**Der Preis ist unangenehm und der Grund, warum das hier nur steht:** In dem
-Fenster zwischen erstem Bild und geladenem Sentry werden Fehler nicht
-gemeldet — und das ist genau das Fenster, in dem Startfehler auftreten, also
-die, die man am dringendsten sehen will. Eine Zwischenlösung wäre, nur
-`browserTracingIntegration` nachzuladen (die Leistungsmessung) und die
-Fehlererfassung sofort zu starten; dann ist der Gewinn kleiner, aber kein
-Fehler geht verloren. Beides verlangt eine Entscheidung darüber, wie viel
-Blindflug beim Start hinnehmbar ist.
+Der Preis schien der Haken zu sein: In dem Fenster zwischen erstem Bild und
+geladenem Sentry würde nichts gemeldet — und das ist genau das Fenster, in dem
+Startfehler auftreten. `src/utils/fehlermelder.ts` umgeht ihn, statt ihn
+hinzunehmen: Zwei native Lauscher (`error`, `unhandledrejection`) hängen sich
+synchron auf, kosten keine messbaren Bytes und legen alles in eine
+Warteschlange, die abgearbeitet wird, sobald Sentry da ist. Acht Tests halten
+das fest; fällt einer, ist aus der Verbesserung wieder ein Tausch geworden.
+
+`Sentry.ErrorBoundary` in `App.tsx` war der zweite statische Import und ist
+jetzt eine eigene Fehlergrenze, die über denselben Melder berichtet.
+
+**Zwei Dinge, die dabei zu beachten sind:**
+
+- **Namensraum-Import tötet das Wegwerfen.** `const Sentry = await
+  import("@sentry/react")` materialisiert das ganze Modul; im Stück landen
+  `replay`, `feedback` und `replay-canvas` — gemessen 144,1 statt 45,1 kB
+  gzip. Mit benannter Destrukturierung (`const { init, captureException,
+  browserTracingIntegration } = await import(…)`) sind es wieder 44,5 kB.
+- **Die Transaktion für den Seitenaufbau geht verloren.**
+  `browserTracingIntegration` startet erst nach dem Laden und erfasst den
+  ersten Aufbau nicht mehr. Eine Entscheidung gegen die Messung der Ladezeit
+  und für die Ladezeit selbst; bei `tracesSampleRate: 0.1` wurde ohnehin nur
+  jeder zehnte Aufbau erfasst. Fehler sind davon nicht betroffen.
 
 ## Was nicht hilft
 

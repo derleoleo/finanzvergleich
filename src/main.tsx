@@ -1,40 +1,20 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import * as Sentry from "@sentry/react";
 import App from "./App";
 import "./index.css";
-import { ohneParameter } from "./utils/fehlerdiagnose";
+import { fruehErfassen, sentryStarten } from "./utils/fehlermelder";
 import { messungStarten } from "./utils/messung";
 
-if (import.meta.env.VITE_SENTRY_DSN) {
-  Sentry.init({
-    dsn: import.meta.env.VITE_SENTRY_DSN,
-    environment: import.meta.env.MODE,
-    integrations: [Sentry.browserTracingIntegration()],
-    tracesSampleRate: 0.1,
-    // Keine personenbezogenen Daten: weder Sentrys Standardangaben (IP, Cookies,
-    // Kopfzeilen) noch Adressen mit Kennungen gespeicherter Berechnungen.
-    sendDefaultPii: false,
-    beforeSend(event) {
-      delete event.user;
-      if (event.request) {
-        event.request.url = ohneParameter(event.request.url);
-        delete event.request.query_string;
-        delete event.request.cookies;
-        delete event.request.headers;
-      }
-      return event;
-    },
-    beforeBreadcrumb(breadcrumb) {
-      if (breadcrumb.data?.url) {
-        breadcrumb.data.url = ohneParameter(String(breadcrumb.data.url));
-      }
-      // Eingaben in Formularen gehören nicht in die Spur
-      if (breadcrumb.category === "ui.input") return null;
-      return breadcrumb;
-    },
-  });
-}
+/*
+ * Fehler erfassen, bevor irgendetwas anderes passiert.
+ *
+ * Das sind zwei `addEventListener` ohne eine Zeile Sentry — Sentry selbst ist
+ * mit `VITE_SENTRY_DSN` 45,1 kB gzip von 137,0 kB im kritischen Pfad und wird
+ * deshalb erst nach dem ersten Bild geladen. Alles, was bis dahin auftritt,
+ * legt `fehlermelder.ts` in eine Warteschlange und reicht es danach weiter.
+ * Kein Fehler geht verloren, er kommt nur später an.
+ */
+fruehErfassen();
 
 // Trichtermessung auf eigener Infrastruktur; ohne Umgebungsvariablen ein
 // Leerlauf (siehe utils/messung.ts).
@@ -45,3 +25,17 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <App />
   </React.StrictMode>
 );
+
+/*
+ * Sentry nachladen, wenn der Browser gerade nichts Besseres zu tun hat.
+ *
+ * `requestIdleCallback` mit Frist, damit es auch unter Last kommt; Safari
+ * kennt es bis heute nicht, dort genügt ein `setTimeout`. Beides läuft nach
+ * `render`, blockiert das erste Bild also in keinem Fall.
+ */
+const spaeter: (fn: () => void) => void =
+  typeof window.requestIdleCallback === "function"
+    ? (fn) => window.requestIdleCallback(fn, { timeout: 3000 })
+    : (fn) => window.setTimeout(fn, 1000);
+
+spaeter(() => void sentryStarten());
