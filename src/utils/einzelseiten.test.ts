@@ -98,6 +98,32 @@ describe("Einzelseiten", () => {
     expect(text).not.toMatch(/zzgl|netto|MwSt|USt\./);
   });
 
+  it("nennt die Bezeichnungen, unter denen gesucht wird", () => {
+    // Gemessen am gebauten HTML stand im Dezember nur „Beratungssoftware"
+    // drin - „Beratungstool", „Beratungsrechner" und „Altersvorsorgeplaner"
+    // kamen auf keiner Seite vor, obwohl das Produkt auch so geführt werden
+    // soll. Title und h1 sind belegt und bleiben es: vier Selbstbezeichnungen
+    // im Kopf wären Keyword-Stuffing. Im Fließtext tragen sie dagegen je eine
+    // eigene Aussage - siehe docs/benennung-startseite.md.
+    const html = einzelseite(
+      beitragLesen(
+        "was-ist-vorsorgewaage.md",
+        SEITEN.find((s) => s.datei === "was-ist-vorsorgewaage.md")!.text,
+      ),
+    );
+    for (const wort of ["Beratungssoftware", "Beratungstool", "Beratungsrechner", "Altersvorsorgeplaner"]) {
+      expect(html, `die Bezeichnung "${wort}" fehlt`).toContain(wort);
+    }
+    // Obergrenze gegen Stuffing. Zwei, nicht eins: „Beratungstool" steht in
+    // der Zwischenueberschrift und im Satz darunter, und das ist normale
+    // Textfuehrung. Ab drei Nennungen desselben Begriffs auf einer Seite
+    // schreibt jemand fuer die Suchmaschine und nicht fuer den Leser.
+    for (const wort of ["Beratungstool", "Beratungsrechner", "Altersvorsorgeplaner"]) {
+      const n = html.split(wort).length - 1;
+      expect(n, `"${wort}" steht ${n}-mal im HTML`).toBeLessThanOrEqual(2);
+    }
+  });
+
   it("nennt die Grenzen des Werkzeugs, nicht nur die Fähigkeiten", () => {
     // Drei der ersten sieben Suchanfragen zielten auf Dinge, die die Software
     // nicht kann. Wer danach sucht, soll das hier lesen und nicht erst nach
