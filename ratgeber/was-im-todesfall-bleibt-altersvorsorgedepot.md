@@ -111,7 +111,7 @@ Hinterbliebenen gegen Absicherung des langen Lebens.
 im Nachlass bestimmt und zum Rentenbeginn unumkehrbar wird, ist eine
 nachvollziehbare Rechnung keine Kür.
 
-## Annahmen und Rechengrundlage
+## Rechengrundlage
 
 Alle Zahlen stammen aus derselben Engine, die auch im Rechner läuft: Geburtsjahr
 1990, Beitragsjahr ab 2027, 150 € monatlich, zwei Kinder, Rentenbeginn mit 67,
