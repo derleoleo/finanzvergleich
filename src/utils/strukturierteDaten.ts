@@ -64,8 +64,11 @@ function organisation() {
       addressLocality: "Hannover",
       addressCountry: "DE",
     },
+    // „Beratungssoftware", wie im Title und in `webseite()` — hier stand noch
+    // „Vergleichssoftware". Ein Assistent, der beide Blöcke liest, bekäme sonst
+    // zwei Auskünfte darüber, was das Produkt ist. Siehe docs/benennung-startseite.md.
     description:
-      "Einzelunternehmen aus Hannover, Anbieter der Vergleichssoftware " +
+      "Einzelunternehmen aus Hannover, Anbieter der Beratungssoftware " +
       "Vorsorgewaage für Finanz- und Versicherungsberater.",
   };
 }

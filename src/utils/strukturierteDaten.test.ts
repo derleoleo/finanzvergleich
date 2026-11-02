@@ -89,6 +89,24 @@ describe("Strukturierte Daten der Startseite", () => {
     expect(roh).not.toContain('"review"');
   });
 
+  it("jede Beschreibung nennt das Produkt gleich", () => {
+    // Die Organisation beschrieb sich als Anbieter der „Vergleichssoftware",
+    // die Anwendung daneben als „Beratungssoftware" - zwei Auskuenfte im selben
+    // Kopf darueber, was das Produkt ist. Der Begriff ist eine Entscheidung
+    // des Nutzers, kein Nebeneffekt: siehe docs/benennung-startseite.md.
+    //
+    // Der Test greift jeden Block mit Beschreibung, statt zwei Typen zu nennen:
+    // kommt spaeter einer hinzu, faellt eine abweichende Benennung hier auf.
+    const beschriebene = BLOECKE.filter(
+      (b) => typeof (b as { description?: unknown }).description === "string",
+    ) as { "@type": string; description: string }[];
+    expect(beschriebene.length).toBeGreaterThanOrEqual(2);
+    for (const b of beschriebene) {
+      expect(b.description, b["@type"]).toContain("Beratungssoftware");
+    }
+    expect(JSON.stringify(BLOECKE)).not.toContain("Vergleichssoftware");
+  });
+
   it("die Fragen stehen wortgleich im sichtbaren Abschnitt", () => {
     const fragen = block("FAQPage").mainEntity as { name: string }[];
     expect(fragen).toHaveLength(FAQ.length);
