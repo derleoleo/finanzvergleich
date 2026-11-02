@@ -1,12 +1,12 @@
 ---
 titel: Was ist Vorsorgewaage?
-kurztitel: Was ist Vorsorgewaage? Software für Altersvorsorge
-beschreibung: Sechs Rechner für Altersvorsorge und Ruhestandsplanung: Fondspolice gegen Depot, Altersvorsorgedepot ab 2027, Rentenlücke, Entnahmeplan. Für Berater.
+kurztitel: Was ist Vorsorgewaage? Beratungssoftware für Berater
+beschreibung: Beratungssoftware für Altersvorsorge: sechs Rechner für Fondspolice gegen Depot, Altersvorsorgedepot ab 2027, Rentenlücke und Entnahmeplan. Für Berater.
 datum: 2026-11-02
 ---
 
-Vorsorgewaage ist eine Software für Altersvorsorge und Ruhestandsplanung — für
-Finanz- und Versicherungsberater, nicht für Endkunden. Sie rechnet die Frage
+Vorsorgewaage ist eine Beratungssoftware für Altersvorsorge — für Finanz- und
+Versicherungsberater, nicht für Endkunden. Sie rechnet die Frage
 durch, die in fast jeder Beratung zur Altersvorsorge auftaucht: **Depot oder
 Lebensversicherung?** Und sie legt offen, mit welchen Annahmen sie zu ihrem
 Ergebnis kommt.

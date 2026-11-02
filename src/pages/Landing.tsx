@@ -84,20 +84,30 @@ export default function Landing() {
                   das Wort, das niemand sucht (Search Console: gesucht wird
                   „software", „rechner", „ruhestandsplanung").
 
-                  „Ruhestandsplanung" in die Überschrift zu setzen ging nicht:
-                  Das Wort hat 17 Zeichen ohne Trennstelle und brach gemessen
-                  bei 375 px mitten durch („Ruhestandsplanu / ng") — und bei
-                  1009 px ebenso, weil die Hero-Spalte dort nur 449 px breit
-                  ist und 48 px Schrift rund 523 px bräuchten. Statt die
-                  Schriftgröße gegen ein einzelnes Wort zu verteidigen, steht
-                  es jetzt im Title, in der Description und im Vorspann. Die
-                  Überschrift bleibt bei kurzen Wörtern. */}
+                  Die Benennung lautet „Beratungssoftware für Altersvorsorge"
+                  und steht im Title, in der Description, in den
+                  strukturierten Daten und auf der Überblicksseite. In die
+                  Überschrift passt sie nicht: Gemessen ist „Beratungssoftware"
+                  bei 48 px genau 449 px breit — und die Hero-Spalte ist bei
+                  einem 1009 px breiten Fenster ebenfalls 449 px. Auf den
+                  Pixel. Je nach Scrollleiste kippt es in einen Bruch mitten
+                  im Wort.
+
+                  Silbentrennung hilft nicht: `hyphens: auto` ändert bei
+                  diesem Wort gemessen gar nichts, die Umbrüche sind mit und
+                  ohne identisch. Und an den Haltepunkten zu drehen hieße,
+                  zwischen 768 und 1280 px mit 20 px Luft zu rechnen.
+
+                  Also dieselbe Lehre wie bei „Ruhestandsplanung" vorher: Eine
+                  Schauüberschrift verträgt kein 17-Zeichen-Kompositum. Die
+                  Zeilen tragen die kurzen Wörter, die Benennung steht
+                  woanders. */}
               Die professionelle<br />
-              <span className="text-brand-cyan">Software</span><br />
-              für Altersvorsorge
+              <span className="text-brand-cyan">Software für</span><br />
+              Altersvorsorge
             </h1>
             <p className="text-lg text-slate-500 mb-8 leading-relaxed">
-              Sechs Rechner für Altersvorsorge und Ruhestandsplanung: Fondspolice gegen Depot, Rentenlücke, Entnahmeplan, Altersvorsorgedepot — transparent, nachvollziehbar und mandantensicher.
+              Sechs Rechner für die Altersvorsorgeberatung: Fondspolice gegen Depot, Rentenlücke, Entnahmeplan, Altersvorsorgedepot — transparent, nachvollziehbar und mandantensicher.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 mb-10">
               <Link
