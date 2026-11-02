@@ -1,6 +1,12 @@
 // src/utils/ratgeber.ts
 // Aus Markdown werden fertige HTML-Seiten – beim Bauen, nicht im Browser.
 //
+// Zwei Arten von Seiten entstehen hier: die Ratgeberbeiträge unter
+// `/ratgeber/` und einzelne Textseiten direkt unter `/` (siehe
+// `einzelseite`). Beide teilen Rahmen, Stil und Kopf; getrennte Module dafür
+// hätten zwei Fassungen desselben Rahmens bedeutet, die beim nächsten
+// Rechtslink auseinanderlaufen.
+//
 // Warum nicht als Route in der Anwendung: Die Anwendung ist eine Single-Page-App.
 // Jede Adresse liefert dieselbe `index.html` mit einem Title, einer Description
 // und dem Canonical auf `/`. Für Rechner ist das gleichgültig, für
@@ -33,7 +39,7 @@ export type Beitrag = {
   /** Die sichtbare Überschrift. Darf eine ausformulierte These sein. */
   titel: string;
   /**
-   * Kurzform nur für den `<title>` und damit für die Trefferliste.
+   * Der Titel für die Trefferliste, wenn er ein anderer sein soll als der `h1`.
    *
    * Zwei Felder, weil die beiden Texte verschiedene Aufgaben haben. Gemessen
    * am gebauten `dist/` waren die vier `<title>` 77 bis 100 Zeichen lang;
@@ -41,6 +47,10 @@ export type Beitrag = {
    * bleibt – und warum die Auszahlform mehr entscheidet als das Produkt" fiel
    * also genau die Aussage weg. Den `h1` dafür zu stutzen wäre der falsche
    * Tausch: Auf der Seite selbst trägt der lange Satz.
+   *
+   * Bei Einzelseiten ist es umgekehrt: Dort trägt der `h1` die kurze Frage
+   * („Was ist Vorsorgewaage?") und der Title darf länger sein, weil er allein
+   * stehen muss. Deshalb heißt das Feld nicht mehr „Kurzform".
    *
    * Fehlt die Angabe, gilt `titel` — dann ist der Beitrag kurz genug betitelt.
    */
@@ -498,6 +508,58 @@ ${b.html}
           { name: b.titel },
         ]),
       ),
+    inhalt,
+    mess,
+  });
+}
+
+/**
+ * Eine einzelne Textseite direkt unter `/` — zum Beispiel „Was ist
+ * Vorsorgewaage?".
+ *
+ * Warum nicht als Route in der Anwendung, obwohl es eine Produktseite ist:
+ * Sie wurde zuerst als React-Seite gebaut, und die Messung hat das widerlegt.
+ * Im ausgelieferten HTML standen **null** Wörter — der ganze Text erschien
+ * erst, nachdem der Browser JavaScript ausgeführt hatte. Eine Ratgeberseite
+ * liefert zum Vergleich über 1.100 Wörter sofort. Für eine Seite, deren
+ * einziger Zweck es ist, gefunden und zitiert zu werden, ist das der
+ * Unterschied, auf den es ankommt: Google rendert JavaScript, aber die
+ * Suchindex-Crawler der KI-Assistenten tun es nicht verlässlich, und genau
+ * für die wurde die Crawler-Entscheidung getroffen
+ * (docs/ki-crawler-entscheidung.md).
+ *
+ * Kein zweites Build-System: Es ist derselbe Erzeuger, der schon den Ratgeber
+ * baut — nur eine zweite Art Seite darin.
+ *
+ * Unterschiede zur Beitragsseite: kein `Article`-JSON-LD (eine Produktseite
+ * ist kein Artikel), `og:type` ist `website`, die Brotkrumen haben zwei
+ * Glieder, und der Title bekommt **kein** „– Vorsorgewaage" angehängt. Er
+ * steht hier allein und trägt den Markennamen schon selbst; der Seitenname
+ * über dem Treffer kommt ohnehin aus dem `WebSite`-Markup der Startseite.
+ */
+export function einzelseite(b: Beitrag, mess?: Messstelle): string {
+  const adresse = `${DOMAIN}/${b.slug}`;
+  const inhalt = `    <article>
+      <h1>${escape(b.titel)}</h1>
+${b.html}
+    </article>
+    <section class="ruf">
+      <h2>Mit eigenen Zahlen nachrechnen</h2>
+      <p>
+        Der Beispielfall rechnet live und ohne Anmeldung – dieselbe Engine, die auch
+        hinter den sechs Rechnern steht.
+      </p>
+      <a class="knopf" href="${DOMAIN}/beispiel">Beispielfall ansehen</a>
+    </section>`;
+
+  return huelle({
+    titel: b.kurztitel ?? b.titel,
+    beschreibung: b.beschreibung,
+    adresse,
+    art: "website",
+    kopfExtra: datenBloecke(
+      brotkrumen([{ name: "Startseite", adresse: `${DOMAIN}/` }, { name: b.titel }]),
+    ),
     inhalt,
     mess,
   });
