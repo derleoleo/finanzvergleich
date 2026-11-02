@@ -16,7 +16,7 @@ Daraus wird im Vertrieb gern ein einfacher Satz: „Im Todesfall ist das
 Altersvorsorgedepot schlecht." Die Zahlen sagen etwas Genaueres — und etwas
 Nützlicheres.
 
-## Drei Phasen, drei Regeln
+## Was geschieht im Todesfall in welcher Phase?
 
 | Zeitpunkt | Was gilt |
 |---|---|
@@ -26,7 +26,7 @@ Nützlicheres.
 
 Der Bruch liegt nicht beim Produkt. Er liegt bei der **Verrentung**.
 
-## In der Ansparphase liegt der geförderte Vertrag vorn
+## Was bleibt bei Tod in der Ansparphase?
 
 150 € im Monat ab 2027, zwei Kinder, 7 % Bruttorendite, Effektivkosten 0,5 %
 (Depot 0,3 %, Fondspolice 1,2 %):
@@ -47,7 +47,7 @@ Altersvorsorgevertrag auf seinen Namen übertragen, bleibt das förderunschädli
 (§ 93 Abs. 1 S. 4 Buchst. c EStG) — keine Rückforderung, keine sofortige Steuer.
 In der Tabelle oben wären das die vollen 57.223 € bzw. 148.805 €.
 
-## Mit dem Rentenbeginn kippt es
+## Was bleibt nach dem Rentenbeginn?
 
 Zum Rentenbeginn werden in diesem Beispiel **258.521 €** verrentet — bei einem
 Rentenfaktor von 30 sind das 776 € Monatsrente brutto. Ab diesem Moment gehört
@@ -71,7 +71,7 @@ Das ist kein Mangel des Altersvorsorgedepots, sondern die Bauart jeder
 geförderten Altersvorsorge. Der Riester-Altvertrag verhält sich identisch — auch
 dort fällt der Wert zum selben Zeitpunkt auf null, aus derselben Norm.
 
-## Die Stellschraube, die niemand nennt
+## Wie wirkt ein Auszahlplan statt der Leibrente?
 
 Das Altersvorsorgedepot lässt neben der Leibrente einen **Auszahlplan** zu.
 Derselbe Fall, nur mit dieser Auszahlform:
@@ -95,7 +95,7 @@ Wer 95 wird, hat am Ende des Plans nichts mehr, während die Leibrente weiterzah
 Genau das ist die Abwägung, die ins Beratungsprotokoll gehört — Absicherung der
 Hinterbliebenen gegen Absicherung des langen Lebens.
 
-## Was daraus für die Beratung folgt
+## Was heißt das für die Auswahl der Auszahlform?
 
 1. **In der Ansparphase ist der Todesfall kein Argument gegen den geförderten
    Vertrag.** Er liegt dort trotz Rückforderung vorn. Wer anders argumentiert,

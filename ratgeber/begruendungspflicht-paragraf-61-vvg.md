@@ -30,7 +30,7 @@ Vermittler führen. Wer die Gründe seines Rates später nicht mehr darlegen kan
 steht nicht neutral da — er steht in der Pflicht, etwas zu beweisen, wofür ihm
 die Unterlage fehlt.
 
-## Zwei Regime am selben Tisch
+## Welches Recht gilt: VVG oder FinVermV?
 
 Wer Altersvorsorge berät, sitzt regelmäßig zwischen zwei Aufsichtsregimen. Für
 die Fondspolice gilt das VVG. Für das Altersvorsorgedepot — ein Wertpapierprodukt
@@ -52,7 +52,7 @@ Für den Vergleich „Fondspolice oder Altersvorsorgedepot?" heißt das: Dieselb
 Empfehlung muss nach zwei Regelwerken begründet sein, und beide fragen nach dem
 Warum.
 
-## Das Problem der Altersvorsorge: die Zeit
+## Wie lange muss eine Beratung belegbar bleiben?
 
 Bei einer Hausratversicherung zeigt sich innerhalb weniger Jahre, ob der Rat
 trug. Bei der Altersvorsorge vergehen dreißig.
@@ -67,7 +67,7 @@ war.
 Das ist keine Formalie, sondern eine Anforderung an das Werkzeug. Ein Rechner,
 der dieselben Eingaben später anders beantwortet, ist für diese Pflicht wertlos.
 
-## Warum das beim Altersvorsorgedepot besonders brennt
+## Warum ist die Begründung beim Altersvorsorgedepot schwieriger?
 
 Das Altersvorsorgereformgesetz ist neu, und das Anwendungsschreiben des BMF
 steht in mehreren Punkten aus. Solange es fehlt, hängt das Ergebnis an der
@@ -94,7 +94,7 @@ landet. **Welche offene Frage wirkt, hängt am Fall.** Das ist genau der Grund,
 warum eine pauschale Fußnote („Rechtsstand vorbehalten") die Pflicht nicht
 erfüllt.
 
-## Was eine belastbare Begründung enthält
+## Was muss in einer Begründung nach § 61 VVG stehen?
 
 Vier Angaben, ohne die ein Rechenergebnis in zehn Jahren nicht mehr zu
 verteidigen ist:

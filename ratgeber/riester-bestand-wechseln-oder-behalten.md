@@ -17,7 +17,7 @@ Beides lässt sich getrennt wählen. Wer die Fragen zusammenwirft, übersieht
 regelmäßig die Option, die am häufigsten die beste ist — und riskiert eine
 Nebenwirkung, aus der es keinen Rückweg gibt.
 
-## Die fünf Optionen
+## Welche fünf Möglichkeiten hat ein Riester-Bestand ab 2027?
 
 | | Was passiert | Förderregime | Produktmantel | Norm |
 |---|---|---|---|---|
@@ -32,7 +32,7 @@ Produkt nichts — kein Übertragungsverlust, keine neuen Abschlusskosten, der
 Garantiezins bleibt — und hebt trotzdem die Förderung. Das ist keine
 Randerscheinung, sondern der Normalfall.
 
-## Was Option B bringt
+## Was bringt der Wechsel der Fördersystematik?
 
 Alleinstehend, 40 Jahre, Kinder ab 2008 geboren, gleicher Eigenbeitrag in
 beiden Regimen:
@@ -53,7 +53,7 @@ a.F.) entfällt — die Zeile mit 70.000 € zeigt, was er anrichtet: Dort wird 
 alte Zulage auf 164 € gekürzt, weil 1.800 € den geforderten Mindestbeitrag von
 1.925 € unterschreiten.
 
-## Wann die alte Förderung gewinnt
+## Wann ist die alte Riester-Förderung höher?
 
 Sie gewinnt — aber nur in einer eng umrissenen Zone: **niedriges Einkommen,
 Kinder, Beitrag nahe am Sockelbetrag.** Der Grund ist der Sockelbetrag von 60 €
@@ -97,7 +97,7 @@ liegt die neue Förderung vorn.
 > a.F.). Bei zwei solchen Kindern liegt der alte Zulagenanspruch bei 545 € statt
 > 775 € — der Vorsprung der neuen Förderung wächst entsprechend.
 
-## Die Kopplungsfalle
+## Was ist die Kopplungsfalle des § 52 Abs. 50a EStG?
 
 Hier liegt der gefährlichste Punkt der Reform, und er wird regelmäßig falsch
 dargestellt. Die Erklärung zum Wechsel der Fördersystematik ist kein Schalter an
@@ -125,7 +125,7 @@ Daraus folgt eine Regel, an der keine saubere Beratung vorbeikommt:
 > rechnen, nicht je Vertrag. Ein einzelner günstiger Wechsel kann einen zweiten,
 > wertvolleren Altvertrag mit ins neue Regime reißen.
 
-## Was ein Wechsel nicht ist
+## Ist die Übertragung ins Altersvorsorgedepot eine Kündigung?
 
 Anbieterwechsel und Übertragung des Kapitals in ein Altersvorsorgedepot sind
 **keine Kündigung**. Die Übertragung ist nach § 3 Nr. 55c EStG steuerneutral.
@@ -135,7 +135,7 @@ gesondert festgestellten Steuerermäßigungen aus (§ 93 Abs. 1 EStG). Bei fünf
 Jahren Laufzeit sind das schnell fünfstellige Beträge. Diese Unterscheidung
 gehört in jedes Gespräch, in dem das Wort „wechseln" fällt.
 
-## Was daraus für die Beratung folgt
+## In welcher Reihenfolge prüft man Regime und Produktmantel?
 
 Drei Sätze, die den Unterschied machen:
 

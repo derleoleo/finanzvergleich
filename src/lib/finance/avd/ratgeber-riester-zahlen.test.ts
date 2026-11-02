@@ -68,7 +68,7 @@ const zulageNeu = (beitrag: number, kinder: number) =>
 
 describe('Ratgeber: Riester-Bestand', () => {
   it('die Tabelle zu Option B stimmt mit der Engine überein', () => {
-    const zeilen = tabelle('## Was Option B bringt', 6);
+    const zeilen = tabelle('## Was bringt der Wechsel der Fördersystematik?', 6);
     expect(zeilen).toHaveLength(5);
     for (const [einkZ, kinderZ, beitragZ, altZ, neuZ, diffZ] of zeilen) {
       const eink = euro(einkZ);
@@ -85,7 +85,7 @@ describe('Ratgeber: Riester-Bestand', () => {
   it('die Sockelzone ist nachgerechnet', () => {
     // Bis zu welchem Vorjahreseinkommen loesen 60 EUR die volle alte Zulage
     // aus? Das ist die einzige Zone, in der das alte Recht gewinnt.
-    const zeilen = tabelle('## Wann die alte Förderung gewinnt', 2);
+    const zeilen = tabelle('## Wann ist die alte Riester-Förderung höher?', 2);
     expect(zeilen).toHaveLength(4);
     for (const [kinderZ, grenzeZ] of zeilen) {
       const kinder = Number(kinderZ);

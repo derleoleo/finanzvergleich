@@ -15,7 +15,7 @@ Entscheidend ist nicht, wie hoch die Förderung insgesamt ausfällt, sondern
 **was der jeweils nächste Euro noch bringt**. Diese Grenzförderquote fällt an
 einer scharfen Kante — und die liegt tiefer, als die meisten Tabellen zeigen.
 
-## Die Staffel der Grundzulage
+## Wie hoch ist die Grundzulage im Altersvorsorgedepot?
 
 Die Grundzulage ist zweistufig aufgebaut (§ 84 S. 1 EStG n.F.):
 
@@ -33,7 +33,7 @@ Daraus folgt die erste von drei Zahlen, die man im Kopf haben sollte:
 Der Mindesteigenbeitrag liegt bei 120 € im Jahr (§ 86 EStG n.F.) — eine harte
 Schwelle ohne anteilige Kürzung. Wer darunter bleibt, bekommt nichts.
 
-## Was die Kinderzulage daraus macht
+## Wie viel bringt die Kinderzulage?
 
 Die Kinderzulage beträgt 100 % des Eigenbeitrags, gedeckelt bei 300 € je Kind
 (§ 85 Abs. 1 S. 1 EStG n.F.). Bei zwei Kindern sind die ersten 300 € des
@@ -64,7 +64,7 @@ Nenner. Das ist die zweite Zahl:
 > angelegt — ohne Verfügungsbeschränkung und ohne die Rückzahlungspflicht bei
 > schädlicher Verwendung (§ 93 EStG).
 
-## Der Denkfehler, der in der Beratung teuer wird
+## Warum reicht es nicht, nur die Zulage zu rechnen?
 
 Bisher stand in den Tabellen immer nur die Zulage. Nun kommt der
 Sonderausgabenabzug hinzu: 1.800 € zuzüglich der zustehenden Zulage
@@ -102,7 +102,7 @@ Für die Frage „geförderter Vertrag oder freies Depot?" ist deshalb allein di
 Kinderzahl bei 360 € im Jahr. Das ist die dritte Zahl — und die einzige, die man
 wirklich braucht.
 
-## Was daraus für die Empfehlung folgt
+## Welcher Jahresbeitrag ist förderoptimal?
 
 Eine Faustregel, die in drei Zeilen passt:
 
@@ -118,7 +118,7 @@ Anlagehorizont, von der Liquiditätslage und von der erwarteten Steuerbelastung
 im Alter ab. Genau diese Abwägung verlangt § 61 VVG als **Begründung** des
 Rates — nicht nur die Dokumentation, dass beraten wurde.
 
-## Zwei Punkte, die das BMF noch klären muss
+## Was hat das BMF noch nicht geklärt?
 
 Zahlen aus der Übergangszeit müssen ihre offenen Fragen mitnennen, sonst sind
 sie als Beratungsgrundlage unbrauchbar. Zwei Punkte des
