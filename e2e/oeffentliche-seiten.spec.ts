@@ -47,6 +47,33 @@ test.describe("Öffentliche Seiten", () => {
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
+  test("Die Ueberblicksseite ist ohne Anmeldung erreichbar", async ({ page }) => {
+    // „Was ist das hier eigentlich?" - die Seite entstand, weil die Search
+    // Console zeigte, dass das Werkzeug gesucht wird und keine Seite diese
+    // Frage zusammenhaengend beantwortet. Hinter der Anmeldung waere sie
+    // wertlos.
+    await page.goto("/was-ist-vorsorgewaage");
+    await expect(page).toHaveURL(/\/was-ist-vorsorgewaage$/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Was ist");
+
+    // Eigener Kopf statt des Kopfes der Startseite.
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      "https://www.vorsorgewaage.de/was-ist-vorsorgewaage",
+    );
+    await expect(page).toHaveTitle(/^Was ist Vorsorgewaage\?/);
+
+    // Die Grenzen muessen auf der Seite stehen, nicht nur die Faehigkeiten:
+    // Ein Besucher, der ein Pensionsrueckstellungs-Werkzeug sucht, soll das
+    // hier lesen und nicht erst nach der Anmeldung merken.
+    await expect(page.getByText(/Pensionsrückstellungen/)).toBeVisible();
+    await expect(page.getByText(/[Kk]eine Anlageberatung/)).toBeVisible();
+
+    // Und der Weg weiter ist da.
+    await expect(page.getByRole("link", { name: /Beispielfall/ }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Impressum" }).first()).toBeVisible();
+  });
+
   test("Preise und Beispielfall sind ohne Anmeldung erreichbar", async ({ page }) => {
     // Beide Seiten lagen hinter der Anmeldung bzw. gab es nicht. Sie sind die
     // Zielseiten fuer Suche und Anzeigen; eine Umleitung zum Login waere der

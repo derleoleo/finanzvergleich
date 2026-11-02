@@ -45,6 +45,7 @@ const AllResults              = lazy(() => import("@/pages/AllResults"));
 const SinglePaymentCalculator = lazy(() => import("@/pages/SinglePaymentCalculator"));
 const SinglePaymentDetail     = lazy(() => import("@/pages/SinglePaymentDetail"));
 const Beispiel                = lazy(() => import("@/pages/Beispiel"));
+const WasIstVorsorgewaage     = lazy(() => import("@/pages/WasIstVorsorgewaage"));
 const BestAdviceCalculator    = lazy(() => import("@/pages/BestAdviceCalculator"));
 const BestAdviceDetail        = lazy(() => import("@/pages/BestAdviceDetail"));
 const NetPolicyCalculator     = lazy(() => import("@/pages/NetPolicyCalculator"));
@@ -346,6 +347,13 @@ export default function App() {
 
           {/* Beispielfall - oeffentlich, Zielseite fuer Suche und Anzeigen */}
           <Route path="/beispiel" element={<Beispiel />} />
+          {/*
+            „Was ist das hier eigentlich?" - oeffentlich.
+            Die Search Console zeigt: Gesucht wird das Werkzeug, nicht das
+            Fachthema. Diese Frage beantwortete bisher keine Seite
+            zusammenhaengend.
+          */}
+          <Route path="/was-ist-vorsorgewaage" element={<WasIstVorsorgewaage />} />
 
           {/* Fallback */}
           <Route

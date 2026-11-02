@@ -36,6 +36,13 @@ export type Seitenkopf = {
  */
 export const SEITENKOEPFE: Seitenkopf[] = [
   {
+    pfad: "/was-ist-vorsorgewaage",
+    titel: "Was ist Vorsorgewaage? Software für Altersvorsorge",
+    beschreibung:
+      "Sechs Rechner für Altersvorsorge und Ruhestandsplanung: Fondspolice gegen " +
+      "Depot, Altersvorsorgedepot ab 2027, Rentenlücke, Entnahmeplan. Für Berater.",
+  },
+  {
     pfad: "/beispiel",
     titel: "Beispielfall: Fondspolice oder Depot? – Vorsorgewaage",
     beschreibung:

@@ -535,6 +535,13 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <BrandLogo className="opacity-60" markClassName="h-7 w-7" textClassName="text-lg text-white" />
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-xs">
+            {/* „Was ist das hier eigentlich?" - bewusst in der Fusszeile und
+                nicht in der Kopfnavigation: Die hat auf der Landingpage schon
+                vier Eintraege, ein fuenfter braeche auf mittleren Breiten um.
+                Auf allen uebrigen Gastseiten steht der Verweis oben
+                (GastRahmen), und die Fusszeile reicht, damit ein Crawler die
+                Seite findet. */}
+            <Link to="/was-ist-vorsorgewaage" className="hover:text-white transition-colors">Überblick</Link>
             <a href="/ratgeber/" className="hover:text-white transition-colors">Ratgeber</a>
             <Link to="/impressum" className="hover:text-white transition-colors">Impressum</Link>
             <Link to="/datenschutz" className="hover:text-white transition-colors">Datenschutz</Link>
