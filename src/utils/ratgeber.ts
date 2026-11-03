@@ -228,6 +228,16 @@ const STIL = `
        Seite. */
     .breit { max-width: 72rem; margin: 0 auto; padding: 0 1.5rem; }
     header { border-bottom: 1px solid var(--border); background: rgba(255,255,255,.9); backdrop-filter: blur(4px); position: sticky; top: 0; z-index: 50; }
+    /* Sprungziele muessen unter der klebenden Leiste landen, nicht dahinter.
+       Die Leiste ist 69 px hoch; gemessen auf /was-die-rechner-koennen stand
+       die angesprungene Ueberschrift exakt bei top: 0 und war damit
+       vollstaendig verdeckt. 5rem laesst ihr Luft. Das gleitende Scrollen
+       macht den Sprung nachvollziehbar - wer Bewegung abbestellt hat,
+       bekommt sie nicht. */
+    h2[id] { scroll-margin-top: 5rem; }
+    @media (prefers-reduced-motion: no-preference) {
+      html { scroll-behavior: smooth; }
+    }
     /* Drei Gruppen wie in der Anwendung: Marke links, Navigation in der
        Mitte, Aktionen rechts. Mit space-between ueber nur zwei Gruppen klebte
        die Navigation an den Aktionen - das war der sichtbare Unterschied. */
@@ -340,6 +350,7 @@ ${inhalt}
   </main>
   <footer>
     <div class="breit">
+      <a href="${DOMAIN}/was-die-rechner-koennen">Was die Rechner können</a>
       <a href="${DOMAIN}/impressum">Impressum</a>
       <a href="${DOMAIN}/datenschutz">Datenschutz</a>
       <a href="${DOMAIN}/agb">AGB</a>

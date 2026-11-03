@@ -74,6 +74,63 @@ test.describe("Öffentliche Seiten", () => {
     await expect(page.getByRole("link", { name: "Impressum" }).first()).toBeVisible();
   });
 
+  test("Die Funktionsseite ist erreichbar und ihre Anker springen", async ({ page }) => {
+    // Anlass: Ein Nutzer hatte nicht bemerkt, dass sich Sonderentnahmen im
+    // Entnahmeplan einzeln bearbeiten lassen - sie liegen hinter einem
+    // Schalter. Die Seite erklaert je Rechner, was leicht zu uebersehen ist.
+    await page.goto("/was-die-rechner-koennen");
+    await expect(page).toHaveURL(/\/was-die-rechner-koennen$/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(
+      "Was die Rechner können",
+    );
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      "https://www.vorsorgewaage.de/was-die-rechner-koennen",
+    );
+
+    // Der Anlassfall muss benannt sein, sonst traegt die Seite ihren Zweck
+    // nicht.
+    await expect(page.getByText(/Expertenmodus/).first()).toBeVisible();
+
+    // Die Anker sind der Grund fuer eine einzelne Seite statt sieben: Aus
+    // einem Rechner soll direkt der passende Abschnitt erreichbar sein.
+    // `marked` setzt keine IDs an Ueberschriften - die stehen als rohes HTML
+    // in der Markdown-Datei, und genau das wird hier geprueft.
+    for (const anker of ["entnahmeplan", "avd", "voreinstellungen"]) {
+      await expect(page.locator(`#${anker}`)).toHaveCount(1);
+    }
+    // `toBeInViewport()` reicht hier nicht: Die Ueberschrift stand nach dem
+    // Sprung exakt bei top: 0 und damit vollstaendig hinter der klebenden
+    // Kopfleiste - der Test war trotzdem gruen. Geprueft wird deshalb, dass
+    // sie unterhalb der Leiste zu liegen kommt.
+    // Zwei Fallen auf einmal, beide hier erlebt:
+    //   1. `toBeInViewport()` reicht nicht - die Ueberschrift stand nach dem
+    //      Sprung exakt bei top: 0 und damit vollstaendig hinter der
+    //      klebenden Kopfleiste, der Test war trotzdem gruen.
+    //   2. Das Scrollen gleitet. Wer direkt nach dem Laden misst, misst
+    //      mitten in der Bewegung - bei rund 4.100 px Weg waren das beim
+    //      ersten Versuch 4.165 px daneben. Deshalb `expect.poll`, bis die
+    //      Seite zur Ruhe gekommen ist.
+    await page.goto("/was-die-rechner-koennen#entnahmeplan");
+    await page.evaluate(() => document.fonts.ready);
+    const kopfhoehe = await page.evaluate(
+      () => document.querySelector("header")!.getBoundingClientRect().height,
+    );
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() =>
+            Math.round(
+              document.querySelector("#entnahmeplan")!.getBoundingClientRect().top,
+            ),
+          ),
+        { message: `Ueberschrift muss unter die ${kopfhoehe} px hohe Kopfleiste` },
+      )
+      .toBeGreaterThanOrEqual(Math.round(kopfhoehe));
+
+    await expect(page.getByRole("link", { name: "Impressum" }).first()).toBeVisible();
+  });
+
   test("Preise und Beispielfall sind ohne Anmeldung erreichbar", async ({ page }) => {
     // Beide Seiten lagen hinter der Anmeldung bzw. gab es nicht. Sie sind die
     // Zielseiten fuer Suche und Anzeigen; eine Umleitung zum Login waere der

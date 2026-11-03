@@ -23,6 +23,7 @@ import {
   LogOut,
   Lock,
   PiggyBank,
+  CircleHelp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,12 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   /** Zusätzliche Pfade, bei denen der Eintrag als aktiv markiert wird */
   activeUrls?: string[];
+  /**
+   * Seite außerhalb der Anwendung (statisch gebaut, kein Router-Pfad).
+   * Solche Ziele brauchen ein echtes `<a href>`: Ein `<Link to>` bliebe im
+   * React-Router hängen, der die Adresse nicht kennt, und landete im 404.
+   */
+  extern?: boolean;
 };
 
 const calculatorItems: NavItem[] = [
@@ -88,9 +95,15 @@ const resultItems = [
   { title: "Alle Ergebnisse", url: createPageUrl("Results"), icon: BarChart3 },
 ];
 
-const profileItems = [
+const profileItems: NavItem[] = [
   { title: "Mein Profil", url: createPageUrl("Profile"), icon: User },
   { title: "Voreinstellungen", url: createPageUrl("Defaults"), icon: SlidersHorizontal },
+  {
+    title: "Was die Rechner können",
+    url: "/was-die-rechner-koennen",
+    icon: CircleHelp,
+    extern: true,
+  },
   { title: "Premium", url: createPageUrl("Pricing"), icon: TrendingUp },
 ];
 
@@ -264,28 +277,39 @@ export default function Layout({ children }: Props) {
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {profileItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        className={`hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 rounded-xl mb-1 ${
-                          location.pathname === item.url
-                            ? "bg-slate-100 text-slate-900 font-medium"
-                            : "text-slate-600"
-                        }`}
-                      >
-                        <Link
-                          to={item.url}
-                          className="flex items-center gap-3 px-4 py-3"
+                  {profileItems.map((item) => {
+                    const inhalt = (
+                      <>
+                        <item.icon className="w-5 h-5" />
+                        <span className="font-medium text-sm">
+                          {item.title}
+                        </span>
+                      </>
+                    );
+                    const zeile = "flex items-center gap-3 px-4 py-3";
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          className={`hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 rounded-xl mb-1 ${
+                            location.pathname === item.url
+                              ? "bg-slate-100 text-slate-900 font-medium"
+                              : "text-slate-600"
+                          }`}
                         >
-                          <item.icon className="w-5 h-5" />
-                          <span className="font-medium text-sm">
-                            {item.title}
-                          </span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                          {item.extern ? (
+                            <a href={item.url} className={zeile}>
+                              {inhalt}
+                            </a>
+                          ) : (
+                            <Link to={item.url} className={zeile}>
+                              {inhalt}
+                            </Link>
+                          )}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
