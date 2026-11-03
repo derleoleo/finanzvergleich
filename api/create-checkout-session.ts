@@ -51,63 +51,124 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(a.status).json(a.koerper);
   }
 
-  // Vorhandene stripe_customer_id laden
-  const { data: sub } = await supabaseAdmin
-    .from("subscriptions")
-    .select("stripe_customer_id")
-    .eq("user_id", user.id)
-    .single();
+  // Ab hier wird mit Stripe gesprochen, und ab hier konnte bisher alles
+  // ungebremst durchschlagen: Dieser Teil lief ohne jede Absicherung. Ein
+  // Preis, den das Live-Konto nicht kennt, ein Gutschein, den es nur im
+  // Testmodus gibt, ein Parameter, den die Stripe-Fassung nicht versteht -
+  // jede dieser Ausnahmen wurde zu einem nackten 500 ohne Text. Im Browser
+  // blieb davon nichts uebrig, und in den Protokollen stand nur ein
+  // Stapelabzug. Am 03.11.2026 meldete ein Interessent, der Kaufknopf gehe
+  // nicht; niemand konnte sagen, warum. Deshalb sagt die Funktion jetzt
+  // selbst, woran sie gescheitert ist.
+  try {
+    // Vorhandene stripe_customer_id laden
+    const { data: sub } = await supabaseAdmin
+      .from("subscriptions")
+      .select("stripe_customer_id")
+      .eq("user_id", user.id)
+      .single();
 
-  let customerId: string | undefined = sub?.stripe_customer_id ?? undefined;
+    const kundeAnlegen = async () => {
+      const kunde = await stripe.customers.create({
+        email: user.email,
+        metadata: { supabase_user_id: user.id },
+      });
+      return kunde.id;
+    };
 
-  // Neuen Customer anlegen, falls noch keiner existiert
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: user.email,
-      metadata: { supabase_user_id: user.id },
+    let customerId: string | undefined = sub?.stripe_customer_id ?? undefined;
+
+    // Neuen Customer anlegen, falls noch keiner existiert
+    if (!customerId) customerId = await kundeAnlegen();
+
+    // Weiterempfehlung: Wer über einen Empfehlungslink gekommen ist, bekommt
+    // den Rabatt auf sein erstes Abo. Der Werber wird erst belohnt, wenn hier
+    // tatsächlich gezahlt wird (siehe stripe-webhook.ts).
+    const { data: werbung } = await supabaseAdmin
+      .from("werbungen")
+      .select("status")
+      .eq("geworbener_user_id", user.id)
+      .maybeSingle();
+    const coupon =
+      werbung?.status === WERBUNG_STATUS.registriert
+        ? couponFuerGeworbenen(priceId)
+        : undefined;
+
+    const kasseOeffnen = (kunde: string) =>
+      stripe.checkout.sessions.create({
+        customer: kunde,
+        mode: "subscription",
+        line_items: [{ price: priceId, quantity: 1 }],
+        // Pflichtangaben für Rechnungen über 250 € (§ 14 Abs. 4 UStG): Name und
+        // Anschrift des Leistungsempfängers. Die Angaben werden am Stripe-Kunden
+        // gespeichert und erscheinen so auf allen Folgerechnungen.
+        billing_address_collection: "required",
+        name_collection: { business: { enabled: true, optional: false } },
+        customer_update: { address: "auto", name: "auto" },
+        locale: "de",
+        subscription_data: {
+          trial_period_days: 30,
+          metadata: { supabase_user_id: user.id },
+        },
+        // Stripe erlaubt beides nie zugleich: einen fest gesetzten Rabatt
+        // (`discounts`) oder das Eingabefeld für Gutscheincodes
+        // (`allow_promotion_codes`). Der Empfehlungsrabatt geht vor – er ist schon
+        // zugesagt, und ein eingetippter Code würde ihn verdrängen. Alle anderen
+        // können ihren Code beim Bezahlen selbst eingeben; ohne dieses Feld war ein
+        // Gutschein nur von Hand im Stripe-Konto einlösbar.
+        ...(coupon ? { discounts: [{ coupon }] } : { allow_promotion_codes: true }),
+        metadata: { supabase_user_id: user.id },
+        success_url: `${req.headers.origin}/pricing?checkout=success`,
+        cancel_url: `${req.headers.origin}/pricing`,
+      });
+
+    // Steht in der Datenbank eine Kundennummer, die es in diesem Stripe-Konto
+    // nicht (mehr) gibt, lehnt Stripe jeden Kauf ab - und zwar dauerhaft, denn
+    // die Nummer wird bei jedem Versuch aufs Neue verwendet. Genau das ist am
+    // 03.11.2026 passiert: `No such customer: 'cus_…'`, gemeldet aus dem
+    // Echtbetrieb, der Betroffene konnte Premium nie buchen. Ueblichste
+    // Ursache ist eine Nummer aus dem Testmodus in der Live-Datenbank; Kunden
+    // gelten, wie Gutscheine auch, immer nur in ihrem Modus.
+    //
+    // Statt den Kauf scheitern zu lassen, legen wir einen neuen Kunden an,
+    // schreiben ihn zurueck und versuchen es ein einziges Mal erneut. Der
+    // Betroffene merkt nichts, und die veraltete Nummer ist danach weg.
+    let session;
+    try {
+      session = await kasseOeffnen(customerId);
+    } catch (err) {
+      const f = err as { code?: string; param?: string };
+      if (f.code !== "resource_missing" || f.param !== "customer") throw err;
+
+      console.warn("create-checkout-session: Kundennummer unbekannt, neu angelegt", {
+        code: f.code,
+        param: f.param,
+      });
+      customerId = await kundeAnlegen();
+      if (sub) {
+        await supabaseAdmin
+          .from("subscriptions")
+          .update({ stripe_customer_id: customerId })
+          .eq("user_id", user.id);
+      }
+      session = await kasseOeffnen(customerId);
+    }
+
+    return res.status(200).json({ url: session.url });
+  } catch (err) {
+    const f = err as { type?: string; code?: string; message?: string };
+    // Bewusst ohne Nutzerkennung, wie bei Sentry auch: Der Tarif und die
+    // Meldung von Stripe reichen, um den Fehler zu finden.
+    console.error("create-checkout-session: Kasse fehlgeschlagen", {
+      priceId,
+      type: f.type,
+      code: f.code,
+      message: f.message,
     });
-    customerId = customer.id;
+    return res.status(502).json({
+      error:
+        `Die Bezahlseite ließ sich nicht öffnen${f.code ? ` (${f.code})` : ""}. ` +
+        "Bitte versuchen Sie es erneut oder schreiben Sie uns an info@vorsorgewaage.de.",
+    });
   }
-
-  // Weiterempfehlung: Wer über einen Empfehlungslink gekommen ist, bekommt
-  // den Rabatt auf sein erstes Abo. Der Werber wird erst belohnt, wenn hier
-  // tatsächlich gezahlt wird (siehe stripe-webhook.ts).
-  const { data: werbung } = await supabaseAdmin
-    .from("werbungen")
-    .select("status")
-    .eq("geworbener_user_id", user.id)
-    .maybeSingle();
-  const coupon =
-    werbung?.status === WERBUNG_STATUS.registriert
-      ? couponFuerGeworbenen(priceId)
-      : undefined;
-
-  const session = await stripe.checkout.sessions.create({
-    customer: customerId,
-    mode: "subscription",
-    line_items: [{ price: priceId, quantity: 1 }],
-    // Pflichtangaben für Rechnungen über 250 € (§ 14 Abs. 4 UStG): Name und
-    // Anschrift des Leistungsempfängers. Die Angaben werden am Stripe-Kunden
-    // gespeichert und erscheinen so auf allen Folgerechnungen.
-    billing_address_collection: "required",
-    name_collection: { business: { enabled: true, optional: false } },
-    customer_update: { address: "auto", name: "auto" },
-    locale: "de",
-    subscription_data: {
-      trial_period_days: 30,
-      metadata: { supabase_user_id: user.id },
-    },
-    // Stripe erlaubt beides nie zugleich: einen fest gesetzten Rabatt
-    // (`discounts`) oder das Eingabefeld für Gutscheincodes
-    // (`allow_promotion_codes`). Der Empfehlungsrabatt geht vor – er ist schon
-    // zugesagt, und ein eingetippter Code würde ihn verdrängen. Alle anderen
-    // können ihren Code beim Bezahlen selbst eingeben; ohne dieses Feld war ein
-    // Gutschein nur von Hand im Stripe-Konto einlösbar.
-    ...(coupon ? { discounts: [{ coupon }] } : { allow_promotion_codes: true }),
-    metadata: { supabase_user_id: user.id },
-    success_url: `${req.headers.origin}/pricing?checkout=success`,
-    cancel_url: `${req.headers.origin}/pricing`,
-  });
-
-  return res.status(200).json({ url: session.url });
 }

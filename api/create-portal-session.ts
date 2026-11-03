@@ -48,10 +48,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer: sub.stripe_customer_id,
-    return_url: `${req.headers.origin}/pricing`,
-  });
+  // Dieselbe Absicherung wie in `create-checkout-session.ts`: Ohne sie wird
+  // jede Ausnahme zu einem nackten 500 ohne Text. Hier ist der haeufigste
+  // Fall, dass das Kundenportal im Live-Konto noch nicht eingerichtet ist -
+  // Stripe wirft dann, und niemand erfaehrt es.
+  try {
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: sub.stripe_customer_id,
+      return_url: `${req.headers.origin}/pricing`,
+    });
 
-  return res.status(200).json({ url: portalSession.url });
+    return res.status(200).json({ url: portalSession.url });
+  } catch (err) {
+    const f = err as { type?: string; code?: string; message?: string };
+    console.error("create-portal-session: Portal fehlgeschlagen", {
+      type: f.type,
+      code: f.code,
+      message: f.message,
+    });
+    return res.status(502).json({
+      error:
+        `Die Abo-Verwaltung ließ sich nicht öffnen${f.code ? ` (${f.code})` : ""}. ` +
+        "Bitte versuchen Sie es erneut oder schreiben Sie uns an info@vorsorgewaage.de.",
+    });
+  }
 }
