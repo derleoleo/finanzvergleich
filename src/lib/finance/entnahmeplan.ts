@@ -22,6 +22,7 @@ export type EntnahmeZeile = {
   year: number;
   age: number;
   startCapital: number;
+  /** Positiv entnommen, negativ eingezahlt – wie in `specialWithdrawals`. */
   withdrawal: number;
   growth: number;
   endCapital: number;
@@ -35,7 +36,16 @@ export type EntnahmeEingabe = {
   annualReturnPercent: number;
   startAge: number;
   endAge: number;
-  /** Sonderentnahmen je Planjahr (Expertenmodus). */
+  /**
+   * Sonderbeträge je Planjahr (Expertenmodus), Schlüssel ist das Planjahr ab 0.
+   *
+   * Positiv ist eine Entnahme, negativ eine Einzahlung. Diese Richtung ist
+   * nicht frei wählbar: Gespeicherte Pläne enthalten positive Werte, die
+   * Entnahmen bedeuten. Würde man sie umdrehen, läse jeder alte Plan seine
+   * Entnahmen als Einzahlungen. Die Oberfläche zeigt es umgekehrt – dort
+   * steht eine Entnahme mit Minus –, und diese Umkehr geschieht an genau
+   * einer Stelle, in `WithdrawalTable`.
+   */
   specialWithdrawals?: Record<number, number>;
   /** Jahre ohne Entnahme vor der ersten Auszahlung (Vorgabe 0). */
   aufschubJahre?: number;
@@ -73,12 +83,23 @@ export function baueEntnahmeplan({
     const letztesJahr = jahr === planJahre;
     const vorAufschub = jahr < aufschub;
 
+    // `specialWithdrawals` führt Entnahmen positiv und Einzahlungen negativ.
+    const sonder = specialWithdrawals?.[jahr];
+    const istEinzahlung = sonder !== undefined && sonder < 0;
+
     let entnahme = 0;
-    if (!vorAufschub) {
+    if (istEinzahlung) {
+      // Eine Einzahlung – ein Erbe etwa, das mitten im Plan zufließt – wird
+      // weder auf null gekappt noch auf das vorhandene Kapital gedeckelt.
+      // Beide Grenzen gelten nur für Entnahmen. Und sie wirkt auch während
+      // der Aufschubzeit: Dass noch nicht entnommen wird, heißt nicht, dass
+      // nichts hinzukommen kann.
+      entnahme = sonder;
+    } else if (!vorAufschub) {
       const gewuenscht =
         letztesJahr && komplettentnahmeAmEnde
           ? kapitalJahresanfang
-          : (specialWithdrawals?.[jahr] ?? annualWithdrawal);
+          : (sonder ?? annualWithdrawal);
       entnahme = Math.max(0, Math.min(gewuenscht, Math.max(0, kapitalJahresanfang)));
     }
 
@@ -86,7 +107,9 @@ export function baueEntnahmeplan({
     // Negative Rendite bleibt negativ – ein Verlust ist kein Nullwachstum
     const wachstum = nachEntnahme * rendite;
     kapital = nachEntnahme + wachstum;
-    summeEntnommen += entnahme;
+    // Eine Einzahlung ist keine Entnahme: Sie darf die ausgewiesene
+    // Gesamtentnahme nicht mindern.
+    summeEntnommen += Math.max(0, entnahme);
 
     zeilen.push({
       year: jahr,

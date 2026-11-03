@@ -210,8 +210,10 @@ export default function WithdrawalPlan() {
   // Ein Aufschub über die gesamte Planlänge hinaus bedeutet: in diesem Plan
   // wird nie etwas entnommen. Das muss dastehen, sonst sucht der Berater den
   // Fehler in der Rendite.
+  // `<= 0`, nicht `=== 0`: Eine Einzahlung steht als negativer Betrag in der
+  // Zeile. Ein Plan, in dem nur eingezahlt wird, hat trotzdem keine Entnahme.
   const ohneEntnahme =
-    withdrawalData.length > 0 && withdrawalData.every((z) => z.withdrawal === 0);
+    withdrawalData.length > 0 && withdrawalData.every((z) => z.withdrawal <= 0);
 
   // Szenario B: gleiche Parameter, andere Entnahmehöhe (ohne Sonderentnahmen)
   const compareData = useMemo(
@@ -279,9 +281,12 @@ export default function WithdrawalPlan() {
     return eintraege;
   }, [gespeicherteErgebnisse, withdrawalData, startCapital]);
 
-  const handleSpecialWithdrawalChange = (year: number, amount: string) => {
+  // Der Betrag kommt bereits in Speicherrichtung an: positiv entnommen,
+  // negativ eingezahlt. Das Drehen des Vorzeichens für die Anzeige passiert
+  // ausschließlich in `WithdrawalTable`.
+  const handleSpecialWithdrawalChange = (year: number, betrag: number) => {
     if (!isDetailMode) return;
-    setSpecialWithdrawals((prev) => ({ ...prev, [year]: parseFloat(amount) || 0 }));
+    setSpecialWithdrawals((prev) => ({ ...prev, [year]: betrag }));
   };
 
   const planSpeichern = async () => {
@@ -592,9 +597,17 @@ export default function WithdrawalPlan() {
                     </div>
                   ) : (
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-xs text-blue-800 flex items-center gap-2">
-                        <Pencil className="w-4 h-4" />
-                        Entnahmen direkt in der Tabelle bearbeiten.
+                      <p className="text-xs text-blue-800 flex items-start gap-2">
+                        <Pencil className="w-4 h-4 shrink-0 mt-0.5" />
+                        {/* Ohne diesen Satz ist das Vorzeichen nicht zu
+                            erraten: Entnahmen stehen mit Minus, und eine
+                            positive Zahl bedeutet Geld, das hinzukommt. */}
+                        <span>
+                          Entnahmen direkt in der Tabelle bearbeiten – sie stehen
+                          dort mit Minus. Eine <strong>positive</strong> Zahl ist
+                          eine Einzahlung, etwa ein Erbe. Der Wert greift, sobald
+                          Sie das Feld verlassen.
+                        </span>
                       </p>
                     </div>
                   )}
