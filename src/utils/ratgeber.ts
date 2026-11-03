@@ -26,6 +26,7 @@
 
 import { marked } from "marked";
 import { ERLAUBTE_PARAMETER } from "./messparameter";
+import { SEITENVERHAELTNISSE, bildAdressen, bildwerkFuer } from "./beitragsbilder";
 
 export const DOMAIN = "https://www.vorsorgewaage.de";
 export const RATGEBER_PFAD = "/ratgeber";
@@ -349,18 +350,18 @@ ${inhalt}
 }
 
 /**
- * Das Vorschaubild, mit dem die Anwendung ohnehin schon geteilt wird.
+ * Das Markenbild — Vorschau für alle Seiten, die kein eigenes Bild haben.
  *
  * Die Ratgeberseiten hatten gar keins: `og:image` fehlte, und
  * `twitter:card` stand auf `summary`. Geteilt in einem Beratungsnetzwerk oder
- * einer Nachricht erschien also ein Textschnipsel ohne Bild — und das für die
- * vier Seiten, die überhaupt Besucher bringen sollen.
+ * einer Nachricht erschien also ein Textschnipsel ohne Bild.
  *
- * Bewusst dasselbe Markenbild für alle Beiträge statt eines eigenen pro
- * Beitrag: Ein eigenes Bild ist besser, verlangt aber vier gestaltete Dateien.
- * Dasselbe Bild ins `Article`-JSON-LD zu schreiben, wäre dagegen falsch —
- * Google verlangt dort ausdrücklich ein Bild, das den Beitrag zeigt, „rather
- * than logos". Dort steht deshalb weiterhin keins.
+ * Danach trugen alle Beiträge dieses eine Markenbild, und im
+ * `Article`-JSON-LD stand gar keins: Google verlangt dort ausdrücklich ein
+ * Bild, das den Beitrag zeigt, „rather than logos". Inzwischen hat jeder
+ * Beitrag ein eigenes, aus seinen Zahlen gezeichnetes Bild
+ * (`beitragsbilder.ts`) — das Markenbild bleibt für die Übersicht und die
+ * Einzelseiten.
  */
 const VORSCHAUBILD = {
   adresse: `${DOMAIN}/og-image.png`,
@@ -376,9 +377,12 @@ function huelle(o: {
   /** `article` für einen Beitrag, `website` für die Übersicht. */
   art: "article" | "website";
   kopfExtra?: string;
+  /** Eigenes Vorschaubild; ohne Angabe das Markenbild. */
+  bild?: { adresse: string; breite: string; hoehe: string; text: string };
   inhalt: string;
   mess: Messstelle | undefined;
 }): string {
+  const bild = o.bild ?? VORSCHAUBILD;
   return `<!doctype html>
 <html lang="de">
 <head>
@@ -394,14 +398,14 @@ function huelle(o: {
   <meta property="og:url" content="${escape(o.adresse)}">
   <meta property="og:site_name" content="Vorsorgewaage">
   <meta property="og:locale" content="de_DE">
-  <meta property="og:image" content="${VORSCHAUBILD.adresse}">
-  <meta property="og:image:width" content="${VORSCHAUBILD.breite}">
-  <meta property="og:image:height" content="${VORSCHAUBILD.hoehe}">
-  <meta property="og:image:alt" content="${escape(VORSCHAUBILD.text)}">
+  <meta property="og:image" content="${bild.adresse}">
+  <meta property="og:image:width" content="${bild.breite}">
+  <meta property="og:image:height" content="${bild.hoehe}">
+  <meta property="og:image:alt" content="${escape(bild.text)}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${escape(o.titel)}">
   <meta name="twitter:description" content="${escape(o.beschreibung)}">
-  <meta name="twitter:image" content="${VORSCHAUBILD.adresse}">
+  <meta name="twitter:image" content="${bild.adresse}">
 ${o.kopfExtra ?? ""}${messskript(o.mess)}  <style>${STIL}  </style>
 </head>
 <body>
@@ -457,6 +461,14 @@ function datenBloecke(...bloecke: object[]): string {
 /** Eine Beitragsseite. */
 export function beitragSeite(b: Beitrag, mess?: Messstelle): string {
   const adresse = `${DOMAIN}${RATGEBER_PFAD}/${b.slug}/`;
+
+  // Jeder Beitrag hat ein eigenes, aus seinen Zahlen gezeichnetes Bild.
+  // Google verlangt fuer `Article.image` ein Bild, das den Beitrag zeigt
+  // ("rather than logos"), und empfiehlt mehrere Seitenverhaeltnisse —
+  // deshalb alle drei als Feld, wie im Beispiel der Google-Seite.
+  const werk = bildwerkFuer(b.slug);
+  const bilder = werk ? bildAdressen(b.slug, DOMAIN) : [];
+
   const artikel = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -468,6 +480,7 @@ export function beitragSeite(b: Beitrag, mess?: Messstelle): string {
     mainEntityOfPage: { "@type": "WebPage", "@id": adresse },
     author: { "@type": "Organization", name: "Vorsorgewaage" },
     publisher: { "@type": "Organization", name: "Vorsorgewaage", url: `${DOMAIN}/` },
+    ...(bilder.length ? { image: bilder } : {}),
   };
   const stand = [
     `Veröffentlicht am ${datumLesbar(b.datum)}`,
@@ -497,6 +510,15 @@ ${b.html}
     beschreibung: b.beschreibung,
     adresse,
     art: "article",
+    // 16:9 als Vorschau beim Teilen; die uebrigen Masse stehen im JSON-LD.
+    bild: werk
+      ? {
+          adresse: bilder[0],
+          breite: String(SEITENVERHAELTNISSE[0].breite),
+          hoehe: String(SEITENVERHAELTNISSE[0].hoehe),
+          text: werk.alt,
+        }
+      : undefined,
     kopfExtra:
       `  <meta property="article:published_time" content="${b.datum}">\n` +
       `  <meta property="article:modified_time" content="${b.datum}">\n` +

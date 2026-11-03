@@ -14,7 +14,8 @@
     "test:e2e": "playwright test --project=chrome",
     "screenshots": "node scripts/screenshots.mjs",
     "test:e2e:angemeldet": "playwright test --project=chrome-angemeldet",
-    "seo:kopfzeilen": "node scripts/seo-kopfzeilen.mjs"
+    "seo:kopfzeilen": "node scripts/seo-kopfzeilen.mjs",
+    "bilder:ratgeber": "node scripts/generate-beitragsbilder.mjs"
   },
   "dependencies": {
     "@sentry/react": "^10.39.0",
