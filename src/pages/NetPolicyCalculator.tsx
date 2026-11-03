@@ -3,8 +3,13 @@
 // Engine mit identischen Beiträgen/Fonds. Nettotarif ohne Abschlusskosten und
 // mit reduzierter Verwaltung, dafür einmaliges Beratungshonorar.
 //
-// Vereinfachung: Das Honorar wird separat gezahlt (nicht aus dem Vertrag
-// entnommen) und ohne Verzinsungseffekt vom Netto-Endwert abgezogen.
+// Das Honorar wird separat gezahlt (nicht aus dem Vertrag entnommen) und mit
+// seinem Endwert vom Netto-Endwert abgezogen - also einschließlich der
+// Rendite, die dieses Geld bis zum Ablauf erwirtschaftet hätte. Nur so
+// vergleichen beide Seiten denselben Gesamtaufwand. Dieser Kommentar
+// behauptete bis zum 04.11.2026 das Gegenteil ("ohne Verzinsungseffekt") und
+// stand damit im Widerspruch zur Rechnung weiter unten und zur Waage, die den
+// Posten korrekt "Honorar mit entgangener Rendite" nennt.
 // Berechnungen lassen sich speichern (Tabelle net_policy_calculations) und
 // über "Alle Ergebnisse" wieder öffnen; ungespeichertes bleibt als Draft lokal.
 // Nur sichtbar, wenn in den Voreinstellungen "Honorarberatung" aktiviert ist.
@@ -530,10 +535,19 @@ export default function NetPolicyCalculator() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+              {/*
+                Dieser Satz sagte bis zum 04.11.2026 „ohne Verzinsungseffekt"
+                und beschrieb damit etwas anderes, als gerechnet wird. Er ist
+                der Satz, den ein Berater liest und im Gespräch weitergibt -
+                er muss die Rechnung treffen, nicht eine frühere Fassung
+                davon.
+              */}
               <p className="text-sm text-slate-600 mt-3">
                 Beide Läufe mit identischen Beiträgen, Fonds und Steuerregeln (Halbeinkünfte-Qualifikation
-                je Laufzeitjahr geprüft). Das Beratungshonorar wird separat gezahlt und ohne
-                Verzinsungseffekt von der Nettopolice abgezogen.
+                je Laufzeitjahr geprüft). Das Beratungshonorar wird separat gezahlt – nicht dem Vertrag
+                entnommen – und mit seinem Endwert von der Nettopolice abgezogen, also einschließlich
+                der Rendite, die dieses Geld bis zum Ablauf erwirtschaftet hätte. Nur so stehen beide
+                Seiten bei gleichem Gesamtaufwand nebeneinander.
               </p>
             </CardContent>
           </Card>
