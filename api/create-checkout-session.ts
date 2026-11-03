@@ -68,16 +68,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq("user_id", user.id)
       .single();
 
-    let customerId: string | undefined = sub?.stripe_customer_id ?? undefined;
-
-    // Neuen Customer anlegen, falls noch keiner existiert
-    if (!customerId) {
-      const customer = await stripe.customers.create({
+    const kundeAnlegen = async () => {
+      const kunde = await stripe.customers.create({
         email: user.email,
         metadata: { supabase_user_id: user.id },
       });
-      customerId = customer.id;
-    }
+      return kunde.id;
+    };
+
+    let customerId: string | undefined = sub?.stripe_customer_id ?? undefined;
+
+    // Neuen Customer anlegen, falls noch keiner existiert
+    if (!customerId) customerId = await kundeAnlegen();
 
     // Weiterempfehlung: Wer über einen Empfehlungslink gekommen ist, bekommt
     // den Rabatt auf sein erstes Abo. Der Werber wird erst belohnt, wenn hier
@@ -92,32 +94,65 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ? couponFuerGeworbenen(priceId)
         : undefined;
 
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: "subscription",
-      line_items: [{ price: priceId, quantity: 1 }],
-      // Pflichtangaben für Rechnungen über 250 € (§ 14 Abs. 4 UStG): Name und
-      // Anschrift des Leistungsempfängers. Die Angaben werden am Stripe-Kunden
-      // gespeichert und erscheinen so auf allen Folgerechnungen.
-      billing_address_collection: "required",
-      name_collection: { business: { enabled: true, optional: false } },
-      customer_update: { address: "auto", name: "auto" },
-      locale: "de",
-      subscription_data: {
-        trial_period_days: 30,
+    const kasseOeffnen = (kunde: string) =>
+      stripe.checkout.sessions.create({
+        customer: kunde,
+        mode: "subscription",
+        line_items: [{ price: priceId, quantity: 1 }],
+        // Pflichtangaben für Rechnungen über 250 € (§ 14 Abs. 4 UStG): Name und
+        // Anschrift des Leistungsempfängers. Die Angaben werden am Stripe-Kunden
+        // gespeichert und erscheinen so auf allen Folgerechnungen.
+        billing_address_collection: "required",
+        name_collection: { business: { enabled: true, optional: false } },
+        customer_update: { address: "auto", name: "auto" },
+        locale: "de",
+        subscription_data: {
+          trial_period_days: 30,
+          metadata: { supabase_user_id: user.id },
+        },
+        // Stripe erlaubt beides nie zugleich: einen fest gesetzten Rabatt
+        // (`discounts`) oder das Eingabefeld für Gutscheincodes
+        // (`allow_promotion_codes`). Der Empfehlungsrabatt geht vor – er ist schon
+        // zugesagt, und ein eingetippter Code würde ihn verdrängen. Alle anderen
+        // können ihren Code beim Bezahlen selbst eingeben; ohne dieses Feld war ein
+        // Gutschein nur von Hand im Stripe-Konto einlösbar.
+        ...(coupon ? { discounts: [{ coupon }] } : { allow_promotion_codes: true }),
         metadata: { supabase_user_id: user.id },
-      },
-      // Stripe erlaubt beides nie zugleich: einen fest gesetzten Rabatt
-      // (`discounts`) oder das Eingabefeld für Gutscheincodes
-      // (`allow_promotion_codes`). Der Empfehlungsrabatt geht vor – er ist schon
-      // zugesagt, und ein eingetippter Code würde ihn verdrängen. Alle anderen
-      // können ihren Code beim Bezahlen selbst eingeben; ohne dieses Feld war ein
-      // Gutschein nur von Hand im Stripe-Konto einlösbar.
-      ...(coupon ? { discounts: [{ coupon }] } : { allow_promotion_codes: true }),
-      metadata: { supabase_user_id: user.id },
-      success_url: `${req.headers.origin}/pricing?checkout=success`,
-      cancel_url: `${req.headers.origin}/pricing`,
-    });
+        success_url: `${req.headers.origin}/pricing?checkout=success`,
+        cancel_url: `${req.headers.origin}/pricing`,
+      });
+
+    // Steht in der Datenbank eine Kundennummer, die es in diesem Stripe-Konto
+    // nicht (mehr) gibt, lehnt Stripe jeden Kauf ab - und zwar dauerhaft, denn
+    // die Nummer wird bei jedem Versuch aufs Neue verwendet. Genau das ist am
+    // 03.11.2026 passiert: `No such customer: 'cus_…'`, gemeldet aus dem
+    // Echtbetrieb, der Betroffene konnte Premium nie buchen. Ueblichste
+    // Ursache ist eine Nummer aus dem Testmodus in der Live-Datenbank; Kunden
+    // gelten, wie Gutscheine auch, immer nur in ihrem Modus.
+    //
+    // Statt den Kauf scheitern zu lassen, legen wir einen neuen Kunden an,
+    // schreiben ihn zurueck und versuchen es ein einziges Mal erneut. Der
+    // Betroffene merkt nichts, und die veraltete Nummer ist danach weg.
+    let session;
+    try {
+      session = await kasseOeffnen(customerId);
+    } catch (err) {
+      const f = err as { code?: string; param?: string };
+      if (f.code !== "resource_missing" || f.param !== "customer") throw err;
+
+      console.warn("create-checkout-session: Kundennummer unbekannt, neu angelegt", {
+        code: f.code,
+        param: f.param,
+      });
+      customerId = await kundeAnlegen();
+      if (sub) {
+        await supabaseAdmin
+          .from("subscriptions")
+          .update({ stripe_customer_id: customerId })
+          .eq("user_id", user.id);
+      }
+      session = await kasseOeffnen(customerId);
+    }
 
     return res.status(200).json({ url: session.url });
   } catch (err) {
