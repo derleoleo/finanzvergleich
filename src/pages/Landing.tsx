@@ -564,6 +564,7 @@ export default function Landing() {
                 (GastRahmen), und die Fusszeile reicht, damit ein Crawler die
                 Seite findet. */}
             <a href="/was-ist-vorsorgewaage" className="hover:text-white transition-colors">Überblick</a>
+            <a href="/was-die-rechner-koennen" className="hover:text-white transition-colors">Was die Rechner können</a>
             <a href="/ratgeber/" className="hover:text-white transition-colors">Ratgeber</a>
             <Link to="/impressum" className="hover:text-white transition-colors">Impressum</Link>
             <Link to="/datenschutz" className="hover:text-white transition-colors">Datenschutz</Link>

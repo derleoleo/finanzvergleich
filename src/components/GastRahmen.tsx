@@ -85,6 +85,9 @@ export default function GastRahmen({
           <BrandLogo className="opacity-60" markClassName="h-7 w-7" textClassName="text-lg text-white" />
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-xs">
             <a href="/ratgeber/" className="hover:text-white transition-colors">Ratgeber</a>
+            {/* Bewusst nur im Fuss: Die Kopfleiste hat schon vier Eintraege,
+                ein fuenfter braeche auf mittleren Breiten um. */}
+            <a href="/was-die-rechner-koennen" className="hover:text-white transition-colors">Was die Rechner können</a>
             <Link to="/impressum" className="hover:text-white transition-colors">Impressum</Link>
             <Link to="/datenschutz" className="hover:text-white transition-colors">Datenschutz</Link>
             <Link to="/agb" className="hover:text-white transition-colors">AGB</Link>

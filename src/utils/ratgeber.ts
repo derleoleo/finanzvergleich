@@ -340,6 +340,7 @@ ${inhalt}
   </main>
   <footer>
     <div class="breit">
+      <a href="${DOMAIN}/was-die-rechner-koennen">Was die Rechner können</a>
       <a href="${DOMAIN}/impressum">Impressum</a>
       <a href="${DOMAIN}/datenschutz">Datenschutz</a>
       <a href="${DOMAIN}/agb">AGB</a>

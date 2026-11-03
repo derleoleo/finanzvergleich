@@ -74,6 +74,37 @@ test.describe("Öffentliche Seiten", () => {
     await expect(page.getByRole("link", { name: "Impressum" }).first()).toBeVisible();
   });
 
+  test("Die Funktionsseite ist erreichbar und ihre Anker springen", async ({ page }) => {
+    // Anlass: Ein Nutzer hatte nicht bemerkt, dass sich Sonderentnahmen im
+    // Entnahmeplan einzeln bearbeiten lassen - sie liegen hinter einem
+    // Schalter. Die Seite erklaert je Rechner, was leicht zu uebersehen ist.
+    await page.goto("/was-die-rechner-koennen");
+    await expect(page).toHaveURL(/\/was-die-rechner-koennen$/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(
+      "Was die Rechner können",
+    );
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      "https://www.vorsorgewaage.de/was-die-rechner-koennen",
+    );
+
+    // Der Anlassfall muss benannt sein, sonst traegt die Seite ihren Zweck
+    // nicht.
+    await expect(page.getByText(/Expertenmodus/).first()).toBeVisible();
+
+    // Die Anker sind der Grund fuer eine einzelne Seite statt sieben: Aus
+    // einem Rechner soll direkt der passende Abschnitt erreichbar sein.
+    // `marked` setzt keine IDs an Ueberschriften - die stehen als rohes HTML
+    // in der Markdown-Datei, und genau das wird hier geprueft.
+    for (const anker of ["entnahmeplan", "avd", "voreinstellungen"]) {
+      await expect(page.locator(`#${anker}`)).toHaveCount(1);
+    }
+    await page.goto("/was-die-rechner-koennen#entnahmeplan");
+    await expect(page.locator("#entnahmeplan")).toBeInViewport();
+
+    await expect(page.getByRole("link", { name: "Impressum" }).first()).toBeVisible();
+  });
+
   test("Preise und Beispielfall sind ohne Anmeldung erreichbar", async ({ page }) => {
     // Beide Seiten lagen hinter der Anmeldung bzw. gab es nicht. Sie sind die
     // Zielseiten fuer Suche und Anzeigen; eine Umleitung zum Login waere der
