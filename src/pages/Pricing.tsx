@@ -54,6 +54,7 @@ export default function Pricing() {
   const [searchParams] = useSearchParams();
   const [billing, setBilling] = useState<Billing>("monthly");
   const [loadingCheckout, setLoadingCheckout] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState("");
 
@@ -90,6 +91,7 @@ export default function Pricing() {
 
   const handleCheckout = async () => {
     if (!session || !priceId) return;
+    setCheckoutError("");
     setLoadingCheckout(true);
     try {
       const res = await fetch("/api/create-checkout-session", {
@@ -100,10 +102,30 @@ export default function Pricing() {
         },
         body: JSON.stringify({ priceId }),
       });
-      const { url } = await res.json();
-      if (url) window.location.href = url;
+      // Dieselbe Pruefung wie in `handlePortal` darunter - sie fehlte hier,
+      // und damit verschluckte ausgerechnet der Kaufknopf jede Absage des
+      // Servers: `url` blieb leer, es wurde nichts geladen und nichts
+      // gemeldet. Wer Premium buchen wollte, klickte auf einen Knopf, der
+      // scheinbar gar nichts tat - gemeldet aus dem Echtbetrieb am
+      // 03.11.2026. Der Fall war fuer die Abo-Verwaltung schon behoben; die
+      // Stelle daneben blieb stehen.
+      const antwort = (await res.json().catch(() => ({}))) as {
+        url?: string;
+        error?: string;
+      };
+      if (!res.ok || !antwort.url) {
+        setCheckoutError(
+          antwort.error ??
+            `Die Bezahlseite ließ sich nicht öffnen (Fehler ${res.status}). Bitte versuchen Sie es erneut.`
+        );
+        return;
+      }
+      window.location.href = antwort.url;
     } catch (err) {
       console.error("Checkout-Fehler:", err);
+      setCheckoutError(
+        "Die Bezahlseite ließ sich nicht öffnen. Bitte prüfen Sie Ihre Verbindung."
+      );
     } finally {
       setLoadingCheckout(false);
     }
@@ -383,6 +405,11 @@ export default function Pricing() {
               {portalError && (
                 <p className="text-sm text-red-200 bg-red-900/40 rounded-lg px-3 py-2 mt-3">
                   {portalError}
+                </p>
+              )}
+              {checkoutError && (
+                <p className="text-sm text-red-200 bg-red-900/40 rounded-lg px-3 py-2 mt-3">
+                  {checkoutError}
                 </p>
               )}
             </div>
