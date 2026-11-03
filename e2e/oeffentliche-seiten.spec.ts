@@ -99,8 +99,34 @@ test.describe("Öffentliche Seiten", () => {
     for (const anker of ["entnahmeplan", "avd", "voreinstellungen"]) {
       await expect(page.locator(`#${anker}`)).toHaveCount(1);
     }
+    // `toBeInViewport()` reicht hier nicht: Die Ueberschrift stand nach dem
+    // Sprung exakt bei top: 0 und damit vollstaendig hinter der klebenden
+    // Kopfleiste - der Test war trotzdem gruen. Geprueft wird deshalb, dass
+    // sie unterhalb der Leiste zu liegen kommt.
+    // Zwei Fallen auf einmal, beide hier erlebt:
+    //   1. `toBeInViewport()` reicht nicht - die Ueberschrift stand nach dem
+    //      Sprung exakt bei top: 0 und damit vollstaendig hinter der
+    //      klebenden Kopfleiste, der Test war trotzdem gruen.
+    //   2. Das Scrollen gleitet. Wer direkt nach dem Laden misst, misst
+    //      mitten in der Bewegung - bei rund 4.100 px Weg waren das beim
+    //      ersten Versuch 4.165 px daneben. Deshalb `expect.poll`, bis die
+    //      Seite zur Ruhe gekommen ist.
     await page.goto("/was-die-rechner-koennen#entnahmeplan");
-    await expect(page.locator("#entnahmeplan")).toBeInViewport();
+    await page.evaluate(() => document.fonts.ready);
+    const kopfhoehe = await page.evaluate(
+      () => document.querySelector("header")!.getBoundingClientRect().height,
+    );
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() =>
+            Math.round(
+              document.querySelector("#entnahmeplan")!.getBoundingClientRect().top,
+            ),
+          ),
+        { message: `Ueberschrift muss unter die ${kopfhoehe} px hohe Kopfleiste` },
+      )
+      .toBeGreaterThanOrEqual(Math.round(kopfhoehe));
 
     await expect(page.getByRole("link", { name: "Impressum" }).first()).toBeVisible();
   });
