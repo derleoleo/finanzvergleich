@@ -16,10 +16,23 @@ type WithdrawalRow = {
   isLastYear?: boolean;
 };
 
+/**
+ * Hier und nur hier wird das Vorzeichen gedreht.
+ *
+ * Gespeichert und gerechnet wird eine Entnahme positiv, eine Einzahlung
+ * negativ (siehe `specialWithdrawals` in `lib/finance/entnahmeplan.ts`) – das
+ * muss so bleiben, sonst läse jeder gespeicherte Plan seine Entnahmen als
+ * Einzahlungen. Angezeigt wird es andersherum, weil die Spalte Entnahmen
+ * schon immer mit Minus führt: Im Eingabefeld steht die vorgeschlagene
+ * Entnahme als `-15000`, und wer dort eine positive Zahl einträgt, zahlt ein.
+ */
+const vorzeichenDrehen = (betrag: number) => -betrag || 0;
+
 type Props = {
   data: WithdrawalRow[];
   isDetailMode: boolean;
-  onSpecialWithdrawalChange: (year: number, amount: string) => void;
+  /** Betrag bereits in Speicherrichtung: positiv entnommen, negativ eingezahlt. */
+  onSpecialWithdrawalChange: (year: number, betrag: number) => void;
   forPrint?: boolean;
   /** Wird im letzten Jahr das Restkapital entnommen? Nur dann passt „Komplett". */
   komplettEntnahmeAmEnde?: boolean;
@@ -114,18 +127,37 @@ export default function WithdrawalTable({ data, isDetailMode, onSpecialWithdrawa
                     <TableCell className="text-right font-medium text-slate-700">
                       {formatCurrency(rowData.startCapital)}
                     </TableCell>
-                    <TableCell className="text-right font-medium text-red-600">
+                    <TableCell
+                      // `min-w-36` statt einer Breite am Eingabefeld: `Input`
+                      // setzt selbst `w-full`, jede Breitenklasse dort bleibt
+                      // wirkungslos. Die Spalte war fuer "-12000" zu schmal -
+                      // sichtbar abgeschnitten zu "-12C", seit das
+                      // Minuszeichen eine Stelle kostet. `scrollWidth` zeigt
+                      // das bei Zahlenfeldern nicht an, nur das Bild.
+                      className={`text-right font-medium ${isDetailMode ? "min-w-36" : ""} ${
+                        rowData.withdrawal < 0 ? "text-emerald-600" : "text-red-600"
+                      }`}
+                    >
                       {isDetailMode &&
                       !forPrint &&
                       !(rowData.isLastYear && komplettEntnahmeAmEnde) ? (
                         <Input
                           type="number"
-                          defaultValue={rowData.withdrawal}
-                          onBlur={(e) => onSpecialWithdrawalChange(rowData.year, e.target.value)}
-                          className="w-28 h-8 text-right bg-white"
+                          defaultValue={vorzeichenDrehen(rowData.withdrawal)}
+                          onBlur={(e) =>
+                            onSpecialWithdrawalChange(
+                              rowData.year,
+                              vorzeichenDrehen(parseFloat(e.target.value) || 0)
+                            )
+                          }
+                          className="h-8 text-right bg-white"
                         />
+                      ) : rowData.withdrawal > 0 ? (
+                        `−${formatCurrency(rowData.withdrawal)}`
+                      ) : rowData.withdrawal < 0 ? (
+                        `+${formatCurrency(-rowData.withdrawal)}`
                       ) : (
-                        rowData.withdrawal > 0 ? `−${formatCurrency(rowData.withdrawal)}` : '—'
+                        '—'
                       )}
                     </TableCell>
                     <TableCell
