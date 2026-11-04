@@ -88,6 +88,32 @@ const AUFNAHMEN = [
     pfad: "/results",
     warteAuf: "h1",
   },
+  /*
+   * Bilder fuer die Produktseiten unter `seiten/*.md`.
+   *
+   * Kleinere Ansicht als die uebrigen: Die Seiten sind statisches HTML, das
+   * schnell ausliefern soll, und die Lesespalte ist 44rem breit - ein Bild
+   * mit 1280 px Breite wiegt dort das Dreifache, ohne mehr zu zeigen.
+   * Gemessen: die vorhandenen Aufnahmen liegen bei 355 bis 444 KB.
+   */
+  {
+    datei: "produkt-entnahmeplan.png",
+    pfad: "/withdrawal-plan",
+    warteAuf: "h1",
+    ansicht: { width: 960, height: 600 },
+  },
+  {
+    datei: "produkt-rentenluecke.png",
+    pfad: "/pension-gap",
+    warteAuf: "h1",
+    ansicht: { width: 960, height: 600 },
+  },
+  {
+    datei: "produkt-vergleich.png",
+    pfad: "/calculator",
+    warteAuf: "text=Vergleich berechnen",
+    ansicht: { width: 960, height: 600 },
+  },
 ];
 
 async function anmeldenUndSpeichern(browser) {
@@ -164,6 +190,8 @@ async function main() {
 
   for (const aufnahme of AUFNAHMEN) {
     process.stdout.write(`${aufnahme.datei} … `);
+    if (aufnahme.ansicht) await seite.setViewportSize(aufnahme.ansicht);
+    else await seite.setViewportSize(ANSICHT);
     await seite.goto(`${basis}${aufnahme.pfad}`, { waitUntil: "networkidle" });
     if (aufnahme.warteAuf) {
       await seite.waitForSelector(aufnahme.warteAuf, { timeout: 20_000 });
