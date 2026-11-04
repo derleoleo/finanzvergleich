@@ -266,6 +266,30 @@ const STIL = `
       border-left: 3px solid var(--brand); border-radius: 0 .5rem .5rem 0;
     }
     blockquote p:last-child { margin-bottom: 0; }
+
+    /* Fremder Wortlaut sieht anders aus als unsere These.
+     *
+     * Vorher trugen beide dasselbe blockquote-Element: getoenter Kasten mit
+     * Markenbalken. Gezaehlt waren das zehn Thesenkaesten und zwei
+     * Gesetzeszitate — ein Leser konnte nicht sehen, was das Gesetz sagt und
+     * was wir daraus folgern. Fuer einen Beitrag, dessen Thema die
+     * Begruendungspflicht ist, ist das der falsche Fehler.
+     *
+     * Deshalb bleibt der getoente Kasten die These (laut, unsere), und das
+     * Zitat wird leise und fremd: ohne Flaeche, graue Haarlinie, Serifen, und
+     * die Fundstelle als kleine Zeile darunter. Die Unterscheidung traegt
+     * ueber drei Merkmale, nicht nur ueber Farbe — sie bleibt im Druck und
+     * fuer farbenblinde Leser erkennbar. */
+    .gesetz { margin: 1.5rem 0; }
+    .gesetz blockquote {
+      margin: 0; padding: .1rem 0 .1rem 1.25rem;
+      background: none; border-left: 2px solid var(--border); border-radius: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.02em; color: var(--slate);
+    }
+    .gesetz > p:last-child {
+      margin: .5rem 0 0 1.4rem; font-size: .82rem; color: var(--muted);
+    }
     .tabelle { overflow-x: auto; margin: 1.5rem 0; -webkit-overflow-scrolling: touch; }
     table { width: 100%; border-collapse: collapse; font-size: .9rem; }
     .tabelle table { min-width: 26rem; }

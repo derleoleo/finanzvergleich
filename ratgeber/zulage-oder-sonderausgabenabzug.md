@@ -20,12 +20,12 @@ Beratungsaussagen.
 
 ## Wie funktioniert die Günstigerprüfung?
 
-Zwei Wege, ein Ergebnis (§ 10a Abs. 1, 2 EStG n.F.):
+Zwei Wege, ein Ergebnis ([§ 10a Abs. 1, 2 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende")):
 
 | Weg | Wohin das Geld fließt | Norm |
 |---|---|---|
-| 1. Zulage | in den Vertrag | §§ 84, 85 EStG n.F. |
-| 2. Sonderausgabenabzug | als Steuererstattung an den Sparer | § 10a Abs. 1 EStG n.F. |
+| 1. Zulage | in den Vertrag | [§§ 84, 85 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende") |
+| 2. Sonderausgabenabzug | als Steuererstattung an den Sparer | [§ 10a Abs. 1 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende") |
 
 Das Finanzamt rechnet beide Wege und gewährt den Abzug, **wenn die tarifliche
 Entlastung höher ist als der Zulagenanspruch**. Dann wird die Einkommensteuer
@@ -37,8 +37,8 @@ Drei Folgen, die man kennen muss:
 - **Es ist kein Antrag nötig.** Die Prüfung erfolgt von Amts wegen. Ein
   Berater, der „den Steuervorteil beantragen" will, verspricht etwas, das es
   nicht gibt.
-- **Das Abzugsvolumen ist größer als der Beitrag.** § 10a Abs. 1 S. 1 EStG
-  n.F. nennt „1.800 Euro zuzüglich der zustehenden Zulage". Bei 1.800 €
+- **Das Abzugsvolumen ist größer als der Beitrag.** [§ 10a Abs. 1 S. 1 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende")
+  nennt „1.800 Euro zuzüglich der zustehenden Zulage". Bei 1.800 €
   Eigenbeitrag und 540 € Grundzulage sind das 2.340 €.
 - **Die Zulage fließt in jedem Fall.** Sie ist nicht die Alternative zum
   Abzug, sondern dessen Untergrenze.
@@ -76,8 +76,8 @@ Produkts.
 ## Warum verschieben Kinder den Punkt so weit?
 
 Weil die Kinderzulage die Untergrenze anhebt, die der Abzug überspringen muss.
-100 % des Eigenbeitrags, gedeckelt bei 300 € je Kind (§ 85 Abs. 1 S. 1 EStG
-n.F.) — bei zwei Kindern also 600 € zusätzlich, Zulage insgesamt 1.140 €.
+100 % des Eigenbeitrags, gedeckelt bei 300 € je Kind ([§ 85 Abs. 1 S. 1 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende"))
+— bei zwei Kindern also 600 € zusätzlich, Zulage insgesamt 1.140 €.
 
 Derselbe Fall, nur mit zwei Kindern:
 
@@ -117,7 +117,7 @@ Der praktische Unterschied ist nicht die Höhe der Förderung, sondern ihre
    Zulagenstaffel macht die ersten 300 € außerordentlich wertvoll — dazu
    [Grenzförderquote beim Altersvorsorgedepot](/ratgeber/grenzfoerderquote-altersvorsorgedepot/).
 
-Für die Dokumentation nach § 61 VVG heißt das: Die Förderquote ist keine
+Für die Dokumentation nach [§ 61 VVG](https://www.gesetze-im-internet.de/vvg_2008/__61.html) heißt das: Die Förderquote ist keine
 Produkteigenschaft, sondern eine Eigenschaft dieses Mandanten in diesem Jahr.
 Sie gehört mit Einkommen, Kinderzahl und Veranlagungsart in die Begründung —
 sonst ist in zehn Jahren nicht mehr nachvollziehbar, warum 63,3 % dort stand.
@@ -128,7 +128,7 @@ Mehr dazu in [Die Begründung nach § 61 VVG](/ratgeber/begruendungspflicht-para
 Eine offene Frage trifft diesen Beitrag im Kern, und sie ist größer als alles
 andere hier: **Erhöht die Kinderzulage das Abzugsvolumen?**
 
-§ 10a Abs. 1 S. 1 EStG n.F. spricht von „1.800 Euro zuzüglich der zustehenden
+[§ 10a Abs. 1 S. 1 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende") spricht von „1.800 Euro zuzüglich der zustehenden
 Zulage" — nach dem Wortlaut also 2.940 € bei zwei Kindern. Die BMF-FAQ nennt
 als Höchstbetrag dagegen nur 2.340 €, und das ist der kinderlose Fall. Die
 Zahlen oben folgen dem Gesetzeswortlaut.
@@ -160,7 +160,7 @@ Berufseinsteigerbonus, Eigenbeitrag 1.800 € im Jahr, Kinderzulage den Kindern
 zugeordnet. Die Umschlagpunkte sind auf 100 € gerundet; sie liegen auf einem
 flachen Abschnitt des Tarifs, eine Angabe auf den Euro wäre Scheingenauigkeit.
 Solidaritätszuschlag und Kirchensteuer bleiben in der Günstigerprüfung außer
-Betracht. ESt-Tarif 2026 (§ 32a EStG), unverändert fortgeschrieben.
+Betracht. ESt-Tarif 2026 ([§ 32a EStG](https://www.gesetze-im-internet.de/estg/__32a.html)), unverändert fortgeschrieben.
 
 Mit eigenen Werten für Einkommen, Kinder und Beitrag rechnet der
 [Beispielfall](/beispiel) dieselbe Logik live durch.

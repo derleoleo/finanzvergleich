@@ -18,14 +18,14 @@ stehen in keiner Steuerbescheinigung.
 
 ## Wie wird die Vorabpauschale berechnet?
 
-Vier Schritte, alle in § 18 InvStG:
+Vier Schritte, alle in [§ 18 InvStG](https://www.gesetze-im-internet.de/invstg_2018/__18.html):
 
 | Schritt | Rechnung | Norm |
 |---|---|---|
-| 1. Basisertrag | Wert zu Jahresbeginn × Basiszins × 70 % | § 18 Abs. 1 InvStG |
-| 2. Deckel | höchstens die tatsächliche Wertsteigerung | § 18 Abs. 1 S. 3 InvStG |
-| 3. Teilfreistellung | 30 % bleiben bei Aktienfonds frei | § 20 Abs. 1 InvStG |
-| 4. Steuer | 25 % Abgeltungsteuer plus 5,5 % Soli | § 32d EStG |
+| 1. Basisertrag | Wert zu Jahresbeginn × Basiszins × 70 % | [§ 18 Abs. 1 InvStG](https://www.gesetze-im-internet.de/invstg_2018/__18.html) |
+| 2. Deckel | höchstens die tatsächliche Wertsteigerung | [§ 18 Abs. 1 S. 3 InvStG](https://www.gesetze-im-internet.de/invstg_2018/__18.html) |
+| 3. Teilfreistellung | 30 % bleiben bei Aktienfonds frei | [§ 20 Abs. 1 InvStG](https://www.gesetze-im-internet.de/invstg_2018/__20.html) |
+| 4. Steuer | 25 % Abgeltungsteuer plus 5,5 % Soli | [§ 32d EStG](https://www.gesetze-im-internet.de/estg/__32d.html) |
 
 Zwei Dinge, die in Überschlagsrechnungen regelmäßig fehlen:
 
@@ -33,8 +33,8 @@ Zwei Dinge, die in Überschlagsrechnungen regelmäßig fehlen:
   Vorabpauschale auf null — nicht auf einen anteiligen Betrag, sondern auf
   null. Sie ist nie negativ und wird nicht vorgetragen.
 - **Unterjährige Raten zählen nur zeitanteilig.** Je vollem Monat vor dem
-  Erwerbsmonat vermindert sich die Pauschale um ein Zwölftel (§ 18 Abs. 4
-  InvStG). Bei einem Monatssparplan ist das ein spürbarer Unterschied zur
+  Erwerbsmonat vermindert sich die Pauschale um ein Zwölftel ([§ 18 Abs. 4 InvStG](https://www.gesetze-im-internet.de/invstg_2018/__18.html)).
+  Bei einem Monatssparplan ist das ein spürbarer Unterschied zur
   reinen Jahresanfangsbetrachtung — und ein Grund, warum eine Rechnung „Wert
   × Basiszins × 70 %" zu hohe Werte liefert.
 
@@ -114,8 +114,8 @@ Steuer und etwa 84 % der abgeführten Steuer selbst.
    hat. Eine Hochrechnung aus den ersten Jahren unterschätzt ihn um mehr als
    den Faktor 15.
 4. **Im geförderten Altersvorsorgedepot fällt sie nicht an.** Dort wird in der
-   Ansparphase gar nicht besteuert, sondern erst die Auszahlung (§ 22 Nr. 5
-   EStG). Das ist ein struktureller Unterschied und keine Frage der Kosten —
+   Ansparphase gar nicht besteuert, sondern erst die Auszahlung ([§ 22 Nr. 5 EStG](https://www.gesetze-im-internet.de/estg/__22.html)).
+   Das ist ein struktureller Unterschied und keine Frage der Kosten —
    was daraus für den Vergleich folgt, hängt am Steuersatz im Alter und
    rechnet der [Beispielfall](/beispiel) für den jeweiligen Fall durch.
 

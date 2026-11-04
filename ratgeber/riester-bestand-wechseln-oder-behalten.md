@@ -21,11 +21,11 @@ Nebenwirkung, aus der es keinen Rückweg gibt.
 
 | | Was passiert | Förderregime | Produktmantel | Norm |
 |---|---|---|---|---|
-| **A** | Altvertrag unverändert weiterführen | alt | Altvertrag | § 52 Abs. 50a S. 1 EStG |
-| **B** | Nur die Fördersystematik wechseln | **neu** | Altvertrag | § 52 Abs. 50a S. 4 EStG |
-| **C** | Altvertrag ruhend stellen, neues Depot daneben | neu | beides | § 1 Abs. 1 Nr. 10a AltZertG |
-| **D** | Kapital ins Altersvorsorgedepot übertragen | neu | Depot | § 1 Abs. 1 Nr. 10b AltZertG, § 3 Nr. 55c EStG |
-| **E** | Kündigen und Kapital entnehmen | — | — | **förderschädlich**, § 93 EStG |
+| **A** | Altvertrag unverändert weiterführen | alt | Altvertrag | [§ 52 Abs. 50a S. 1 EStG](https://www.gesetze-im-internet.de/estg/__52.html) |
+| **B** | Nur die Fördersystematik wechseln | **neu** | Altvertrag | [§ 52 Abs. 50a S. 4 EStG](https://www.gesetze-im-internet.de/estg/__52.html) |
+| **C** | Altvertrag ruhend stellen, neues Depot daneben | neu | beides | [§ 1 Abs. 1 Nr. 10a AltZertG](https://www.gesetze-im-internet.de/altzertg/__1.html) |
+| **D** | Kapital ins Altersvorsorgedepot übertragen | neu | Depot | [§ 1 Abs. 1 Nr. 10b AltZertG](https://www.gesetze-im-internet.de/altzertg/__1.html), [§ 3 Nr. 55c EStG](https://www.gesetze-im-internet.de/estg/__3.html) |
+| **E** | Kündigen und Kapital entnehmen | — | — | **förderschädlich**, [§ 93 EStG](https://www.gesetze-im-internet.de/estg/__93.html) |
 
 **Option B ist die am meisten unterschätzte.** Sie kostet nichts, ändert am
 Produkt nichts — kein Übertragungsverlust, keine neuen Abschlusskosten, der
@@ -47,7 +47,7 @@ beiden Regimen:
 
 Dahinter stehen zwei Änderungen. Die Grundzulage war seit dem Beitragsjahr 2018
 bei starren **175 €** eingefroren; neu sind es 50 Cent je Euro auf die ersten
-360 € und 25 Cent bis 1.800 €, also bis zu **540 €** (§ 84 S. 1 EStG n.F.).
+360 € und 25 Cent bis 1.800 €, also bis zu **540 €** ([§ 84 S. 1 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende")).
 Und der Mindesteigenbeitrag von 4 % der Vorjahreseinnahmen (§ 86 Abs. 1 EStG
 a.F.) entfällt — die Zeile mit 70.000 € zeigt, was er anrichtet: Dort wird die
 alte Zulage auf 164 € gekürzt, weil 1.800 € den geforderten Mindestbeitrag von
@@ -104,7 +104,7 @@ dargestellt. Die Erklärung zum Wechsel der Fördersystematik ist kein Schalter 
 einem Vertrag:
 
 - **Sie ist unwiderruflich** und wirkt **einheitlich für alle**
-  Bestandsverträge des Zulageberechtigten (§ 52 Abs. 50a S. 4 EStG). Ein
+  Bestandsverträge des Zulageberechtigten ([§ 52 Abs. 50a S. 4 EStG](https://www.gesetze-im-internet.de/estg/__52.html)). Ein
   Rückweg existiert nicht (S. 9).
 - **Jeder neue Vertrag löst sie aus.** Wer nach dem 31.12.2026 irgendeinen
   zertifizierten Altersvorsorgevertrag abschließt, für den gilt automatisch und
@@ -115,7 +115,7 @@ einem Vertrag:
   auch bei ihm neues Recht (S. 8).
 - **Dazu eine Sperre:** Beantragt der mittelbar Berechtigte Zulage für einen
   Neuvertrag, während der unmittelbar Berechtigte noch einen Bestandsvertrag
-  hat, besteht für ihn **kein** Zulagenanspruch (§ 90 Abs. 2 EStG n.F.).
+  hat, besteht für ihn **kein** Zulagenanspruch ([§ 90 Abs. 2 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende")).
 
 Daraus folgt eine Regel, an der keine saubere Beratung vorbeikommt:
 
@@ -128,10 +128,10 @@ Daraus folgt eine Regel, an der keine saubere Beratung vorbeikommt:
 ## Ist die Übertragung ins Altersvorsorgedepot eine Kündigung?
 
 Anbieterwechsel und Übertragung des Kapitals in ein Altersvorsorgedepot sind
-**keine Kündigung**. Die Übertragung ist nach § 3 Nr. 55c EStG steuerneutral.
+**keine Kündigung**. Die Übertragung ist nach [§ 3 Nr. 55c EStG](https://www.gesetze-im-internet.de/estg/__3.html) steuerneutral.
 
 Eine **Kündigung** dagegen löst die Rückzahlung **aller** Zulagen und aller
-gesondert festgestellten Steuerermäßigungen aus (§ 93 Abs. 1 EStG). Bei fünfzehn
+gesondert festgestellten Steuerermäßigungen aus ([§ 93 Abs. 1 EStG](https://www.gesetze-im-internet.de/estg/__93.html)). Bei fünfzehn
 Jahren Laufzeit sind das schnell fünfstellige Beträge. Diese Unterscheidung
 gehört in jedes Gespräch, in dem das Wort „wechseln" fällt.
 
@@ -156,8 +156,8 @@ Effektivkosten über 1,5 % bei einem Garantiezins unter 1 %, und der Wunsch nach
 einem Auszahlungsplan mit vererbbarem Restkapital statt einer Verrentung — was
 im Todesfall ein erheblicher Unterschied ist.
 
-Diese Abwägung ist nicht nur guter Stil. § 61 VVG verlangt neben Beratung und
-Dokumentation ausdrücklich eine **Begründung** des Rates, § 63 VVG knüpft daran
+Diese Abwägung ist nicht nur guter Stil. [§ 61 VVG](https://www.gesetze-im-internet.de/vvg_2008/__61.html) verlangt neben Beratung und
+Dokumentation ausdrücklich eine **Begründung** des Rates, [§ 63 VVG](https://www.gesetze-im-internet.de/vvg_2008/__63.html) knüpft daran
 die Haftung. Bei einer Erklärung, die unwiderruflich ist und den Ehepartner
 mitzieht, ist das keine Formalie.
 
@@ -166,7 +166,7 @@ mitzieht, ist das keine Formalie.
 Alle Zahlen sind mit derselben Engine erzeugt, die auch im Rechner läuft:
 Beitragsjahr 2027, Alter 40, unmittelbare Berechtigung, kein
 Berufseinsteigerbonus, Grundtarif. Zulagen nach § 84 f. EStG n.F. gegen
-§§ 84, 85, 86 EStG in der bis zum 31.12.2026 geltenden Fassung. Kinder, soweit
+[§§ 84, 85, 86 EStG](https://www.gesetze-im-internet.de/estg/) in der bis zum 31.12.2026 geltenden Fassung. Kinder, soweit
 nicht anders angegeben, ab 2008 geboren. Der Sonderausgabenabzug bleibt in den
 Zulagentabellen außer Betracht; er ändert die Richtung der Aussage nicht, weil
 er im neuen Recht am Höchstbetrag von 1.800 € zuzüglich Zulage ansetzt statt an

@@ -9,7 +9,7 @@ stand: Altersvorsorgereformgesetz, BGBl. 2026 I Nr. 156; §§ 93, 22 Nr. 5 EStG
 Die Frage wird in der Altersvorsorgeberatung selten gestellt und fast nie
 durchgerechnet: **Was passiert, wenn der Sparer stirbt?** Beim geförderten
 Vertrag ist die Antwort unbequem, denn die Auszahlung im Todesfall ist
-grundsätzlich eine schädliche Verwendung (§ 93 Abs. 1 S. 1 EStG) — Zulagen und
+grundsätzlich eine schädliche Verwendung ([§ 93 Abs. 1 S. 1 EStG](https://www.gesetze-im-internet.de/estg/__93.html)) — Zulagen und
 die gesondert festgestellten Steuerermäßigungen sind zurückzuzahlen.
 
 Daraus wird im Vertrieb gern ein einfacher Satz: „Im Todesfall ist das
@@ -20,7 +20,7 @@ Nützlicheres.
 
 | Zeitpunkt | Was gilt |
 |---|---|
-| Ansparphase | Rückzahlungsbetrag nach § 93 Abs. 1 S. 1 EStG, Steuer auf die Erträge nach § 22 Nr. 5 S. 3 EStG. Übertragung auf einen Vertrag des Ehegatten bleibt förderunschädlich (§ 93 Abs. 1 S. 4 Buchst. c EStG). |
+| Ansparphase | Rückzahlungsbetrag nach [§ 93 Abs. 1 S. 1 EStG](https://www.gesetze-im-internet.de/estg/__93.html), Steuer auf die Erträge nach [§ 22 Nr. 5 S. 3 EStG](https://www.gesetze-im-internet.de/estg/__22.html). Übertragung auf einen Vertrag des Ehegatten bleibt förderunschädlich ([§ 93 Abs. 1 S. 4 Buchst. c EStG](https://www.gesetze-im-internet.de/estg/__93.html)). |
 | Auszahlphase, innerhalb der Rentengarantiezeit | Das Kapital ist verrentet. Vererbbar ist nur die garantierte Restrente. |
 | Auszahlphase, nach der Rentengarantiezeit | Nichts. Auch nicht an den Ehegatten. |
 
@@ -44,7 +44,7 @@ Phase schlicht falsch.
 
 Für den **Ehegatten** gilt ohnehin etwas anderes: Wird das Kapital auf einen
 Altersvorsorgevertrag auf seinen Namen übertragen, bleibt das förderunschädlich
-(§ 93 Abs. 1 S. 4 Buchst. c EStG) — keine Rückforderung, keine sofortige Steuer.
+([§ 93 Abs. 1 S. 4 Buchst. c EStG](https://www.gesetze-im-internet.de/estg/__93.html)) — keine Rückforderung, keine sofortige Steuer.
 In der Tabelle oben wären das die vollen 57.223 € bzw. 148.805 €.
 
 ## Was bleibt nach dem Rentenbeginn?
@@ -106,7 +106,7 @@ Hinterbliebenen gegen Absicherung des langen Lebens.
 3. **Nach Ablauf der Rentengarantiezeit hilft auch der Ehegattenstatus nicht.**
    Diese Grenze gehört benannt, bevor jemand sie für selbstverständlich hält.
 
-§ 61 VVG verlangt neben Beratung und Dokumentation ausdrücklich eine
+[§ 61 VVG](https://www.gesetze-im-internet.de/vvg_2008/__61.html) verlangt neben Beratung und Dokumentation ausdrücklich eine
 **Begründung** des Rates. Bei einer Entscheidung, die über sechsstellige Beträge
 im Nachlass bestimmt und zum Rentenbeginn unumkehrbar wird, ist eine
 nachvollziehbare Rechnung keine Kür.
