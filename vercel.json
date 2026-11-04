@@ -23,6 +23,6 @@
     }
   ],
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/)(?!.*\\.[A-Za-z0-9]+$).*)", "destination": "/index.html" }
   ]
 }

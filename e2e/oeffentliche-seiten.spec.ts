@@ -274,6 +274,26 @@ test.describe("Agentisches Browsen", () => {
     expect(text).toContain("Ohne JavaScript");
   });
 
+  test("llms.txt wird ausgeliefert und nennt die Ratgeberbeitraege", async ({ page }) => {
+    const antwort = await page.request.get("/llms.txt");
+    expect(antwort.status()).toBe(200);
+    const txt = await antwort.text();
+    expect(txt.startsWith("# Vorsorgewaage")).toBe(true);
+    expect(txt).toContain("/ratgeber/");
+    expect(txt).toContain("keine** Finanz-, Steuer- oder Rechtsberatung");
+
+    /*
+     * Die beiden Punkte, an denen ein Pruefwerkzeug fuer KI-Auffindbarkeit
+     * die Datei abgelehnt hat, als es statt ihrer unsere `index.html` bekam:
+     * „In der Datei fehlt eine erforderliche H1-Ueberschrift" und „Die Datei
+     * enthaelt keine Links."
+     */
+    expect(txt.match(/^# /gm) ?? [], "keine H1-Ueberschrift").toHaveLength(1);
+    expect((txt.match(/\]\(https:\/\//g) ?? []).length, "keine Links").toBeGreaterThan(5);
+    // Und sie darf auf keinen Fall HTML sein - genau das war der Fehler.
+    expect(txt).not.toContain("<!doctype");
+  });
+
   test("ein Besucher mit JavaScript sieht den Vorabtext nicht", async ({ page }) => {
     // Der Grund fuer `<noscript>` statt Inhalt in `#root`: An der Ansicht
     // darf sich nichts aendern, auch nicht kurz beim Laden.
