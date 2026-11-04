@@ -24,9 +24,8 @@ import type { LucideIcon } from "lucide-react";
  * Das Symbol je Rechner – die Oberflächenhälfte von `RECHNER`.
  *
  * Die Namen und Einzeiler stehen in `utils/rechner.ts`, weil der Vorabtext
- * ohne JavaScript und `llms.txt` sie ebenfalls brauchen. Ein Symbol braucht
- * dort niemand, und `lucide-react` hat in einem Modul, das beim Bauen läuft,
- * nichts zu suchen.
+ * ohne JavaScript sie ebenfalls braucht. Ein Symbol braucht dort niemand, und
+ * `lucide-react` hat in einem Modul, das beim Bauen läuft, nichts zu suchen.
  */
 const RECHNER_SYMBOLE: Record<string, LucideIcon> = {
   "Fonds-Sparvertrag": Calculator,

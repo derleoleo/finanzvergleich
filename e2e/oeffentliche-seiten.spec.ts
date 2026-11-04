@@ -274,15 +274,6 @@ test.describe("Agentisches Browsen", () => {
     expect(text).toContain("Ohne JavaScript");
   });
 
-  test("llms.txt wird ausgeliefert und nennt die Ratgeberbeitraege", async ({ page }) => {
-    const antwort = await page.request.get("/llms.txt");
-    expect(antwort.status()).toBe(200);
-    const txt = await antwort.text();
-    expect(txt.startsWith("# Vorsorgewaage")).toBe(true);
-    expect(txt).toContain("/ratgeber/");
-    expect(txt).toContain("keine** Finanz-, Steuer- oder Rechtsberatung");
-  });
-
   test("ein Besucher mit JavaScript sieht den Vorabtext nicht", async ({ page }) => {
     // Der Grund fuer `<noscript>` statt Inhalt in `#root`: An der Ansicht
     // darf sich nichts aendern, auch nicht kurz beim Laden.

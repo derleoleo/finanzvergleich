@@ -4,15 +4,14 @@
 // Die Liste stand als Inline-Array mitten im JSX der Landingpage. Dort ist sie
 // nur zu lesen, wenn JavaScript läuft — und genau das tun die Abrufer der
 // KI-Assistenten nicht (siehe `vorabInhalt.ts`). Wer die Namen für den
-// Vorabtext oder für `llms.txt` braucht, hätte sie abschreiben müssen, und
-// eine zweite Fassung dieser sechs Zeilen läuft bei der ersten Umbenennung
-// auseinander.
+// Vorabtext braucht, hätte sie abschreiben müssen, und eine zweite Fassung
+// dieser sechs Zeilen läuft bei der ersten Umbenennung auseinander.
 //
 // Hier steht nur, was die Namen und Einzeiler sind. Welches Symbol daneben
 // steht, ist eine Frage der Oberfläche und bleibt in `Landing.tsx`.
 
 export type Rechner = {
-  /** Der Name, wie ihn Oberfläche, Vorabtext und `llms.txt` nennen. */
+  /** Der Name, wie ihn Oberfläche und Vorabtext nennen. */
   name: string;
   /** Ein Halbsatz, was er rechnet. */
   desc: string;
