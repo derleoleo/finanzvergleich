@@ -72,6 +72,17 @@ export type Beitrag = {
    * von selbst, und ein Test haelt fest, dass kein Beitrag allein steht.
    */
   verwandt?: string[];
+  /**
+   * Adresse der Produktseite, die zum Thema des Beitrags passt, aus
+   * `rechner: /entnahmeplan-rechner` im Kopf.
+   *
+   * Der Kasten am Beitragsende fuehrte bisher ausnahmslos zum allgemeinen
+   * Beispielfall – auch unter einem Beitrag ueber den Todesfall, wo die
+   * naechste Frage „wie lange reicht das Kapital" lautet und nicht
+   * „Fondspolice oder Depot". Der Verweis auf `/beispiel` bleibt; die
+   * Produktseite kommt daneben.
+   */
+  rechner?: string;
   /** Gerendertes Markdown. */
   html: string;
 };
@@ -136,6 +147,7 @@ export function beitragLesen(dateiname: string, rohEingang: string): Beitrag {
     beschreibung: pflicht("beschreibung"),
     datum,
     stand: kopf.get("stand"),
+    rechner: kopf.get("rechner"),
     verwandt: (kopf.get("verwandt") ?? "")
       .split(",")
       .map((t) => t.trim())
@@ -322,6 +334,21 @@ const STIL = `
       background: var(--brand); color: #fff; border-radius: .5rem; font-weight: 600; font-size: .95rem;
     }
     .knopf:hover { background: var(--brand-dark); text-decoration: none; }
+    /* Bilder im Fliesstext.
+     *
+     * Es gab dafuer keine Regel - ein Screenshot, breiter als die Lesespalte
+     * von 44rem, lief schlicht aus dem Layout. Gebraucht wurde sie nie, weil
+     * bis zu den Produktseiten keine Markdown-Datei ein Bild einband.
+     *
+     * Ein figure-Element statt nacktem img, damit die Bildunterschrift
+     * dazugehoert:
+     * Ein Screenshot ohne Erklaerung zeigt eine Oberflaeche, aber nicht, was
+     * man darin sehen soll. */
+    figure { margin: 2rem 0; }
+    figure img, p > img { display: block; width: 100%; height: auto; border-radius: .5rem;
+      border: 1px solid var(--border); }
+    figcaption { margin-top: .6rem; font-size: .85rem; color: var(--muted); }
+
     .weiterlesen { margin: 2.5rem 0 0; }
     .weiterlesen h2 { font-size: 1.05rem; margin-bottom: .5rem; }
     .weiterlesen ul { padding-left: 1.1rem; }
@@ -610,7 +637,12 @@ ${weiterlesen(b, alle)}
         Der Beispielfall rechnet live und ohne Anmeldung – dieselbe Engine, die auch
         die Zahlen in diesem Beitrag erzeugt hat.
       </p>
-      <a class="knopf" href="${DOMAIN}/beispiel">Beispielfall ansehen</a>
+      <a class="knopf" href="${DOMAIN}/beispiel">Beispielfall ansehen</a>${
+        b.rechner
+          ? `
+      <p style="margin-top:1rem;margin-bottom:0"><a href="${escape(b.rechner)}">Was der passende Rechner leistet →</a></p>`
+          : ""
+      }
     </section>
     <p style="margin-top:2rem"><a href="${RATGEBER_PFAD}/">← Alle Beiträge</a></p>`;
 
