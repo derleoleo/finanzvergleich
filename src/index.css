@@ -28,8 +28,23 @@
   --color-slate-100: #EEF2F9;
   --color-slate-200: #E0E8F5;   /* Border – Trennlinien, Rahmen     */
   --color-slate-300: #C8D5E8;
-  --color-slate-400: #AABBD4;
-  --color-slate-500: #8899BB;   /* Muted – Placeholder, Hints       */
+  /*
+   * Kontrast statt Zartheit.
+   *
+   * Gemessen mit Lighthouse 12: 46 Verstoesse auf dem Telefon, 51 auf dem
+   * Schreibtisch – praktisch alle gingen auf diese beiden Werte zurueck.
+   * #AABBD4 kam auf 1,95:1 gegen Weiss und 1,85:1 gegen die Flaeche
+   * #F7F9FF, #8899BB auf 2,87 und 2,72. WCAG AA verlangt 4,5:1 fuer
+   * normalen Text; das war nicht knapp daneben, sondern weniger als die
+   * Haelfte.
+   *
+   * Farbton und Saettigung bleiben, nur die Helligkeit sinkt (75% -> 49%
+   * und 63% -> 44%). Damit bleibt die Leiter 400 < 500 < 600 < 700 lesbar
+   * – 4,76 / 5,83 / 7,67 / 10,84 – statt dass beide Werte auf denselben
+   * Punkt zusammenfallen, wenn man nur die Mindestgrenze trifft.
+   */
+  --color-slate-400: #5374A5;   /* 4,76:1 – Hinweise, Platzhalter   */
+  --color-slate-500: #51658E;   /* 5,83:1 – Muted, Sekundaeres      */
   --color-slate-600: #445566;   /* Slate – Sekundärer Text          */
   --color-slate-700: #2E3E55;
   --color-slate-800: #1F2D40;

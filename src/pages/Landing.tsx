@@ -277,7 +277,7 @@ export default function Landing() {
             ].map((item) => (
               <div key={item.step} className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                 <div className={item.reverse ? "md:order-2" : ""}>
-                  <span className="text-7xl font-black text-slate-100 block mb-1 leading-none">{item.step}</span>
+                  <span className="text-7xl font-black text-[#7091CC] block mb-1 leading-none">{item.step}</span>
                   <h3 className="text-xl font-bold text-slate-900 mb-3">{item.title}</h3>
                   <p className="text-slate-500 leading-relaxed">{item.desc}</p>
                 </div>
@@ -298,7 +298,7 @@ export default function Landing() {
             <h2 className="text-3xl font-bold text-slate-900 mb-3">Sechs Rechner für die Beratung</h2>
             <p className="text-sm text-slate-500">Von der Erstberatung bis zur Bestandsanalyse — alle Szenarien abgedeckt.</p>
             <p className="text-xs text-slate-400 mt-3">
-              <span className="font-semibold text-green-600">Free</span> heißt: dauerhaft
+              <span className="font-semibold text-green-700">Free</span> heißt: dauerhaft
               kostenlos, begrenzt auf {FREI_BERECHNUNGEN_PRO_MONAT} Berechnungen pro Monat und
               ohne PDF-Export. Alle übrigen Rechner sind Premium.
             </p>
@@ -318,7 +318,7 @@ export default function Landing() {
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-sm font-semibold text-slate-900">{item.name}</p>
                     {item.free && (
-                      <span className="text-[10px] bg-green-50 text-green-600 font-bold px-1.5 py-0.5 rounded-full border border-green-100">
+                      <span className="text-[10px] bg-green-50 text-green-700 font-bold px-1.5 py-0.5 rounded-full border border-green-100">
                         Free
                       </span>
                     )}
@@ -376,7 +376,7 @@ export default function Landing() {
           <div className="text-center mb-12">
             <Shield className="w-8 h-8 text-brand-cyan mx-auto mb-4" />
             <h2 className="text-3xl font-bold mb-3">Datenschutz & Compliance</h2>
-            <p className="text-slate-400 text-sm">DSGVO-konform konzipiert — für den Einsatz im professionellen Umfeld.</p>
+            <p className="text-slate-300 text-sm">DSGVO-konform konzipiert — für den Einsatz im professionellen Umfeld.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
@@ -397,7 +397,7 @@ export default function Landing() {
           <div className="mt-8 text-center">
             <Link
               to={createPageUrl("Compliance")}
-              className="inline-flex items-center gap-2 text-sm font-medium text-brand-cyan hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-medium text-blue-300 hover:text-white transition-colors"
             >
               Compliance & TOM-Dokumentation ansehen <ArrowRight className="w-4 h-4" />
             </Link>
@@ -463,14 +463,14 @@ export default function Landing() {
                 </div>
                 <p
                   className={`text-sm mb-1 ${
-                    tarif.hervorgehoben ? "text-blue-300" : "text-slate-500"
+                    tarif.hervorgehoben ? "text-blue-100" : "text-slate-500"
                   }`}
                 >
                   {tarif.takt} · Endpreis, keine USt.
                 </p>
                 <p
                   className={`text-xs mb-6 ${
-                    tarif.hervorgehoben ? "text-blue-400" : "text-slate-400"
+                    tarif.hervorgehoben ? "text-blue-200" : "text-slate-400"
                   }`}
                 >
                   {tarif.zusatz}
@@ -567,7 +567,7 @@ export default function Landing() {
       </section>
 
       {/* ── Footer ───────────────────────────────────────────────── */}
-      <footer className="bg-slate-950 text-slate-500 py-10 px-6">
+      <footer className="bg-slate-950 text-slate-300 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <BrandLogo className="opacity-60" markClassName="h-7 w-7" textClassName="text-lg text-white" />
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-xs">
