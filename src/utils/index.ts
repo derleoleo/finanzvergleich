@@ -1,5 +1,5 @@
 // src/utils/index.ts
-const routes: Record<string, string> = {
+export const routes: Record<string, string> = {
   Home: "/",
   Calculator: "/calculator",
   CalculatorDetail: "/calculator/detail",
