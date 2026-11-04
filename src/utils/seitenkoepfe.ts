@@ -18,6 +18,7 @@
 // zwei widersprüchliche Angaben. Was im Dokument steht, soll stimmen.
 
 import { DOMAIN } from "./ratgeber";
+import { vorabHtml, vorabSetzen } from "./vorabInhalt";
 import { FREI_BERECHNUNGEN_PRO_MONAT, PREIS_JAHR, PREIS_MONAT, eur } from "./preise";
 
 export type Seitenkopf = {
@@ -129,7 +130,7 @@ export function kopfSetzen(html: string, kopf: Seitenkopf): string {
   const titel = sicher(kopf.titel);
   const beschreibung = sicher(kopf.beschreibung);
 
-  return html
+  const kopfGesetzt = html
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${titel}</title>`)
     .replace(
       /<meta name="description" content="[^"]*"\s*\/?>/,
@@ -160,6 +161,16 @@ export function kopfSetzen(html: string, kopf: Seitenkopf): string {
       `<meta name="twitter:description" content="${beschreibung}" />`,
     )
     .replace(/\s*<script type="application\/ld\+json">[\s\S]*?<\/script>/g, "");
+
+  /*
+   * Der Vorabtext muss mit: Die Kopien entstehen aus der fertigen Startseite
+   * und trugen damit deren `<noscript>` – acht Adressen hätten „Die sechs
+   * Rechner" und die häufigen Fragen gezeigt, und der `h1` darin hätte
+   * „Vorsorgewaage – Beratungssoftware" geheißen statt „Preise" oder
+   * „Impressum". Dasselbe Dublettenproblem wie beim Title, einen Schritt
+   * weiter unten.
+   */
+  return vorabSetzen(kopfGesetzt, vorabHtml(kopf.pfad, kopf.titel, kopf.beschreibung));
 }
 
 /**
