@@ -4,6 +4,7 @@ kurztitel: Altersvorsorgedepot: was im Todesfall bleibt
 beschreibung: Die Förderung ist zurückzuzahlen (§ 93 EStG), trotzdem liegt der Vertrag in der Ansparphase vorn. Der Bruch kommt mit der Verrentung – fünf Fälle.
 datum: 2026-10-27
 stand: Altersvorsorgereformgesetz, BGBl. 2026 I Nr. 156; §§ 93, 22 Nr. 5 EStG
+verwandt: mittelbare-berechtigung-ehegatte, vorabpauschale-was-sie-wirklich-kostet
 ---
 
 Die Frage wird in der Altersvorsorgeberatung selten gestellt und fast nie

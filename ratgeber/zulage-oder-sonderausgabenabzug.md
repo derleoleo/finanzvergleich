@@ -4,6 +4,7 @@ kurztitel: Zulage oder Sonderausgabenabzug ab 2027
 beschreibung: Die Günstigerprüfung läuft von Amts wegen. Ohne Kinder trägt der Abzug ab rund 18.600 € zvE, mit zwei Kindern erst ab rund 62.000 € – nachgerechnet.
 datum: 2026-11-02
 stand: Altersvorsorgereformgesetz, BGBl. 2026 I Nr. 156; §§ 10a, 84, 85, 86 EStG n.F.; ESt-Tarif 2026 (§ 32a EStG)
+verwandt: grenzfoerderquote-altersvorsorgedepot, begruendungspflicht-paragraf-61-vvg
 ---
 
 „Bekommt mein Mandant die Zulage oder den Steuervorteil?" Die Frage ist falsch

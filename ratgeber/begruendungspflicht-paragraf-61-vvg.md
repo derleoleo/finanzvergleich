@@ -4,6 +4,7 @@ kurztitel: § 61 VVG: Begründung, die zehn Jahre hält
 beschreibung: Das Gesetz verlangt die Gründe für jeden Rat, nicht nur Dokumentation. Warum das beim Altersvorsorgedepot schwierig ist – mit sechs offenen Rechtsfragen.
 datum: 2026-10-27
 stand: §§ 61, 62, 63 VVG; §§ 16, 18 FinVermV; Altersvorsorgereformgesetz, BGBl. 2026 I Nr. 156
+verwandt: grenzfoerderquote-altersvorsorgedepot, riester-bestand-wechseln-oder-behalten, was-im-todesfall-bleibt-altersvorsorgedepot
 ---
 
 Die meisten Beratungsprotokolle halten fest, **dass** beraten wurde, und **was**
@@ -139,15 +140,6 @@ gespeicherte Fassung hält fest, mit welcher Lesart beraten wurde.
 Das macht aus einer Rechnung noch keine Begründung. Die muss der Berater
 schreiben, und sie gehört ihm. Aber es macht die Begründung **überprüfbar** —
 und genau darauf kommt es an, wenn sie Jahre später gelesen wird.
-
-## Weiterlesen
-
-Die drei vorangegangenen Beiträge zeigen, wie unterschiedlich dieselbe
-Entscheidung ausfällt, je nachdem welche Frage man stellt:
-
-- [Grenzförderquote beim Altersvorsorgedepot](/ratgeber/grenzfoerderquote-altersvorsorgedepot/) — warum der nächste Euro weniger bringt
-- [Riester-Bestand ab 2027](/ratgeber/riester-bestand-wechseln-oder-behalten/) — zwei Entscheidungen, nicht eine
-- [Was im Todesfall bleibt](/ratgeber/was-im-todesfall-bleibt-altersvorsorgedepot/) — warum die Auszahlform mehr entscheidet als das Produkt
 
 ## Rechengrundlage
 

@@ -4,6 +4,7 @@ kurztitel: Mittelbare Berechtigung ab 2027
 beschreibung: Der Mindestbeitrag des mittelbar berechtigten Ehegatten steigt auf 120 €. Einen Euro darunter gibt es nichts – die Schwelle kennt keine anteilige Kürzung.
 datum: 2026-11-02
 stand: Altersvorsorgereformgesetz, BGBl. 2026 I Nr. 156; §§ 79, 84, 86, 10a Abs. 3 EStG n.F.
+verwandt: grenzfoerderquote-altersvorsorgedepot, zulage-oder-sonderausgabenabzug
 ---
 
 Es gibt in der Altersvorsorgeförderung wenige Stellen, an denen ein einzelner

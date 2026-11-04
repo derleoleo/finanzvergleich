@@ -4,6 +4,7 @@ kurztitel: Riester ab 2027: wechseln oder behalten
 beschreibung: Förderregime und Produktmantel sind zwei getrennte Entscheidungen. Wer sie zusammenwirft, tappt in die Kopplungsfalle des § 52 Abs. 50a EStG.
 datum: 2026-10-27
 stand: Altersvorsorgereformgesetz, BGBl. 2026 I Nr. 156; Riester-Bestandsverträge nach § 52 Abs. 50a EStG
+verwandt: grenzfoerderquote-altersvorsorgedepot, zulage-oder-sonderausgabenabzug
 ---
 
 „Soll mein Riester-Vertrag bleiben oder soll ich wechseln?" — so wird die Frage

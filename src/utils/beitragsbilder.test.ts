@@ -177,7 +177,8 @@ describe("Beitragsbilder", () => {
   it("die Beitragsseite trägt die Bilder im Markup", () => {
     const slug = "vorabpauschale-was-sie-wirklich-kostet";
     const beitrag = BEITRAEGE.find((b) => b.slug === slug)!;
-    const html = beitragSeite(beitragLesen(`${slug}.md`, beitrag.text));
+    const alle = BEITRAEGE.map((x) => beitragLesen(`${x.slug}.md`, x.text));
+    const html = beitragSeite(beitragLesen(`${slug}.md`, beitrag.text), undefined, alle);
     const werk = bildwerkFuer(slug)!;
     const adressen = bildAdressen(slug, DOMAIN);
 

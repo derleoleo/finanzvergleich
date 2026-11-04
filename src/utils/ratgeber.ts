@@ -62,6 +62,16 @@ export type Beitrag = {
   datum: string;
   /** Rechtsstand, auf den sich der Beitrag bezieht – bei Steuerthemen Pflicht. */
   stand?: string;
+  /**
+   * Slugs verwandter Beitraege, aus `verwandt: a, b` im Kopf.
+   *
+   * Steht im Kopf und nicht als Markdown-Liste im Text, weil die Verweise
+   * sonst in sieben Dateien von Hand gepflegt werden muessten – gemessen
+   * hatten drei Beitraege ueberhaupt keinen ausgehenden und zwei keinen
+   * einzigen eingehenden Verweis. Aus dem Kopf entsteht der Block am Ende
+   * von selbst, und ein Test haelt fest, dass kein Beitrag allein steht.
+   */
+  verwandt?: string[];
   /** Gerendertes Markdown. */
   html: string;
 };
@@ -126,6 +136,10 @@ export function beitragLesen(dateiname: string, rohEingang: string): Beitrag {
     beschreibung: pflicht("beschreibung"),
     datum,
     stand: kopf.get("stand"),
+    verwandt: (kopf.get("verwandt") ?? "")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean),
     html: tabellenRahmen(marked.parse(koerper, { async: false }) as string),
   };
 }
@@ -308,6 +322,10 @@ const STIL = `
       background: var(--brand); color: #fff; border-radius: .5rem; font-weight: 600; font-size: .95rem;
     }
     .knopf:hover { background: var(--brand-dark); text-decoration: none; }
+    .weiterlesen { margin: 2.5rem 0 0; }
+    .weiterlesen h2 { font-size: 1.05rem; margin-bottom: .5rem; }
+    .weiterlesen ul { padding-left: 1.1rem; }
+    .weiterlesen li { margin-bottom: .5rem; color: var(--slate); font-size: .95rem; }
     .liste { list-style: none; padding: 0; }
     .liste li { padding: 1.25rem 0; border-bottom: 1px solid var(--border); margin: 0; }
     .liste h2 { margin: 0 0 .35rem; font-size: 1.15rem; }
@@ -514,7 +532,43 @@ function datenBloecke(...bloecke: object[]): string {
 }
 
 /** Eine Beitragsseite. */
-export function beitragSeite(b: Beitrag, mess?: Messstelle): string {
+/**
+ * Der Block „Weiterlesen" am Ende eines Beitrags.
+ *
+ * Gemessen vor dieser Aenderung: elf Markdown-Links im ganzen Ratgeber, drei
+ * Beitraege ohne jeden ausgehenden Verweis, zwei ohne einen einzigen
+ * eingehenden – aus keinem anderen Beitrag erreichbar. Der einzige
+ * „Weiterlesen"-Abschnitt war von Hand geschrieben, in genau einer Datei.
+ *
+ * Die Verweise stehen deshalb im Kopf (`verwandt:`) und der Block entsteht
+ * daraus. Eine Umbenennung eines Titels zieht damit ueberall mit, und
+ * `ratgeber-verwandt.test.ts` haelt fest, dass kein Beitrag allein steht.
+ */
+function weiterlesen(b: Beitrag, alle: Beitrag[] | undefined): string {
+  if (!b.verwandt?.length) return "";
+  if (!alle) {
+    throw new Error(
+      `Ratgeber: ${b.slug} nennt verwandte Beitraege, aber beitragSeite() ` +
+        "wurde ohne die Liste aller Beitraege aufgerufen.",
+    );
+  }
+
+  const eintraege = b.verwandt.map((slug) => {
+    const z = alle.find((a) => a.slug === slug);
+    if (!z) throw new Error(`Ratgeber: ${b.slug} verweist auf "${slug}" – den gibt es nicht.`);
+    return `        <li><a href="${RATGEBER_PFAD}/${z.slug}/">${escape(z.kurztitel ?? z.titel)}</a> – ${escape(z.beschreibung)}</li>`;
+  });
+
+  return `
+    <section class="weiterlesen">
+      <h2>Weiterlesen</h2>
+      <ul>
+${eintraege.join("\n")}
+      </ul>
+    </section>`;
+}
+
+export function beitragSeite(b: Beitrag, mess?: Messstelle, alle?: Beitrag[]): string {
   const adresse = `${DOMAIN}${RATGEBER_PFAD}/${b.slug}/`;
 
   // Jeder Beitrag hat ein eigenes, aus seinen Zahlen gezeichnetes Bild.
@@ -549,6 +603,7 @@ export function beitragSeite(b: Beitrag, mess?: Messstelle): string {
       <p class="stand">${stand}</p>
 ${b.html}
     </article>
+${weiterlesen(b, alle)}
     <section class="ruf">
       <h2>Mit eigenen Zahlen nachrechnen</h2>
       <p>
