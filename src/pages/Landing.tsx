@@ -13,10 +13,29 @@ import {
   ersparnisEtikett,
   eur,
 } from "@/utils/preise";
+import { RECHNER } from "@/utils/rechner";
 import {
   Shield, Check, ArrowRight, ChevronDown, FileDown, BarChart3, Users,
   Calculator, DollarSign, Target, TrendingDown, Wallet, Lock, PiggyBank,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+/**
+ * Das Symbol je Rechner – die Oberflächenhälfte von `RECHNER`.
+ *
+ * Die Namen und Einzeiler stehen in `utils/rechner.ts`, weil der Vorabtext
+ * ohne JavaScript und `llms.txt` sie ebenfalls brauchen. Ein Symbol braucht
+ * dort niemand, und `lucide-react` hat in einem Modul, das beim Bauen läuft,
+ * nichts zu suchen.
+ */
+const RECHNER_SYMBOLE: Record<string, LucideIcon> = {
+  "Fonds-Sparvertrag": Calculator,
+  "Fonds-Einmalanlage": DollarSign,
+  BestAdvice: Target,
+  "Rentenlücke": TrendingDown,
+  Entnahmeplan: Wallet,
+  Altersvorsorgedepot: PiggyBank,
+};
 
 
 function BrowserFrame({ src, alt }: { src: string; alt: string }) {
@@ -286,20 +305,15 @@ export default function Landing() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { icon: Calculator, name: "Fonds-Sparvertrag", desc: "LV vs. Direktanlage (monatliche Sparrate)", free: true },
-              { icon: DollarSign, name: "Fonds-Einmalanlage", desc: "LV vs. Direktanlage (Einmalbetrag)", free: true },
-              { icon: Target, name: "BestAdvice", desc: "Bestandsvertrag vs. Umschichtung in Fonds-LV", free: false },
-              { icon: TrendingDown, name: "Rentenlücke", desc: "Versorgungslücke im Ruhestand berechnen", free: false },
-              { icon: Wallet, name: "Entnahmeplan", desc: "Kapitalverzehr im Ruhestand simulieren", free: false },
-              { icon: PiggyBank, name: "Altersvorsorgedepot", desc: "Förderung ab 2027 – inkl. Vergleich mit Riester und freiem Depot", free: false },
-            ].map((item) => (
+            {RECHNER.map((item) => {
+              const Symbol = RECHNER_SYMBOLE[item.name];
+              return (
               <div
                 key={item.name}
                 className="bg-white rounded-xl border border-slate-100 p-5 flex items-start gap-4 hover:border-blue-100 hover:shadow-sm transition-all duration-200"
               >
                 <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
-                  <item.icon className="w-4 h-4 text-brand-cyan" />
+                  <Symbol className="w-4 h-4 text-brand-cyan" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -313,7 +327,8 @@ export default function Landing() {
                   <p className="text-xs text-slate-500">{item.desc}</p>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

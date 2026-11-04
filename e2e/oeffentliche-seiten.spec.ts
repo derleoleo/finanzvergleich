@@ -233,3 +233,61 @@ test.describe("Öffentliche Seiten", () => {
     await expect(page.getByText(/ist besser/i)).toHaveCount(0);
   });
 });
+
+test.describe("Agentisches Browsen", () => {
+  /*
+   * Geprueft wird der rohe Abruf, nicht die gerenderte Seite: `page.request`
+   * holt die HTML, ohne JavaScript auszufuehren - genau wie die Abrufer der
+   * Assistenten (ChatGPT-User, Claude-User, PerplexityBot, OAI-SearchBot),
+   * die `robots.txt` ausdruecklich hereinlaesst.
+   *
+   * Gemessen vor dieser Aenderung: `/` und `/beispiel` lieferten im Rumpf
+   * null Woerter, `/pricing` zwoelf. Ein Assistent, dem ein Mensch die
+   * Adresse nennt, bekam eine leere Seite zu lesen.
+   */
+  function rumpftext(html: string): string {
+    const rumpf = html.slice(html.indexOf("<body"));
+    return rumpf
+      .replace(/<script[\s\S]*?<\/script>/g, " ")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  for (const pfad of ["/", "/beispiel", "/pricing", "/impressum", "/compliance"]) {
+    test(`${pfad} liefert Text ohne JavaScript`, async ({ page }) => {
+      const html = await (await page.request.get(pfad)).text();
+      const text = rumpftext(html);
+      expect(
+        text.split(" ").length,
+        `${pfad} liefert ohne JavaScript fast nichts: "${text.slice(0, 120)}"`,
+      ).toBeGreaterThan(30);
+      // Und der Vorabtext gehoert zu DIESER Adresse, nicht zur Startseite.
+      expect(html.match(/<noscript>/g) ?? []).toHaveLength(1);
+    });
+  }
+
+  test("die Startseite nennt ohne JavaScript die Rechner und die Wege weiter", async ({ page }) => {
+    const text = rumpftext(await (await page.request.get("/")).text());
+    expect(text).toContain("Fonds-Sparvertrag");
+    expect(text).toContain("Altersvorsorgedepot");
+    expect(text).toContain("Ohne JavaScript");
+  });
+
+  test("llms.txt wird ausgeliefert und nennt die Ratgeberbeitraege", async ({ page }) => {
+    const antwort = await page.request.get("/llms.txt");
+    expect(antwort.status()).toBe(200);
+    const txt = await antwort.text();
+    expect(txt.startsWith("# Vorsorgewaage")).toBe(true);
+    expect(txt).toContain("/ratgeber/");
+    expect(txt).toContain("keine** Finanz-, Steuer- oder Rechtsberatung");
+  });
+
+  test("ein Besucher mit JavaScript sieht den Vorabtext nicht", async ({ page }) => {
+    // Der Grund fuer `<noscript>` statt Inhalt in `#root`: An der Ansicht
+    // darf sich nichts aendern, auch nicht kurz beim Laden.
+    await page.goto("/");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByText("Ohne JavaScript vollständig lesbar")).toHaveCount(0);
+  });
+});

@@ -29,6 +29,34 @@ function strukturierteDatenPlugin(): PluginOption {
 }
 
 /**
+ * Vorabtext in die ausgelieferte Startseite schreiben.
+ *
+ * Gemessen am gebauten `dist/`: Der Rumpf der Startseite enthielt genau
+ * `<div id="root"></div>` - null Woerter. Ein Crawler, der JavaScript
+ * ausfuehrt, stoert das nicht; die Abrufer der KI-Assistenten tun es nicht
+ * und bekamen eine leere Seite. Begruendung und Inhalt stehen in
+ * `src/utils/vorabInhalt.ts`.
+ *
+ * Title und Description kommen aus der Datei selbst, nicht aus einer zweiten
+ * Fassung hier: `index.html` ist die Quelle fuer den Kopf der Startseite.
+ */
+function vorabInhaltPlugin(): PluginOption {
+  return {
+    name: "vorsorgewaage-vorabinhalt",
+    transformIndexHtml: {
+      order: "post",
+      async handler(html: string) {
+        const { vorabHtml, vorabSetzen } = await import("./src/utils/vorabInhalt");
+        const titel = html.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? "Vorsorgewaage";
+        const beschreibung =
+          html.match(/<meta name="description" content="([^"]*)"/)?.[1] ?? "";
+        return vorabSetzen(html, vorabHtml("/", titel, beschreibung));
+      },
+    },
+  };
+}
+
+/**
  * Der Ratgeber: aus `ratgeber/*.md` werden beim Bauen fertige HTML-Seiten.
  *
  * Kein zweites Build-System, kein JavaScript im Ergebnis, pro Beitrag eigener
@@ -72,9 +100,18 @@ function ratgeberPlugin(modus: string): PluginOption {
 
     const aus = new Map<string, string>();
 
+    /*
+     * Beide Listen werden gesammelt, nicht nur durchgeschleift: `llms.txt`
+     * nennt jeden Beitrag mit Titel und Beschreibung und muss dafuer am Ende
+     * wissen, was es gibt. Von Hand gepflegt waere die Datei beim ersten
+     * neuen Beitrag veraltet.
+     */
+    let beitraege: ReturnType<typeof beitragLesen>[] = [];
+    const textseiten: ReturnType<typeof beitragLesen>[] = [];
+
     if (existsSync(ordner)) {
       const dateien = readdirSync(ordner).filter((d) => d.endsWith(".md")).sort();
-      const beitraege = dateien.map((d) =>
+      beitraege = dateien.map((d) =>
         beitragLesen(d, readFileSync(path.join(ordner, d), "utf8")),
       );
       if (beitraege.length > 0) {
@@ -88,6 +125,7 @@ function ratgeberPlugin(modus: string): PluginOption {
     if (existsSync(seitenOrdner)) {
       for (const d of readdirSync(seitenOrdner).filter((f) => f.endsWith(".md")).sort()) {
         const b = beitragLesen(d, readFileSync(path.join(seitenOrdner, d), "utf8"));
+        textseiten.push(b);
         const html = einzelseite(b, mess);
         /*
          * Zwei Formen, aus demselben Grund wie in seitenkoepfe.ts: Vercel
@@ -100,6 +138,14 @@ function ratgeberPlugin(modus: string): PluginOption {
         aus.set(`${b.slug}.html`, html);
       }
     }
+
+    /*
+     * Die Karte der Seite fuer Assistenten, die sie abrufen. Begruendung in
+     * `src/utils/llmsTxt.ts`. Steht hier und nicht in `public/`, weil der
+     * Inhalt aus denselben Markdown-Dateien kommt wie die Seiten selbst.
+     */
+    const { llmsTxt } = await import("./src/utils/llmsTxt");
+    aus.set("llms.txt", llmsTxt(beitraege, textseiten));
 
     return aus;
   }
@@ -116,6 +162,15 @@ function ratgeberPlugin(modus: string): PluginOption {
         const pfad = (req.url ?? "").split("?")[0];
         // Nur Pfade ohne Punkt: Sonst faengt die Mitte Anfragen nach
         // /assets/... und den Modulen des Entwicklungsservers ab.
+        /*
+         * `llms.txt` hat einen Punkt im Namen und faellt sonst durch die
+         * Pruefung unten - dann waere sie nur nach einem Build pruefbar.
+         */
+        if (pfad === "/llms.txt") {
+          res.setHeader("Content-Type", "text/plain; charset=utf-8");
+          res.end((await seiten()).get("llms.txt") ?? "");
+          return;
+        }
         if (pfad === "/" || /\.[a-z0-9]+$/i.test(pfad)) return next();
         const schluessel = pfad.replace(/^\//, "").replace(/\/$/, "");
         const karte = await seiten();
@@ -171,6 +226,7 @@ export default defineConfig(({ mode }) => ({
     tailwindcss(),
     react(),
     strukturierteDatenPlugin(),
+    vorabInhaltPlugin(),
     ratgeberPlugin(mode),
     seitenkoepfePlugin(),
   ],
