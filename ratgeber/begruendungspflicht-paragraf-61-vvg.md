@@ -7,23 +7,35 @@ stand: §§ 61, 62, 63 VVG; §§ 16, 18 FinVermV; Altersvorsorgereformgesetz, BG
 ---
 
 Die meisten Beratungsprotokolle halten fest, **dass** beraten wurde, und **was**
-empfohlen wurde. Das Gesetz verlangt mehr. § 61 Abs. 1 S. 1 VVG nennt drei
+empfohlen wurde. Das Gesetz verlangt mehr. [§ 61 Abs. 1 S. 1 VVG](https://www.gesetze-im-internet.de/vvg_2008/__61.html) nennt drei
 Pflichten in einem Satz, und die dritte wird am häufigsten übersehen:
+
+<div class="gesetz">
 
 > Der Versicherungsvermittler hat den Versicherungsnehmer […] nach seinen
 > Wünschen und Bedürfnissen **zu befragen** und […] **zu beraten** sowie **die
 > Gründe für jeden zu einer bestimmten Versicherung erteilten Rat anzugeben**.
 
+[§ 61 Abs. 1 S. 1 VVG](https://www.gesetze-im-internet.de/vvg_2008/__61.html)
+
+</div>
+
 Befragen, beraten, **begründen**. Erst der nächste Satz spricht von der
 Dokumentation — sie ist die Form, nicht der Inhalt. Wer nur festhält, was
 empfohlen wurde, hat eine Pflicht von dreien erfüllt und zwei offengelassen.
 
-Was daran hängt, steht in § 63 VVG:
+Was daran hängt, steht in [§ 63 VVG](https://www.gesetze-im-internet.de/vvg_2008/__63.html):
+
+<div class="gesetz">
 
 > Der Versicherungsvermittler ist zum Ersatz des Schadens verpflichtet, der dem
 > Versicherungsnehmer durch die Verletzung einer Pflicht nach § 60 oder § 61
 > entsteht. Dies gilt nicht, wenn der Versicherungsvermittler die
 > Pflichtverletzung **nicht zu vertreten hat**.
+
+[§ 63 VVG](https://www.gesetze-im-internet.de/vvg_2008/__63.html)
+
+</div>
 
 Der letzte Halbsatz ist die eigentliche Nachricht: Die Entlastung muss der
 Vermittler führen. Wer die Gründe seines Rates später nicht mehr darlegen kann,
@@ -34,16 +46,16 @@ die Unterlage fehlt.
 
 Wer Altersvorsorge berät, sitzt regelmäßig zwischen zwei Aufsichtsregimen. Für
 die Fondspolice gilt das VVG. Für das Altersvorsorgedepot — ein Wertpapierprodukt
-— gilt für Vermittler nach § 34f GewO die Finanzanlagenvermittlungsverordnung:
+— gilt für Vermittler nach [§ 34f GewO](https://www.gesetze-im-internet.de/gewo/__34f.html) die Finanzanlagenvermittlungsverordnung:
 
-| | Fondspolice | Altersvorsorgedepot (§ 34f GewO) |
+| | Fondspolice | Altersvorsorgedepot ([§ 34f GewO](https://www.gesetze-im-internet.de/gewo/__34f.html)) |
 |---|---|---|
-| Begründung des Rates | § 61 Abs. 1 S. 1 VVG | § 18 FinVermV, Geeignetheitserklärung |
-| Prüfmaßstab | Wünsche und Bedürfnisse | § 16 FinVermV: Anlageziele, finanzielle Tragbarkeit, Kenntnisse |
-| Form und Zeitpunkt | Textform nach § 62 VVG | dauerhafter Datenträger, **vor** Vertragsschluss |
-| Haftung | § 63 VVG | zivilrechtlich über die Verletzung der Verordnungspflichten |
+| Begründung des Rates | [§ 61 Abs. 1 S. 1 VVG](https://www.gesetze-im-internet.de/vvg_2008/__61.html) | [§ 18 FinVermV](https://www.gesetze-im-internet.de/finvermv/__18.html), Geeignetheitserklärung |
+| Prüfmaßstab | Wünsche und Bedürfnisse | [§ 16 FinVermV](https://www.gesetze-im-internet.de/finvermv/__16.html): Anlageziele, finanzielle Tragbarkeit, Kenntnisse |
+| Form und Zeitpunkt | Textform nach [§ 62 VVG](https://www.gesetze-im-internet.de/vvg_2008/__62.html) | dauerhafter Datenträger, **vor** Vertragsschluss |
+| Haftung | [§ 63 VVG](https://www.gesetze-im-internet.de/vvg_2008/__63.html) | zivilrechtlich über die Verletzung der Verordnungspflichten |
 
-Die Geeignetheitserklärung nach § 18 FinVermV hat das frühere Beratungsprotokoll
+Die Geeignetheitserklärung nach [§ 18 FinVermV](https://www.gesetze-im-internet.de/finvermv/__18.html) hat das frühere Beratungsprotokoll
 abgelöst. Sie muss erläutern, **wie** die Empfehlung auf Präferenzen, Anlageziele
 und die sonstigen Merkmale des Anlegers abgestimmt wurde — also wieder: nicht
 was, sondern warum.
@@ -60,7 +72,7 @@ trug. Bei der Altersvorsorge vergehen dreißig.
 Schadensersatzansprüche verjähren regelmäßig in drei Jahren ab dem Schluss des
 Jahres, in dem der Anspruch entstand und der Gläubiger davon erfuhr (§§ 195,
 199 Abs. 1 BGB) — **ohne Rücksicht auf die Kenntnis aber erst in zehn Jahren**
-ab Entstehung (§ 199 Abs. 3 S. 1 Nr. 1 BGB). Die Begründung von heute muss also
+ab Entstehung ([§ 199 Abs. 3 S. 1 Nr. 1 BGB](https://www.gesetze-im-internet.de/bgb/__199.html)). Die Begründung von heute muss also
 in zehn Jahren noch nachvollziehbar sein, und zwar von jemandem, der nicht dabei
 war.
 

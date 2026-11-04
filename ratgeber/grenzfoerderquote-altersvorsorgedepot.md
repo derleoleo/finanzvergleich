@@ -17,7 +17,7 @@ einer scharfen Kante — und die liegt tiefer, als die meisten Tabellen zeigen.
 
 ## Wie hoch ist die Grundzulage im Altersvorsorgedepot?
 
-Die Grundzulage ist zweistufig aufgebaut (§ 84 S. 1 EStG n.F.):
+Die Grundzulage ist zweistufig aufgebaut ([§ 84 S. 1 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende")):
 
 | Eigenbeitrag im Jahr | Grundzulage je Euro | Norm |
 |---|---|---|
@@ -30,13 +30,13 @@ Daraus folgt die erste von drei Zahlen, die man im Kopf haben sollte:
 > **30 € im Monat.** Bei 360 € Jahresbeitrag halbiert sich die
 > Zulagen-Grenzquote von 50 auf 25 Cent je Euro.
 
-Der Mindesteigenbeitrag liegt bei 120 € im Jahr (§ 86 EStG n.F.) — eine harte
+Der Mindesteigenbeitrag liegt bei 120 € im Jahr ([§ 86 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende")) — eine harte
 Schwelle ohne anteilige Kürzung. Wer darunter bleibt, bekommt nichts.
 
 ## Wie viel bringt die Kinderzulage?
 
 Die Kinderzulage beträgt 100 % des Eigenbeitrags, gedeckelt bei 300 € je Kind
-(§ 85 Abs. 1 S. 1 EStG n.F.). Bei zwei Kindern sind die ersten 300 € des
+([§ 85 Abs. 1 S. 1 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende")). Bei zwei Kindern sind die ersten 300 € des
 Jahresbeitrags deshalb außerordentlich wertvoll — hier gerechnet für einen
 Alleinstehenden, 40 Jahre, zu versteuerndes Einkommen 45.000 €:
 
@@ -62,13 +62,13 @@ Nenner. Das ist die zweite Zahl:
 > **150 € im Monat.** Bei 1.800 € Jahresbeitrag endet die Förderung. Jeder
 > weitere Euro ist ungefördert und wäre im freien Depot flexibler
 > angelegt — ohne Verfügungsbeschränkung und ohne die Rückzahlungspflicht bei
-> schädlicher Verwendung (§ 93 EStG).
+> schädlicher Verwendung ([§ 93 EStG](https://www.gesetze-im-internet.de/estg/__93.html)).
 
 ## Warum reicht es nicht, nur die Zulage zu rechnen?
 
 Bisher stand in den Tabellen immer nur die Zulage. Nun kommt der
 Sonderausgabenabzug hinzu: 1.800 € zuzüglich der zustehenden Zulage
-(§ 10a Abs. 1 S. 1 EStG n.F.), und die Günstigerprüfung erfolgt von Amts wegen.
+([§ 10a Abs. 1 S. 1 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende")), und die Günstigerprüfung erfolgt von Amts wegen.
 Dieselbe Rechnung für einen Alleinstehenden **ohne Kinder**:
 
 | Jahresbeitrag | Zulage | Zusätzliche Erstattung | Gesamtförderung | Förderquote |
@@ -106,7 +106,7 @@ wirklich braucht.
 
 Eine Faustregel, die in drei Zeilen passt:
 
-1. Mindestens 120 € im Jahr, sonst keine Förderung (§ 86 EStG n.F.).
+1. Mindestens 120 € im Jahr, sonst keine Förderung ([§ 86 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende")).
 2. 360 € im Jahr (30 €/Monat) sind der Punkt, bis zu dem sich jeder Euro am
    stärksten lohnt. Mit Kindern umso mehr.
 3. Darüber ist die Entscheidung offen und gehört begründet: Der geförderte
@@ -115,7 +115,7 @@ Eine Faustregel, die in drei Zeilen passt:
 
 Punkt 3 ist keine Ausrede, sondern der Kern: Welche Seite überwiegt, hängt vom
 Anlagehorizont, von der Liquiditätslage und von der erwarteten Steuerbelastung
-im Alter ab. Genau diese Abwägung verlangt § 61 VVG als **Begründung** des
+im Alter ab. Genau diese Abwägung verlangt [§ 61 VVG](https://www.gesetze-im-internet.de/vvg_2008/__61.html) als **Begründung** des
 Rates — nicht nur die Dokumentation, dass beraten wurde.
 
 ## Was hat das BMF noch nicht geklärt?
@@ -124,10 +124,10 @@ Zahlen aus der Übergangszeit müssen ihre offenen Fragen mitnennen, sonst sind
 sie als Beratungsgrundlage unbrauchbar. Zwei Punkte des
 Anwendungsschreibens sind noch nicht entschieden:
 
-- **Kinderzulage und Beitragsverbrauch.** § 85 Abs. 1 S. 1 EStG n.F. bemisst die
+- **Kinderzulage und Beitragsverbrauch.** [§ 85 Abs. 1 S. 1 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende") bemisst die
   Zulage dem Wortlaut nach je Kind auf den vollen Eigenbeitrag, ohne dass ein
   vorheriges Kind Beitrag „verbraucht". Die Zahlen oben folgen diesem Wortlaut.
-- **Sonderausgaben-Volumen mit Kindern.** § 10a Abs. 1 S. 1 EStG n.F. spricht von
+- **Sonderausgaben-Volumen mit Kindern.** [§ 10a Abs. 1 S. 1 EStG n.F.](https://www.recht.bund.de/eli/bund/bgbl-1/2026/156 "Fassung ab Beitragsjahr 2027 – BGBl. 2026 I Nr. 156, nicht die heute geltende") spricht von
   „1.800 Euro zuzüglich der zustehenden Zulage". Die BMF-FAQ nennt als
   Höchstbetrag dagegen nur 2.340 € — das ist der kinderlose Fall. Auch hier
   folgen die Zahlen dem Gesetzeswortlaut.
