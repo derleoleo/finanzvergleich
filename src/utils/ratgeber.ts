@@ -399,6 +399,11 @@ function huelle(o: {
   adresse: string;
   /** `article` für einen Beitrag, `website` für die Übersicht. */
   art: "article" | "website";
+  /**
+   * Eigene `robots`-Angabe. Ohne sie steht keine im Kopf, und es gilt die
+   * Voreinstellung der Suchmaschine (indexieren).
+   */
+  robots?: string;
   kopfExtra?: string;
   /** Eigenes Vorschaubild; ohne Angabe das Markenbild. */
   bild?: { adresse: string; breite: string; hoehe: string; text: string };
@@ -413,13 +418,16 @@ function huelle(o: {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escape(o.titel)}</title>
   <meta name="description" content="${escape(o.beschreibung)}">
-  <link rel="canonical" href="${escape(o.adresse)}">
-  <link rel="icon" type="image/svg+xml" href="${DOMAIN}/favicon.svg">
+${o.adresse ? `  <link rel="canonical" href="${escape(o.adresse)}">
+` : ""}${
+    o.robots ? `  <meta name="robots" content="${escape(o.robots)}">
+` : ""
+  }  <link rel="icon" type="image/svg+xml" href="${DOMAIN}/favicon.svg">
   <meta property="og:type" content="${o.art}">
   <meta property="og:title" content="${escape(o.titel)}">
   <meta property="og:description" content="${escape(o.beschreibung)}">
-  <meta property="og:url" content="${escape(o.adresse)}">
-  <meta property="og:site_name" content="Vorsorgewaage">
+${o.adresse ? `  <meta property="og:url" content="${escape(o.adresse)}">
+` : ""}  <meta property="og:site_name" content="Vorsorgewaage">
   <meta property="og:locale" content="de_DE">
   <meta property="og:image" content="${bild.adresse}">
   <meta property="og:image:width" content="${bild.breite}">
@@ -611,6 +619,58 @@ ${b.html}
 }
 
 /** Die Übersicht, neueste zuerst. */
+/**
+ * Die Seite, die bei einer unbekannten Adresse ausgeliefert wird.
+ *
+ * Sie ersetzt die Umschreibung auf `index.html`, die jeder erfundenen Adresse
+ * mit HTTP 200, dem Titel der Startseite und `index, follow` geantwortet hat.
+ *
+ * Warum statisch und nicht die Anwendung: Sie trägt kein JavaScript, erscheint
+ * sofort, und sie umgeht die Frage, ob die Anwendung auf einer Adresse
+ * hochfährt, die es nicht gibt. Dazu trägt sie Kopf und Fuß der übrigen
+ * Textseiten – wer sich bei einer Ratgeberadresse vertippt, bleibt optisch am
+ * selben Ort.
+ *
+ * `noindex` sagt der Suchmaschine, dass hier nichts zu holen ist; `follow`
+ * bleibt, damit die vier Verweise unten Wert haben. **Kein Canonical** – das
+ * wäre die Behauptung, diese Adresse *sei* die Startseite, und genau daran
+ * erkennt Google einen weichen 404. Aus demselben Grund kein `og:url`.
+ *
+ * Vier Verweise, nicht mehr: Auf einer Fehlerseite soll man nicht raten, was
+ * der Besucher wollte. Dieselben vier stehen in `src/pages/NotFound.tsx`,
+ * damit ein Besucher dasselbe liest, ob er die Adresse eingetippt oder in der
+ * Anwendung auf einen toten Verweis geklickt hat.
+ */
+export function fehlerseite(mess?: Messstelle): string {
+  const inhalt = `    <article>
+      <h1>Diese Seite gibt es nicht</h1>
+      <p>
+        Vielleicht hat sich die Adresse geändert, oder es fehlt ein Zeichen.
+        Diese vier Wege führen weiter:
+      </p>
+      <ul>
+        <li><a href="${DOMAIN}/">Startseite</a> – was Vorsorgewaage ist und für wen</li>
+        <li><a href="${DOMAIN}/beispiel">Beispielfall</a> – ein durchgerechneter Vergleich, ohne Anmeldung</li>
+        <li><a href="${DOMAIN}${RATGEBER_PFAD}/">Ratgeber</a> – Fachbeiträge zu Förderung, Steuern und Entnahme</li>
+        <li><a href="${DOMAIN}/pricing">Preise</a></li>
+      </ul>
+    </article>`;
+
+  return huelle({
+    titel: "Diese Seite gibt es nicht – Vorsorgewaage",
+    beschreibung:
+      "Die aufgerufene Adresse führt ins Leere. Von hier aus geht es zur " +
+      "Startseite, zum Beispielfall, zum Ratgeber und zu den Preisen.",
+    // Leer: Diese Seite erscheint unter beliebigen Adressen und darf keine
+    // davon als ihre eigene ausgeben.
+    adresse: "",
+    art: "website",
+    robots: "noindex, follow",
+    inhalt,
+    mess,
+  });
+}
+
 export function uebersichtSeite(beitraege: Beitrag[], mess?: Messstelle): string {
   const sortiert = [...beitraege].sort((a, b) => b.datum.localeCompare(a.datum));
   const eintraege = sortiert

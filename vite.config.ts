@@ -3,6 +3,7 @@ import { defineConfig, loadEnv, type PluginOption } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 
 /**
  * Strukturierte Daten in die ausgelieferte HTML schreiben.
@@ -86,7 +87,7 @@ function ratgeberPlugin(modus: string): PluginOption {
   const seitenOrdner = path.resolve(__dirname, "seiten");
 
   async function seiten(): Promise<Map<string, string>> {
-    const { beitragLesen, beitragSeite, uebersichtSeite, einzelseite, RATGEBER_PFAD } =
+    const { beitragLesen, beitragSeite, uebersichtSeite, einzelseite, fehlerseite, RATGEBER_PFAD } =
       await import("./src/utils/ratgeber");
     const { readdirSync, readFileSync, existsSync } = await import("node:fs");
 
@@ -147,6 +148,17 @@ function ratgeberPlugin(modus: string): PluginOption {
     const { llmsTxt } = await import("./src/utils/llmsTxt");
     aus.set("llms.txt", llmsTxt(beitraege, textseiten));
 
+    /*
+     * Die Seite fuer unbekannte Adressen.
+     *
+     * Sie entsteht hier und nicht im `seitenkoepfePlugin`, weil `mess` an
+     * dieser Stelle schon vorliegt - die Fehlerseite soll gezaehlt werden wie
+     * jede andere Seite. Vercel liefert `404.html` bei statischem
+     * Ausgabeordner mit HTTP 404 aus; dass die SPA-Umschreibung sie nie zu
+     * Gesicht bekam, war der ganze Fehler.
+     */
+    aus.set("404.html", fehlerseite(mess));
+
     return aus;
   }
 
@@ -184,6 +196,54 @@ function ratgeberPlugin(modus: string): PluginOption {
 }
 
 /**
+ * Der Vorschauserver antwortet wie Vercel - sonst prueft niemand den 404.
+ *
+ * `vite preview` faellt fuer jede unbekannte Adresse ohne Punkt auf
+ * `index.html` zurueck und antwortet mit 200. Das ist genau das Verhalten,
+ * das in der Produktion gerade abgeschafft wurde: Ein Playwright-Test gegen
+ * die Vorschau wuerde also das Gegenteil dessen messen, was live passiert.
+ *
+ * Die Mitte wird direkt registriert und nicht in der zurueckgegebenen
+ * Funktion - nur dann laeuft sie VOR dem SPA-Rueckfall von Vite.
+ *
+ * Nachgestellt wird die Vercel-Regel, nicht mehr: Liegt eine Datei vor, soll
+ * sie ausgeliefert werden; liegt keine vor, kommt `404.html` mit Status 404.
+ *
+ * Auch fuer Pfade mit Punkt. Die waren hier zuerst ausgenommen, weil sirv bei
+ * fehlender Datei von sich aus 404 liefert - gemessen tat er das nicht:
+ * `/ai-catalog.json` und `/gibtesnicht.txt` bekamen 200 mit der `index.html`,
+ * weil Vites HTML-Rueckfall vorher greift. Genau der Fall, den die Vorschau
+ * ehrlich abbilden soll.
+ */
+function vorschauPlugin(): PluginOption {
+  let ausgabe = "dist";
+  return {
+    name: "vorsorgewaage-vorschau",
+    apply: "serve",
+    configResolved(config) {
+      ausgabe = config.build.outDir;
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const pfad = (req.url ?? "/").split("?")[0];
+        const ohne = pfad.replace(/^\//, "").replace(/\/$/, "");
+        const treffer =
+          ohne === "" ||
+          // Eine Datei mit Endung liegt unter genau diesem Namen.
+          existsSync(path.resolve(ausgabe, ohne)) ||
+          existsSync(path.resolve(ausgabe, `${ohne}/index.html`)) ||
+          existsSync(path.resolve(ausgabe, `${ohne}.html`));
+        if (treffer) return next();
+        const seite = path.resolve(ausgabe, "404.html");
+        res.statusCode = 404;
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.end(existsSync(seite) ? readFileSync(seite, "utf8") : "404");
+      });
+    },
+  };
+}
+
+/**
  * Jede oeffentliche Adresse der Anwendung bekommt ihren eigenen Kopf.
  *
  * Ohne das liefert die Single-Page-App ueberall dieselbe index.html - mit
@@ -204,18 +264,38 @@ function seitenkoepfePlugin(): PluginOption {
       ausgabe = config.build.outDir;
     },
     async closeBundle() {
-      const { SEITENKOEPFE, kopfSetzen, dateinamen } = await import("./src/utils/seitenkoepfe");
+      const { SEITENKOEPFE, kopfSetzen, kopfSperren, dateinamen } = await import(
+        "./src/utils/seitenkoepfe"
+      );
+      const { NICHT_INDEXIEREN, dateinamenFuer } = await import("./src/utils/adressen");
       const { readFileSync, writeFileSync, mkdirSync, existsSync } = await import("node:fs");
       const quelle = path.resolve(ausgabe, "index.html");
       if (!existsSync(quelle)) return;
       const html = readFileSync(quelle, "utf8");
+      const schreiben = (name: string, inhalt: string) => {
+        const ziel = path.resolve(ausgabe, name);
+        mkdirSync(path.dirname(ziel), { recursive: true });
+        writeFileSync(ziel, inhalt, "utf8");
+      };
+
       for (const kopf of SEITENKOEPFE) {
         const inhalt = kopfSetzen(html, kopf);
-        for (const name of dateinamen(kopf.pfad)) {
-          const ziel = path.resolve(ausgabe, name);
-          mkdirSync(path.dirname(ziel), { recursive: true });
-          writeFileSync(ziel, inhalt, "utf8");
-        }
+        for (const name of dateinamen(kopf.pfad)) schreiben(name, inhalt);
+      }
+
+      /*
+       * Die Adressen hinter der Anmeldung bekommen ebenfalls eine Datei.
+       *
+       * Zwei Gruende. Erstens: Seit die SPA-Umschreibung entfallen ist,
+       * liefert Vercel nur aus, wofuer eine Datei vorliegt - ohne das waere
+       * jeder Rechner nach einem Neuladen ein 404. Zweitens trugen sie bisher
+       * `index, follow` und das Canonical der Startseite, waren fuer eine
+       * Suchmaschine also 19 Dubletten der Startseite. Beides behebt
+       * `kopfSperren`.
+       */
+      const gesperrt = kopfSperren(html);
+      for (const pfad of NICHT_INDEXIEREN) {
+        for (const name of dateinamenFuer(pfad)) schreiben(name, gesperrt);
       }
     },
   };
@@ -229,6 +309,7 @@ export default defineConfig(({ mode }) => ({
     vorabInhaltPlugin(),
     ratgeberPlugin(mode),
     seitenkoepfePlugin(),
+    vorschauPlugin(),
   ],
   resolve: {
     alias: {
