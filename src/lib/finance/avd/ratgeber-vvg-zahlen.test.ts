@@ -183,12 +183,22 @@ describe('Ratgeber: Begründungspflicht nach § 61 VVG', () => {
   });
 
   it('verweist auf die drei anderen Beiträge', () => {
+    /*
+     * Geprüft wird jetzt der Kopf statt des Fließtexts.
+     *
+     * Die Verweise standen als handgeschriebener Abschnitt „## Weiterlesen"
+     * im Text – in genau diesem einen Beitrag. Drei andere hatten gar keinen
+     * ausgehenden Verweis. Seitdem stehen sie im Kopf (`verwandt:`), und der
+     * Block am Seitenende entsteht daraus; `ratgeber-verwandt.test.ts` prüft,
+     * dass er auch wirklich im HTML landet. Die Zusage ist dieselbe
+     * geblieben, nur die Stelle, an der sie steht, hat gewechselt.
+     */
     for (const slug of [
       'grenzfoerderquote-altersvorsorgedepot',
       'riester-bestand-wechseln-oder-behalten',
       'was-im-todesfall-bleibt-altersvorsorgedepot',
     ]) {
-      expect(TEXT, `Verweis auf ${slug} fehlt`).toContain(`/ratgeber/${slug}/`);
+      expect(TEXT, `Verweis auf ${slug} fehlt`).toContain(slug);
     }
   });
 });

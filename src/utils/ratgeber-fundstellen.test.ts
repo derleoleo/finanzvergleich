@@ -37,6 +37,9 @@ const BEITRAEGE = Object.entries(ROH).map(([pfad, text]) => ({
   koerper: koerperVon(text),
 }));
 
+/** Alle Beitraege als Objekte – `beitragSeite` braucht sie fuer „Weiterlesen". */
+const ALLE = BEITRAEGE.map((b) => beitragLesen(b.datei, b.text));
+
 describe("Fundstellen im Ratgeber", () => {
   it("es gibt Beiträge und sie nennen Fundstellen", () => {
     // Ohne diese Vorprüfung wären alle folgenden still leer und grün.
@@ -111,7 +114,7 @@ describe("Fundstellen im Ratgeber", () => {
     // Linktext. Ein Link darin ergäbe ungültiges HTML, und der innere
     // Verweis bräche.
     for (const b of BEITRAEGE) {
-      const html = beitragSeite(beitragLesen(b.datei, b.text)).toString();
+      const html = beitragSeite(beitragLesen(b.datei, b.text), undefined, ALLE).toString();
       const artikel = html.slice(html.indexOf("<article"), html.indexOf("</article>"));
       // `<a[\s>]` statt `<a`: Sonst trifft das Muster `<article>`.
       expect(
@@ -138,7 +141,7 @@ describe("Gesetzeszitat und eigene These", () => {
    */
   const GEBAUT = BEITRAEGE.map((b) => ({
     datei: b.datei,
-    html: beitragSeite(beitragLesen(b.datei, b.text)),
+    html: beitragSeite(beitragLesen(b.datei, b.text), undefined, ALLE),
   }));
 
   it("es gibt ueberhaupt eingefasste Gesetzeszitate", () => {

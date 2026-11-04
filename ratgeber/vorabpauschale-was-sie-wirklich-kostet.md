@@ -4,6 +4,7 @@ kurztitel: Was die Vorabpauschale wirklich kostet
 beschreibung: 6.593 € Steuer in 30 Jahren – und am Ende keinen Cent Mehrbelastung. Was die Vorabpauschale wirklich kostet, ist nicht die Steuer, sondern der Zinseszins.
 datum: 2026-11-02
 stand: § 18 InvStG (Vorabpauschale), § 20 InvStG (Teilfreistellung); Basiszins nach BMF-Schreiben v. 13.01.2026
+verwandt: begruendungspflicht-paragraf-61-vvg, was-im-todesfall-bleibt-altersvorsorgedepot
 ---
 
 Die Vorabpauschale hat in der Beratung einen schlechten Ruf, und sie hat ihn

@@ -176,6 +176,9 @@ describe("Die erzeugte Seite", () => {
   });
 });
 
+/** Alle echten Beitraege – `beitragSeite` braucht sie fuer „Weiterlesen". */
+const ALLE = BEITRAEGE.map(({ datei, text }) => beitragLesen(datei, text));
+
 describe("Die wirklichen Beitraege", () => {
   it("es gibt mindestens einen", () => {
     expect(BEITRAEGE.length).toBeGreaterThan(0);
@@ -189,7 +192,9 @@ describe("Die wirklichen Beitraege", () => {
       // Ohne Rechtsstand ist ein Steuerbeitrag fuer die Begruendungspflicht
       // nach § 61 VVG wertlos.
       expect(b.stand).toBeTruthy();
-      expect(beitragSeite(b)).toContain("</html>");
+      // `ALLE` muss mit: Seit `verwandt:` im Kopf steht, braucht
+      // `beitragSeite` die Liste, um den Weiterlesen-Block zu bauen.
+      expect(beitragSeite(b, undefined, ALLE)).toContain("</html>");
     });
 
     it(`${datei} legt seine Rechengrundlage offen`, () => {

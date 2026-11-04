@@ -118,7 +118,7 @@ function ratgeberPlugin(modus: string): PluginOption {
       if (beitraege.length > 0) {
         aus.set(`${RATGEBER_PFAD.slice(1)}/index.html`, uebersichtSeite(beitraege, mess));
         for (const b of beitraege) {
-          aus.set(`${RATGEBER_PFAD.slice(1)}/${b.slug}/index.html`, beitragSeite(b, mess));
+          aus.set(`${RATGEBER_PFAD.slice(1)}/${b.slug}/index.html`, beitragSeite(b, mess, beitraege));
         }
       }
     }
