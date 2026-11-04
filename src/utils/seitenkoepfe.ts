@@ -174,6 +174,34 @@ export function kopfSetzen(html: string, kopf: Seitenkopf): string {
 }
 
 /**
+ * Der Kopf einer Adresse, die hinter der Anmeldung liegt.
+ *
+ * Die 19 Adressen der Rechner, der Ergebnisliste und des Profils lieferten
+ * bisher die unveränderte `index.html` aus: Titel, Beschreibung und Canonical
+ * der Startseite, dazu `index, follow`. Für eine Suchmaschine waren das 19
+ * Dubletten der Startseite – dasselbe Problem, das dieses Modul oben für die
+ * sieben öffentlichen Adressen löst, nur ohne Nutzen, denn ein Crawler landet
+ * dort ohnehin auf der Anmeldeseite.
+ *
+ * Was ersetzt wird, ist deshalb nicht der Titel (unter `noindex` liest ihn
+ * niemand), sondern die beiden Angaben, die etwas Falsches behaupten: Das
+ * Canonical fliegt **ersatzlos** heraus – ein Canonical auf `/` wäre die
+ * Aussage, diese Adresse sei die Startseite – und `robots` sagt klar, dass
+ * hier nichts zu indexieren ist.
+ *
+ * `nofollow` dazu, anders als auf der Fehlerseite: Hinter der Anmeldung gibt
+ * es keine Verweise, denen ein Crawler sinnvoll folgen könnte.
+ */
+export function kopfSperren(html: string): string {
+  return html
+    .replace(/\s*<link rel="canonical" href="[^"]*"\s*\/?>/, "")
+    .replace(
+      /<meta name="robots" content="[^"]*"\s*\/?>/,
+      '<meta name="robots" content="noindex, nofollow" />',
+    );
+}
+
+/**
  * Wohin die Kopien geschrieben werden.
  *
  * Zwei Formen, weil Server verschieden auflösen: Vercel liefert für

@@ -54,7 +54,7 @@ const PensionGapDetail        = lazy(() => import("@/pages/PensionGapDetail"));
 const Profile                 = lazy(() => import("@/pages/Profile"));
 const Defaults                = lazy(() => import("@/pages/Defaults"));
 const Pricing                 = lazy(() => import("@/pages/Pricing"));
-const SimplePage              = lazy(() => import("@/pages/SimplePage"));
+const NotFound                = lazy(() => import("@/pages/NotFound"));
 
 /** Dezenter Ladeindikator während ein Seiten-Chunk nachgeladen wird */
 function PageLoader() {
@@ -166,6 +166,26 @@ function SmartPricing() {
   if (loading) return vielleichtAngemeldet() ? null : <Pricing />;
   if (!user) return <Pricing />;
   return <PageShell><Pricing /></PageShell>;
+}
+
+/**
+ * Die 404-Ansicht war fuer Gaeste unerreichbar.
+ *
+ * Sie lag hinter `PageShell` und damit hinter `ProtectedRoute`: Ein Gast auf
+ * einer unbekannten Adresse landete nicht auf „nicht gefunden", sondern im
+ * Login - ohne jeden Hinweis darauf, dass die Adresse selbst falsch war.
+ * Dasselbe Muster, aus demselben Grund wie `SmartPricing` darueber.
+ *
+ * Seit dem harten 404 (siehe `src/utils/adressen.ts`) erscheint diese Ansicht
+ * nur noch nach einer Navigation innerhalb der Anwendung; wer die Adresse
+ * eintippt, bekommt die statische `404.html` mit Status 404. Beide zeigen
+ * denselben Text und dieselben vier Wege.
+ */
+function SmartNotFound() {
+  const { user, loading } = useAuth();
+  if (loading) return vielleichtAngemeldet() ? null : <NotFound />;
+  if (!user) return <NotFound />;
+  return <PageShell><NotFound /></PageShell>;
 }
 
 function SmartRoot() {
@@ -380,17 +400,7 @@ export default function App() {
           <Route path="/beispiel" element={<Beispiel />} />
 
           {/* Fallback */}
-          <Route
-            path="*"
-            element={
-              <PageShell>
-                <SimplePage
-                  title="404"
-                  hint="Diese Seite existiert noch nicht."
-                />
-              </PageShell>
-            }
-          />
+          <Route path="*" element={<SmartNotFound />} />
         </Routes>
         </Suspense>
         </Fehlergrenze>
