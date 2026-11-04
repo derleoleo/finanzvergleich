@@ -297,8 +297,20 @@ const STIL = `
     }
     @media (max-width: 480px) {
       h1 { font-size: 1.6rem; }
-      /* Marke und Polsterung bleiben, wie sie sind: Die Anwendung
-         verkleinert dort nichts, und die Leiste soll gleich aussehen. */
+      /* Auf 320 px passen Marke und Handlungsaufforderung nicht
+         nebeneinander: Marke 188 px, Knopf 99 px, dazu 16 px Lücke macht
+         303 px für 272 px Platz - die Seite lief um 7 px über. Nur die
+         Lücke zu streichen reicht nicht; dann berührten sich beide, und
+         der Knopf legte sich über das Wort. Genau so sieht es heute auch
+         in der Anwendung aus (Landingpage auf 320 px) - dort ist derselbe
+         Fehler noch offen.
+
+         Deshalb hier beides: keine Lücke, und das Markenwort eine Spur
+         kleiner. Das Zeichen behält seine Größe. Macht 158 + 99 = 257 px
+         und damit 15 px Luft. */
+      header .breit { gap: .5rem; }
+      .marke { font-size: 1rem; }
+      .knopf.klein { padding: .5rem .75rem; }
     }
 `;
 
