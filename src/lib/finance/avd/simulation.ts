@@ -1159,10 +1159,14 @@ export function foerderquotenKurve(args: {
   flags?: RechtsFlags;
   maxBeitrag?: number;
   schritt?: number;
-}): { beitrag: number; foerderquote: number; grenzfoerderquote: number }[] {
+}): { beitrag: number; foerderquote: number; grenzfoerderquote: number | null }[] {
   const max = args.maxBeitrag ?? GESETZ.EINZAHLUNG_MAX;
   const schritt = args.schritt ?? 60;
-  const punkte: { beitrag: number; foerderquote: number; grenzfoerderquote: number }[] = [];
+  const punkte: {
+    beitrag: number;
+    foerderquote: number;
+    grenzfoerderquote: number | null;
+  }[] = [];
 
   const foerderungBei = (beitrag: number) => {
     const z = berechneZulagen({
@@ -1187,10 +1191,29 @@ export function foerderquotenKurve(args: {
   let vorheriger = 0;
   for (let b = schritt; b <= max; b += schritt) {
     const f = foerderungBei(b);
+    /*
+     * Über dem Mindesteigenbeitrag gibt es keine Grenzquote.
+     *
+     * § 86 EStG n.F. ist eine harte Schwelle: unter 120 € null Zulage, ab
+     * 120 € der volle Anspruch. Das ist ein Sprung, keine Steigung - und für
+     * einen Sprung ist die Ableitung nicht endlich.
+     *
+     * Vorher wurde trotzdem eine Zahl gebildet, und die hing allein an der
+     * Abtastung: Gemessen bei zwei Kindern ergab dieselbe Rechtslage 250 %
+     * bei 120er Schritten, 465 % bei 60ern, 893 % bei 30ern und 2.610 % bei
+     * 10ern. Die Reihe divergiert, weil sie eine Sprungstelle als Steigung
+     * liest. Angezeigt wurde damit das Raster des Diagramms, nicht das
+     * Gesetz - unter einer Überschrift, die nach dem nächsten Euro fragt.
+     *
+     * `null` statt einer Zahl, damit der Aufrufer die Lücke zeichnen kann;
+     * die Schwelle selbst gehört als Schwelle dargestellt.
+     */
+    const ueberSchwelle =
+      b - schritt < GESETZ.MINDESTEIGENBEITRAG && b >= GESETZ.MINDESTEIGENBEITRAG;
     punkte.push({
       beitrag: b,
       foerderquote: b > 0 ? f / b : 0,
-      grenzfoerderquote: (f - vorheriger) / schritt,
+      grenzfoerderquote: ueberSchwelle ? null : (f - vorheriger) / schritt,
     });
     vorheriger = f;
   }

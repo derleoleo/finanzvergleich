@@ -774,8 +774,71 @@ describe('Förderquoten-Kurve', () => {
     const bei360 = kurve.find((p) => p.beitrag === 360)!;
     const bei1200 = kurve.find((p) => p.beitrag === 1200)!;
     const bei2400 = kurve.find((p) => p.beitrag === 2400)!;
-    expect(bei360.grenzfoerderquote).toBeGreaterThan(bei1200.grenzfoerderquote);
+    // Oberhalb des Mindesteigenbeitrags ist die Grenzquote eine Steigung und
+    // damit eine Zahl; `null` gibt es nur am Sprung bei 120 €.
+    expect(bei360.grenzfoerderquote).not.toBeNull();
+    expect(bei1200.grenzfoerderquote).not.toBeNull();
+    expect(bei360.grenzfoerderquote!).toBeGreaterThan(bei1200.grenzfoerderquote!);
     expect(bei2400.grenzfoerderquote).toBe(0);
+  });
+
+  it('am Mindesteigenbeitrag gibt es keine Grenzquote, nur davor und danach', () => {
+    /*
+     * § 86 EStG n.F. ist eine harte Schwelle: unter 120 € null Zulage, ab
+     * 120 € der volle Anspruch. Ein Sprung hat keine endliche Steigung.
+     */
+    const mitKindern = foerderquotenKurve({
+      kinder: 2,
+      zvE: 48000,
+      splitting: false,
+      berechtigung: 'unmittelbar',
+      schritt: 60,
+    });
+    const amSprung = mitKindern.find((p) => p.beitrag === GESETZ.MINDESTEIGENBEITRAG)!;
+    expect(amSprung.grenzfoerderquote).toBeNull();
+    // Die Gesamtquote bleibt dort eine Zahl - sie ist ein Verhaeltnis, kein
+    // Differenzenquotient, und deshalb an der Kante sehr wohl definiert.
+    expect(amSprung.foerderquote).toBeGreaterThan(2);
+
+    // Davor und danach ist die Grenzquote eine gewoehnliche Steigung.
+    const davor = mitKindern.find((p) => p.beitrag === 60)!;
+    const danach = mitKindern.find((p) => p.beitrag === 180)!;
+    expect(davor.grenzfoerderquote).not.toBeNull();
+    expect(danach.grenzfoerderquote).not.toBeNull();
+  });
+
+  it('die gezeigte Grenzquote haengt nicht mehr von der Schrittweite ab', () => {
+    /*
+     * Der eigentliche Befund, der zu dieser Aenderung gefuehrt hat.
+     *
+     * Vorher las die Kurve den Sprung bei 120 € als Steigung. Gemessen bei
+     * zwei Kindern ergab dieselbe Rechtslage:
+     *
+     *     Schritt 120 € ->   250 %
+     *     Schritt  60 € ->   465 %
+     *     Schritt  30 € ->   893 %
+     *     Schritt  10 € -> 2.610 %
+     *
+     * Die Reihe divergiert - angezeigt wurde das Raster des Diagramms, nicht
+     * das Gesetz, und zwar unter der Ueberschrift "Wie viel Foerderung bringt
+     * der naechste Euro?". Jetzt ist die Spitze in jeder Abtastung dieselbe.
+     */
+    const spitze = (schritt: number) => {
+      const k = foerderquotenKurve({
+        kinder: 2,
+        zvE: 48000,
+        splitting: false,
+        berechtigung: 'unmittelbar',
+        maxBeitrag: 600,
+        schritt,
+      });
+      return Math.max(...k.map((p) => p.grenzfoerderquote ?? 0));
+    };
+    const werte = [120, 60, 30, 20, 10].map(spitze);
+    for (const w of werte) expect(w).toBeCloseTo(werte[0], 6);
+    // Und sie liegt bei der echten Grenzquote oberhalb der Schwelle, nicht
+    // in einer Groessenordnung, die es im Gesetz nicht gibt.
+    expect(werte[0]).toBeLessThan(5);
   });
 
   it('mit Kindern ist die Förderquote bei kleinen Beiträgen extrem hoch', () => {
