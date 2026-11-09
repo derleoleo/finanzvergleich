@@ -523,8 +523,8 @@ export default function BestAdviceCalculator() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">Name der Berechnung</Label>
-                  <Input value={formData.name} onChange={(e) => update("name", e.target.value)}
+                  <Label htmlFor="bestadvice-name" className="text-sm font-medium text-slate-700">Name der Berechnung</Label>
+                  <Input id="bestadvice-name" value={formData.name} onChange={(e) => update("name", e.target.value)}
                     placeholder="Bitte keine Klarnamen"
                     className="bg-slate-50 border-slate-200 focus:border-blue-500 focus:bg-white" />
                   {looksLikeName(formData.name) && (
