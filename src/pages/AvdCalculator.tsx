@@ -53,7 +53,7 @@ import {
 } from 'lucide-react';
 import {
   ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend,
+  Tooltip, ResponsiveContainer, Legend, ReferenceLine,
 } from 'recharts';
 
 const DRAFT_KEY = 'fv_avd_draft_v1';
@@ -1076,10 +1076,33 @@ export default function AvdCalculator() {
                         labelFormatter={(b: unknown) => `Jahresbeitrag ${b} €`}
                       />
                       <Legend />
+                      {/*
+                        * Die Schwelle als Schwelle, nicht als Balken.
+                        *
+                        * Unter dem Mindesteigenbeitrag gibt es null Zulage, ab
+                        * ihm den vollen Anspruch (§ 86 EStG n.F.) - ein Sprung.
+                        * Vorher las die Kurve ihn als Steigung und zeigte je
+                        * nach Raster 250 bis 2.610 %: eine Zahl, die das
+                        * Diagramm selbst erzeugt hat. Jetzt liefert die Engine
+                        * dort `null`, die Flaeche bekommt eine Luecke, und die
+                        * Kante steht hier.
+                        */}
+                      <ReferenceLine
+                        x={GESETZ.MINDESTEIGENBEITRAG}
+                        stroke="#dc2626"
+                        strokeDasharray="4 3"
+                        label={{
+                          value: `${GESETZ.MINDESTEIGENBEITRAG} €`,
+                          position: 'top',
+                          fontSize: 11,
+                          fill: '#dc2626',
+                        }}
+                      />
                       <Area
                         type="stepAfter"
                         dataKey="grenzfoerderquote"
                         name="Grenzförderquote"
+                        connectNulls={false}
                         stroke="#2563eb"
                         fill="#2563eb"
                         fillOpacity={0.12}
@@ -1098,7 +1121,13 @@ export default function AvdCalculator() {
                   </ResponsiveContainer>
                 </div>
                 <p className="text-xs text-slate-500 mt-2">
-                  Knick bei {GESETZ.GZ_STUFE1_GRENZE} € (Grundzulage sinkt von 50 % auf 25 %)
+                  <strong className="text-slate-700">
+                    Unter {GESETZ.MINDESTEIGENBEITRAG} € im Jahr entsteht gar kein
+                    Zulagenanspruch
+                  </strong>{' '}
+                  (§ 86 EStG n.F.) – an dieser Kante hat die Grenzquote keinen Wert,
+                  daher die Lücke. Danach: Knick bei {GESETZ.GZ_STUFE1_GRENZE} €
+                  (Grundzulage sinkt von 50 % auf 25 %)
                   {formData.kinder > 0 && `, volle Kinderzulage ab ${GESETZ.KZ_MAX_PRO_KIND} €`}
                   , ab {GESETZ.GEFOERDERTER_EIGENBEITRAG_MAX} € keine Grenzförderung mehr.
                 </p>
