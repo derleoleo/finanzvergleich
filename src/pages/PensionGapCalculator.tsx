@@ -201,8 +201,8 @@ export default function PensionGapCalculator() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">Name der Berechnung</Label>
-                  <Input value={formData.name} onChange={(e) => update("name", e.target.value)}
+                  <Label htmlFor="rentenluecke-name" className="text-sm font-medium text-slate-700">Name der Berechnung</Label>
+                  <Input id="rentenluecke-name" value={formData.name} onChange={(e) => update("name", e.target.value)}
                     placeholder="Bitte keine Klarnamen"
                     className={inputClass} />
                   {looksLikeName(formData.name) && (

@@ -242,6 +242,41 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
   }
 
   /**
+   * Wartet ab, was auf „Berechnen" folgt: die Auswertung oder eine Meldung.
+   *
+   * Scheitert das Speichern, bleibt die Adresse stehen und die Meldung
+   * erscheint. Dann soll der Test sie zeigen - bei der Ursache dieses Falls
+   * stand die Antwort („Could not find the 'withdrawal_end_age' column") in
+   * der Meldung, und ein blankes „Zeit abgelaufen" hätte sie verschluckt.
+   *
+   * Die Meldung wird mit **kurzer** Frist gelesen, und das ist der Kern
+   * dieser Funktion. Ohne die Frist wartet `textContent()` die volle Vorgabe
+   * auf ein `[role="alert"]`, das es im Erfolgsfall nie gibt: Der erste
+   * Durchlauf des Prädikats kehrt nicht zurück, die Umfrage kommt nie zur
+   * zweiten Runde, und der Test scheitert mit „waiting on the predicate" -
+   * obwohl längst gespeichert wurde. Genau so ist es beim Schreiben dieses
+   * Falls passiert, und es sah nach einem Fehler der App aus.
+   */
+  async function speichernAbwarten(page: Page, detailPfad: string) {
+    const meldung = page.locator('[role="alert"]').first();
+    await expect
+      .poll(
+        async () =>
+          page.url().includes(detailPfad)
+            ? "gespeichert"
+            : ((await meldung.textContent({ timeout: 500 }).catch(() => null))?.trim() ??
+              "noch nichts"),
+        {
+          timeout: 90_000,
+          message:
+            `Nach dem Berechnen muss ${detailPfad} offen sein. Steht hier stattdessen ` +
+            "eine Meldung, kommt sie vom Speichern - etwa eine fehlende Spalte (PGRST204).",
+        },
+      )
+      .toBe("gespeichert");
+  }
+
+  /**
    * Liest eine geöffnete Fassungsansicht vollständig aus.
    *
    * Bewusst Inhalte und nicht nur Vorhandensein: Der bisherige Durchlauf
@@ -383,6 +418,90 @@ test.describe("Beratungsablauf mit Anmeldung", () => {
    * sehen. Deshalb hier: beide Fassungen einzeln öffnen und ihre Inhalte
    * vergleichen.
    */
+  test("Der Rentenlückenrechner speichert und öffnet wieder", async ({ page }) => {
+    /*
+     * Der Test, der sechs Wochen gefehlt hat.
+     *
+     * Am 29.09.2026 kam `withdrawal_end_age` ins Formular, am 26.10.2026
+     * `einnahmen_basis` und `abzuege_gesetzliche_rente_percent` - jedes Mal
+     * ohne Migration. Weil die Rechner mit `{ ...formData, results }`
+     * speichern, lehnte PostgREST den ganzen Insert ab (PGRST204), und die
+     * Oberflaeche zeigte nur "Ein Fehler ist aufgetreten". Gemeldet wurde es
+     * erst am 09.11.2026 von einem Nutzer.
+     *
+     * Bis dahin lief dieser Durchgang ausschliesslich gegen den
+     * Sparvertragsrechner. Ein Rechner, dessen Speichern niemand prueft,
+     * bricht unbemerkt - und zwar genau so.
+     *
+     * `src/entities/schema.test.ts` faengt die Ursache schon ohne Datenbank
+     * ab. Dieser Fall hier prueft die andere Haelfte: dass der Insert gegen
+     * das echte Schema wirklich durchgeht.
+     */
+    const name = `${LAUF}-Rentenluecke`;
+    angelegt.push(name);
+
+    await anmelden(page);
+    await page.goto("/pension-gap");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 30_000 });
+
+    await page.getByLabel("Name der Berechnung").fill(name);
+    await page.getByRole("button", { name: /Rentenlücke berechnen/ }).click();
+
+    await speichernAbwarten(page, "/pension-gap/detail");
+
+    // --- Die Rechnung ist da ------------------------------------------
+    await expect(page.getByText(/\d[\d.]*\s?€/).first()).toBeVisible();
+
+    const fallUrl = page.url();
+
+    // --- Wiederoeffnen liefert denselben Fall --------------------------
+    await page.goto("/results");
+    await expect(page.getByText(name, { exact: false }).first()).toBeVisible({
+      timeout: 20_000,
+    });
+    await page.goto(fallUrl);
+    await expect(page.getByText(/\d[\d.]*\s?€/).first()).toBeVisible({ timeout: 20_000 });
+  });
+
+  /*
+   * Die beiden stillen Fälle.
+   *
+   * Gemeldet war nur die Rentenlücke. Die Untersuchung fand denselben Defekt
+   * bei der Einmalanlage (`lv_funds`, `depot_funds`) und bei BestAdvice
+   * (`current_fondsgebunden`, `current_rueckkaufswert_ist_netto`) - dort hatte
+   * ihn bloß niemand gemeldet. Deshalb bekommen beide ihren eigenen Fall:
+   * Ein Rechner, dessen Speichern niemand prüft, bricht unbemerkt.
+   *
+   * Absichtlich knapp gehalten - nur Name eintragen, rechnen, Auswertung. Das
+   * Wiederöffnen und die Fassungen deckt der Sparvertragsfall ab; hier geht es
+   * um die eine Frage, ob der Insert gegen das echte Schema durchgeht.
+   */
+  test("Die Einmalanlage speichert", async ({ page }) => {
+    const name = `${LAUF}-Einmalanlage`;
+    angelegt.push(name);
+
+    await anmelden(page);
+    await page.goto("/single-payment");
+    await page.getByLabel("Name der Berechnung").fill(name);
+    await page.getByRole("button", { name: "Vergleich berechnen" }).click();
+
+    await speichernAbwarten(page, "/single-payment/detail");
+    await expect(page.getByText(/\d[\d.]*\s?€/).first()).toBeVisible();
+  });
+
+  test("BestAdvice speichert", async ({ page }) => {
+    const name = `${LAUF}-BestAdvice`;
+    angelegt.push(name);
+
+    await anmelden(page);
+    await page.goto("/best-advice");
+    await page.getByLabel("Name der Berechnung").fill(name);
+    await page.getByRole("button", { name: "Vergleich berechnen" }).click();
+
+    await speichernAbwarten(page, "/best-advice/detail");
+    await expect(page.getByText(/\d[\d.]*\s?€/).first()).toBeVisible();
+  });
+
   test("Zwei Fassungen desselben Falls bleiben getrennt und vollständig", async ({
     page,
   }) => {
