@@ -20,6 +20,7 @@ import {
   type AvdEingabe,
 } from '@/lib/finance/avd/simulation';
 import { GESETZ, RECHTS_FLAGS_DEFAULT, ANNAHMEN } from '@/lib/finance/avd/config';
+import { baueAvdVerlauf } from '@/lib/finance/avd/verlauf';
 import {
   berechneStrategien,
   type ZweitvertragArt,
@@ -430,26 +431,24 @@ export default function AvdCalculator() {
 
   /** Die Kombination „30 + x" – dritte Moeglichkeit neben den beiden reinen Wegen. */
   const kombination = strategien.strategien[2];
-  const verlaufsdaten = ergebnis.jahre.map((j, i) => ({
-    jahr: j.jahr,
-    alter: j.alter,
-    avd: Math.round(showReal ? j.kapitalGesamtReal : j.kapitalGesamt),
-    depot: Math.round(
-      (() => {
-        const nominal =
-          ergebnis.riesterAlt?.kapitalProJahr[i] ??
-          ergebnis.fondsLv?.kapitalProJahr[i] ??
-          j.depotKapital;
-        return showReal
-          ? nominal /
-              deflatorFuer(formData.inflationPaJahr, j.alter - (ergebnis.jahre[0].alter - 1))
-          : nominal;
-      })()
-    ),
-    eingezahlt: Math.round(
-      ergebnis.jahre.slice(0, j.jahr - ergebnis.jahre[0].jahr + 1).reduce((s, x) => s + x.eigenbeitrag, 0)
-    ),
-  }));
+  /*
+   * Die Reihen fuer den Verlauf - gebaut in `avd/verlauf.ts`.
+   *
+   * Zwei Dinge sind gegenueber der frueheren Fassung neu:
+   *
+   * **Das Kapital kommt zerlegt.** `gefoerdert` und `ungefoerdert` werden im
+   * Diagramm gestapelt, die Oberkante ist also dasselbe Gesamtkapital wie
+   * vorher - nur sieht man jetzt, woraus es besteht. Die Trennung ist nicht
+   * Beiwerk: An ihr haengt die Besteuerung der Auszahlung (§ 22 Nr. 5 EStG
+   * fuer den gefoerderten Topf, Abgeltungsteuer fuer den ungefoerderten), und
+   * genau sie unterscheidet das AVD von einem Depot.
+   *
+   * **Der Aufwand steht netto und brutto.** Die Linie hiess "Eigenbeitraege"
+   * und zeigte Bruttobeitraege - also gerade nicht, was die Vorsorge gekostet
+   * hat. Der Abstand zwischen den beiden Linien ist die Foerderung, und die
+   * ist der Punkt des AVD.
+   */
+  const verlaufsdaten = baueAvdVerlauf(ergebnis, formData.inflationPaJahr, showReal);
 
   /**
    * Was in die Fassung geht (Audit A05).
@@ -563,6 +562,16 @@ export default function AvdCalculator() {
     ? endVergleichNominal /
       deflatorFuer(formData.inflationPaJahr, ergebnis.jahreBisAuszahlung)
     : endVergleichNominal;
+
+  /**
+   * Welcher der beiden Nachsteuer-Werte oben liegt.
+   *
+   * Entscheidet im Verlaufsdiagramm, auf welcher Seite der jeweiligen Linie
+   * ihre Beschriftung sitzt. Feste Positionen legten die beiden Texte
+   * uebereinander, sobald die Reihenfolge kippte - und sie kippt, das ist ja
+   * die Frage, um die es auf dieser Seite geht.
+   */
+  const avdObenAn = endAvd >= endDepot;
 
   /**
    * Steht die Dreierzeile auf einer anderen Annahme als die Waage darueber?
@@ -1553,7 +1562,15 @@ export default function AvdCalculator() {
                 </div>
               )}
 
-              <div className="h-80 w-full">
+              {/*
+                Auf dem Telefon hoeher.
+
+                Die Legende hat jetzt fuenf Eintraege und bricht dort auf
+                fuenf Zeilen um. In 20 rem blieb davon so wenig Zeichenflaeche
+                uebrig, dass die obere Nachsteuer-Linie samt Beschriftung aus
+                dem Bild fiel - gemessen bei 390 px.
+              */}
+              <div className="h-[26rem] sm:h-80 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={verlaufsdaten} margin={{ top: 10, right: 20, left: 10, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -1563,20 +1580,99 @@ export default function AvdCalculator() {
                       formatter={(value: unknown, name: unknown) => [formatCurrency(Number(value || 0)), String(name)]}
                       labelFormatter={(jahr: unknown) => {
                         const p = verlaufsdaten.find((x) => x.jahr === Number(jahr));
-                        return p ? `${jahr} (Alter ${p.alter})` : `${jahr}`;
+                        // Die Gesamtsumme in die Kopfzeile, nicht als eigene
+                        // Reihe: Sie ist die Oberkante des Stapels und waere
+                        // als sechster Legendeneintrag nur eine Dublette.
+                        return p
+                          ? `${jahr} (Alter ${p.alter}) · AVD gesamt ${formatCurrency(p.avd)}`
+                          : `${jahr}`;
                       }}
                     />
-                    <Legend />
-                    <Line type="monotone" dataKey="avd" name="Altersvorsorgedepot (vor Steuern)" stroke="#2563eb" strokeWidth={3} dot={false} isAnimationActive={false} />
-                    <Line type="monotone" dataKey="depot" name={`${vergleichName} (vor Steuern)`} stroke="#16a34a" strokeWidth={3} dot={false} isAnimationActive={false} />
-                    <Line type="monotone" dataKey="eingezahlt" name="Eigenbeiträge" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 4" dot={false} isAnimationActive={false} />
+                    <Legend wrapperStyle={{ fontSize: 12, lineHeight: '18px' }} />
+                    {/*
+                      Gestapelt, nicht nebeneinander: Die Oberkante ist das
+                      Gesamtkapital des AVD - dieselbe Kurve wie vorher. Was
+                      dazukommt, ist die Trennlinie zwischen dem gefoerderten
+                      Topf (nachgelagert voll besteuert) und dem ungefoerderten
+                      (Abgeltungsteuer). Ohne sie sah das AVD im Bild aus wie
+                      ein Depot mit anderer Rendite.
+                    */}
+                    <Area type="monotone" dataKey="gefoerdert" name="AVD: geförderter Topf" stackId="avd" stroke="#1d4ed8" strokeWidth={1} fill="#1d4ed8" fillOpacity={0.3} isAnimationActive={false} />
+                    <Area type="monotone" dataKey="ungefoerdert" name="AVD: ungeförderter Topf" stackId="avd" stroke="#60a5fa" strokeWidth={1} fill="#93c5fd" fillOpacity={0.55} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="depot" name={vergleichName} stroke="#16a34a" strokeWidth={3} dot={false} isAnimationActive={false} />
+                    {/*
+                      Zwei Beitragslinien, und der Abstand dazwischen ist die
+                      Foerderung. Vorher stand hier eine einzige Linie
+                      "Eigenbeitraege" mit Bruttobeitraegen - also gerade
+                      nicht, was die Vorsorge gekostet hat, und ohne jede Spur
+                      davon, dass der Staat mitzahlt. Das ist der Punkt des
+                      AVD, und er war im Bild nicht zu sehen.
+                    */}
+                    {/*
+                      Beide Linien laufen ueber der blauen Flaeche. Grau ging
+                      darin unter - deshalb Bernstein und Fast-Schwarz, die
+                      auf Blau beide tragen.
+                    */}
+                    <Line type="monotone" dataKey="eingeflossen" name="In den Vertrag geflossen" stroke="#b45309" strokeWidth={2} strokeDasharray="2 3" dot={false} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="aufwandNetto" name="Ihr Aufwand nach Förderung" stroke="#0f172a" strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} />
+                    {/*
+                      Die beiden Endwerte nach Steuern als Linie ins Bild.
+
+                      Hier stand bisher eine Fussnote, die einen Widerspruch
+                      einraeumte: Die Kurven laufen vor Steuern, Waage und
+                      Kacheln stehen nach Steuern, und wer die rechte Kante
+                      liest, liest die falsche Zahl. Zwei waagerechte Linien
+                      loesen das im Bild statt im Text - man sieht, wo der
+                      Verlauf endet und was davon bleibt.
+
+                      Die Beschriftungen stehen nach aussen: die obere Linie
+                      beschriftet sich darueber, die untere darunter. Anders
+                      herum - jede Beschriftung in den Zwischenraum - standen
+                      sie uebereinander, sobald die beiden Werte nahe
+                      beieinander lagen. Und sie liegen oft nahe beieinander;
+                      das ist ja die Frage, um die es auf dieser Seite geht.
+
+                      In Recharts zeichnet `insideTopLeft` die Beschriftung
+                      *unter* die waagerechte Linie und `insideBottomLeft`
+                      *darueber*. Deshalb bekommt die obere Linie
+                      `insideBottomLeft`.
+                    */}
+                    <ReferenceLine
+                      y={Math.round(endAvd)}
+                      stroke="#1d4ed8"
+                      strokeDasharray="6 4"
+                      label={{
+                        value: `AVD nach Steuern: ${formatCurrency(endAvd)}`,
+                        position: avdObenAn ? 'insideBottomLeft' : 'insideTopLeft',
+                        fontSize: 11,
+                        fill: '#1d4ed8',
+                      }}
+                    />
+                    <ReferenceLine
+                      y={Math.round(endDepot)}
+                      stroke="#15803d"
+                      strokeDasharray="6 4"
+                      label={{
+                        value: `${vergleichName} nach Steuern: ${formatCurrency(endDepot)}`,
+                        position: avdObenAn ? 'insideTopLeft' : 'insideBottomLeft',
+                        fontSize: 11,
+                        fill: '#15803d',
+                      }}
+                    />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
               <p className="text-xs text-slate-500">
-                <strong>Die Kurven zeigen das laufende Kapital vor der abschließenden
-                Besteuerung</strong> – Waage und Kacheln oben stehen dagegen nach Steuern. Der
-                Abstand am rechten Rand ist deshalb größer als der Unterschied nach Steuern.{' '}
+                <strong>Die Flächen zeigen das laufende Kapital vor der abschließenden
+                Besteuerung, die beiden waagerechten Linien das Ergebnis danach</strong> – also
+                die Zahlen, auf denen Waage und Kacheln oben stehen. Der Abstand am rechten
+                Rand der Flächen ist größer als der Unterschied nach Steuern; wie viel davon
+                bleibt, sagen die waagerechten Linien. Die Trennung in geförderten und
+                ungeförderten Topf ist der Grund dafür: Nur der geförderte wird nachgelagert
+                voll besteuert. Der Abstand zwischen den beiden gestrichelten Linien unten ist
+                die Förderung – was in den Vertrag geflossen ist (Eigenbeiträge plus
+                gutgeschriebene Zulagen) gegen das, was Sie nach der Steuererstattung
+                tatsächlich aufgewendet haben.{' '}
                 {gegenRiester
                   ? 'Steuerlich sind AVD und Riester-Altvertrag identisch: in der Ansparphase steuerfrei, in der Auszahlphase voll nachgelagert besteuert (§ 22 Nr. 5 EStG), beide ohne Teilfreistellung. Der Unterschied entsteht allein aus Förderhöhe, Kosten und Renditepotenzial – bereits gezahlte Zulagen und Steuervorteile bleiben beim Wechsel erhalten (§ 3 Nr. 55c EStG).'
                   : gegenFondsLv
