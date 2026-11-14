@@ -7,6 +7,11 @@ stand: Altersvorsorgereformgesetz, BGBl. 2026 I Nr. 156; §§ 10a, 84, 85, 86 ES
 verwandt: grenzfoerderquote-altersvorsorgedepot, begruendungspflicht-paragraf-61-vvg
 ---
 
+**Kurz gesagt:** Der Sonderausgabenabzug trägt im Grundtarif ab rund 18.600 €
+zu versteuerndem Einkommen ohne Kind, ab rund 41.800 € mit einem Kind und erst
+ab rund 62.000 € mit zwei Kindern. Gewählt wird nichts — das Finanzamt prüft
+von Amts wegen, was günstiger ist.
+
 „Bekommt mein Mandant die Zulage oder den Steuervorteil?" Die Frage ist falsch
 gestellt, und zwar in einer Weise, die in der Beratung teuer wird. Er bekommt
 **nicht beides und nicht eines von beiden nach Wahl**, sondern das Günstigere

@@ -7,6 +7,11 @@ stand: Altersvorsorgereformgesetz, BGBl. 2026 I Nr. 156; Förderregeln ab Beitra
 verwandt: zulage-oder-sonderausgabenabzug, mittelbare-berechtigung-ehegatte
 ---
 
+**Kurz gesagt:** Von den ersten 360 € Jahresbeitrag gibt es 50 Cent Grundzulage
+je Euro, von 360 € bis 1.800 € noch 25 Cent, darüber nichts. Die Förderung ist
+also nicht gleichmäßig verteilt — die ersten Euro sind doppelt so viel wert wie
+die letzten, und mehr als 540 € Grundzulage gibt es nicht.
+
 Die Frage kommt ab 2027 in jedem Beratungsgespräch: **Wie viel soll in das
 Altersvorsorgedepot?** Die naheliegende Antwort — „so viel wie gefördert wird,
 also 1.800 € im Jahr" — ist in vielen Fällen falsch. Nicht, weil die Förderung
