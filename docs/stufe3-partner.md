@@ -210,3 +210,107 @@ jedes Erstveröffentlichung erwartet.
   nichts geändert.
 - **Partner-PDF** über Papermark: erst sinnvoll, wenn ein Gespräch zustande
   kommt. Vorher ist es Beschäftigung.
+
+## Nachgeprüft am 14.11.2026
+
+Die Grundlage dieses Dokuments ist eine Rechtsfrage, und sie hängt daran, ob
+die Einladungen noch stehen. Drei Wochen nach der ersten Prüfung noch einmal
+aufgerufen, nicht aus der Erinnerung bestätigt:
+
+| Weg | Stand 14.11.2026 |
+|---|---|
+| **Versicherungsbote** | Einladung steht **wörtlich unverändert**: „Möchten auch Sie als Gastautor unser Redaktionsteam unterstützen? Kontaktieren Sie uns: redaktion@versicherungsbote.de!" |
+| **Cash.** | Kontaktseite führt ausdrücklich „zur Cash.-Redaktion", Formular vorhanden. Der offene Punkt ist damit **positiv geklärt**. |
+| **procontra** | Auf `/kontakt` liegt **nur ein Anmeldeformular** (E-Mail, Passwort), daneben die allgemeine Verlagsadresse `frage@alsterspree.de`. Kein Redaktionsformular, keine Gastautoren-Seite. **Bleibt zurückgestellt.** |
+
+Zwei Beobachtungen bei procontra, die den Takt betreffen, auch wenn der Weg
+dorthin fehlt: Das Haus führt ein eigenes Dossier **„Altersvorsorge-Reform"**
+und ein Spezial **„Ruhestandsplanung richtig beraten"**. Thematisch ist das
+die nächste Passung im ganzen Feld — wenn sich ein Weg auftut, steht das
+Thema schon bereit.
+
+### Was sich seit dem 27.10. sonst geändert hat
+
+- Aus **vier** Ratgeberbeiträgen sind **sieben** geworden. Der Haken bleibt
+  derselbe: Sie sind veröffentlicht, taugen also als Arbeitsprobe, nicht als
+  Ware. Angeboten wird weiterhin ein **neuer** Text.
+- Der KI-Check vom 14.11.2026 hat den Befund geschärft, der dieses Dokument
+  überhaupt trägt: Perplexity nennt Vorsorgewaage in **0 von 25** Antworten,
+  genannt werden IVFP und fonder. Beide werden zitiert, weil **andere über
+  sie schreiben**. Genau das ist der Zweck eines Gastbeitrags — nicht die
+  Klicks aus dem Artikel, sondern die Erwähnung, aus der eine KI zitiert.
+- Die Namensverwechslung bei den Honorarberater-Verbänden steht unverändert
+  weiter oben und bleibt die gefährlichste Falle in diesem Dokument.
+
+### Entscheidung, die offen ist: wer unterschreibt
+
+Ein Gastbeitrag erscheint mit Namen und Kurzvita. Im Impressum steht
+**Luisa Brandt** als Betreiberin. Wer als Autor auftritt und mit welcher
+Funktionsbezeichnung, geht aus dem Repo nicht hervor — die Platzhalter im
+Entwurf bleiben deshalb stehen, bis sie jemand füllt.
+
+### Versandfertiger Text (noch nicht versendet)
+
+Gegenüber der Fassung vom 27.10. gestrafft, mit belastbarer Arbeitsprobe und
+ohne jeden Produkthinweis. Keine Preise, kein Link auf die Preisseite, kein
+„testen Sie" — das machte aus einem Themenangebot eine Werbemail und damit
+aus einer Einladung einen Verstoß.
+
+---
+
+Betreff: Themenangebot: Altersvorsorgedepot ab 2027 — wo die Beitragsempfehlung kippt
+
+Sehr geehrte Damen und Herren,
+
+auf Ihrer Gastautoren-Seite laden Sie zur Mitarbeit am Redaktionsteam ein —
+dem komme ich gern nach.
+
+Ich biete Ihnen einen exklusiven Fachbeitrag zum Altersvorsorgedepot an, das
+ab dem Beitragsjahr 2027 gilt. Thema: warum die naheliegende
+Beitragsempfehlung — „so viel wie gefördert wird, also 1.800 € im Jahr" — in
+vielen Fällen die falsche ist.
+
+Der Kern in drei Sätzen: Die Grundzulage ist zweistufig, 50 Cent je Euro auf
+die ersten 360 € und danach 25 Cent (§ 84 S. 1 EStG n.F.). Der
+Sonderausgabenabzug glättet diesen Knick auf der Gesamtförderungskurve,
+weshalb die üblichen Vergleichsrechnungen ihn nicht zeigen. Für die
+Entscheidung „geförderter Vertrag oder freies Depot" ist aber allein die
+Zulagen-Grenzquote maßgeblich, denn die Zulage fließt in den Vertrag, die
+Steuererstattung dagegen dem Sparer zu.
+
+Der Beitrag bringt durchgerechnete Tabellen für das Beitragsjahr 2027 — mit
+und ohne Kinder, über mehrere Einkommensstufen — und benennt die Punkte, die
+das BMF-Anwendungsschreiben noch offen lässt. Umfang nach Ihrem Wunsch,
+Richtwert 6.000 bis 9.000 Zeichen, Erstveröffentlichung bei Ihnen.
+
+Als Arbeitsprobe: Unter vorsorgewaage.de/ratgeber/ stehen sieben Fachbeiträge
+zur Reform, jeder mit nachgerechneten Zahlen und Fundstellen. Sie zeigen den
+Stil; der angebotene Text wäre ein neuer, ausschließlich für Sie
+geschriebener.
+
+Zu mir: [Name], [Funktion]. Ich entwickle Vergleichsrechner für die
+Altersvorsorgeberatung und habe die Förderlogik des
+Altersvorsorgereformgesetzes dafür vollständig abgebildet.
+
+Wenn das Thema passt, schicke ich Ihnen gern zuerst eine Gliederung. Über
+eine Rückmeldung freue ich mich.
+
+Mit freundlichen Grüßen
+
+---
+
+**Zwei Ausweichthemen**, falls das erste schon besetzt ist:
+
+- Riester-Bestand ab 2027 — die Kopplungsfalle des § 52 Abs. 50a EStG:
+  unwiderruflich, wirkt für alle Verträge, zieht den Ehegatten mit.
+- Was im Todesfall vom Altersvorsorgedepot bleibt: Der geförderte Vertrag
+  liegt in der Ansparphase vorn, der Bruch kommt erst mit der Verrentung.
+
+### Für Cash. und VDH gilt ein anderer Text
+
+Bei beiden läuft die Ansprache über ein **Formular**, nicht über E-Mail. Die
+Einleitung mit dem Verweis auf die Gastautoren-Seite passt dort nicht und
+muss weg. Beim VDH ist es ohnehin kein Beitrag, sondern ein Angebot zur
+Zusammenarbeit — und dort ist zu berücksichtigen, dass XPS Finanzsoftware
+bereits als Partner auftritt: also nicht als Ersatz auftreten, sondern mit
+dem Altersvorsorgedepot, das dort noch niemand durchrechnet.
