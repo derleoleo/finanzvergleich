@@ -8,6 +8,12 @@ rechner: /entnahmeplan-rechner
 verwandt: mittelbare-berechtigung-ehegatte, vorabpauschale-was-sie-wirklich-kostet
 ---
 
+**Kurz gesagt:** In der Ansparphase liegt der geförderte Vertrag trotz
+Rückforderung vorn: Bei Tod mit 60 gehen 99.027 € an die Erben, aus der
+Fondspolice 81.219 €. Nach dem Rentenbeginn kehrt sich das um — mit 67 sind es
+48.439 € gegenüber 133.271 €, mit 80 bleibt nichts. Entscheidend ist deshalb
+nicht der Produktmantel, sondern die Auszahlform.
+
 Die Frage wird in der Altersvorsorgeberatung selten gestellt und fast nie
 durchgerechnet: **Was passiert, wenn der Sparer stirbt?** Beim geförderten
 Vertrag ist die Antwort unbequem, denn die Auszahlung im Todesfall ist

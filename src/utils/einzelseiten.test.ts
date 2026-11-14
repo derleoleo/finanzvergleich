@@ -85,6 +85,32 @@ describe("Einzelseiten", () => {
   it("die genannten Preise stimmen mit preise.ts überein", () => {
     // Der Text nennt die Beträge wörtlich, weil er Markdown ist und nichts
     // einsetzen kann. Dann muss ein Test sie zusammenhalten.
+    //
+    // Gilt für JEDE Seite, die einen Betrag nennt - nicht mehr nur für
+    // "Was ist Vorsorgewaage?". Mit "Was kostet eine Beratungssoftware?" kam
+    // eine zweite Seite mit Preisen dazu; eine Regel, die nur eine Datei
+    // kennt, haette die neue stillschweigend durchgelassen.
+    // Wortgrenze davor: "59 €" steckt sonst auch in "5.259 €" und
+    // "19.759 €", und fondspolice-oder-depot.md fiel prompt darauf herein.
+    // Doppelte Backslashes: Im Template-Literal waere `\d` nur ein `d`.
+    const preisRegex = new RegExp(`(^|[^\\d.])${eur(PREIS_MONAT).replace(" ", "\\s")}`);
+    const mitPreis = SEITEN.filter((s) => preisRegex.test(s.text));
+    expect(mitPreis.length, "keine Seite nennt den Monatspreis").toBeGreaterThan(0);
+    for (const s of mitPreis) {
+      expect(s.text, `${s.datei}: Jahrespreis ${eur(PREIS_JAHR)} fehlt`).toContain(
+        eur(PREIS_JAHR),
+      );
+      // Endpreise, Kleinunternehmer - keine Umsatzsteuer ausweisen.
+      // Der Punkt MUSS escaped sein: `USt.` traefe sonst das `UStG` im
+      // Kleinunternehmer-Hinweis, der auf genau diesen Seiten steht.
+      // `netto` mit Wortgrenzen, damit „Nettopolice" als Produktbegriff
+      // durchgeht.
+      expect(s.text, `${s.datei}: Hinweis auf § 19 UStG fehlt`).toContain("§ 19 UStG");
+      expect(s.text, `${s.datei}: weist Umsatzsteuer aus`).not.toMatch(
+        /zzgl|\bnetto\b|MwSt|USt\./,
+      );
+    }
+
     const seite = SEITEN.find((s) => s.datei === "was-ist-vorsorgewaage.md");
     expect(seite, "was-ist-vorsorgewaage.md fehlt").toBeDefined();
     const text = seite!.text;
